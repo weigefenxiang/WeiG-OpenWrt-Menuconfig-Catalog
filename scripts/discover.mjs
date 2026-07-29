@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +9,12 @@ const config = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'
 const token = process.env.GITHUB_TOKEN || '';
 const headers = { 'User-Agent': 'WeiG-OpenWrt-Menuconfig-Catalog' };
 if (token) headers.Authorization = `Bearer ${token}`;
+const safeKey = (value) => {
+  const raw = String(value);
+  const slug = raw.toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 110);
+  return `${slug}-${createHash('sha256').update(raw).digest('hex').slice(0, 8)}`;
+};
 
 async function remoteBranches(repo) {
   const rows = [];
@@ -26,11 +33,16 @@ for (const source of config.sources) {
   const branches = source.branches === 'all' ? await remoteBranches(source.repo) : source.branches;
   for (const branch of [...new Set(branches)].filter((item) => !source.exclude.includes(item)).sort()) {
     if (!/^[A-Za-z0-9._/-]{1,96}$/.test(branch)) throw new Error(`非法分支名:${source.repo}/${branch}`);
+    const version = branch.startsWith('openwrt-') ? branch.slice(8) : branch;
     include.push({
       source: source.id,
       label: source.label,
       repo: source.repo,
       branch,
+      version,
+      jobKey: safeKey(`${source.id}-${branch}`),
+      metadataCompat: source.id === 'OpenWrt' &&
+        ['openwrt-18.06', 'openwrt-19.07'].includes(branch) ? 'legacy-metadata' : 'native',
       diy: source.diy,
       legacy: Boolean(source.legacy),
     });

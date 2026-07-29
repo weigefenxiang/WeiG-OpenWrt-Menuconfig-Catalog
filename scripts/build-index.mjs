@@ -43,6 +43,7 @@ for (const row of rows) {
   source.label = row.source.label || source.label || row.source.id;
   const branch = {
     id: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
+    version: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
     branch: row.source.branch, commit: row.source.commit, asset: row.asset, counts: row.counts,
     state: 'fresh',
     lastSuccessAt: row.generatedAt || new Date().toISOString(),
@@ -67,6 +68,11 @@ for (const attempt of attempts) {
   }
   branch.lastAttemptAt = attempt.attemptedAt;
   branch.runUrl = attempt.runUrl;
+  branch.version = attempt.version || branch.version || branch.id;
+  branch.lastAttemptCommit = attempt.upstreamCommit || '';
+  branch.compatibilityMode = attempt.compatibilityMode || 'native';
+  branch.artifactName = attempt.artifactName || '';
+  branch.failureLog = attempt.failureLog || '';
   if (attempt.status === 'success' && currentKeys.has(`${attempt.source.id}\0${attempt.branch}`)) {
     branch.state = 'fresh';
     branch.errorStage = '';

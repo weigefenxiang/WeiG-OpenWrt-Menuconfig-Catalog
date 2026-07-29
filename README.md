@@ -59,6 +59,28 @@ node scripts/import-curated-i18n.mjs \
 - 只有全部分支成功时才更新固定 Release `menuconfig-catalog-complete`；
   部分失败只更新滚动目录，Workflow 保持失败状态。
 
+## Diagnostic identity and legacy metadata / 诊断身份与旧版元数据
+
+Every matrix job and downloaded diagnostic file identifies its source, repository, branch,
+display version, upstream commit, stage, run ID/attempt, job index, artifact and run URL.
+Failure logs use unique names such as
+`openwrt-openwrt-18.06--defconfig.log`; the same artifact also contains a readable
+`--SUMMARY.txt` and a machine-readable `.attempt.json`. Full failure logs are retained for
+14 days, while the Actions console shows only key errors and the last 40 relevant lines.
+
+每个矩阵任务、错误日志和汇总文件都会写明源码、仓库、分支版本、上游提交、
+失败阶段、Run ID/次数、任务序号、Artifact 名称和 Run 链接。日志文件名全局唯一，
+不会再因多个分支都叫 `defconfig.log` 而互相覆盖；完整错误日志保留 14 天。
+
+OpenWrt 18.06 and 19.07 use `legacy-metadata` mode. These branches unconditionally invoke
+obsolete compiler/Python host-version gates from `prepare-tmpinfo`, although this repository
+only extracts Kconfig/Perl metadata and never builds firmware. The compatibility mode creates
+a fresh prerequisite cookie before `make defconfig FORCE=1`; modern branches keep the native
+path unchanged.
+
+OpenWrt 18.06/19.07 使用仅限元数据的兼容模式，跳过已经过时的 GCC/Python
+版本门槛；它不用于固件编译，也不会改变现代分支的正常检查链路。
+
 ## 本地检查
 
 ```bash

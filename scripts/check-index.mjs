@@ -28,9 +28,12 @@ try {
     generatedAt: '2026-07-29T00:00:00Z',
   }));
   const attempt = (branch, status, stage) => ({
-    schema: 1,
+    schema: 2,
     source: { id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'immortalwrt/immortalwrt', legacy: false },
-    branch, status, stage, attemptedAt: '2026-07-29T00:10:00Z', runUrl: 'https://example.invalid/run/1',
+    branch, version: branch.slice(8), upstreamCommit: 'attempt123',
+    compatibilityMode: 'native', artifactName: `catalog-immortalwrt-${branch}`,
+    failureLog: status === 'failure' ? `immortalwrt-${branch}--${stage}.log` : '',
+    status, stage, attemptedAt: '2026-07-29T00:10:00Z', runUrl: 'https://example.invalid/run/1',
   });
   writeFileSync(join(attempts, '23.attempt.json'), JSON.stringify(attempt('openwrt-23.05', 'success', 'complete')));
   writeFileSync(join(attempts, '21.attempt.json'), JSON.stringify(attempt('openwrt-21.02', 'failure', 'defconfig')));
@@ -48,6 +51,9 @@ try {
   if (main.state !== 'fresh' || main.commit !== 'abcdef') throw new Error('fresh branch merge failed');
   if (old.state !== 'stale' || !old.asset || old.errorStage !== 'defconfig') throw new Error('stale branch merge failed');
   if (never.state !== 'unavailable' || never.asset || never.errorStage !== 'feeds') throw new Error('unavailable branch merge failed');
+  if (old.version !== '21.02' || old.lastAttemptCommit !== 'attempt123' ||
+      old.failureLog !== 'immortalwrt-openwrt-21.02--defconfig.log' ||
+      !old.artifactName) throw new Error('diagnostic metadata merge failed');
   if (index.health.fresh !== 1 || index.health.stale !== 1 || index.health.unavailable !== 1) {
     throw new Error('health counts failed');
   }

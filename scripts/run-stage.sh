@@ -4,20 +4,51 @@ set -uo pipefail
 stage="${1:?stage is required}"
 shift
 log_dir="${GITHUB_WORKSPACE:-$PWD}/failure-logs"
-log_file="${RUNNER_TEMP:-/tmp}/catalog-${stage}.log"
+job_key="${CATALOG_JOB_KEY:-catalog-unknown}"
+log_name="${job_key}--${stage}.log"
+log_file="${RUNNER_TEMP:-/tmp}/${log_name}"
 started="$(date +%s)"
 
-if "$@" >"$log_file" 2>&1; then
-  echo "✓ ${stage} completed in $(( $(date +%s) - started ))s"
+mkdir -p "$log_dir"
+{
+  echo "WeiG Menuconfig Catalog diagnostic log"
+  echo "Source ID: ${CATALOG_SOURCE_ID:-unknown}"
+  echo "Source label: ${CATALOG_SOURCE_LABEL:-unknown}"
+  echo "Repository: ${CATALOG_REPO:-unknown}"
+  echo "Branch: ${CATALOG_BRANCH:-unknown}"
+  echo "Version: ${CATALOG_VERSION:-unknown}"
+  echo "Compatibility mode: ${CATALOG_COMPAT:-native}"
+  echo "Stage: ${stage}"
+  echo "Run ID: ${CATALOG_RUN_ID:-unknown}"
+  echo "Run attempt: ${CATALOG_RUN_ATTEMPT:-unknown}"
+  echo "Job index: ${CATALOG_JOB_INDEX:-unknown}"
+  echo "Runner: ${RUNNER_OS:-unknown} ${RUNNER_ARCH:-unknown} / ${ImageOS:-unknown}"
+  echo "Started UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "Upstream commit: $(git -C "${GITHUB_WORKSPACE:-$PWD}/work/upstream" rev-parse HEAD 2>/dev/null || echo unavailable)"
+  echo "Artifact: ${CATALOG_ARTIFACT_NAME:-unknown}"
+  echo "Run URL: ${CATALOG_RUN_URL:-unknown}"
+  echo "================================================================"
+} >"$log_file"
+
+if "$@" >>"$log_file" 2>&1; then
+  echo "OK: ${CATALOG_SOURCE_ID:-unknown}/${CATALOG_BRANCH:-unknown} ${stage} completed in $(( $(date +%s) - started ))s"
   rm -f "$log_file"
   exit 0
 fi
 
-mkdir -p "$log_dir"
-cp "$log_file" "$log_dir/${stage}.log"
-echo "::error::${stage} failed after $(( $(date +%s) - started ))s"
+{
+  echo "================================================================"
+  echo "Final status: failure"
+  echo "Elapsed seconds: $(( $(date +%s) - started ))"
+  echo "Finished UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "Final upstream commit: $(git -C "${GITHUB_WORKSPACE:-$PWD}/work/upstream" rev-parse HEAD 2>/dev/null || echo unavailable)"
+} >>"$log_file"
+cp "$log_file" "$log_dir/$log_name"
+echo "::error::${CATALOG_SOURCE_ID:-unknown}/${CATALOG_BRANCH:-unknown} ${stage} failed after $(( $(date +%s) - started ))s; log=${log_name}"
 echo "---- key errors ----"
-grep -Ei 'error|failed|failure|missing|not found|prerequisite|traceback|cannot|no such file' "$log_file" | tail -n 40 || true
-echo "---- last 80 lines ----"
-tail -n 80 "$log_file"
+grep -Eiv '^fatal: Invalid revision range' "$log_file" |
+  grep -Ei 'error|failed|failure|missing|not found|prerequisite|traceback|cannot|no such file' |
+  tail -n 40 || true
+echo "---- last 40 relevant lines ----"
+grep -Ev '^fatal: Invalid revision range' "$log_file" | tail -n 40
 exit 1

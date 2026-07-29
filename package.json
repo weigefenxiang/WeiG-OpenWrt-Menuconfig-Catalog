@@ -6,7 +6,7 @@
     "check": "node scripts/check.mjs",
     "discover": "node scripts/discover.mjs",
     "import-i18n": "node scripts/import-curated-i18n.mjs",
-    "test": "node scripts/check.mjs && node scripts/check-index.mjs"
+    "test": "node scripts/check.mjs && node scripts/check-index.mjs && node scripts/check-legacy-metadata.mjs"
   },
   "engines": {
     "node": ">=20"
