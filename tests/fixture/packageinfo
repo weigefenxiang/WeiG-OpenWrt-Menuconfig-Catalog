@@ -1,0 +1,11 @@
+Package: luci-app-demo
+Title: Demo LuCI app
+Category: LuCI
+Submenu: Applications
+Depends: +luci-base +PACKAGE_kmod-demo:kmod-demo
+
+Package: kmod-demo
+Title: Demo kernel module
+Category: Kernel modules
+Submenu: Network Support
+Depends: @TARGET_x86

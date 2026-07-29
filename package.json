@@ -1,0 +1,13 @@
+{
+  "name": "weig-openwrt-menuconfig-catalog",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "discover": "node scripts/discover.mjs",
+    "test": "node scripts/check.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

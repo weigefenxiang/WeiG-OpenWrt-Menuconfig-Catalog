@@ -1,0 +1,22 @@
+mainmenu "OpenWrt Configuration"
+
+menu "Target Images"
+config TARGET_IMAGES_GZIP
+	bool "GZip images"
+	default y
+endmenu
+
+menu "LuCI"
+config PACKAGE_luci-app-demo
+	tristate "Demo LuCI app"
+	depends on TARGET_x86
+	select PACKAGE_luci-base
+endmenu
+
+choice
+	prompt "Root filesystem"
+config TARGET_ROOTFS_SQUASHFS
+	bool "SquashFS"
+config TARGET_ROOTFS_EXT4FS
+	bool "ext4"
+endchoice
