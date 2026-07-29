@@ -20,6 +20,7 @@ const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const failures = [];
+const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3) failures.push('targetinfo');
 if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
     packages[0].description !== 'Demonstration web interface package') failures.push('packageinfo');
@@ -49,7 +50,9 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('matrix.artifactPrefix') ||
     !workflow.includes('publish-order') ||
     !workflow.includes('Upload publish diagnostic') ||
-    !workflow.includes('scripts/collect-results.mjs')) failures.push('workflow resilience');
+    !workflow.includes('scripts/collect-results.mjs') ||
+    !workflow.includes('run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts') ||
+    unsafePlainRunContinuation) failures.push('workflow resilience');
 if (!discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
     !discover.includes('metadataCompat') ||
     !metadata.includes('touch staging_dir/host/.prereq-build') ||

@@ -186,8 +186,7 @@ jobs:
         id: index
         if: steps.collect.outcome == 'success'
         continue-on-error: true
-        run: bash scripts/run-stage.sh index node scripts/build-index.mjs \
-          dist dist/index.json previous/index.json current-attempts
+        run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts
       - name: Publish catalog-data branch
         id: data
         if: steps.collect.outcome == 'success' && steps.index.outcome == 'success'
