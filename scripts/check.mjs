@@ -14,6 +14,8 @@ const discover = readFileSync(join(ROOT, 'scripts', 'discover.mjs'), 'utf8');
 const metadata = readFileSync(join(ROOT, 'scripts', 'prepare-metadata.sh'), 'utf8');
 const stageRunner = readFileSync(join(ROOT, 'scripts', 'run-stage.sh'), 'utf8');
 const attemptWriter = readFileSync(join(ROOT, 'scripts', 'write-attempt.mjs'), 'utf8');
+const collector = readFileSync(join(ROOT, 'scripts', 'collect-results.mjs'), 'utf8');
+const release = readFileSync(join(ROOT, 'scripts', 'publish-release.sh'), 'utf8');
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
@@ -37,11 +39,17 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes("if: needs.generate.result == 'success'") ||
     !workflow.includes('scripts/write-attempt.mjs') ||
     !workflow.includes('scripts/run-stage.sh') ||
-    !workflow.includes('pattern: catalog-*') ||
+    !workflow.includes('pattern: "*-catalog-*"') ||
     !workflow.includes('attempts/*--SUMMARY.txt') ||
     !workflow.includes('retention-days: 14') ||
     !workflow.includes('actions/upload-artifact@v7') ||
-    !workflow.includes('actions/download-artifact@v8')) failures.push('workflow resilience');
+    !workflow.includes('actions/download-artifact@v8') ||
+    !workflow.includes('01 · Discover / 发现源码分支') ||
+    !workflow.includes('matrix.jobName') ||
+    !workflow.includes('matrix.artifactPrefix') ||
+    !workflow.includes('publish-order') ||
+    !workflow.includes('Upload publish diagnostic') ||
+    !workflow.includes('scripts/collect-results.mjs')) failures.push('workflow resilience');
 if (!discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
     !discover.includes('metadataCompat') ||
     !metadata.includes('touch staging_dir/host/.prereq-build') ||
@@ -49,9 +57,16 @@ if (!discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
 if (!stageRunner.includes('Source ID:') ||
     !stageRunner.includes('Upstream commit:') ||
     !stageRunner.includes('CATALOG_ARTIFACT_NAME') ||
+    !stageRunner.includes('CATALOG_ORDER') ||
     !stageRunner.includes('last 40 relevant lines') ||
     !attemptWriter.includes('--SUMMARY.txt') ||
-    !attemptWriter.includes('failureLog')) failures.push('diagnostic identity');
+    !attemptWriter.includes('failureLog') ||
+    !attemptWriter.includes('orderText') ||
+    !collector.includes('publish-inputs.json') ||
+    !collector.includes('Artifact 完整性检查失败') ||
+    release.includes('gh release delete') ||
+    !release.includes('gh release upload') ||
+    !release.includes('--clobber')) failures.push('diagnostic identity');
 if (policy.sources.length !== 3 || policy.sources[0].id !== 'ImmortalWrt' ||
     policy.sources[0].branches.join(',') !==
       'openwrt-21.02,openwrt-23.05,openwrt-24.10,openwrt-25.12') failures.push('stable branch policy');

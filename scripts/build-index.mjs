@@ -72,6 +72,9 @@ for (const attempt of attempts) {
   branch.lastAttemptCommit = attempt.upstreamCommit || '';
   branch.compatibilityMode = attempt.compatibilityMode || 'native';
   branch.artifactName = attempt.artifactName || '';
+  branch.order = attempt.order || 0;
+  branch.orderText = attempt.orderText || '';
+  branch.jobName = attempt.jobName || '';
   branch.failureLog = attempt.failureLog || '';
   if (attempt.status === 'success' && currentKeys.has(`${attempt.source.id}\0${attempt.branch}`)) {
     branch.state = 'fresh';

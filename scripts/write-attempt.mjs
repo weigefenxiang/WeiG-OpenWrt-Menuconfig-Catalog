@@ -21,6 +21,8 @@ const outDir = resolve(process.env.ATTEMPT_DIR || 'attempts');
 const jobKey = process.env.CATALOG_JOB_KEY ||
   `${safeSlug(process.env.SOURCE_ID)}--${safeSlug(process.env.SOURCE_BRANCH)}`;
 const artifactName = process.env.CATALOG_ARTIFACT_NAME || `catalog-${jobKey}`;
+const orderText = process.env.CATALOG_ORDER || '00';
+const filePrefix = `${orderText}-${jobKey}`;
 let upstreamCommit = '';
 try {
   upstreamCommit = execFileSync('git', ['-C', resolve('work/upstream'), 'rev-parse', 'HEAD'],
@@ -49,11 +51,14 @@ const attempt = {
     attempt: process.env.RUN_ATTEMPT || '',
     jobIndex: process.env.JOB_INDEX || '',
   },
+  order: Number.parseInt(orderText, 10) || 0,
+  orderText,
+  jobName: process.env.CATALOG_JOB_NAME || '',
   artifactName,
 };
-attempt.failureLog = status === 'failure' ? `${jobKey}--${attempt.stage}.log` : '';
+attempt.failureLog = status === 'failure' ? `${filePrefix}--${attempt.stage}.log` : '';
 mkdirSync(outDir, { recursive: true });
-const name = `${jobKey}.attempt.json`;
+const name = `${filePrefix}.attempt.json`;
 writeFileSync(resolve(outDir, name), JSON.stringify(attempt, null, 2) + '\n');
 const failureLog = attempt.failureLog || '-';
 const summary = [
@@ -71,6 +76,8 @@ const summary = [
   `Artifact: ${attempt.artifactName}`,
   `Run ID: ${attempt.run.id}`,
   `Run attempt: ${attempt.run.attempt}`,
+  `Job number: ${attempt.orderText}`,
+  `Job name: ${attempt.jobName}`,
   `Job index: ${attempt.run.jobIndex}`,
   `Run URL: ${attempt.runUrl}`,
   `Attempted UTC: ${attempt.attemptedAt}`,
@@ -79,5 +86,5 @@ const summary = [
   ...steps.map(([stage, outcome]) => `- ${stage}: ${outcome || 'not-run'}`),
   '',
 ].join('\n');
-writeFileSync(resolve(outDir, `${jobKey}--SUMMARY.txt`), summary);
+writeFileSync(resolve(outDir, `${filePrefix}--SUMMARY.txt`), summary);
 console.log(`${attempt.source.id}/${attempt.branch}: ${attempt.status} @ ${attempt.stage}`);

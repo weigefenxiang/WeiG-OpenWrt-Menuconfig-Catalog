@@ -21,18 +21,45 @@ concurrency:
 
 jobs:
   discover:
+    name: 01 · Discover / 发现源码分支
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      publish-order: ${{ steps.matrix.outputs.publish-order }}
     steps:
       - uses: actions/checkout@v7
       - id: matrix
+        name: Discover branches and assign numbers
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/discover.mjs >> "$GITHUB_OUTPUT"
+        run: |
+          mkdir -p diagnostics
+          if node scripts/discover.mjs > "$RUNNER_TEMP/discover.outputs" 2> diagnostics/01-discover.log; then
+            cat "$RUNNER_TEMP/discover.outputs" >> "$GITHUB_OUTPUT"
+            rm -f diagnostics/01-discover.log
+          else
+            rc=$?
+            {
+              echo "WeiG Menuconfig Catalog discovery summary"
+              echo "Final status: failure"
+              echo "Run ID: $GITHUB_RUN_ID"
+              echo "Run attempt: $GITHUB_RUN_ATTEMPT"
+              echo "Run URL: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            } > diagnostics/01-discover--SUMMARY.txt
+            tail -n 80 diagnostics/01-discover.log
+            exit "$rc"
+          fi
+      - name: Upload 01 discovery diagnostic
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: 01-discover-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: diagnostics/
+          retention-days: 14
+          if-no-files-found: error
 
   generate:
-    name: ${{ matrix.label }} · ${{ matrix.branch }} · ${{ matrix.repo }}
+    name: ${{ matrix.jobName }}
     needs: discover
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -44,11 +71,13 @@ jobs:
       CATALOG_VERSION: ${{ matrix.version }}
       CATALOG_COMPAT: ${{ matrix.metadataCompat }}
       CATALOG_JOB_KEY: ${{ matrix.jobKey }}
+      CATALOG_ORDER: ${{ matrix.orderText }}
+      CATALOG_JOB_NAME: ${{ matrix.jobName }}
       CATALOG_RUN_ID: ${{ github.run_id }}
       CATALOG_RUN_ATTEMPT: ${{ github.run_attempt }}
       CATALOG_JOB_INDEX: ${{ strategy.job-index }}
       CATALOG_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      CATALOG_ARTIFACT_NAME: catalog-${{ matrix.jobKey }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+      CATALOG_ARTIFACT_NAME: ${{ matrix.artifactPrefix }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
@@ -99,8 +128,10 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
           JOB_INDEX: ${{ strategy.job-index }}
+          CATALOG_ORDER: ${{ matrix.orderText }}
+          CATALOG_JOB_NAME: ${{ matrix.jobName }}
           CATALOG_JOB_KEY: ${{ matrix.jobKey }}
-          CATALOG_ARTIFACT_NAME: catalog-${{ matrix.jobKey }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          CATALOG_ARTIFACT_NAME: ${{ matrix.artifactPrefix }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           METADATA_COMPAT: ${{ matrix.metadataCompat }}
           JOB_STATUS: ${{ job.status }}
           TOOLS_OUTCOME: ${{ steps.tools.outcome }}
@@ -113,7 +144,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: catalog-${{ matrix.jobKey }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          name: ${{ matrix.artifactPrefix }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
           path: |
             dist/*.json.gz
             dist/*.meta.json
@@ -125,60 +156,98 @@ jobs:
           if-no-files-found: error
 
   publish:
+    name: ${{ needs.discover.outputs.publish-order }} · Publish / 发布目录与 Release
     needs: [discover, generate]
     if: always() && needs.discover.result == 'success'
     runs-on: ubuntu-24.04
+    env:
+      CATALOG_ORDER: ${{ needs.discover.outputs.publish-order }}
+      CATALOG_JOB_KEY: publish
+      CATALOG_JOB_NAME: ${{ needs.discover.outputs.publish-order }} · Publish / 发布目录与 Release
+      CATALOG_RUN_ID: ${{ github.run_id }}
+      CATALOG_RUN_ATTEMPT: ${{ github.run_attempt }}
+      CATALOG_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      CATALOG_ARTIFACT_NAME: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
-          pattern: catalog-*
+          pattern: "*-catalog-*"
           path: current
-          merge-multiple: true
       - name: Keep last successful branch entries
+        id: collect
+        continue-on-error: true
         run: |
           git clone --branch catalog-data --depth 1 \
             "https://github.com/${{ github.repository }}" previous || true
-          mkdir -p dist
-          cp previous/*.json.gz dist/ 2>/dev/null || true
-          cp current/*.json.gz current/*.meta.json dist/ 2>/dev/null || true
-          cp current/*.translations.json dist/ 2>/dev/null || true
+          bash scripts/run-stage.sh collect node scripts/collect-results.mjs \
+            current previous dist current-attempts publish-diagnostics
       - name: Build catalog index
-        run: node scripts/build-index.mjs dist dist/index.json previous/index.json current
+        id: index
+        if: steps.collect.outcome == 'success'
+        continue-on-error: true
+        run: bash scripts/run-stage.sh index node scripts/build-index.mjs \
+          dist dist/index.json previous/index.json current-attempts
       - name: Publish catalog-data branch
+        id: data
+        if: steps.collect.outcome == 'success' && steps.index.outcome == 'success'
+        continue-on-error: true
         run: |
-          cd dist
-          rm -f -- *.meta.json
-          git init
-          git checkout -b catalog-data
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .
-          git commit -m "data: refresh menuconfig catalog"
-          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
-          git push --force origin catalog-data
+          bash scripts/run-stage.sh catalog-data bash -c '
+            cd dist
+            rm -f -- *.meta.json
+            git init
+            git checkout -b catalog-data
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add .
+            git commit -m "data: refresh menuconfig catalog"
+            git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+            git push --force origin catalog-data
+          '
       - name: Publish complete catalog Release
-        if: needs.generate.result == 'success'
+        id: release
+        if: needs.generate.result == 'success' && steps.data.outcome == 'success'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release delete menuconfig-catalog-complete --cleanup-tag --yes || true
-          gh release create menuconfig-catalog-complete \
-            --target "$GITHUB_SHA" \
-            --title "Complete Menuconfig Catalog" \
-            --notes "All discovered source branches completed successfully in run $GITHUB_RUN_ID." \
-            dist/index.json dist/*.json.gz dist/*.translations.json
+        run: bash scripts/run-stage.sh release bash scripts/publish-release.sh
       - name: Catalog health summary
         if: always()
+        env:
+          MATRIX_RESULT: ${{ needs.generate.result }}
+          COLLECT_OUTCOME: ${{ steps.collect.outcome }}
+          INDEX_OUTCOME: ${{ steps.index.outcome }}
+          DATA_OUTCOME: ${{ steps.data.outcome }}
+          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          {
-            echo "## Menuconfig catalog health"
-            echo ""
-            echo "- Matrix result: \`${{ needs.generate.result }}\`"
-            echo "- Rolling data: \`catalog-data\`"
-            echo "- Complete Release updated: \`${{ needs.generate.result == 'success' }}\`"
-            echo ""
-            echo "| Source | Repository | Version / branch | Commit | State | Failed stage | Diagnostic |"
-            echo "|---|---|---|---|---|---|---|"
-            node -e "const i=require('./dist/index.json'); for(const s of i.sources) for(const b of s.branches) console.log('| '+s.label+' | '+s.repo+' | '+(b.version||b.id)+' / '+b.branch+' | '+(b.commit||b.lastAttemptCommit||'-')+' | '+b.state+' | '+(b.errorStage||'-')+' | '+(b.failureLog||'-')+'<br>'+(b.artifactName||'-')+' |')"
-          } >> "$GITHUB_STEP_SUMMARY"
+          node scripts/write-publish-summary.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Upload publish diagnostic
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            publish-diagnostics/
+            failure-logs/
+            current-attempts/
+            dist/index.json
+          retention-days: 14
+          if-no-files-found: error
+      - name: Fail incomplete publish
+        if: always()
+        env:
+          MATRIX_RESULT: ${{ needs.generate.result }}
+          COLLECT_OUTCOME: ${{ steps.collect.outcome }}
+          INDEX_OUTCOME: ${{ steps.index.outcome }}
+          DATA_OUTCOME: ${{ steps.data.outcome }}
+          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+        run: |
+          test "$MATRIX_RESULT" = success
+          test "$COLLECT_OUTCOME" = success
+          test "$INDEX_OUTCOME" = success
+          test "$DATA_OUTCOME" = success
+          test "$RELEASE_OUTCOME" = success

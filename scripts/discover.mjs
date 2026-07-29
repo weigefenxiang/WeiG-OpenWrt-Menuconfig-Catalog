@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -49,6 +49,45 @@ for (const source of config.sources) {
   }
 }
 if (!include.length) throw new Error('未发现任何源码分支');
+const width = Math.max(2, String(include.length + 2).length);
+for (const [index, item] of include.entries()) {
+  item.order = index + 2;
+  item.orderText = String(item.order).padStart(width, '0');
+  item.jobName = `${item.orderText} · ${item.label} · ${item.branch} · ${item.repo}`;
+  item.artifactPrefix = `${item.orderText}-catalog-${item.jobKey}`;
+}
+const publishOrderText = String(include.length + 2).padStart(width, '0');
+const mapping = {
+  schema: 1,
+  generatedAt: new Date().toISOString(),
+  jobs: [
+    { order: 1, orderText: String(1).padStart(width, '0'), jobName: 'Discover / 发现源码分支', artifactPrefix: '01-discover' },
+    ...include.map(({ order, orderText, jobName, artifactPrefix, source, repo, branch, version }) => ({
+      order, orderText, jobName, artifactPrefix, source, repo, branch, version,
+    })),
+    {
+      order: include.length + 2, orderText: publishOrderText,
+      jobName: 'Publish / 发布目录与 Release', artifactPrefix: `${publishOrderText}-publish`,
+    },
+  ],
+};
+mkdirSync(join(ROOT, 'diagnostics'), { recursive: true });
+writeFileSync(join(ROOT, 'diagnostics', '01-job-artifact-map.json'),
+  JSON.stringify(mapping, null, 2) + '\n');
+writeFileSync(join(ROOT, 'diagnostics', '01-discover--SUMMARY.txt'), [
+  'WeiG Menuconfig Catalog discovery summary',
+  `Discovered branches: ${include.length}`,
+  `Number width: ${width}`,
+  `Generate jobs: 02-${String(include.length + 1).padStart(width, '0')}`,
+  `Publish job: ${publishOrderText}`,
+  '',
+  ...mapping.jobs.map((item) => `${item.orderText} | ${item.jobName} | ${item.artifactPrefix}`),
+  '',
+].join('\n'));
 const matrix = JSON.stringify({ include });
-if (process.env.GITHUB_OUTPUT) console.log(`matrix=${matrix}`);
-else console.log(JSON.stringify({ schema: 1, generatedAt: new Date().toISOString(), include }, null, 2));
+if (process.env.GITHUB_OUTPUT) {
+  console.log(`matrix=${matrix}`);
+  console.log(`publish-order=${publishOrderText}`);
+} else {
+  console.log(JSON.stringify({ schema: 1, generatedAt: new Date().toISOString(), include }, null, 2));
+}

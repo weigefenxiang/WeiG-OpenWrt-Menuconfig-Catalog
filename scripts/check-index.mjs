@@ -27,17 +27,19 @@ try {
     asset: 'immortalwrt--openwrt-23.05.json.gz',
     generatedAt: '2026-07-29T00:00:00Z',
   }));
-  const attempt = (branch, status, stage) => ({
+  const attempt = (branch, status, stage, order) => ({
     schema: 2,
     source: { id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'immortalwrt/immortalwrt', legacy: false },
     branch, version: branch.slice(8), upstreamCommit: 'attempt123',
+    order, orderText: String(order).padStart(2, '0'),
+    jobName: `${String(order).padStart(2, '0')} · ImmortalWrt · ${branch}`,
     compatibilityMode: 'native', artifactName: `catalog-immortalwrt-${branch}`,
     failureLog: status === 'failure' ? `immortalwrt-${branch}--${stage}.log` : '',
     status, stage, attemptedAt: '2026-07-29T00:10:00Z', runUrl: 'https://example.invalid/run/1',
   });
-  writeFileSync(join(attempts, '23.attempt.json'), JSON.stringify(attempt('openwrt-23.05', 'success', 'complete')));
-  writeFileSync(join(attempts, '21.attempt.json'), JSON.stringify(attempt('openwrt-21.02', 'failure', 'defconfig')));
-  writeFileSync(join(attempts, '24.attempt.json'), JSON.stringify(attempt('openwrt-24.10', 'failure', 'feeds')));
+  writeFileSync(join(attempts, '23.attempt.json'), JSON.stringify(attempt('openwrt-23.05', 'success', 'complete', 3)));
+  writeFileSync(join(attempts, '21.attempt.json'), JSON.stringify(attempt('openwrt-21.02', 'failure', 'defconfig', 2)));
+  writeFileSync(join(attempts, '24.attempt.json'), JSON.stringify(attempt('openwrt-24.10', 'failure', 'feeds', 4)));
   const out = join(temp, 'index.json');
   execFileSync(process.execPath, [
     join(ROOT, 'scripts', 'build-index.mjs'), dist, out, join(temp, 'previous.json'), attempts,
@@ -53,7 +55,8 @@ try {
   if (never.state !== 'unavailable' || never.asset || never.errorStage !== 'feeds') throw new Error('unavailable branch merge failed');
   if (old.version !== '21.02' || old.lastAttemptCommit !== 'attempt123' ||
       old.failureLog !== 'immortalwrt-openwrt-21.02--defconfig.log' ||
-      !old.artifactName) throw new Error('diagnostic metadata merge failed');
+      !old.artifactName || old.orderText !== '02' ||
+      !old.jobName.startsWith('02 ·')) throw new Error('diagnostic metadata merge failed');
   if (index.health.fresh !== 1 || index.health.stale !== 1 || index.health.unavailable !== 1) {
     throw new Error('health counts failed');
   }

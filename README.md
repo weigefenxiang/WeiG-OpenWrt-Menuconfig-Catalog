@@ -51,20 +51,27 @@ node scripts/import-curated-i18n.mjs \
 `catalog-data` 发布，主站只按当前分支加载一个 gzip 分片。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
+- Discover、每个矩阵 Job、Publish 依次使用 `01`、`02`… 编号；Job、
+  Artifact、`SUMMARY`、attempt 和失败日志共用同一编号。Actions Summary
+  另列一一对应表，按编号即可找到同一任务的全部资料。
 - 所有元数据与压缩分片必须通过非空和解析检查。
 - 成功阶段只输出名称和耗时；失败阶段在控制台显示关键错误及末尾 80 行，
-  完整错误日志放入该分支唯一的结果 Artifact，保留 7 天。
+  完整错误日志放入该分支唯一的结果 Artifact，保留 14 天。
 - 本次失败但曾成功的分支标为 `stale`；从未成功的分支标为
   `unavailable`，不会伪装成最新数据。
 - 只有全部分支成功时才更新固定 Release `menuconfig-catalog-complete`；
   部分失败只更新滚动目录，Workflow 保持失败状态。
+- Publish 会递归收集下载后的 Artifact 目录，核对成功分支的 catalog、
+  meta、translations、attempt、SUMMARY 和 SHA-256，并拦截同名冲突。
+  固定 Release 存在时原位覆盖，不会先删除旧 Release。Publish 成败都会
+  上传独立诊断 Artifact，记录输入清单、失败阶段和对应编号。
 
 ## Diagnostic identity and legacy metadata / 诊断身份与旧版元数据
 
 Every matrix job and downloaded diagnostic file identifies its source, repository, branch,
 display version, upstream commit, stage, run ID/attempt, job index, artifact and run URL.
 Failure logs use unique names such as
-`openwrt-openwrt-18.06--defconfig.log`; the same artifact also contains a readable
+`07-openwrt-openwrt-18.06--defconfig.log`; the same artifact also contains a readable
 `--SUMMARY.txt` and a machine-readable `.attempt.json`. Full failure logs are retained for
 14 days, while the Actions console shows only key errors and the last 40 relevant lines.
 
