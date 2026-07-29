@@ -1,0 +1,1768 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-07-29T16:52:27.596Z",
+  "policy": {
+    "primary": [
+      "en",
+      "zh-CN"
+    ],
+    "fallback": "en",
+    "note": "Canonical English comes from upstream. Chinese overrides never replace symbols."
+  },
+  "prompts": {
+    "Advanced configuration options (for developers)": {
+      "titleZh": "高级配置选项（开发者）",
+      "usageEn": "Configure low-level build and toolchain settings",
+      "usageZh": "配置底层构建与工具链设置"
+    },
+    "Administration": {
+      "titleZh": "系统管理",
+      "usageEn": "System administration tools",
+      "usageZh": "系统管理工具"
+    },
+    "Applications": {
+      "titleZh": "应用",
+      "usageEn": "LuCI web applications",
+      "usageZh": "LuCI 网页应用"
+    },
+    "Base system": {
+      "titleZh": "基础系统",
+      "usageEn": "Core packages required by the firmware",
+      "usageZh": "固件所需的核心软件包"
+    },
+    "Build the OpenWrt Image Builder": {
+      "titleZh": "构建 OpenWrt 镜像生成器",
+      "usageEn": "Build the Image Builder archive",
+      "usageZh": "生成 Image Builder 压缩包"
+    },
+    "Build the OpenWrt SDK": {
+      "titleZh": "构建 OpenWrt SDK",
+      "usageEn": "Build the software development kit",
+      "usageZh": "生成软件开发工具包"
+    },
+    "Package the OpenWrt-based Toolchain": {
+      "titleZh": "打包 OpenWrt 工具链",
+      "usageEn": "Build a standalone toolchain archive",
+      "usageZh": "生成独立工具链压缩包"
+    },
+    "Boot Loaders": {
+      "titleZh": "引导加载程序",
+      "usageEn": "Bootloader packages and utilities",
+      "usageZh": "引导程序软件包与工具"
+    },
+    "Development": {
+      "titleZh": "开发工具",
+      "usageEn": "Development and debugging tools",
+      "usageZh": "开发与调试工具"
+    },
+    "Enable experimental features by default": {
+      "titleZh": "默认启用实验功能",
+      "usageEn": "Expose experimental build options",
+      "usageZh": "显示实验性构建选项"
+    },
+    "Extra packages": {
+      "titleZh": "扩展软件包",
+      "usageEn": "Additional optional packages",
+      "usageZh": "其他可选软件包"
+    },
+    "Firmware": {
+      "titleZh": "固件组件",
+      "usageEn": "Firmware blobs and device components",
+      "usageZh": "固件文件与设备组件"
+    },
+    "Fonts": {
+      "titleZh": "字体",
+      "usageEn": "Font packages",
+      "usageZh": "字体软件包"
+    },
+    "Games": {
+      "titleZh": "游戏",
+      "usageEn": "Games and entertainment packages",
+      "usageZh": "游戏与娱乐软件包"
+    },
+    "Global build settings": {
+      "titleZh": "全局构建设置",
+      "usageEn": "Configure global build behavior",
+      "usageZh": "配置全局构建行为"
+    },
+    "Image configuration": {
+      "titleZh": "镜像配置",
+      "usageEn": "Configure generated firmware images",
+      "usageZh": "配置生成的固件镜像"
+    },
+    "Kernel modules": {
+      "titleZh": "内核模块",
+      "usageEn": "Optional Linux kernel modules",
+      "usageZh": "可选 Linux 内核模块"
+    },
+    "Languages": {
+      "titleZh": "语言",
+      "usageEn": "Language runtimes and tools",
+      "usageZh": "语言运行环境与工具"
+    },
+    "Libraries": {
+      "titleZh": "程序库",
+      "usageEn": "Shared libraries used by packages",
+      "usageZh": "软件包使用的共享程序库"
+    },
+    "LuCI": {
+      "titleZh": "LuCI 网页管理",
+      "usageEn": "Web administration interface and applications",
+      "usageZh": "网页管理界面与应用"
+    },
+    "Collections": {
+      "titleZh": "套件集合",
+      "usageEn": "LuCI package collections",
+      "usageZh": "LuCI 软件包集合"
+    },
+    "Modules": {
+      "titleZh": "模块",
+      "usageEn": "LuCI core modules",
+      "usageZh": "LuCI 核心模块"
+    },
+    "Plugins": {
+      "titleZh": "插件",
+      "usageEn": "LuCI service plugins",
+      "usageZh": "LuCI 服务插件"
+    },
+    "Protocols": {
+      "titleZh": "协议",
+      "usageEn": "LuCI network protocol support",
+      "usageZh": "LuCI 网络协议支持"
+    },
+    "Themes": {
+      "titleZh": "主题",
+      "usageEn": "LuCI web interface themes",
+      "usageZh": "LuCI 网页界面主题"
+    },
+    "Mail": {
+      "titleZh": "邮件",
+      "usageEn": "Mail clients and servers",
+      "usageZh": "邮件客户端与服务器"
+    },
+    "Multimedia": {
+      "titleZh": "多媒体",
+      "usageEn": "Audio and video applications",
+      "usageZh": "音频与视频应用"
+    },
+    "Network": {
+      "titleZh": "网络",
+      "usageEn": "Network services and utilities",
+      "usageZh": "网络服务与工具"
+    },
+    "Network Support": {
+      "titleZh": "网络支持",
+      "usageEn": "Network drivers and protocol support",
+      "usageZh": "网络驱动与协议支持"
+    },
+    "Sound": {
+      "titleZh": "声音",
+      "usageEn": "Audio drivers and tools",
+      "usageZh": "音频驱动与工具"
+    },
+    "Target Images": {
+      "titleZh": "目标镜像",
+      "usageEn": "Choose firmware image formats and filesystems",
+      "usageZh": "选择固件镜像格式与文件系统"
+    },
+    "Utilities": {
+      "titleZh": "实用工具",
+      "usageEn": "General system utilities",
+      "usageZh": "通用系统工具"
+    },
+    "Video": {
+      "titleZh": "视频",
+      "usageEn": "Video drivers and tools",
+      "usageZh": "视频驱动与工具"
+    },
+    "Xorg": {
+      "titleZh": "Xorg 图形系统",
+      "usageEn": "X Window System packages",
+      "usageZh": "X Window 图形系统软件包"
+    }
+  },
+  "entries": {
+    "PACKAGE_luci-app-accesscontrol": {
+      "titleEn": "Access Control",
+      "titleZh": "上网时间控制",
+      "usageEn": "Limit device internet access by time schedule",
+      "usageZh": "按时间段限制设备上网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-acl": {
+      "titleEn": "LuCI Account Management",
+      "titleZh": "LuCI 权限管理",
+      "usageEn": "Manage web UI account permissions",
+      "usageZh": "管理网页后台账号权限",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-acme": {
+      "titleEn": "ACME Certificates",
+      "titleZh": "ACME 证书",
+      "usageEn": "Automatically obtain free HTTPS certificates",
+      "usageZh": "自动申请免费 HTTPS 证书",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-adblock": {
+      "titleEn": "Adblock",
+      "titleZh": "Adblock 广告过滤",
+      "usageEn": "Block ads and malicious domains",
+      "usageZh": "拦截广告和恶意域名",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-adbyby-plus": {
+      "titleEn": "Adbyby Plus+",
+      "titleZh": "广告屏蔽大师+",
+      "usageEn": "Powerful local-rule ad blocking",
+      "usageZh": "本地规则强力去广告",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-advanced-reboot": {
+      "titleEn": "Advanced Reboot",
+      "titleZh": "高级重启",
+      "usageEn": "Reboot or switch between dual boot partitions",
+      "usageZh": "切换双分区启动或重启",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-advancedsetting": {
+      "titleEn": "Advanced Settings",
+      "titleZh": "系统高级设置",
+      "usageEn": "Edit config files directly in the web UI",
+      "usageZh": "网页直接编辑配置文件",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ahcp": {
+      "titleEn": "AHCP Server",
+      "titleZh": "AHCP 服务",
+      "usageEn": "Automatic addressing for ad-hoc networks",
+      "usageZh": "自组网自动分配地址",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-airplay2": {
+      "titleEn": "AirPlay 2 Receiver",
+      "titleZh": "AirPlay 2 音频接收",
+      "usageEn": "Turn the router into an AirPlay speaker",
+      "usageZh": "让路由器变苹果音箱",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-airwhu": {
+      "titleEn": "AirWHU Campus Login",
+      "titleZh": "AirWHU 校园网",
+      "usageEn": "Wuhan University campus network login",
+      "usageZh": "武汉大学校园网认证",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-aliddns": {
+      "titleEn": "Aliyun DDNS",
+      "titleZh": "阿里云 DDNS",
+      "usageEn": "Dynamic DNS for Alibaba Cloud domains",
+      "usageZh": "阿里云域名动态解析",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-amule": {
+      "titleEn": "aMule",
+      "titleZh": "aMule 电驴",
+      "usageEn": "eDonkey network download client",
+      "usageZh": "电驴网络离线下载",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-apinger": {
+      "titleEn": "Apinger Link Monitor",
+      "titleZh": "Apinger 链路监测",
+      "usageEn": "Monitor link latency and packet loss",
+      "usageZh": "监测线路延迟和丢包",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-appfilter": {
+      "titleEn": "OpenAppFilter",
+      "titleZh": "应用过滤 OpenAppFilter",
+      "usageEn": "Block apps like TikTok and games",
+      "usageZh": "禁用抖音游戏等应用",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-argon-config": {
+      "titleEn": "Argon Theme Config",
+      "titleZh": "Argon 主题设置",
+      "usageEn": "Customize the Argon theme appearance",
+      "usageZh": "自定义 Argon 主题外观",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-aria2": {
+      "titleEn": "Aria2",
+      "titleZh": "Aria2 下载器",
+      "usageEn": "Multi-protocol offline download tool",
+      "usageZh": "多协议离线下载工具",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-arpbind": {
+      "titleEn": "IP/MAC Binding",
+      "titleZh": "IP/MAC 绑定",
+      "usageEn": "Bind IP to MAC to prevent ARP spoofing",
+      "usageZh": "绑定 IP 与 MAC 防欺骗",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-asterisk": {
+      "titleEn": "Asterisk PBX",
+      "titleZh": "Asterisk 电话交换",
+      "usageEn": "Build a VoIP phone system",
+      "usageZh": "搭建 VoIP 电话系统",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-attendedsysupgrade": {
+      "titleEn": "Attended Sysupgrade",
+      "titleZh": "在线固件升级",
+      "usageEn": "Upgrade firmware online, settings kept",
+      "usageZh": "在线升级固件保留配置",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-autoreboot": {
+      "titleEn": "Scheduled Reboot",
+      "titleZh": "定时重启",
+      "usageEn": "Reboot the router automatically on schedule",
+      "usageZh": "设定时间自动重启路由",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-babeld": {
+      "titleEn": "Babeld",
+      "titleZh": "Babeld 路由",
+      "usageEn": "Babel dynamic routing protocol",
+      "usageZh": "Babel 动态路由协议",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-baidupcs-web": {
+      "titleEn": "BaiduPCS Web",
+      "titleZh": "百度网盘 Web",
+      "usageEn": "Web-based Baidu Netdisk downloads",
+      "usageZh": "网页版百度网盘下载",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-banip": {
+      "titleEn": "banIP",
+      "titleZh": "banIP 防护",
+      "usageEn": "Automatically ban malicious IPs",
+      "usageZh": "自动封禁恶意 IP",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-bcp38": {
+      "titleEn": "BCP38 Filter",
+      "titleZh": "BCP38 过滤",
+      "usageEn": "Filter traffic with spoofed source addresses",
+      "usageZh": "过滤伪造源地址流量",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-beardropper": {
+      "titleEn": "BearDropper",
+      "titleZh": "BearDropper 防爆破",
+      "usageEn": "Block SSH brute-force attacks",
+      "usageZh": "拦截 SSH 暴力破解",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-bird1-ipv4": {
+      "titleEn": "BIRD1 IPv4",
+      "titleZh": "BIRD1 路由 (IPv4)",
+      "usageEn": "BIRD dynamic routing for IPv4",
+      "usageZh": "BIRD 动态路由 IPv4 版",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-bird1-ipv6": {
+      "titleEn": "BIRD1 IPv6",
+      "titleZh": "BIRD1 路由 (IPv6)",
+      "usageEn": "BIRD dynamic routing for IPv6",
+      "usageZh": "BIRD 动态路由 IPv6 版",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-bitsrunlogin-go": {
+      "titleEn": "Srun Campus Login",
+      "titleZh": "深澜校园网认证",
+      "usageEn": "Auto login for Srun campus networks",
+      "usageZh": "深澜系统自动登录认证",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-bmx6": {
+      "titleEn": "BMX6 Mesh Routing",
+      "titleZh": "BMX6 组网路由",
+      "usageEn": "BMX6 mesh routing protocol",
+      "usageZh": "BMX6 自组网路由协议",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-bmx7": {
+      "titleEn": "BMX7 Mesh Routing",
+      "titleZh": "BMX7 组网路由",
+      "usageEn": "BMX7 mesh routing protocol",
+      "usageZh": "BMX7 自组网路由协议",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-brook-server": {
+      "titleEn": "Brook Server",
+      "titleZh": "Brook 服务端",
+      "usageEn": "Run a Brook proxy server",
+      "usageZh": "搭建 Brook 代理服务器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cd8021x": {
+      "titleEn": "cd8021x Authentication",
+      "titleZh": "cd8021x 认证",
+      "usageEn": "802.1X campus network authentication",
+      "usageZh": "校园网 802.1x 拨号认证",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cifs": {
+      "titleEn": "CIFS Network Mount",
+      "titleZh": "CIFS 网络挂载",
+      "usageEn": "Mount remote shared folders",
+      "usageZh": "挂载远程共享文件夹",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cifs-mount": {
+      "titleEn": "CIFS Mount Points",
+      "titleZh": "CIFS 挂载点",
+      "usageEn": "Mount SMB shares locally",
+      "usageZh": "挂载 SMB 共享到本机",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cjdns": {
+      "titleEn": "CJDNS",
+      "titleZh": "CJDNS 加密组网",
+      "usageEn": "Encrypted IPv6 mesh networking",
+      "usageZh": "加密 IPv6 自组网络",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-clamav": {
+      "titleEn": "ClamAV Antivirus",
+      "titleZh": "ClamAV 杀毒",
+      "usageEn": "Virus scanning and protection engine",
+      "usageZh": "病毒扫描防护引擎",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-commands": {
+      "titleEn": "Custom Commands",
+      "titleZh": "自定义命令",
+      "usageEn": "Run frequent commands from the web UI",
+      "usageZh": "网页一键执行常用命令",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cpufreq": {
+      "titleEn": "CPU Frequency",
+      "titleZh": "CPU 调频",
+      "usageEn": "Tune CPU frequency and performance",
+      "usageZh": "调整 CPU 频率与性能",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cpulimit": {
+      "titleEn": "CPU Limit",
+      "titleZh": "CPU 限制",
+      "usageEn": "Limit per-process CPU usage",
+      "usageZh": "限制进程 CPU 占用",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cshark": {
+      "titleEn": "CloudShark Capture",
+      "titleZh": "CloudShark 抓包",
+      "usageEn": "Capture packets and analyze them online",
+      "usageZh": "抓包上传在线分析",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cupsd": {
+      "titleEn": "CUPS Print Server",
+      "titleZh": "CUPS 打印服务",
+      "usageEn": "Share USB printers over the network",
+      "usageZh": "USB 打印机网络共享",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dawn": {
+      "titleEn": "DAWN Wireless Roaming",
+      "titleZh": "DAWN 无线漫游",
+      "usageEn": "Roaming coordination across multiple APs",
+      "usageZh": "多 AP 无线漫游调度",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dcwapd": {
+      "titleEn": "Dual Channel WiFi",
+      "titleZh": "双通道 WiFi",
+      "usageEn": "Split traffic over dual WiFi channels",
+      "usageZh": "双通道 WiFi 流量分离",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ddns": {
+      "titleEn": "Dynamic DNS",
+      "titleZh": "动态 DNS",
+      "usageEn": "Dynamic DNS for remote access",
+      "usageZh": "动态域名解析远程访问",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ddns-go": {
+      "titleEn": "DDNS-GO",
+      "titleZh": "DDNS-GO",
+      "usageEn": "Simple, easy-to-use dynamic DNS",
+      "usageZh": "简单好用的动态域名",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-diag-core": {
+      "titleEn": "Network Diagnostics",
+      "titleZh": "网络诊断",
+      "usageEn": "Basic network diagnostic tools",
+      "usageZh": "基础网络诊断工具",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-diskman": {
+      "titleEn": "DiskMan",
+      "titleZh": "磁盘管理 DiskMan",
+      "usageEn": "Format and manage USB disk partitions",
+      "usageZh": "格式化和管理USB硬盘分区",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dnscrypt-proxy": {
+      "titleEn": "DNSCrypt Proxy",
+      "titleZh": "DNSCrypt 加密DNS",
+      "usageEn": "Encrypted DNS against spoofing and hijacking",
+      "usageZh": "加密DNS查询防污染防劫持",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dnsforwarder": {
+      "titleEn": "DNSForwarder",
+      "titleZh": "DNSForwarder 转发",
+      "usageEn": "Custom DNS forwarding against tampering",
+      "usageZh": "自定义DNS转发防污染",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-docker": {
+      "titleEn": "Docker Engine",
+      "titleZh": "Docker 容器引擎",
+      "usageEn": "Run Docker containers on the router",
+      "usageZh": "在路由器上运行Docker容器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dockerman": {
+      "titleEn": "DockerMan",
+      "titleZh": "Docker 管理 DockerMan",
+      "usageEn": "Manage Docker containers from the web UI",
+      "usageZh": "网页图形化管理Docker容器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dump1090": {
+      "titleEn": "Dump1090 ADS-B",
+      "titleZh": "Dump1090 航班接收",
+      "usageEn": "Receive aircraft ADS-B signals via SDR",
+      "usageZh": "用SDR接收飞机ADS-B信号",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dynapoint": {
+      "titleEn": "DynaPoint",
+      "titleZh": "DynaPoint 动态热点",
+      "usageEn": "Toggle WiFi AP based on connectivity",
+      "usageZh": "按联网状态自动启停WiFi热点",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-eoip": {
+      "titleEn": "EoIP Tunnel",
+      "titleZh": "EoIP 隧道",
+      "usageEn": "Ethernet tunnel linking two LANs",
+      "usageZh": "以太网隧道打通两地内网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-eqos": {
+      "titleEn": "EQoS Speed Limit",
+      "titleZh": "EQoS 简单限速",
+      "usageEn": "Limit per-IP upload and download speed",
+      "usageZh": "按IP限制设备上下行网速",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-fileassistant": {
+      "titleEn": "File Assistant",
+      "titleZh": "文件助手",
+      "usageEn": "Browse and manage router files in the web UI",
+      "usageZh": "网页上浏览管理路由器文件",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-filebrowser": {
+      "titleEn": "FileBrowser",
+      "titleZh": "FileBrowser 文件管理",
+      "usageEn": "Web-based personal drive and file manager",
+      "usageZh": "网页版私人网盘和文件管理",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-filetransfer": {
+      "titleEn": "File Transfer",
+      "titleZh": "文件传输",
+      "usageEn": "Upload and install IPK packages via web",
+      "usageZh": "网页上传安装ipk插件包",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-frpc": {
+      "titleEn": "frp Client (frpc)",
+      "titleZh": "frp 客户端 frpc",
+      "usageEn": "NAT traversal to reach home devices remotely",
+      "usageZh": "内网穿透远程访问家中设备",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-frps": {
+      "titleEn": "frp Server (frps)",
+      "titleZh": "frp 服务端 frps",
+      "usageEn": "Self-hosted frp server for NAT traversal",
+      "usageZh": "自建frp服务端供外网穿透",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-fwknopd": {
+      "titleEn": "fwknop Port Knocking",
+      "titleZh": "fwknop 端口敲门",
+      "usageEn": "Open ports only after knock authentication",
+      "usageZh": "敲门认证后才开放端口更安全",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-gost": {
+      "titleEn": "GOST Tunnel",
+      "titleZh": "GOST 隧道",
+      "usageEn": "Multi-protocol encrypted tunnel tool",
+      "usageZh": "多协议加密隧道转发工具",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-gowebdav": {
+      "titleEn": "GoWebdav",
+      "titleZh": "WebDAV 服务 GoWebdav",
+      "usageEn": "Turn the router into a WebDAV drive",
+      "usageZh": "把路由器变成WebDAV网盘",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-guest-wifi": {
+      "titleEn": "Guest WiFi",
+      "titleZh": "访客 WiFi",
+      "usageEn": "One-click isolated guest wireless network",
+      "usageZh": "一键开启隔离的访客无线网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-haproxy-tcp": {
+      "titleEn": "HAProxy",
+      "titleZh": "HAProxy 负载均衡",
+      "usageEn": "TCP load balancing and high availability",
+      "usageZh": "TCP流量负载均衡与高可用",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-hd-idle": {
+      "titleEn": "HD-Idle",
+      "titleZh": "硬盘休眠 hd-idle",
+      "usageEn": "Spin down idle USB hard drives",
+      "usageZh": "空闲时让USB硬盘自动休眠",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-hnet": {
+      "titleEn": "HNCP Home Networking",
+      "titleZh": "HNCP 家庭组网",
+      "usageEn": "Auto-configure home networks via HNCP",
+      "usageZh": "HNCP协议自动配置家庭网络",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-homeproxy": {
+      "titleEn": "HomeProxy",
+      "titleZh": "HomeProxy",
+      "usageEn": "Proxy tool based on sing-box",
+      "usageZh": "基于sing-box的代理工具",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ipsec-vpnd": {
+      "titleEn": "IPSec VPN Server",
+      "titleZh": "IPSec VPN 服务器",
+      "usageEn": "Host an IPSec VPN to reach home remotely",
+      "usageZh": "搭建IPSec VPN远程回家",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ipsec-vpnserver-manyusers": {
+      "titleEn": "IPSec Multi-User VPN",
+      "titleZh": "IPSec 多用户 VPN",
+      "usageEn": "IPSec VPN with multiple accounts",
+      "usageZh": "支持多账号的IPSec VPN",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-iptvhelper": {
+      "titleEn": "IPTV Helper",
+      "titleZh": "IPTV 助手",
+      "usageEn": "Watch IPTV and browse on a single line",
+      "usageZh": "单线复用同时看IPTV和上网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-kcptun": {
+      "titleEn": "Kcptun",
+      "titleZh": "Kcptun 加速",
+      "usageEn": "Speed up connections via the KCP protocol",
+      "usageZh": "KCP协议加速网络连接",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-keepalived": {
+      "titleEn": "Keepalived",
+      "titleZh": "Keepalived 高可用",
+      "usageEn": "Hot standby with automatic failover",
+      "usageZh": "双机热备故障自动切换",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-kodexplorer": {
+      "titleEn": "KodExplorer",
+      "titleZh": "可道云 KodExplorer",
+      "usageEn": "Full-featured private cloud drive",
+      "usageZh": "功能齐全的私有云网盘系统",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ksmbd": {
+      "titleEn": "Ksmbd File Sharing",
+      "titleZh": "Ksmbd 网络共享",
+      "usageEn": "Lightweight SMB sharing to PCs and TVs",
+      "usageZh": "轻量SMB共享文件给电脑电视",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ledtrig-rssi": {
+      "titleEn": "LED RSSI Indicator",
+      "titleZh": "LED 信号强度指示",
+      "usageEn": "Show WiFi signal strength via LED",
+      "usageZh": "用LED灯显示WiFi信号强度",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ledtrig-switch": {
+      "titleEn": "LED Port Indicator",
+      "titleZh": "LED 网口指示",
+      "usageEn": "Show Ethernet link status via LED",
+      "usageZh": "用LED灯显示网口连接状态",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ledtrig-usbport": {
+      "titleEn": "LED USB Indicator",
+      "titleZh": "LED USB指示",
+      "usageEn": "Show USB device status via LED",
+      "usageZh": "用LED灯显示USB设备状态",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-lorawan-basicstation": {
+      "titleEn": "LoRaWAN Basic Station",
+      "titleZh": "LoRaWAN 基站",
+      "usageEn": "Turn the router into a LoRaWAN gateway",
+      "usageZh": "把路由器变成LoRaWAN网关",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-lxc": {
+      "titleEn": "LXC Containers",
+      "titleZh": "LXC 容器",
+      "usageEn": "Run lightweight Linux system containers",
+      "usageZh": "运行轻量Linux系统容器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-mentohust": {
+      "titleEn": "MentoHUST",
+      "titleZh": "锐捷认证 MentoHUST",
+      "usageEn": "Auto login for Ruijie 802.1X campus networks",
+      "usageZh": "校园网锐捷802.1X自动认证",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-microsocks": {
+      "titleEn": "MicroSocks",
+      "titleZh": "MicroSocks 代理",
+      "usageEn": "Minimal SOCKS5 proxy service",
+      "usageZh": "极简SOCKS5代理服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-minidlna": {
+      "titleEn": "miniDLNA Media Server",
+      "titleZh": "miniDLNA 媒体服务器",
+      "usageEn": "Stream router media to TVs via DLNA",
+      "usageZh": "电视投屏播放路由器里影音",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-minieap": {
+      "titleEn": "MiniEAP",
+      "titleZh": "MiniEAP 认证",
+      "usageEn": "802.1X campus network auth client",
+      "usageZh": "校园网802.1X认证客户端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-mjpg-streamer": {
+      "titleEn": "MJPG-Streamer",
+      "titleZh": "摄像头串流 mjpg-streamer",
+      "usageEn": "Turn a USB webcam into a network camera",
+      "usageZh": "USB摄像头变网络监控画面",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-msd_lite": {
+      "titleEn": "msd_lite Multicast Relay",
+      "titleZh": "组播转发 msd_lite",
+      "usageEn": "Relay multicast IPTV as HTTP streams",
+      "usageZh": "组播IPTV转HTTP流多端看",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-music-remote-center": {
+      "titleEn": "Music Remote Center",
+      "titleZh": "音乐远程中心",
+      "usageEn": "Play music remotely on connected speakers",
+      "usageZh": "路由器接音箱远程点歌播放",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-mwan3": {
+      "titleEn": "MWAN3",
+      "titleZh": "MWAN3 多线负载",
+      "usageEn": "Multi-WAN load balancing and failover",
+      "usageZh": "多条宽带负载均衡与备份",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-mwan3helper": {
+      "titleEn": "MWAN3 Helper",
+      "titleZh": "MWAN3 分流助手",
+      "usageEn": "Smart WAN selection by IP region",
+      "usageZh": "按国内外IP智能分流出口",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-mwol": {
+      "titleEn": "mWOL Wake on LAN",
+      "titleZh": "网络唤醒 mWOL",
+      "usageEn": "Wake home PCs remotely with one click",
+      "usageZh": "远程一键唤醒家里的电脑",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-naiveproxy": {
+      "titleEn": "NaiveProxy",
+      "titleZh": "NaiveProxy",
+      "usageEn": "Proxy built on the Chrome network stack",
+      "usageZh": "基于Chrome网络栈的代理",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-natmap": {
+      "titleEn": "NATMap",
+      "titleZh": "NATMap 端口打洞",
+      "usageEn": "Open public ports without a public IP",
+      "usageZh": "无公网IP也能开放外网端口",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-netdata": {
+      "titleEn": "Netdata",
+      "titleZh": "Netdata 实时监控",
+      "usageEn": "Real-time CPU, memory and network stats",
+      "usageZh": "实时查看 CPU 内存网络性能",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nextdns": {
+      "titleEn": "NextDNS",
+      "titleZh": "NextDNS",
+      "usageEn": "Cloud-filtered DNS via NextDNS",
+      "usageZh": "接入 NextDNS 云端过滤 DNS",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nfs": {
+      "titleEn": "NFS Shares",
+      "titleZh": "NFS 文件共享",
+      "usageEn": "Share files via the NFS protocol",
+      "usageZh": "通过 NFS 协议共享文件",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nft-qos": {
+      "titleEn": "nft-QoS",
+      "titleZh": "nft-QoS 限速",
+      "usageEn": "Per-device rate limits to share bandwidth",
+      "usageZh": "按设备限速防止抢占带宽",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nginx-pingos": {
+      "titleEn": "PingOS Streaming",
+      "titleZh": "PingOS 流媒体服务",
+      "usageEn": "Host an RTMP live streaming server",
+      "usageZh": "搭建 RTMP 直播推流服务器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ngrokc": {
+      "titleEn": "Ngrok Client",
+      "titleZh": "Ngrok 内网穿透",
+      "usageEn": "Ngrok tunnels for access from outside",
+      "usageZh": "Ngrok 隧道让外网访问家里",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-njitclient": {
+      "titleEn": "NJIT Campus Client",
+      "titleZh": "NJIT 校园网客户端",
+      "usageEn": "802.1X campus network login",
+      "usageZh": "802.1x 校园网上网认证",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nlbwmon": {
+      "titleEn": "Bandwidth Monitor (nlbwmon)",
+      "titleZh": "带宽用量统计 nlbwmon",
+      "usageEn": "Monthly per-device traffic accounting",
+      "usageZh": "按设备统计每月流量用量",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nps": {
+      "titleEn": "NPS Client",
+      "titleZh": "NPS 内网穿透",
+      "usageEn": "Reach your LAN via NPS tunneling",
+      "usageZh": "NPS 客户端穿透访问内网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ntpc": {
+      "titleEn": "NTP Time Sync",
+      "titleZh": "NTP 时间同步",
+      "usageEn": "Keep the router clock accurate",
+      "usageZh": "自动校准路由器系统时间",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nut": {
+      "titleEn": "NUT UPS Monitor",
+      "titleZh": "UPS 电源监控 NUT",
+      "usageEn": "Monitor UPS power supply status",
+      "usageZh": "监控 UPS 不间断电源状态",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ocserv": {
+      "titleEn": "OpenConnect Server",
+      "titleZh": "OpenConnect 服务器",
+      "usageEn": "Host an OpenConnect VPN service",
+      "usageZh": "搭建 OpenConnect VPN 服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-oled": {
+      "titleEn": "OLED Display",
+      "titleZh": "OLED 屏幕显示",
+      "usageEn": "Show status info on a small OLED screen",
+      "usageZh": "在 OLED 小屏显示状态信息",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-olsr": {
+      "titleEn": "OLSR Mesh Routing",
+      "titleZh": "OLSR Mesh 路由",
+      "usageEn": "Wireless mesh routing protocol",
+      "usageZh": "无线 Mesh 组网路由协议",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-olsrd2": {
+      "titleEn": "OLSRv2 Mesh Routing",
+      "titleZh": "OLSRv2 Mesh 路由",
+      "usageEn": "Next-gen mesh routing protocol",
+      "usageZh": "新一代 Mesh 组网路由协议",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-olsr-services": {
+      "titleEn": "OLSR Services",
+      "titleZh": "OLSR 服务发现",
+      "usageEn": "Discover services on the OLSR network",
+      "usageZh": "发现 OLSR 网络中的服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-olsr-viz": {
+      "titleEn": "OLSR Visualization",
+      "titleZh": "OLSR 拓扑图",
+      "usageEn": "Visualize the mesh network topology",
+      "usageZh": "图形化查看 Mesh 网络拓扑",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-omcproxy": {
+      "titleEn": "omcproxy Multicast",
+      "titleZh": "组播代理 omcproxy",
+      "usageEn": "Multicast relay, often used for IPTV",
+      "usageZh": "组播中继常用于 IPTV 看电视",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-onliner": {
+      "titleEn": "Online Devices",
+      "titleZh": "在线设备列表",
+      "usageEn": "See devices currently connected",
+      "usageZh": "查看当前联网的设备",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-openclash": {
+      "titleEn": "OpenClash",
+      "titleZh": "OpenClash",
+      "usageEn": "Full-featured Clash proxy client",
+      "usageZh": "功能全面的 Clash 代理客户端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-openvpn": {
+      "titleEn": "OpenVPN",
+      "titleZh": "OpenVPN",
+      "usageEn": "OpenVPN client for remote networking",
+      "usageZh": "OpenVPN 客户端远程组网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-openvpn-server": {
+      "titleEn": "OpenVPN Server",
+      "titleZh": "OpenVPN 服务器",
+      "usageEn": "Set up an OpenVPN server in one click",
+      "usageZh": "一键搭建 OpenVPN 服务器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-openwisp": {
+      "titleEn": "OpenWISP",
+      "titleZh": "OpenWISP 集中管理",
+      "usageEn": "Connect to OpenWISP central management",
+      "usageZh": "接入 OpenWISP 统一管理平台",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-oscam": {
+      "titleEn": "OSCam",
+      "titleZh": "OSCam",
+      "usageEn": "Card sharing server for satellite TV",
+      "usageZh": "卫星电视解密卡共享服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-p910nd": {
+      "titleEn": "p910nd Print Server",
+      "titleZh": "打印服务器 p910nd",
+      "usageEn": "Share a USB printer with the household",
+      "usageZh": "共享 USB 打印机给全家用",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-pagekitec": {
+      "titleEn": "PageKite",
+      "titleZh": "PageKite 内网穿透",
+      "usageEn": "Expose local services via PageKite tunnels",
+      "usageZh": "PageKite 隧道暴露本地服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-passwall": {
+      "titleEn": "PassWall",
+      "titleZh": "PassWall",
+      "usageEn": "Multi-protocol proxy with smart routing",
+      "usageZh": "多协议智能分流代理工具",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-pbr": {
+      "titleEn": "Policy Based Routing",
+      "titleZh": "策略路由 PBR",
+      "usageEn": "Custom routing by device or website",
+      "usageZh": "按设备或网站自定义分流",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-polipo": {
+      "titleEn": "Polipo",
+      "titleZh": "Polipo 缓存代理",
+      "usageEn": "Small caching HTTP proxy",
+      "usageZh": "小巧的 HTTP 缓存代理",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-pppoe-relay": {
+      "titleEn": "PPPoE Relay",
+      "titleZh": "PPPoE 中继",
+      "usageEn": "Relay dial-up from downstream devices",
+      "usageZh": "转发下级设备的拨号请求",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-pppoe-server": {
+      "titleEn": "PPPoE Server",
+      "titleZh": "PPPoE 服务器",
+      "usageEn": "Let downstream devices dial in via PPPoE",
+      "usageZh": "让下级设备拨号认证上网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-privoxy": {
+      "titleEn": "Privoxy",
+      "titleZh": "Privoxy 过滤代理",
+      "usageEn": "HTTP proxy with ad filtering",
+      "usageZh": "能过滤广告的 HTTP 代理",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ps3netsrv": {
+      "titleEn": "PS3 NetServer",
+      "titleZh": "PS3 游戏共享",
+      "usageEn": "Load PS3 games over the network",
+      "usageZh": "PS3 主机网络加载游戏",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-qbittorrent": {
+      "titleEn": "qBittorrent",
+      "titleZh": "qBittorrent",
+      "usageEn": "Easy-to-use BT/PT download client",
+      "usageZh": "好用的 BT/PT 下载工具",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-qos": {
+      "titleEn": "QoS",
+      "titleZh": "QoS 流量优先级",
+      "usageEn": "Classic rate limiting and traffic priority",
+      "usageZh": "老牌限速与流量优先级控制",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-radicale": {
+      "titleEn": "Radicale",
+      "titleZh": "Radicale 日历同步",
+      "usageEn": "Private calendar and contacts sync",
+      "usageZh": "私有日历和通讯录同步",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-radicale2": {
+      "titleEn": "Radicale 2",
+      "titleZh": "Radicale2 日历同步",
+      "usageEn": "Newer private calendar and contacts sync",
+      "usageZh": "新版私有日历通讯录同步",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ramfree": {
+      "titleEn": "Free Memory",
+      "titleZh": "释放内存",
+      "usageEn": "Free up system memory with one click",
+      "usageZh": "一键清理释放系统内存",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-rclone": {
+      "titleEn": "Rclone",
+      "titleZh": "Rclone 网盘工具",
+      "usageEn": "Mount and sync various cloud drives",
+      "usageZh": "挂载和同步各类云盘网盘",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-rp-pppoe-server": {
+      "titleEn": "RP-PPPoE Server",
+      "titleZh": "RP-PPPoE 服务器",
+      "usageEn": "Alternative PPPoE dial-in server",
+      "usageZh": "另一款 PPPoE 拨号服务器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-samba4": {
+      "titleEn": "Samba4 File Sharing",
+      "titleZh": "Samba4 网络共享",
+      "usageEn": "Share files on the LAN with PCs and TVs",
+      "usageZh": "局域网共享文件给电脑电视",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-scutclient": {
+      "titleEn": "ScutClient",
+      "titleZh": "华工校园网 ScutClient",
+      "usageEn": "Dr.COM auth client for SCUT campus",
+      "usageZh": "华南理工 Dr.COM 认证客户端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ser2net": {
+      "titleEn": "Ser2net Serial Bridge",
+      "titleZh": "串口转网络 ser2net",
+      "usageEn": "Map serial devices to network ports",
+      "usageZh": "把串口设备映射到网络端口",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-serverchan": {
+      "titleEn": "ServerChan Push",
+      "titleZh": "微信推送 Server酱",
+      "usageEn": "Push router alerts to WeChat",
+      "usageZh": "路由状态异常微信提醒",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-shadowsocks-libev": {
+      "titleEn": "Shadowsocks-libev",
+      "titleZh": "Shadowsocks-libev",
+      "usageEn": "Classic lightweight Shadowsocks client",
+      "usageZh": "经典轻量的 SS 代理客户端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-shairplay": {
+      "titleEn": "Shairplay",
+      "titleZh": "AirPlay 音箱 Shairplay",
+      "usageEn": "Turn the router into an AirPlay speaker",
+      "usageZh": "让路由变身 AirPlay 音箱",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-siitwizard": {
+      "titleEn": "SIIT Wizard",
+      "titleZh": "SIIT 转换向导",
+      "usageEn": "IPv4/IPv6 translation setup wizard",
+      "usageZh": "IPv4/IPv6互转配置向导",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-simple-adblock": {
+      "titleEn": "Simple AdBlock",
+      "titleZh": "Simple AdBlock",
+      "usageEn": "Light ad blocking with auto rule updates",
+      "usageZh": "轻量去广告，自动更新拦截规则",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-smartdns": {
+      "titleEn": "SmartDNS",
+      "titleZh": "SmartDNS",
+      "usageEn": "Local DNS picking the fastest servers",
+      "usageZh": "本地DNS加速，多服务器测速优选",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-smartinfo": {
+      "titleEn": "Disk SMART Info",
+      "titleZh": "硬盘 SMART 信息",
+      "usageEn": "Check disk SMART health status",
+      "usageZh": "查看硬盘SMART健康状态",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-smstool": {
+      "titleEn": "SMS Tool",
+      "titleZh": "短信工具 SMS Tool",
+      "usageEn": "Send and receive SMS via a 4G modem",
+      "usageZh": "用4G模块收发手机短信",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-snmpd": {
+      "titleEn": "SNMP Service",
+      "titleZh": "SNMP 服务",
+      "usageEn": "Expose SNMP data for monitoring systems",
+      "usageZh": "开启SNMP供监控系统采集数据",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-socat": {
+      "titleEn": "Socat Port Forward",
+      "titleZh": "Socat 端口转发",
+      "usageEn": "Port forwarding relay with IPv6 support",
+      "usageZh": "端口转发中继，支持IPv6中转",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-softether": {
+      "titleEn": "SoftEther VPN",
+      "titleZh": "SoftEther VPN",
+      "usageEn": "Multi-protocol VPN server for remote access",
+      "usageZh": "多协议VPN服务器，远程回家",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-softethervpn": {
+      "titleEn": "SoftEther VPN 4",
+      "titleZh": "SoftEther VPN 4",
+      "usageEn": "Long-established multi-protocol VPN server",
+      "usageZh": "老牌多协议VPN服务器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-softethervpn5": {
+      "titleEn": "SoftEther VPN 5",
+      "titleZh": "SoftEther VPN 5",
+      "usageEn": "Newer SoftEther multi-protocol VPN",
+      "usageZh": "SoftEther新版多协议VPN",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-speederv2": {
+      "titleEn": "UDPspeeder V2",
+      "titleZh": "UDPspeeder V2",
+      "usageEn": "UDP boost against packet loss for gaming",
+      "usageZh": "UDP加速抗丢包，游戏更流畅",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-splash": {
+      "titleEn": "Client Splash",
+      "titleZh": "热点认证页 Splash",
+      "usageEn": "Add a welcome login page to open WiFi",
+      "usageZh": "为开放WiFi添加认证欢迎页",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-sqm": {
+      "titleEn": "SQM QoS",
+      "titleZh": "SQM 智能队列(QoS)",
+      "usageEn": "Smart queue management to cut latency",
+      "usageZh": "智能限速排队，降低延迟卡顿",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-squid": {
+      "titleEn": "Squid Proxy",
+      "titleZh": "Squid 缓存代理",
+      "usageEn": "Caching HTTP proxy server",
+      "usageZh": "HTTP缓存代理服务器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ssocks": {
+      "titleEn": "sSocks Proxy",
+      "titleZh": "sSocks 代理",
+      "usageEn": "Run a SOCKS5 proxy on the router",
+      "usageZh": "在路由器上开SOCKS5代理",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ssr-libev-server": {
+      "titleEn": "SSR Server (libev)",
+      "titleZh": "SSR 服务端(libev)",
+      "usageEn": "Lightweight SSR server for remote clients",
+      "usageZh": "轻量SSR服务端，供远程连接",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ssr-mudb-server": {
+      "titleEn": "SSR Multi-User Server",
+      "titleZh": "SSR 多用户服务端",
+      "usageEn": "Multi-user SSR server with account admin",
+      "usageZh": "多用户SSR服务端，账号管理",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ssr-plus": {
+      "titleEn": "ShadowSocksR Plus+",
+      "titleZh": "ShadowSocksR Plus+",
+      "usageEn": "Veteran proxy suite with broad protocol support",
+      "usageZh": "老牌科学上网套件，协议全面",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ssrserver-python": {
+      "titleEn": "SSR Server (Python)",
+      "titleZh": "SSR 服务端(Python)",
+      "usageEn": "Python implementation of the SSR server",
+      "usageZh": "Python版SSR服务端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-statistics": {
+      "titleEn": "Statistics",
+      "titleZh": "系统统计图表",
+      "usageEn": "Record and graph CPU, traffic and more",
+      "usageZh": "记录并绘制CPU流量等曲线",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-syncdial": {
+      "titleEn": "Syncdial Multi-Dial",
+      "titleZh": "宽带多拨 Syncdial",
+      "usageEn": "PPPoE multi-dial to stack bandwidth",
+      "usageZh": "PPPoE多拨，叠加宽带速度",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-syncthing": {
+      "titleEn": "Syncthing",
+      "titleZh": "Syncthing 文件同步",
+      "usageEn": "Automatic file sync between devices",
+      "usageZh": "多设备间自动同步文件",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-sysuh3c": {
+      "titleEn": "sysuh3c H3C Login",
+      "titleZh": "H3C 认证 sysuh3c",
+      "usageEn": "H3C 802.1X campus auth client",
+      "usageZh": "H3C 802.1X校园网认证客户端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-timecontrol": {
+      "titleEn": "Internet Time Control",
+      "titleZh": "上网时间控制",
+      "usageEn": "Block chosen devices by time period",
+      "usageZh": "按时段禁止指定设备上网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-timewol": {
+      "titleEn": "Scheduled Wake on LAN",
+      "titleZh": "定时网络唤醒",
+      "usageEn": "Send magic packets on schedule to wake PCs",
+      "usageZh": "定时发魔术包唤醒电脑",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-tinyproxy": {
+      "titleEn": "Tinyproxy",
+      "titleZh": "Tinyproxy 代理",
+      "usageEn": "Small HTTP proxy service",
+      "usageZh": "小巧的HTTP代理服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-transmission": {
+      "titleEn": "Transmission",
+      "titleZh": "Transmission 下载",
+      "usageEn": "Classic BT client with web remote control",
+      "usageZh": "经典BT下载，网页远程管理",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-travelmate": {
+      "titleEn": "Travelmate",
+      "titleZh": "Travelmate 中继",
+      "usageEn": "Auto-repeat WiFi hotspots while traveling",
+      "usageZh": "出门在外自动中继WiFi热点",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-trojan-server": {
+      "titleEn": "Trojan Server",
+      "titleZh": "Trojan 服务端",
+      "usageEn": "Host a Trojan server for remote clients",
+      "usageZh": "搭建Trojan服务端供连接",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-ttyd": {
+      "titleEn": "ttyd Web Terminal",
+      "titleZh": "网页终端 ttyd",
+      "usageEn": "Run shell commands right in the browser",
+      "usageZh": "浏览器里直接敲命令行",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-udp2raw": {
+      "titleEn": "udp2raw Tunnel",
+      "titleZh": "udp2raw 隧道",
+      "usageEn": "Disguise UDP as TCP to avoid ISP limits",
+      "usageZh": "UDP伪装TCP，防运营商限制",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-udpxy": {
+      "titleEn": "udpxy IPTV Proxy",
+      "titleZh": "udpxy 组播代理",
+      "usageEn": "Multicast to unicast for multi-device IPTV",
+      "usageZh": "IPTV组播转单播，多设备看电视",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-uhttpd": {
+      "titleEn": "uHTTPd Web Server",
+      "titleZh": "uHTTPd 网页服务器",
+      "usageEn": "Configure the built-in web server",
+      "usageZh": "配置路由器内置网页服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-unbound": {
+      "titleEn": "Unbound DNS",
+      "titleZh": "Unbound DNS",
+      "usageEn": "Local recursive DNS, faster and safer",
+      "usageZh": "本地递归DNS解析更快更安全",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-upnp": {
+      "titleEn": "UPnP",
+      "titleZh": "UPnP 自动端口转发",
+      "usageEn": "Auto port forwarding for games and P2P",
+      "usageZh": "游戏下载自动开放端口",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-usb3disable": {
+      "titleEn": "Disable USB 3.0",
+      "titleZh": "USB 3.0 禁用",
+      "usageEn": "Turn off USB 3.0 to cut 2.4G interference",
+      "usageZh": "关闭USB3.0减少2.4G干扰",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-usb-printer": {
+      "titleEn": "USB Printer Sharing",
+      "titleZh": "USB 打印共享",
+      "usageEn": "Share a USB printer with the household",
+      "usageZh": "共享USB打印机给全家用",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-uugamebooster": {
+      "titleEn": "UU Game Booster",
+      "titleZh": "UU游戏加速器",
+      "usageEn": "Console game acceleration, smoother play",
+      "usageZh": "主机游戏加速，联机更流畅",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-v2raya": {
+      "titleEn": "v2rayA",
+      "titleZh": "v2rayA",
+      "usageEn": "Web-based V2Ray client, easy to use",
+      "usageZh": "网页版V2Ray客户端易上手",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-v2ray-server": {
+      "titleEn": "V2Ray Server",
+      "titleZh": "V2Ray 服务端",
+      "usageEn": "Self-host a V2Ray server on the router",
+      "usageZh": "在路由器自建V2Ray服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-verysync": {
+      "titleEn": "Verysync",
+      "titleZh": "微力同步",
+      "usageEn": "Automatic file sync across devices",
+      "usageZh": "多设备文件自动同步",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-vlmcsd": {
+      "titleEn": "KMS Server",
+      "titleZh": "KMS 激活服务器",
+      "usageEn": "Activate Windows and Office on the LAN",
+      "usageZh": "局域网激活Windows和Office",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-vnstat": {
+      "titleEn": "vnStat Traffic Monitor",
+      "titleZh": "vnStat 流量统计",
+      "usageEn": "Daily and monthly traffic statistics",
+      "usageZh": "按日月统计上网流量",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-vnstat2": {
+      "titleEn": "vnStat2 Traffic Monitor",
+      "titleZh": "vnStat2 流量统计",
+      "usageEn": "Newer traffic stats with more detail",
+      "usageZh": "新版流量统计，数据更详细",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-vpnbypass": {
+      "titleEn": "VPN Bypass",
+      "titleZh": "VPN 绕行分流",
+      "usageEn": "Keep chosen sites or devices off the VPN",
+      "usageZh": "指定网站或设备不走VPN",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-vpn-policy-routing": {
+      "titleEn": "VPN Policy Routing",
+      "titleZh": "VPN 策略路由",
+      "usageEn": "Route VPN traffic by IP and port rules",
+      "usageZh": "按IP端口灵活分流VPN流量",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-vsftpd": {
+      "titleEn": "vsftpd FTP Server",
+      "titleZh": "vsftpd FTP 服务器",
+      "usageEn": "Share router files over FTP",
+      "usageZh": "搭建FTP共享路由器文件",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-vssr": {
+      "titleEn": "Vssr (Hello World)",
+      "titleZh": "Vssr (Hello World)",
+      "usageEn": "Multi-protocol proxy client",
+      "usageZh": "多协议科学上网客户端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-watchcat": {
+      "titleEn": "Watchcat",
+      "titleZh": "Watchcat 断网守护",
+      "usageEn": "Auto reconnect or reboot on network loss",
+      "usageZh": "断网自动重连或定时重启",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-webadmin": {
+      "titleEn": "Web Admin Settings",
+      "titleZh": "网页管理设置",
+      "usageEn": "Change admin port and access options",
+      "usageZh": "修改后台管理端口和方式",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-webrestriction": {
+      "titleEn": "Web Restriction",
+      "titleZh": "上网限制",
+      "usageEn": "Allow or block internet per device",
+      "usageZh": "按设备禁止或放行上网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-weburl": {
+      "titleEn": "URL Filter",
+      "titleZh": "网址过滤",
+      "usageEn": "Block specific sites and keywords",
+      "usageZh": "屏蔽指定网站和关键词",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-wifischedule": {
+      "titleEn": "WiFi Schedule",
+      "titleZh": "WiFi 定时开关",
+      "usageEn": "Schedule WiFi on/off, auto-off at night",
+      "usageZh": "定时开关WiFi，夜间自动关",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-wol": {
+      "titleEn": "Wake on LAN",
+      "titleZh": "网络唤醒 WOL",
+      "usageEn": "Wake home PCs remotely with one click",
+      "usageZh": "远程一键唤醒家里电脑",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-wrtbwmon": {
+      "titleEn": "Wrtbwmon Traffic Monitor",
+      "titleZh": "Wrtbwmon 流量监控",
+      "usageEn": "Real-time traffic per connected device",
+      "usageZh": "查看每台设备实时流量",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-xfrpc": {
+      "titleEn": "xfrpc",
+      "titleZh": "xfrpc 内网穿透",
+      "usageEn": "Lightweight frp client for NAT traversal",
+      "usageZh": "轻量版frp客户端穿透内网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-xinetd": {
+      "titleEn": "xinetd",
+      "titleZh": "xinetd 服务管理",
+      "usageEn": "Start small network services on demand",
+      "usageZh": "按需启动小型网络服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-xlnetacc": {
+      "titleEn": "Xunlei Booster",
+      "titleZh": "迅雷快鸟",
+      "usageEn": "Bandwidth boost service for Xunlei members",
+      "usageZh": "迅雷会员宽带提速服务",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-yggdrasil": {
+      "titleEn": "Yggdrasil",
+      "titleZh": "Yggdrasil 网络",
+      "usageEn": "Experimental encrypted IPv6 mesh network",
+      "usageZh": "加密IPv6网状组网实验",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-zerotier": {
+      "titleEn": "ZeroTier",
+      "titleZh": "ZeroTier",
+      "usageEn": "Connect remote sites as one virtual LAN",
+      "usageZh": "异地组网，像在同一局域网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-turboacc": {
+      "titleEn": "Turbo ACC",
+      "titleZh": "Turbo ACC 网络加速",
+      "usageEn": "Hardware NAT flow offloading, SDK built in",
+      "usageZh": "硬件 NAT 流量分载加速,SDK 源已内置",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-wireguard": {
+      "titleEn": "WireGuard",
+      "titleZh": "WireGuard",
+      "usageEn": "In-kernel VPN, fast stable site-to-site links",
+      "usageZh": "内核级 VPN,异地组网快而稳",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-unblockmusic": {
+      "titleEn": "NetEase Music Unblock",
+      "titleZh": "网易云音乐解锁",
+      "usageEn": "Unlock greyed-out NetEase Cloud Music songs",
+      "usageZh": "解锁网易云灰色歌曲",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-unblockneteasemusic-go": {
+      "titleEn": "NetEase Unblock (Go)",
+      "titleZh": "网易云解锁 Go 版",
+      "usageEn": "Go build, pick this or the standard one",
+      "usageZh": "Go 内核版本,与标准版二选一",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-n2n": {
+      "titleEn": "N2N VPN",
+      "titleZh": "N2N 组网",
+      "usageEn": "P2P virtual LAN through NAT",
+      "usageZh": "P2P 虚拟局域网穿透组网",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-https-dns-proxy": {
+      "titleEn": "DNS over HTTPS Proxy",
+      "titleZh": "DNS over HTTPS 代理",
+      "usageEn": "DoH encrypted DNS against hijacking",
+      "usageZh": "DoH 加密 DNS,防污染防劫持",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-adblock-fast": {
+      "titleEn": "Adblock Fast",
+      "titleZh": "Adblock Fast 广告过滤",
+      "usageEn": "Lightweight, fast ad domain blocking",
+      "usageZh": "轻量快速的广告域名拦截",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-cloudflared": {
+      "titleEn": "Cloudflare Tunnel",
+      "titleZh": "Cloudflare 隧道",
+      "usageEn": "Remote access via Cloudflare Tunnel",
+      "usageZh": "Cloudflare Tunnel 内网穿透",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-coovachilli": {
+      "titleEn": "CoovaChilli Portal",
+      "titleZh": "CoovaChilli 认证门户",
+      "usageEn": "Captive portal for WiFi login",
+      "usageZh": "WiFi 上网认证门户",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-crowdsec-firewall-bouncer": {
+      "titleEn": "CrowdSec Bouncer",
+      "titleZh": "CrowdSec 防护",
+      "usageEn": "Auto-ban attack IPs via shared intelligence",
+      "usageZh": "协同情报自动封禁攻击 IP",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-libreswan": {
+      "titleEn": "Libreswan IPsec",
+      "titleZh": "Libreswan IPsec",
+      "usageEn": "IPsec VPN server",
+      "usageZh": "IPsec VPN 服务端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-lldpd": {
+      "titleEn": "LLDP Discovery",
+      "titleZh": "LLDP 邻居发现",
+      "usageEn": "Discover switches and devices on the LAN",
+      "usageZh": "发现同网段交换机与设备",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-mosquitto": {
+      "titleEn": "Mosquitto MQTT",
+      "titleZh": "Mosquitto MQTT",
+      "usageEn": "MQTT message broker for IoT",
+      "usageZh": "物联网 MQTT 消息服务器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-sshtunnel": {
+      "titleEn": "SSH Tunnel",
+      "titleZh": "SSH 隧道",
+      "usageEn": "SSH port forwarding and tunnels",
+      "usageZh": "SSH 端口转发与隧道",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-tor": {
+      "titleEn": "Tor",
+      "titleZh": "Tor 洋葱路由",
+      "usageEn": "Onion-routed anonymity network",
+      "usageZh": "洋葱路由匿名网络",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-usteer": {
+      "titleEn": "usteer Roaming",
+      "titleZh": "usteer 漫游调度",
+      "usageEn": "Steer clients between multiple APs",
+      "usageZh": "多 AP 之间智能切换客户端",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-busybox": {
+      "titleEn": "BusyBox",
+      "titleZh": "BusyBox 基础命令",
+      "usageEn": "Core system commands, required by firmware",
+      "usageZh": "系统核心命令集,固件必需",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-fstools": {
+      "titleEn": "fstools",
+      "titleZh": "fstools 存储基础",
+      "usageEn": "Mount and restore partitions, required",
+      "usageZh": "挂载与恢复分区,固件必需",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dropbear": {
+      "titleEn": "Dropbear SSH",
+      "titleZh": "Dropbear SSH",
+      "usageEn": "SSH login service, required by firmware",
+      "usageZh": "SSH 登录服务,固件必需",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-firewall-base": {
+      "titleEn": "Firewall Core",
+      "titleZh": "防火墙核心",
+      "usageEn": "System firewall, required by firmware",
+      "usageZh": "系统防火墙,固件必需",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-dnsmasq-full": {
+      "titleEn": "Dnsmasq Full",
+      "titleZh": "Dnsmasq 完整版",
+      "usageEn": "Full DNS/DHCP, needed by most proxy apps",
+      "usageZh": "完整 DNS/DHCP,多数魔法插件需要",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-block-mount": {
+      "titleEn": "USB Auto Mount",
+      "titleZh": "USB 自动挂载",
+      "usageEn": "Auto-mount USB flash and hard drives",
+      "usageZh": "插上 U 盘/硬盘自动挂载",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-kmod-usb-storage": {
+      "titleEn": "USB Storage Driver",
+      "titleZh": "USB 存储驱动",
+      "usageEn": "Kernel driver for USB disks",
+      "usageZh": "USB 磁盘内核驱动",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-openssh-sftp-server": {
+      "titleEn": "SFTP Server",
+      "titleZh": "SFTP 服务",
+      "usageEn": "Needed by WinSCP and other SFTP tools",
+      "usageZh": "WinSCP 等工具传文件需要",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-curl": {
+      "titleEn": "curl",
+      "titleZh": "curl 下载工具",
+      "usageEn": "Command-line HTTP tool, used by scripts",
+      "usageZh": "命令行 HTTP 工具,脚本常用",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-htop": {
+      "titleEn": "htop",
+      "titleZh": "htop 进程监视",
+      "usageEn": "View CPU and memory usage in the terminal",
+      "usageZh": "命令行查看 CPU/内存占用",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-nano": {
+      "titleEn": "nano Editor",
+      "titleZh": "nano 编辑器",
+      "usageEn": "Text editor easier to pick up than vi",
+      "usageZh": "比 vi 好上手的文本编辑器",
+      "source": "WeiG curated plugins"
+    },
+    "PACKAGE_luci-app-tcpdump": {
+      "titleEn": "tcpdump",
+      "titleZh": "tcpdump 抓包",
+      "usageEn": "Command-line packet capture for debugging",
+      "usageZh": "命令行网络抓包排障",
+      "source": "WeiG curated plugins"
+    }
+  }
+}

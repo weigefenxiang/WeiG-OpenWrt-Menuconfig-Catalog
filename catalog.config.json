@@ -9,6 +9,22 @@
       "branches": ["openwrt-21.02", "openwrt-23.05", "openwrt-24.10", "openwrt-25.12"],
       "exclude": [],
       "diy": "immortalwrt"
+    },
+    {
+      "id": "OpenWrt",
+      "label": "OpenWrt",
+      "repo": "openwrt/openwrt",
+      "branches": "all",
+      "exclude": ["lede-17.01", "pcs-standalone-back", "master"],
+      "diy": "openwrt"
+    },
+    {
+      "id": "lede",
+      "label": "Lean LEDE",
+      "repo": "coolsnowwolf/lede",
+      "branches": ["master"],
+      "exclude": [],
+      "diy": "lede"
     }
   ]
 }

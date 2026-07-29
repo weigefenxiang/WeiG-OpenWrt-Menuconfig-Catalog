@@ -98,6 +98,7 @@ jobs:
           path: |
             dist/*.json.gz
             dist/*.meta.json
+            dist/*.translations.json
             attempts/*.attempt.json
             failure-logs/*.log
           retention-days: 7
@@ -121,6 +122,7 @@ jobs:
           mkdir -p dist
           cp previous/*.json.gz dist/ 2>/dev/null || true
           cp current/*.json.gz current/*.meta.json dist/ 2>/dev/null || true
+          cp current/*.translations.json dist/ 2>/dev/null || true
       - name: Build catalog index
         run: node scripts/build-index.mjs dist dist/index.json previous/index.json current
       - name: Publish catalog-data branch
@@ -145,7 +147,7 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Complete Menuconfig Catalog" \
             --notes "All discovered source branches completed successfully in run $GITHUB_RUN_ID." \
-            dist/index.json dist/*.json.gz
+            dist/index.json dist/*.json.gz dist/*.translations.json
       - name: Catalog health summary
         if: always()
         run: |

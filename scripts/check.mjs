@@ -12,9 +12,11 @@ const menu = parseKconfigTree(fixture);
 const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
+const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const failures = [];
 if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3) failures.push('targetinfo');
-if (packages.length !== 2 || packages[0].category !== 'LuCI') failures.push('packageinfo');
+if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
+    packages[0].description !== 'Demonstration web interface package') failures.push('packageinfo');
 const demo = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo');
 const luci = menu.options.find((item) => item.symbol === 'PACKAGE_luci');
 const demoExtra = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo-extra');
@@ -34,11 +36,21 @@ if (!workflow.includes('make defconfig FORCE=1') ||
     !workflow.includes('pattern: result-*') ||
     !workflow.includes('actions/upload-artifact@v7') ||
     !workflow.includes('actions/download-artifact@v8')) failures.push('workflow resilience');
-if (policy.sources.length !== 1 || policy.sources[0].id !== 'ImmortalWrt' ||
+if (policy.sources.length !== 3 || policy.sources[0].id !== 'ImmortalWrt' ||
     policy.sources[0].branches.join(',') !==
       'openwrt-21.02,openwrt-23.05,openwrt-24.10,openwrt-25.12') failures.push('stable branch policy');
+const openwrt = policy.sources.find((item) => item.id === 'OpenWrt');
+if (openwrt?.branches !== 'all' ||
+    openwrt.exclude.join(',') !== 'lede-17.01,pcs-standalone-back,master') failures.push('OpenWrt branch policy');
+if (!policy.sources.some((item) => item.id === 'lede' && item.label === 'Lean LEDE')) failures.push('LEDE source policy');
 if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('menu: compactMenu') ||
+    !generator.includes('targetSelectors') ||
+    !generator.includes('targetTree') ||
+    !generator.includes('promptZh') ||
+    !generator.includes('.translations.json') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
+if (translations.policy?.primary?.join(',') !== 'en,zh-CN' ||
+    !translations.entries?.['PACKAGE_luci-app-samba4']?.usageZh) failures.push('English/Chinese translations');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);

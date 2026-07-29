@@ -81,7 +81,7 @@ for (const attempt of attempts) {
 for (const source of sources) source.branches.sort((a, b) => a.branch.localeCompare(b.branch));
 const branchRows = sources.flatMap((source) => source.branches);
 writeFileSync(out, JSON.stringify({
-  schema: 1,
+  schema: 2,
   generatedAt: new Date().toISOString(),
   completeReleaseTag: 'menuconfig-catalog-complete',
   health: {

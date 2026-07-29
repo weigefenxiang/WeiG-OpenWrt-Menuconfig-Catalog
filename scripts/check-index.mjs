@@ -40,6 +40,7 @@ try {
     join(ROOT, 'scripts', 'build-index.mjs'), dist, out, join(temp, 'previous.json'), attempts,
   ], { stdio: 'pipe' });
   const index = JSON.parse(readFileSync(out, 'utf8'));
+  if (index.schema !== 2) throw new Error('index schema 2 missing');
   const branches = index.sources.find((source) => source.id === 'ImmortalWrt').branches;
   const main = branches.find((branch) => branch.branch === 'openwrt-23.05');
   const old = branches.find((branch) => branch.branch === 'openwrt-21.02');

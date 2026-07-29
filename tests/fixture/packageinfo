@@ -1,11 +1,13 @@
 Package: luci-app-demo
 Title: Demo LuCI app
+Description: Demonstration web interface package
 Category: LuCI
 Submenu: Applications
 Depends: +luci-base +PACKAGE_kmod-demo:kmod-demo
 
 Package: kmod-demo
 Title: Demo kernel module
+Description: Demonstration kernel module
 Category: Kernel modules
 Submenu: Network Support
 Depends: @TARGET_x86

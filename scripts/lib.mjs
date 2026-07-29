@@ -57,21 +57,34 @@ export function parseInfoRecords(text) {
 export function parsePackageInfo(text) {
   const packages = [];
   let item = null;
+  let lastKey = '';
   const finish = () => {
     if (item?.name) packages.push(item);
     item = null;
+    lastKey = '';
   };
   for (const raw of text.replace(/\r\n/g, '\n').split('\n')) {
     const match = raw.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
-    if (!match) continue;
+    if (!match) {
+      if (item && lastKey === 'Description' && /^\s+/.test(raw) && raw.trim()) {
+        item.description = `${item.description}${item.description ? ' ' : ''}${raw.trim()}`;
+      }
+      continue;
+    }
     const [, key, value] = match;
+    lastKey = key;
     if (key === 'Package') {
       finish();
-      item = { name: value, title: value, category: 'Other', submenu: '', depends: [], provides: [] };
+      item = {
+        name: value, title: value, description: '', category: 'Other',
+        submenu: '', depends: [], provides: [],
+      };
+      lastKey = key;
       continue;
     }
     if (!item) continue;
     if (key === 'Title') item.title = value;
+    else if (key === 'Description') item.description = value;
     else if (key === 'Category') item.category = value || 'Other';
     else if (key === 'Submenu') item.submenu = value;
     else if (key === 'Depends') item.depends = value.split(/\s+/).filter(Boolean);

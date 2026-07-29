@@ -20,6 +20,7 @@ const packageInfo = join(tree, 'tmp', '.packageinfo');
 const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
 const menu = parseKconfigTree(tree);
+const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 if (!targets.length || !menu.options.length) {
   throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
 }
@@ -33,16 +34,103 @@ for (const target of targets) {
 }
 const menuOptions = menu.options.filter((option) =>
   option.path[0] !== 'Target Devices' && !targetSymbols.has(option.symbol));
+const packageByName = new Map(packages.map((item) => [item.name, item]));
+const promptTranslations = translations.prompts || {};
+const entryTranslations = translations.entries || {};
+const translatedOptions = menuOptions.map((option) => {
+  const packageName = option.symbol.startsWith('PACKAGE_') ? option.symbol.slice(8) : '';
+  const packageRow = packageByName.get(packageName);
+  const translated = entryTranslations[option.symbol] || {};
+  const promptRow = promptTranslations[option.prompt] || {};
+  return {
+    ...option,
+    promptEn: packageRow?.title || option.prompt,
+    promptZh: translated.titleZh || promptRow.titleZh || '',
+    usageEn: packageRow?.description || option.help || translated.usageEn || promptRow.usageEn || '',
+    usageZh: translated.usageZh || promptRow.usageZh || '',
+    translationSource: translated.source || (promptRow.titleZh ? 'Catalog glossary' : ''),
+  };
+});
+const menuPathNames = [...new Set(menuOptions.flatMap((option) => option.path || []))];
+const menuLabels = Object.fromEntries(menuPathNames.map((name) => [
+  name,
+  {
+    en: name,
+    zhCN: promptTranslations[name]?.titleZh || '',
+    usageEn: promptTranslations[name]?.usageEn || '',
+    usageZh: promptTranslations[name]?.usageZh || '',
+  },
+]));
 const choiceIds = new Set(menuOptions.map((option) => option.choice).filter(Boolean));
 const compactMenu = {
   categories: menu.categories.filter((name) => name !== 'Target Devices'),
-  options: menuOptions,
-  choices: menu.choices.filter((choice) => choiceIds.has(choice.id)),
+  labels: menuLabels,
+  options: translatedOptions,
+  choices: menu.choices.filter((choice) => choiceIds.has(choice.id)).map((choice) => {
+    const row = promptTranslations[choice.prompt] || {};
+    return {
+      ...choice,
+      promptEn: choice.prompt,
+      promptZh: row.titleZh || '',
+      usageEn: row.usageEn || '',
+      usageZh: row.usageZh || '',
+    };
+  }),
+};
+const targetTree = [];
+for (const target of targets) {
+  let system = targetTree.find((item) => item.value === target.board);
+  if (!system) {
+    system = { value: target.board, labelEn: target.name || target.board, labelZh: '', children: [] };
+    targetTree.push(system);
+  }
+  system.children.push({
+    value: target.subtarget,
+    labelEn: target.subtargetName || target.subtarget,
+    labelZh: '',
+    targetId: target.id,
+    children: target.profiles.map((profile) => ({
+      value: profile.id,
+      labelEn: profile.name || profile.id,
+      labelZh: '',
+      profileId: profile.id,
+      descriptionEn: profile.description || '',
+    })),
+  });
+}
+targetTree.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
+for (const system of targetTree) {
+  system.children.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
+  for (const subtarget of system.children) {
+    subtarget.children.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
+  }
+}
+const targetSelectors = [
+  { id: 'system', labelEn: 'Target System', labelZh: '目标系统' },
+  { id: 'subtarget', labelEn: 'Subtarget', labelZh: '子目标' },
+  { id: 'profile', labelEn: 'Target Profile', labelZh: '目标配置' },
+];
+const missingTranslations = translatedOptions.filter((item) => !item.promptZh).map((item) => ({
+  symbol: item.symbol, promptEn: item.promptEn || item.prompt, path: item.path,
+}));
+const missingMenuTranslations = menuPathNames.filter((name) => !promptTranslations[name]?.titleZh);
+const missingChoiceTranslations = compactMenu.choices.filter((choice) => !choice.promptZh)
+  .map((choice) => ({ id: choice.id, promptEn: choice.promptEn || choice.prompt }));
+const translationReport = {
+  schema: 1,
+  source: { id: args['source-id'], branch: args.branch },
+  generatedAt: new Date().toISOString(),
+  primaryLanguages: ['en', 'zh-CN'],
+  options: translatedOptions.length,
+  translatedZhCN: translatedOptions.length - missingTranslations.length,
+  missingZhCN: missingTranslations,
+  missingMenusZhCN: missingMenuTranslations,
+  missingChoicesZhCN: missingChoiceTranslations,
 };
 let commit = '';
 try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
 const payload = {
-  schema: 1,
+  schema: 2,
   generatedAt: new Date().toISOString(),
   source: {
     id: args['source-id'], label: args.label || args['source-id'],
@@ -50,15 +138,26 @@ const payload = {
     commit, legacy: args.legacy === 'true',
   },
   counts: { targets: targets.length, profiles: targets.reduce((n, item) => n + item.profiles.length, 0),
-    menuOptions: compactMenu.options.length, packages: packages.length },
+    menuOptions: compactMenu.options.length, packages: packages.length,
+    translatedZhCN: translationReport.translatedZhCN,
+    missingZhCN: missingTranslations.length },
+  targetSelectors,
+  targetTree,
   targets,
   menu: compactMenu,
+  translation: {
+    primaryLanguages: ['en', 'zh-CN'],
+    fallback: 'en',
+    translatedZhCN: translationReport.translatedZhCN,
+    missingZhCN: missingTranslations.length,
+  },
 };
 const json = JSON.stringify(payload);
 const slug = `${safeSlug(args['source-id'])}--${safeSlug(args.branch)}`;
 mkdirSync(outDir, { recursive: true });
 const asset = `${slug}.json.gz`;
 writeFileSync(join(outDir, asset), gzipSync(Buffer.from(json), { level: 9 }));
+writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translationReport, null, 2) + '\n');
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   source: payload.source, counts: payload.counts, asset,
   generatedAt: payload.generatedAt,
