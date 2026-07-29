@@ -46,6 +46,7 @@ const asset = `${slug}.json.gz`;
 writeFileSync(join(outDir, asset), gzipSync(Buffer.from(json), { level: 9 }));
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   source: payload.source, counts: payload.counts, asset,
+  generatedAt: payload.generatedAt,
   sha256: createHash('sha256').update(json).digest('hex'),
 }, null, 2) + '\n');
 console.log(`${asset}: ${targets.length} targets / ${payload.counts.profiles} profiles / ${menu.options.length} visible options / ${packages.length} packages`);

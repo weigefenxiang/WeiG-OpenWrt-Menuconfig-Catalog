@@ -5,7 +5,7 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "discover": "node scripts/discover.mjs",
-    "test": "node scripts/check.mjs"
+    "test": "node scripts/check.mjs && node scripts/check-index.mjs"
   },
   "engines": {
     "node": ">=20"
