@@ -13,7 +13,6 @@ const steps = [
   ['feeds', process.env.FEEDS_OUTCOME],
   ['defconfig', process.env.DEFCONFIG_OUTCOME],
   ['extract', process.env.EXTRACT_OUTCOME],
-  ['upload', process.env.UPLOAD_OUTCOME],
 ];
 const failed = steps.find(([, outcome]) => outcome && outcome !== 'success' && outcome !== 'skipped');
 const status = process.env.JOB_STATUS === 'success' ? 'success' : 'failure';

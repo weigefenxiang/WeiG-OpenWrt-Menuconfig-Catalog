@@ -23,6 +23,22 @@ const menu = parseKconfigTree(tree);
 if (!targets.length || !menu.options.length) {
   throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
 }
+const targetSymbols = new Set(['TARGET_BOARD', 'TARGET_SUBTARGET', 'TARGET_PROFILE']);
+for (const target of targets) {
+  targetSymbols.add(`TARGET_${target.board}`);
+  targetSymbols.add(`TARGET_${target.board}_${target.subtarget}`);
+  for (const profile of target.profiles) {
+    targetSymbols.add(`TARGET_${target.board}_${target.subtarget}_${profile.id}`);
+  }
+}
+const menuOptions = menu.options.filter((option) =>
+  option.path[0] !== 'Target Devices' && !targetSymbols.has(option.symbol));
+const choiceIds = new Set(menuOptions.map((option) => option.choice).filter(Boolean));
+const compactMenu = {
+  categories: menu.categories.filter((name) => name !== 'Target Devices'),
+  options: menuOptions,
+  choices: menu.choices.filter((choice) => choiceIds.has(choice.id)),
+};
 let commit = '';
 try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
 const payload = {
@@ -34,10 +50,9 @@ const payload = {
     commit, legacy: args.legacy === 'true',
   },
   counts: { targets: targets.length, profiles: targets.reduce((n, item) => n + item.profiles.length, 0),
-    menuOptions: menu.options.length, packages: packages.length },
+    menuOptions: compactMenu.options.length, packages: packages.length },
   targets,
-  menu,
-  packages,
+  menu: compactMenu,
 };
 const json = JSON.stringify(payload);
 const slug = `${safeSlug(args['source-id'])}--${safeSlug(args.branch)}`;
@@ -49,4 +64,4 @@ writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   generatedAt: payload.generatedAt,
   sha256: createHash('sha256').update(json).digest('hex'),
 }, null, 2) + '\n');
-console.log(`${asset}: ${targets.length} targets / ${payload.counts.profiles} profiles / ${menu.options.length} visible options / ${packages.length} packages`);
+console.log(`${asset}: ${targets.length} targets / ${payload.counts.profiles} profiles / ${compactMenu.options.length} menu options / ${packages.length} packages`);

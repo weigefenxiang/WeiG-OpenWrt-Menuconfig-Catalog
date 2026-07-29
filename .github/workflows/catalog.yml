@@ -25,13 +25,14 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: matrix
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/discover.mjs >> "$GITHUB_OUTPUT"
 
   generate:
+    name: ${{ matrix.label }} · ${{ matrix.branch }}
     needs: discover
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -39,7 +40,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify runner tools
         id: tools
         timeout-minutes: 2
@@ -50,29 +51,22 @@ jobs:
       - name: Clone ${{ matrix.repo }} @ ${{ matrix.branch }}
         id: clone
         timeout-minutes: 10
-        run: git clone "https://github.com/${{ matrix.repo }}" --branch "${{ matrix.branch }}" --depth 1 work/upstream
+        run: bash scripts/run-stage.sh clone git clone "https://github.com/${{ matrix.repo }}" --branch "${{ matrix.branch }}" --depth 1 work/upstream
       - name: Prepare feeds
         id: feeds
         timeout-minutes: 25
         working-directory: work/upstream
-        run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" feeds bash -c './scripts/feeds update -a && ./scripts/feeds install -a'
       - name: Generate upstream metadata
         id: defconfig
         timeout-minutes: 15
         working-directory: work/upstream
-        run: |
-          # Catalog generation does not compile firmware. FORCE only bypasses obsolete
-          # host prerequisite probes in old branches; output files remain mandatory.
-          make defconfig FORCE=1
-          test -s tmp/.targetinfo
-          test -s tmp/.packageinfo
+        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" defconfig bash -c 'make defconfig FORCE=1 && test -s tmp/.targetinfo && test -s tmp/.packageinfo'
       - name: Extract catalog
         id: extract
         timeout-minutes: 5
         run: |
-          node scripts/generate-catalog.mjs \
+          bash scripts/run-stage.sh extract node scripts/generate-catalog.mjs \
             --source-id "${{ matrix.source }}" \
             --label "${{ matrix.label }}" \
             --repo "${{ matrix.repo }}" \
@@ -80,15 +74,6 @@ jobs:
             --legacy "${{ matrix.legacy }}" \
             --tree work/upstream \
             --out dist
-      - id: upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: catalog-${{ matrix.source }}-${{ strategy.job-index }}
-          path: |
-            dist/*.json.gz
-            dist/*.meta.json
-          retention-days: 2
-          if-no-files-found: error
       - name: Record branch attempt
         if: always()
         env:
@@ -104,15 +89,18 @@ jobs:
           FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
           DEFCONFIG_OUTCOME: ${{ steps.defconfig.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
-          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
         run: node scripts/write-attempt.mjs
-      - name: Upload branch attempt
+      - name: Upload branch result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: attempt-${{ matrix.source }}-${{ strategy.job-index }}
-          path: attempts/*.attempt.json
-          retention-days: 14
+          name: result-${{ matrix.source }}-${{ strategy.job-index }}
+          path: |
+            dist/*.json.gz
+            dist/*.meta.json
+            attempts/*.attempt.json
+            failure-logs/*.log
+          retention-days: 7
           if-no-files-found: error
 
   publish:
@@ -120,17 +108,11 @@ jobs:
     if: always() && needs.discover.result == 'success'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          pattern: catalog-*
+          pattern: result-*
           path: current
-          merge-multiple: true
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: attempt-*
-          path: attempts
           merge-multiple: true
       - name: Keep last successful branch entries
         run: |
@@ -140,7 +122,7 @@ jobs:
           cp previous/*.json.gz dist/ 2>/dev/null || true
           cp current/*.json.gz current/*.meta.json dist/ 2>/dev/null || true
       - name: Build catalog index
-        run: node scripts/build-index.mjs dist dist/index.json previous/index.json attempts
+        run: node scripts/build-index.mjs dist dist/index.json previous/index.json current
       - name: Publish catalog-data branch
         run: |
           cd dist
@@ -174,7 +156,7 @@ jobs:
             echo "- Rolling data: \`catalog-data\`"
             echo "- Complete Release updated: \`${{ needs.generate.result == 'success' }}\`"
             echo ""
-            echo '```json'
-            cat dist/index.json
-            echo '```'
+            echo "| Source | Branch | State | Failed stage |"
+            echo "|---|---|---|---|"
+            node -e "const i=require('./dist/index.json'); for(const s of i.sources) for(const b of s.branches) console.log('| '+s.label+' | '+b.branch+' | '+b.state+' | '+(b.errorStage||'-')+' |')"
           } >> "$GITHUB_STEP_SUMMARY"

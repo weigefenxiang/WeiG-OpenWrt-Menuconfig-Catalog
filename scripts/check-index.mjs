@@ -15,35 +15,35 @@ try {
   writeFileSync(join(temp, 'previous.json'), JSON.stringify({
     schema: 1,
     sources: [{
-      id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branches: [
-        { id: 'main', branch: 'main', asset: 'openwrt--main.json.gz', state: 'fresh', lastSuccessAt: '2026-01-01T00:00:00Z' },
-        { id: '18.06', branch: 'openwrt-18.06', asset: 'openwrt--openwrt-18.06.json.gz', state: 'fresh', lastSuccessAt: '2026-01-01T00:00:00Z' },
+      id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'immortalwrt/immortalwrt', branches: [
+        { id: '23.05', branch: 'openwrt-23.05', asset: 'immortalwrt--openwrt-23.05.json.gz', state: 'fresh', lastSuccessAt: '2026-01-01T00:00:00Z' },
+        { id: '21.02', branch: 'openwrt-21.02', asset: 'immortalwrt--openwrt-21.02.json.gz', state: 'fresh', lastSuccessAt: '2026-01-01T00:00:00Z' },
       ],
     }],
   }));
-  writeFileSync(join(dist, 'openwrt--main.meta.json'), JSON.stringify({
-    source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: 'main', commit: 'abcdef' },
+  writeFileSync(join(dist, 'immortalwrt--openwrt-23.05.meta.json'), JSON.stringify({
+    source: { id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'immortalwrt/immortalwrt', branch: 'openwrt-23.05', commit: 'abcdef' },
     counts: { targets: 1, profiles: 1, menuOptions: 10, packages: 20 },
-    asset: 'openwrt--main.json.gz',
+    asset: 'immortalwrt--openwrt-23.05.json.gz',
     generatedAt: '2026-07-29T00:00:00Z',
   }));
   const attempt = (branch, status, stage) => ({
     schema: 1,
-    source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', legacy: false },
+    source: { id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'immortalwrt/immortalwrt', legacy: false },
     branch, status, stage, attemptedAt: '2026-07-29T00:10:00Z', runUrl: 'https://example.invalid/run/1',
   });
-  writeFileSync(join(attempts, 'main.attempt.json'), JSON.stringify(attempt('main', 'success', 'complete')));
-  writeFileSync(join(attempts, '18.attempt.json'), JSON.stringify(attempt('openwrt-18.06', 'failure', 'defconfig')));
-  writeFileSync(join(attempts, '19.attempt.json'), JSON.stringify(attempt('openwrt-19.07', 'failure', 'feeds')));
+  writeFileSync(join(attempts, '23.attempt.json'), JSON.stringify(attempt('openwrt-23.05', 'success', 'complete')));
+  writeFileSync(join(attempts, '21.attempt.json'), JSON.stringify(attempt('openwrt-21.02', 'failure', 'defconfig')));
+  writeFileSync(join(attempts, '24.attempt.json'), JSON.stringify(attempt('openwrt-24.10', 'failure', 'feeds')));
   const out = join(temp, 'index.json');
   execFileSync(process.execPath, [
     join(ROOT, 'scripts', 'build-index.mjs'), dist, out, join(temp, 'previous.json'), attempts,
   ], { stdio: 'pipe' });
   const index = JSON.parse(readFileSync(out, 'utf8'));
-  const branches = index.sources.find((source) => source.id === 'OpenWrt').branches;
-  const main = branches.find((branch) => branch.branch === 'main');
-  const old = branches.find((branch) => branch.branch === 'openwrt-18.06');
-  const never = branches.find((branch) => branch.branch === 'openwrt-19.07');
+  const branches = index.sources.find((source) => source.id === 'ImmortalWrt').branches;
+  const main = branches.find((branch) => branch.branch === 'openwrt-23.05');
+  const old = branches.find((branch) => branch.branch === 'openwrt-21.02');
+  const never = branches.find((branch) => branch.branch === 'openwrt-24.10');
   if (main.state !== 'fresh' || main.commit !== 'abcdef') throw new Error('fresh branch merge failed');
   if (old.state !== 'stale' || !old.asset || old.errorStage !== 'defconfig') throw new Error('stale branch merge failed');
   if (never.state !== 'unavailable' || never.asset || never.errorStage !== 'feeds') throw new Error('unavailable branch merge failed');

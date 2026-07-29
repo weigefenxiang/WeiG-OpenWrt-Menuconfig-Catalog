@@ -3,37 +3,12 @@
   "releaseTag": "menuconfig-catalog",
   "sources": [
     {
-      "id": "OpenWrt",
-      "label": "OpenWrt",
-      "repo": "openwrt/openwrt",
-      "branches": "all",
-      "exclude": ["lede-17.01", "pcs-standalone-back", "master"],
-      "diy": "openwrt"
-    },
-    {
       "id": "ImmortalWrt",
       "label": "ImmortalWrt",
       "repo": "immortalwrt/immortalwrt",
-      "branches": "all",
+      "branches": ["openwrt-21.02", "openwrt-23.05", "openwrt-24.10", "openwrt-25.12"],
       "exclude": [],
       "diy": "immortalwrt"
-    },
-    {
-      "id": "lede",
-      "label": "Lean LEDE",
-      "repo": "coolsnowwolf/lede",
-      "branches": ["master"],
-      "exclude": [],
-      "diy": "lede"
-    },
-    {
-      "id": "hanwckf",
-      "label": "hanwckf mt798x (Legacy)",
-      "repo": "hanwckf/immortalwrt-mt798x",
-      "branches": ["openwrt-21.02"],
-      "exclude": [],
-      "diy": "legacy",
-      "legacy": true
     }
   ]
 }
