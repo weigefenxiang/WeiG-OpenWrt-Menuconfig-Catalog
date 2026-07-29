@@ -16,8 +16,12 @@ const failures = [];
 if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3) failures.push('targetinfo');
 if (packages.length !== 2 || packages[0].category !== 'LuCI') failures.push('packageinfo');
 const demo = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo');
+const luci = menu.options.find((item) => item.symbol === 'PACKAGE_luci');
+const demoExtra = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo-extra');
 const image = menu.options.find((item) => item.symbol === 'TARGET_IMAGES_GZIP');
 if (!demo || demo.type !== 'tristate' || !demo.depends.includes('TARGET_x86')) failures.push('tristate/dependency');
+if (!luci || luci.kind !== 'menuconfig' || demo?.parent !== luci.symbol ||
+    demoExtra?.parent !== demo?.symbol) failures.push('implicit menuconfig hierarchy');
 if (!image || image.path[0] !== 'Target Images') failures.push('menu path');
 if (menu.choices.length !== 1 || !menu.options.some((item) => item.choice)) failures.push('choice');
 if (!workflow.includes('make defconfig FORCE=1') ||

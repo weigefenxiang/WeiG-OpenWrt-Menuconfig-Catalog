@@ -103,6 +103,36 @@ function expandSource(pattern, topdir, currentDir) {
   return readdirSync(dir).filter((name) => re.test(name)).sort().map((name) => join(dir, name));
 }
 
+function hasPositiveDependency(expressions, symbol) {
+  for (const expression of expressions) {
+    const tokens = String(expression).match(/\|\||&&|!=|=|!|\(|\)|"[^"]*"|[A-Za-z0-9_+./-]+/g) || [];
+    for (let index = 0; index < tokens.length; index++) {
+      if (tokens[index] !== symbol || tokens[index - 1] === '!') continue;
+      if (tokens[index + 1] === '!=') continue;
+      if (tokens[index + 1] === '=' && tokens[index + 2] === 'n') continue;
+      return true;
+    }
+  }
+  return false;
+}
+
+function addImplicitMenuParents(options) {
+  const menuconfigs = [];
+  for (const option of options) {
+    let parent = '';
+    for (let index = menuconfigs.length - 1; index >= 0; index--) {
+      const candidate = menuconfigs[index];
+      const sameMenu = candidate.path.every((name, depth) => option.path[depth] === name);
+      if (sameMenu && hasPositiveDependency(option.depends, candidate.symbol)) {
+        parent = candidate.symbol;
+        break;
+      }
+    }
+    if (parent) option.parent = parent;
+    if (option.kind === 'menuconfig') menuconfigs.push(option);
+  }
+}
+
 export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   const options = [];
   const choices = [];
@@ -226,6 +256,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   }
 
   parseFile(entry);
+  addImplicitMenuParents(options);
   const categories = [...new Set(options.map((item) => item.path[0] || 'Other'))];
   return { categories, options, choices };
 }

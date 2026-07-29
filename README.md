@@ -8,6 +8,7 @@
 - Source / Branch / Target System / Subtarget / Target Profile
 - 顶层 `make menuconfig` 中可见的 bool、tristate、choice、string、int、hex
 - `depends on`、`select`、`imply`、`default`、`range` 与菜单路径
+- `menu/endmenu` 显式层级，以及 `menuconfig` 通过正向 `if/depends` 形成的隐式父子层级
 - 软件包 Kconfig 选项及其依赖关系
 
 网页已经用五级 Target 选择器提供设备/Profile，因此目录不会重复发布

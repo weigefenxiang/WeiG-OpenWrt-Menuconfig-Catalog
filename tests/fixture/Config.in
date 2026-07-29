@@ -7,10 +7,22 @@ config TARGET_IMAGES_GZIP
 endmenu
 
 menu "LuCI"
-config PACKAGE_luci-app-demo
+menuconfig PACKAGE_luci
+	tristate "LuCI"
+
+if PACKAGE_luci
+menu "Applications"
+menuconfig PACKAGE_luci-app-demo
 	tristate "Demo LuCI app"
 	depends on TARGET_x86
 	select PACKAGE_luci-base
+
+if PACKAGE_luci-app-demo
+config PACKAGE_luci-app-demo-extra
+	bool "Demo LuCI app extra feature"
+endif
+endmenu
+endif
 endmenu
 
 choice
