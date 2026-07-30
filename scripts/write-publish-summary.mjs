@@ -10,6 +10,11 @@ const attempts = existsSync(attemptsDir)
   ? readdirSync(attemptsDir).filter((name) => name.endsWith('.attempt.json')).sort()
     .map((name) => JSON.parse(readFileSync(join(attemptsDir, name), 'utf8')))
   : [];
+const manifestFile = join(outDir, 'publish-inputs.json');
+const manifest = existsSync(manifestFile)
+  ? JSON.parse(readFileSync(manifestFile, 'utf8')) : { branches: [] };
+const publishedByArtifact = new Map((manifest.branches || [])
+  .map((item) => [item.artifactName, item]));
 const stages = [
   ['collect', process.env.COLLECT_OUTCOME || 'not-run'],
   ['index', process.env.INDEX_OUTCOME || 'not-run'],
@@ -22,19 +27,29 @@ const lines = [
   '## Menuconfig catalog health / 目录健康状态',
   '',
   `- Matrix result: \`${process.env.MATRIX_RESULT || 'unknown'}\``,
+  `- Complete snapshot: \`${process.env.COLLECT_COMPLETE || manifest.complete || false}\``,
+  `- Rolling publish: fresh=\`${manifest.fresh || 0}\`, last-good=\`${manifest.lastGood || 0}\``,
   `- Publish job: \`${order} · Publish / 发布目录与 Release\``,
   `- Publish Artifact: \`${artifact}\``,
   `- Failed stage: \`${failedStage}\``,
   `- Run: [${process.env.RUN_ID || '-'} attempt ${process.env.RUN_ATTEMPT || '-'}](${process.env.RUN_URL || '#'})`,
   '',
-  '| No. | Job | Artifact | Status | Failed stage / log |',
-  '|---:|---|---|---|---|',
-  ...attempts.sort((a, b) => (a.order || 0) - (b.order || 0)).map((item) =>
+  '| No. | Job | Artifact | Build | Published | Diagnostic |',
+  '|---:|---|---|---|---|---|',
+  ...attempts.sort((a, b) => (a.order || 0) - (b.order || 0)).map((item) => {
+    const published = publishedByArtifact.get(item.artifactName);
+    const state = published?.publishState === 'fresh' ? 'Fresh / 本次成功'
+      : published?.publishState === 'last-good' ? 'Stale / 使用旧数据'
+        : 'Unavailable / 暂无数据';
+    const diagnostic = published?.issues?.length
+      ? published.issues.join('<br>') : (item.status === 'failure'
+        ? `${item.stage} / \`${item.failureLog || '-'}\`` : '-');
+    return (
     `| ${item.orderText || '-'} | ${item.jobName || `${item.source.label} · ${item.branch}`} | ` +
-    `\`${item.artifactName || '-'}\` | ${item.status} | ` +
-    `${item.status === 'failure' ? `${item.stage} / \`${item.failureLog || '-'}\`` : '-'} |`),
+    `\`${item.artifactName || '-'}\` | ${item.status} | ${state} | ${diagnostic} |`);
+  }),
   `| ${order} | Publish / 发布目录与 Release | \`${artifact}\` | ` +
-    `${failedStage === '-' ? 'success' : 'failure'} | ${failedStage} |`,
+    `${failedStage === '-' ? 'success' : 'failure'} | Rolling catalog-data | ${failedStage} |`,
   '',
   'Publish stages:',
   ...stages.map(([name, outcome]) => `- ${name}: ${outcome}`),

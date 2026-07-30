@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
 import {
-  copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync,
+  appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync,
+  writeFileSync,
 } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { basename, join, resolve } from 'node:path';
+import { safeSlug } from './lib.mjs';
 
 const [rawArg = 'current', previousArg = 'previous', distArg = 'dist',
   attemptsArg = 'current-attempts', diagnosticsArg = 'publish-diagnostics'] = process.argv.slice(2);
@@ -23,84 +25,154 @@ const walk = (dir) => {
   });
 };
 const digest = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
-const currentFiles = walk(rawDir);
-const accepted = currentFiles.filter((file) =>
-  /\.(json\.gz|meta\.json|translations\.json|attempt\.json|log)$/.test(file) ||
-  file.endsWith('--SUMMARY.txt'));
-const byName = new Map();
-const errors = [];
-for (const file of accepted) {
+const warnings = [];
+const fatalErrors = [];
+const copied = new Map();
+const copyUnique = (file, dir, scope) => {
   const name = basename(file);
   const hash = digest(file);
-  if (byName.has(name) && byName.get(name).hash !== hash) {
-    errors.push(`下载的 Artifact 含同名不同内容文件:${name}`);
-    continue;
+  const key = `${dir}\0${name}`;
+  if (copied.has(key) && copied.get(key) !== hash) {
+    warnings.push(`${scope}:同名不同内容文件 ${name}`);
+    return false;
   }
-  byName.set(name, { file, hash });
-}
+  copyFileSync(file, join(dir, name));
+  copied.set(key, hash);
+  return true;
+};
 
 for (const file of walk(previousDir).filter((item) =>
   item.endsWith('.json.gz') || item.endsWith('.translations.json'))) {
   copyFileSync(file, join(distDir, basename(file)));
 }
-for (const { file } of byName.values()) {
-  const name = basename(file);
-  if (/\.(json\.gz|meta\.json|translations\.json)$/.test(name)) {
-    copyFileSync(file, join(distDir, name));
-  } else {
-    copyFileSync(file, join(attemptsDir, name));
+const fallbackState = (attempt) => {
+  const asset = `${safeSlug(attempt.source?.id)}--${safeSlug(attempt.branch)}.json.gz`;
+  return existsSync(join(distDir, asset)) ? 'last-good' : 'unavailable';
+};
+
+const artifactDirs = existsSync(rawDir)
+  ? readdirSync(rawDir).sort().map((name) => join(rawDir, name))
+    .filter((item) => statSync(item).isDirectory())
+  : [];
+const attempts = [];
+const branches = [];
+let acceptedFiles = 0;
+for (const artifactDir of artifactDirs) {
+  const artifactName = basename(artifactDir);
+  const files = walk(artifactDir);
+  const accepted = files.filter((file) =>
+    /\.(json\.gz|meta\.json|translations\.json|attempt\.json|log)$/.test(file) ||
+    file.endsWith('--SUMMARY.txt'));
+  acceptedFiles += accepted.length;
+  for (const file of accepted.filter((item) =>
+    item.endsWith('.attempt.json') || item.endsWith('--SUMMARY.txt') || item.endsWith('.log'))) {
+    copyUnique(file, attemptsDir, artifactName);
   }
+  const attemptFiles = accepted.filter((file) => file.endsWith('.attempt.json'));
+  if (attemptFiles.length !== 1) {
+    warnings.push(`${artifactName}:attempt 数量=${attemptFiles.length},已隔离`);
+    continue;
+  }
+  let attempt;
+  try {
+    attempt = JSON.parse(readFileSync(attemptFiles[0], 'utf8'));
+  } catch (error) {
+    warnings.push(`${artifactName}:attempt 无法解析:${error.message}`);
+    continue;
+  }
+  attempts.push(attempt);
+  const identity = `${attempt.orderText || '-'} ${attempt.source?.id || 'unknown'}/${attempt.branch || 'unknown'}`;
+  const issues = [];
+  const summary = accepted.find((file) => file.endsWith('--SUMMARY.txt') &&
+    readFileSync(file, 'utf8').includes(`Branch: ${attempt.branch}`));
+  if (!summary) issues.push('缺 SUMMARY');
+  if (attempt.status !== 'success') {
+    if (!attempt.failureLog || !accepted.some((file) => basename(file) === attempt.failureLog)) {
+      issues.push(`缺失败日志 ${attempt.failureLog || '-'}`);
+    }
+    warnings.push(...issues.map((item) => `${identity}:${item}`));
+    branches.push({
+      orderText: attempt.orderText, source: attempt.source.id, branch: attempt.branch,
+      artifactName, attemptStatus: attempt.status, publishState: fallbackState(attempt),
+      stage: attempt.stage, failureLog: attempt.failureLog, issues,
+    });
+    continue;
+  }
+
+  const metaFiles = accepted.filter((file) => file.endsWith('.meta.json'));
+  let meta;
+  if (metaFiles.length !== 1) issues.push(`meta 数量=${metaFiles.length}`);
+  if (!issues.length) {
+    try {
+      meta = JSON.parse(readFileSync(metaFiles[0], 'utf8'));
+    } catch (error) {
+      issues.push(`meta 无法解析:${error.message}`);
+    }
+  }
+  if (meta && (meta.source?.id !== attempt.source.id || meta.source?.branch !== attempt.branch)) {
+    issues.push('meta 与 attempt 身份不一致');
+  }
+  const assetFile = meta && accepted.find((file) => basename(file) === meta.asset);
+  const translationName = meta?.asset?.replace(/\.json\.gz$/, '.translations.json');
+  const translationFile = translationName &&
+    accepted.find((file) => basename(file) === translationName);
+  if (meta && !assetFile) issues.push(`缺 ${meta.asset}`);
+  if (meta && !translationFile) issues.push('缺 translations');
+  if (assetFile) {
+    try {
+      const jsonHash = createHash('sha256').update(gunzipSync(readFileSync(assetFile))).digest('hex');
+      if (meta.sha256 && meta.sha256 !== jsonHash) issues.push('catalog SHA-256 不一致');
+    } catch (error) {
+      issues.push(`catalog 无法解压:${error.message}`);
+    }
+  }
+  let fresh = false;
+  if (!issues.length) {
+    fresh = copyUnique(assetFile, distDir, identity) &&
+      copyUnique(metaFiles[0], distDir, identity) &&
+      copyUnique(translationFile, distDir, identity);
+    if (!fresh) issues.push('输出文件名冲突');
+  }
+  warnings.push(...issues.map((item) => `${identity}:${item}`));
+  branches.push({
+    orderText: attempt.orderText, source: attempt.source.id, branch: attempt.branch,
+    artifactName, attemptStatus: attempt.status,
+    publishState: fresh ? 'fresh' : fallbackState(attempt),
+    stage: fresh ? 'complete' : 'publish-validation', failureLog: attempt.failureLog, issues,
+  });
 }
 
-const attempts = readdirSync(attemptsDir).filter((name) => name.endsWith('.attempt.json')).sort()
-  .map((name) => JSON.parse(readFileSync(join(attemptsDir, name), 'utf8')));
-if (!attempts.length) errors.push('未收集到任何分支 attempt 记录');
-const metas = readdirSync(distDir).filter((name) => name.endsWith('.meta.json')).sort()
-  .map((name) => JSON.parse(readFileSync(join(distDir, name), 'utf8')));
-const metaByBranch = new Map(metas.map((meta) =>
-  [`${meta.source.id}\0${meta.source.branch}`, meta]));
-for (const attempt of attempts) {
-  const summary = readdirSync(attemptsDir).find((name) =>
-    name.startsWith(`${attempt.orderText}-`) && name.endsWith('--SUMMARY.txt') &&
-    readFileSync(join(attemptsDir, name), 'utf8').includes(`Branch: ${attempt.branch}`));
-  if (!summary) errors.push(`${attempt.orderText} ${attempt.source.id}/${attempt.branch}:缺 SUMMARY`);
-  if (attempt.status === 'failure') {
-    if (!attempt.failureLog || !existsSync(join(attemptsDir, attempt.failureLog))) {
-      errors.push(`${attempt.orderText} ${attempt.source.id}/${attempt.branch}:缺失败日志 ${attempt.failureLog || '-'}`);
-    }
-    continue;
-  }
-  const meta = metaByBranch.get(`${attempt.source.id}\0${attempt.branch}`);
-  if (!meta) {
-    errors.push(`${attempt.orderText} ${attempt.source.id}/${attempt.branch}:缺 meta`);
-    continue;
-  }
-  const asset = join(distDir, meta.asset);
-  const translations = join(distDir, meta.asset.replace(/\.json\.gz$/, '.translations.json'));
-  if (!existsSync(asset)) errors.push(`${attempt.orderText} ${attempt.source.id}/${attempt.branch}:缺 ${meta.asset}`);
-  if (!existsSync(translations)) {
-    errors.push(`${attempt.orderText} ${attempt.source.id}/${attempt.branch}:缺 translations`);
-  }
-  if (existsSync(asset)) {
-    const jsonHash = createHash('sha256').update(gunzipSync(readFileSync(asset))).digest('hex');
-    if (meta.sha256 && meta.sha256 !== jsonHash) {
-      errors.push(`${attempt.orderText} ${attempt.source.id}/${attempt.branch}:catalog SHA-256 不一致`);
-    }
-  }
-}
+if (!attempts.length) fatalErrors.push('未收集到任何可解析的分支 attempt 记录');
+const dataAssets = readdirSync(distDir).filter((name) => name.endsWith('.json.gz'));
+if (!dataAssets.length) fatalErrors.push('没有本次成功数据或历史 last-good 数据可发布');
+const complete = attempts.length > 0 && branches.length === attempts.length &&
+  branches.every((item) => item.attemptStatus === 'success' &&
+    item.publishState === 'fresh' && item.issues.length === 0) && warnings.length === 0;
 const manifest = {
-  schema: 1,
+  schema: 2,
   collectedAt: new Date().toISOString(),
-  rawFiles: currentFiles.length,
-  acceptedFiles: byName.size,
+  rawFiles: walk(rawDir).length,
+  acceptedFiles,
+  complete,
+  fresh: branches.filter((item) => item.publishState === 'fresh').length,
+  lastGood: branches.filter((item) => item.publishState === 'last-good').length,
   attempts: attempts.map((item) => ({
     order: item.order, orderText: item.orderText, jobName: item.jobName,
     source: item.source.id, repo: item.source.repo, branch: item.branch, version: item.version,
     status: item.status, stage: item.stage, artifactName: item.artifactName,
     failureLog: item.failureLog,
   })),
-  errors,
+  branches,
+  warnings,
+  fatalErrors,
 };
 writeFileSync(join(diagnosticsDir, 'publish-inputs.json'), JSON.stringify(manifest, null, 2) + '\n');
-if (errors.length) throw new Error(`Artifact 完整性检查失败:\n- ${errors.join('\n- ')}`);
-console.log(`collected ${attempts.length} attempts / ${metas.length} metadata rows / ${byName.size} files`);
+if (process.env.GITHUB_OUTPUT) {
+  appendFileSync(process.env.GITHUB_OUTPUT, `complete=${complete}\n`);
+  appendFileSync(process.env.GITHUB_OUTPUT, `fresh=${manifest.fresh}\n`);
+  appendFileSync(process.env.GITHUB_OUTPUT, `last-good=${manifest.lastGood}\n`);
+}
+if (fatalErrors.length) throw new Error(`Artifact 收集无法继续:\n- ${fatalErrors.join('\n- ')}`);
+if (warnings.length) console.warn(`Artifact 分支级警告:\n- ${warnings.join('\n- ')}`);
+console.log(`collected ${attempts.length} attempts; fresh=${manifest.fresh}` +
+  ` last-good=${manifest.lastGood} complete=${complete}`);

@@ -66,7 +66,9 @@ if (!stageRunner.includes('Source ID:') ||
     !attemptWriter.includes('failureLog') ||
     !attemptWriter.includes('orderText') ||
     !collector.includes('publish-inputs.json') ||
-    !collector.includes('Artifact 完整性检查失败') ||
+    !collector.includes('publishState') ||
+    !collector.includes('last-good') ||
+    !collector.includes('complete=${complete}') ||
     release.includes('gh release delete') ||
     !release.includes('gh release upload') ||
     !release.includes('--clobber')) failures.push('diagnostic identity');

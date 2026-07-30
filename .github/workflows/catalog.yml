@@ -206,7 +206,7 @@ jobs:
           '
       - name: Publish complete catalog Release
         id: release
-        if: needs.generate.result == 'success' && steps.data.outcome == 'success'
+        if: needs.generate.result == 'success' && steps.collect.outputs.complete == 'true' && steps.data.outcome == 'success'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -215,6 +215,7 @@ jobs:
         if: always()
         env:
           MATRIX_RESULT: ${{ needs.generate.result }}
+          COLLECT_COMPLETE: ${{ steps.collect.outputs.complete }}
           COLLECT_OUTCOME: ${{ steps.collect.outcome }}
           INDEX_OUTCOME: ${{ steps.index.outcome }}
           DATA_OUTCOME: ${{ steps.data.outcome }}
@@ -240,13 +241,17 @@ jobs:
         if: always()
         env:
           MATRIX_RESULT: ${{ needs.generate.result }}
+          COLLECT_COMPLETE: ${{ steps.collect.outputs.complete }}
           COLLECT_OUTCOME: ${{ steps.collect.outcome }}
           INDEX_OUTCOME: ${{ steps.index.outcome }}
           DATA_OUTCOME: ${{ steps.data.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
         run: |
-          test "$MATRIX_RESULT" = success
           test "$COLLECT_OUTCOME" = success
           test "$INDEX_OUTCOME" = success
           test "$DATA_OUTCOME" = success
-          test "$RELEASE_OUTCOME" = success
+          test "$RELEASE_OUTCOME" != failure
+          if test "$MATRIX_RESULT" = success; then
+            test "$COLLECT_COMPLETE" = true
+            test "$RELEASE_OUTCOME" = success
+          fi
