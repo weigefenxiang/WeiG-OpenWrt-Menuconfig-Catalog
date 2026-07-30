@@ -76,13 +76,18 @@ if (!stageRunner.includes('Source ID:') ||
     release.includes('gh release delete') ||
     !release.includes('gh release upload') ||
     !release.includes('--clobber')) failures.push('diagnostic identity');
-if (policy.sources.length !== 3 || policy.sources[0].id !== 'ImmortalWrt' ||
+if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
     policy.sources[0].branches.join(',') !==
       'openwrt-21.02,openwrt-23.05,openwrt-24.10,openwrt-25.12') failures.push('stable branch policy');
 const openwrt = policy.sources.find((item) => item.id === 'OpenWrt');
 if (openwrt?.branches !== 'all' ||
     openwrt.exclude.join(',') !== 'lede-17.01,pcs-standalone-back,master') failures.push('OpenWrt branch policy');
 if (!policy.sources.some((item) => item.id === 'lede' && item.label === 'Lean LEDE')) failures.push('LEDE source policy');
+if (!policy.sources.some((item) => item.id === 'hanwckf' &&
+    item.repo === 'hanwckf/immortalwrt-mt798x' &&
+    item.branches.join(',') === 'openwrt-21.02' && item.legacy === true)) {
+  failures.push('hanwckf legacy source policy');
+}
 if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('menu: compactMenu') ||
     !generator.includes('targetSelectors') ||

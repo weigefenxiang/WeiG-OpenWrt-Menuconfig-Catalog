@@ -33,8 +33,9 @@ node scripts/import-curated-i18n.mjs \
 
 为 WeiG OpenWrt 在线定制器生成静态 menuconfig 目录。项目本身不编译固件。
 
-目录内容来自 ImmortalWrt 稳定分支生成的 `tmp/.targetinfo`、`tmp/.packageinfo` 和
-顶层 `Config.in` 树，包括：
+目录内容来自 ImmortalWrt、OpenWrt、Lean LEDE 与
+`hanwckf/immortalwrt-mt798x` 各收录分支生成的 `tmp/.targetinfo`、
+`tmp/.packageinfo` 和顶层 `Config.in` 树，包括：
 
 - Source / Branch / Target System / Subtarget / Target Profile
 - 顶层 `make menuconfig` 中可见的 bool、tristate、choice、string、int、hex
@@ -48,9 +49,9 @@ node scripts/import-curated-i18n.mjs \
 
 ## 自动更新
 
-`.github/workflows/catalog.yml` 每周检查 ImmortalWrt 的 21.02、23.05、
-24.10 和 25.12 四个稳定分支。每个分支独立生成，失败时沿用上一次成功
-数据。结果以无历史膨胀的孤立分支
+`.github/workflows/catalog.yml` 每周检查配置文件中声明的全部源码与分支；
+其中 hanwckf 仅收录 `openwrt-21.02` 并标记为 Legacy。每个分支独立生成，
+失败时沿用上一次成功数据。结果以无历史膨胀的孤立分支
 `catalog-data` 发布，主站只按当前分支加载一个 gzip 分片。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
