@@ -13,13 +13,27 @@ const english = i18n.plugins || {};
 const entries = {};
 for (const plugin of meta.plugins || []) {
   const translated = english[plugin.id] || {};
-  entries[`PACKAGE_luci-app-${plugin.id}`] = {
+  const titleI18n = Object.fromEntries(Object.entries(translated.name || {})
+    .filter(([lang, value]) => lang !== 'en' && value));
+  const usageI18n = Object.fromEntries(Object.entries(translated.desc || {})
+    .filter(([lang, value]) => lang !== 'en' && value));
+  if (plugin.name) titleI18n['zh-CN'] = plugin.name;
+  if (plugin.desc) usageI18n['zh-CN'] = plugin.desc;
+  const entry = {
     titleEn: translated.name?.en || plugin.id,
     titleZh: plugin.name || '',
     usageEn: translated.desc?.en || '',
     usageZh: plugin.desc || '',
+    titleI18n,
+    usageI18n,
     source: 'WeiG curated plugins',
   };
+  const packageNames = new Set([
+    `luci-app-${plugin.id}`,
+    plugin.pkg,
+    ...Object.values(plugin.pkgs || {}),
+  ].filter(Boolean));
+  for (const packageName of packageNames) entries[`PACKAGE_${packageName}`] = entry;
 }
 
 const prompts = {
@@ -69,9 +83,9 @@ writeFileSync(output, JSON.stringify({
   schema: 1,
   generatedAt: new Date().toISOString(),
   policy: {
-    primary: ['en', 'zh-CN'],
+    languages: ['en', 'zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'],
     fallback: 'en',
-    note: 'Canonical English comes from upstream. Chinese overrides never replace symbols.',
+    note: 'Canonical English comes from upstream. Localized labels never replace symbols.',
   },
   prompts,
   entries,

@@ -17,11 +17,13 @@ const publishedByArtifact = new Map((manifest.branches || [])
   .map((item) => [item.artifactName, item]));
 const stages = [
   ['collect', process.env.COLLECT_OUTCOME || 'not-run'],
+  ['translate', process.env.TRANSLATE_OUTCOME || 'not-run'],
   ['index', process.env.INDEX_OUTCOME || 'not-run'],
   ['catalog-data', process.env.DATA_OUTCOME || 'not-run'],
   ['release', process.env.RELEASE_OUTCOME || 'skipped'],
 ];
-const failedStage = stages.find(([, outcome]) => outcome === 'failure')?.[0] || '-';
+const failedStage = stages.filter(([name]) => name !== 'translate')
+  .find(([, outcome]) => outcome === 'failure')?.[0] || '-';
 const artifact = process.env.CATALOG_ARTIFACT_NAME || `${order}-publish`;
 const lines = [
   '## Menuconfig catalog health / 目录健康状态',

@@ -1,6 +1,6 @@
 # WeiG OpenWrt Menuconfig Catalog
 
-## Dynamic targets and primary translations / 动态目标与首选翻译
+## Dynamic targets and 11-language translations / 动态目标与 11 语翻译
 
 The catalog is the data authority for source branches, Target selectors and the complete
 Kconfig menu tree. The web customizer does not keep source branches, targets or menu entries
@@ -10,18 +10,21 @@ Catalog 是源码分支、Target 动态选择器和完整 Kconfig 菜单树的�
 JavaScript 中写死分支、Target 或菜单项目。
 
 - Canonical English comes from upstream `.targetinfo`, `.packageinfo` and `Config.in`.
-- Simplified Chinese titles and usages come from `translations/zh-CN.json`.
+- Curated application titles and descriptions in all 11 languages come from
+  `translations/zh-CN.json`; the filename is retained for compatibility.
 - Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
-- Every generation writes a `*.translations.json` report for missing or stale Chinese work.
-- Curated application names/usages are joined by package symbol in the web project; unknown
-  developer packages keep canonical upstream English instead of receiving guessed names.
+- Every generation writes a `*.translations.json` coverage report.
+- The weekly publish step reuses `i18n-cache.json` and sends only new or changed text to
+  GitHub Models. Translation limits or service errors do not block canonical English catalogs.
+- Curated application names/usages are joined by every known source package symbol. Text that
+  should remain a technical English name is left untranslated instead of showing a fake tooltip.
 
-英文以各上游源码为准；简体中文标题和用途由 Catalog 维护，11 语菜单分类维护在
-`translations/menu-i18n.json`。精选 Applications 由网页按软件包符号关联 11 语名称/用途；
-未人工校对的开发者软件包保留官方英文，不生成猜测译名。每次生成仍会输出翻译缺失报告。
+英文以各上游源码为准；精选 Applications 的 11 语名称与用途由 Catalog 维护，11 语菜单
+分类维护在 `translations/menu-i18n.json`。每周发布复用历史翻译缓存，只翻译新增或变化
+文本；额度不足或服务异常时保留官方英文并写入待译统计，不阻断成功分支发布。
 
 Refresh the curated LuCI seed after the main project's curated plugin table changes:
 
@@ -50,11 +53,13 @@ node scripts/import-curated-i18n.mjs \
 ## 自动更新
 
 `.github/workflows/catalog.yml` 每周检查配置文件中声明的全部源码与分支；
-其中 hanwckf 仅收录 `openwrt-21.02` 并标记为 Legacy。每个分支独立生成，
+其中 hanwckf 仅收录 `openwrt-21.02` 兼容分支。每个分支独立生成，
 失败时沿用上一次成功数据。结果以无历史膨胀的孤立分支
 `catalog-data` 发布，主站只按当前分支加载一个 gzip 分片。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
+- 翻译阶段具有 `models: read` 最小权限，每周最多增量处理 500 条文本；历史译文按英文
+  内容指纹复用。翻译失败只记入 Summary 和 `translation-summary.json`。
 - Discover、每个矩阵 Job、Publish 依次使用 `01`、`02`… 编号；Job、
   Artifact、`SUMMARY`、attempt 和失败日志共用同一编号。Actions Summary
   另列一一对应表，按编号即可找到同一任务的全部资料。
@@ -110,5 +115,5 @@ node scripts/generate-catalog.mjs \
   --out dist
 ```
 
-本项目保留上游英文原文，并维护简体中文用途、11 语菜单分类与缺失报告；未校对的
-开发者软件包统一回退官方英文。
+本项目保留上游英文原文，并维护 11 语菜单、常用插件用途、增量翻译缓存与覆盖报告；
+未翻译或应保持原名的技术文本统一回退官方英文。

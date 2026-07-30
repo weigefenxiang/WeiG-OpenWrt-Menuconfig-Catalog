@@ -20,6 +20,7 @@ const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
 const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
+const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs'), 'utf8');
 const failures = [];
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3) failures.push('targetinfo');
@@ -49,6 +50,8 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('retention-days: 14') ||
     !workflow.includes('actions/upload-artifact@v7') ||
     !workflow.includes('actions/download-artifact@v8') ||
+    !workflow.includes('models: read') ||
+    !workflow.includes('scripts/translate-catalog.mjs') ||
     !workflow.includes('01 · Discover / 发现源码分支') ||
     !workflow.includes('matrix.jobName') ||
     !workflow.includes('matrix.artifactPrefix') ||
@@ -100,7 +103,14 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
 const requiredLanguages = ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];
 if (!['Top level', 'General settings', 'Global build settings', 'LuCI'].every((label) =>
   requiredLanguages.every((lang) => menuI18n[label]?.[lang]))) failures.push('menu i18n');
-if (translations.policy?.primary?.join(',') !== 'en,zh-CN' ||
+if (translations.policy?.languages?.join(',') !== 'en,zh-CN,zh-TW,ru,es,pt,ja,ko,de,fr,vi' ||
     !translations.entries?.['PACKAGE_luci-app-samba4']?.usageZh) failures.push('English/Chinese translations');
+if (!translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.['zh-TW'] ||
+    !translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.de) {
+  failures.push('curated 11-language translations');
+}
+if (!autoTranslator.includes('i18n-cache.json') ||
+    !autoTranslator.includes('https://models.github.ai/inference/chat/completions') ||
+    !autoTranslator.includes('pendingFields')) failures.push('incremental translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);

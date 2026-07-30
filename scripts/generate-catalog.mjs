@@ -54,8 +54,10 @@ const translatedOptions = menuOptions.map((option) => {
     ...option,
     promptEn: packageRow?.title || option.prompt,
     promptZh: translated.titleZh || promptRow.titleZh || '',
+    promptI18n: translated.titleI18n || {},
     usageEn: packageRow?.description || option.help || translated.usageEn || promptRow.usageEn || '',
     usageZh: translated.usageZh || promptRow.usageZh || '',
+    usageI18n: translated.usageI18n || {},
     translationSource: translated.source || (promptRow.titleZh ? 'Catalog glossary' : ''),
   };
 });
@@ -81,8 +83,10 @@ const compactMenu = {
       ...choice,
       promptEn: choice.prompt,
       promptZh: row.titleZh || '',
+      promptI18n: menuI18n[choice.prompt] || {},
       usageEn: row.usageEn || '',
       usageZh: row.usageZh || '',
+      usageI18n: {},
     };
   }),
 };
@@ -129,7 +133,7 @@ const translationReport = {
   schema: 1,
   source: { id: args['source-id'], branch: args.branch },
   generatedAt: new Date().toISOString(),
-  primaryLanguages: ['en', 'zh-CN'],
+  languages: ['en', 'zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'],
   options: translatedOptions.length,
   translatedZhCN: translatedOptions.length - missingTranslations.length,
   missingZhCN: missingTranslations,
@@ -155,7 +159,7 @@ const payload = {
   targets,
   menu: compactMenu,
   translation: {
-    primaryLanguages: ['en', 'zh-CN'],
+    languages: translationReport.languages,
     fallback: 'en',
     translatedZhCN: translationReport.translatedZhCN,
     missingZhCN: missingTranslations.length,

@@ -3,6 +3,11 @@ run-name: Menuconfig catalog · ${{ github.event_name }} · run ${{ github.run_n
 
 on:
   workflow_dispatch:
+    inputs:
+      translate_limit:
+        description: New or changed texts to translate (0 keeps only cached/manual text)
+        required: false
+        default: "500"
   schedule:
     - cron: "17 19 * * 6"
   push:
@@ -14,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  models: read
 
 concurrency:
   group: menuconfig-catalog
@@ -182,6 +188,14 @@ jobs:
             "https://github.com/${{ github.repository }}" previous || true
           bash scripts/run-stage.sh collect node scripts/collect-results.mjs \
             current previous dist current-attempts publish-diagnostics
+      - name: Update multilingual catalog text
+        id: translate
+        if: steps.collect.outcome == 'success'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TRANSLATE_LIMIT: ${{ inputs.translate_limit || '500' }}
+        run: bash scripts/run-stage.sh translate node scripts/translate-catalog.mjs dist previous/i18n-cache.json
       - name: Build catalog index
         id: index
         if: steps.collect.outcome == 'success'
@@ -217,6 +231,7 @@ jobs:
           MATRIX_RESULT: ${{ needs.generate.result }}
           COLLECT_COMPLETE: ${{ steps.collect.outputs.complete }}
           COLLECT_OUTCOME: ${{ steps.collect.outcome }}
+          TRANSLATE_OUTCOME: ${{ steps.translate.outcome }}
           INDEX_OUTCOME: ${{ steps.index.outcome }}
           DATA_OUTCOME: ${{ steps.data.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
@@ -235,6 +250,7 @@ jobs:
             failure-logs/
             current-attempts/
             dist/index.json
+            dist/translation-summary.json
           retention-days: 14
           if-no-files-found: error
       - name: Fail incomplete publish
