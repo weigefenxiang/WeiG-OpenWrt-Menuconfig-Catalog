@@ -21,6 +21,7 @@ const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
 const menu = parseKconfigTree(tree);
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
+const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
 if (!targets.length || !menu.options.length) {
   throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
 }
@@ -34,6 +35,13 @@ for (const target of targets) {
 }
 const menuOptions = menu.options.filter((option) =>
   option.path[0] !== 'Target Devices' && !targetSymbols.has(option.symbol));
+const pollutedDependencies = menuOptions.flatMap((option) =>
+  (option.depends || []).filter((expression) =>
+    /\s/.test(expression) && !/[&|=!<>]/.test(expression))
+    .map((expression) => `${option.symbol}: ${expression}`));
+if (pollutedDependencies.length) {
+  throw new Error(`Kconfig 依赖疑似混入 help 正文:\n${pollutedDependencies.slice(0, 20).join('\n')}`);
+}
 const packageByName = new Map(packages.map((item) => [item.name, item]));
 const promptTranslations = translations.prompts || {};
 const entryTranslations = translations.entries || {};
@@ -57,6 +65,7 @@ const menuLabels = Object.fromEntries(menuPathNames.map((name) => [
   {
     en: name,
     zhCN: promptTranslations[name]?.titleZh || '',
+    i18n: menuI18n[name] || {},
     usageEn: promptTranslations[name]?.usageEn || '',
     usageZh: promptTranslations[name]?.usageZh || '',
   },

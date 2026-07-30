@@ -11,14 +11,17 @@ JavaScript 中写死分支、Target 或菜单项目。
 
 - Canonical English comes from upstream `.targetinfo`, `.packageinfo` and `Config.in`.
 - Simplified Chinese titles and usages come from `translations/zh-CN.json`.
+- Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` report for missing or stale Chinese work.
-- Other languages are not generated here; clients fall back to canonical English.
+- Curated application names/usages are joined by package symbol in the web project; unknown
+  developer packages keep canonical upstream English instead of receiving guessed names.
 
-英文以各上游源码为准；简体中文标题和用途由 Catalog 维护。每次生成都会输出翻译缺失报告，
-其他语言暂不在本项目生成，缺失时回退英文。
+英文以各上游源码为准；简体中文标题和用途由 Catalog 维护，11 语菜单分类维护在
+`translations/menu-i18n.json`。精选 Applications 由网页按软件包符号关联 11 语名称/用途；
+未人工校对的开发者软件包保留官方英文，不生成猜测译名。每次生成仍会输出翻译缺失报告。
 
 Refresh the curated LuCI seed after the main project's curated plugin table changes:
 
@@ -106,4 +109,5 @@ node scripts/generate-catalog.mjs \
   --out dist
 ```
 
-本项目保留上游英文原文，并维护简体中文标题、用途与缺失报告；其他语言回退英文。
+本项目保留上游英文原文，并维护简体中文用途、11 语菜单分类与缺失报告；未校对的
+开发者软件包统一回退官方英文。

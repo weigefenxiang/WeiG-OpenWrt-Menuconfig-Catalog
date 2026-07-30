@@ -164,18 +164,30 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
     let current = null;
     let currentChoice = null;
     let help = false;
+    let helpIndent = -1;
+    const indentWidth = (raw) => {
+      const prefix = raw.match(/^\s*/)?.[0] || '';
+      return [...prefix].reduce((total, char) => total + (char === '\t' ? 8 : 1), 0);
+    };
     const finish = () => {
       if (!current) return;
       current.depends = [...new Set(current.depends.filter(Boolean))];
       if (current.prompt && current.symbol) options.push(current);
       current = null;
       help = false;
+      helpIndent = -1;
     };
 
     for (let index = 0; index < lines.length; index++) {
       const raw = lines[index];
       const line = raw.trim();
       if (!line || line.startsWith('#')) continue;
+      if (help && indentWidth(raw) > helpIndent) {
+        current.help = `${current.help || ''}${current.help ? '\n' : ''}${line}`;
+        continue;
+      }
+      help = false;
+      helpIndent = -1;
       if (/^(config|menuconfig)\s+/.test(line)) {
         finish();
         const [, kind, symbol] = line.match(/^(config|menuconfig)\s+(\S+)/);
@@ -245,14 +257,9 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       if (!current) continue;
       if (line === 'help' || line === '---help---') {
         help = true;
+        helpIndent = indentWidth(raw);
         continue;
       }
-      if (help && /^\s/.test(raw) && !/^\s*(depends on|default|select|imply|range|prompt)\b/.test(raw)) {
-        const text = line;
-        if (text) current.help = `${current.help || ''}${current.help ? '\n' : ''}${text}`;
-        continue;
-      }
-      help = false;
       const typeMatch = line.match(/^(bool|tristate|string|int|hex)\b(.*)$/);
       if (typeMatch) {
         current.type = typeMatch[1];

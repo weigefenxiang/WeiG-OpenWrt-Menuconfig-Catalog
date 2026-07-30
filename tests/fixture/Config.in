@@ -16,6 +16,9 @@ menuconfig PACKAGE_luci-app-demo
 	tristate "Demo LuCI app"
 	depends on TARGET_x86
 	select PACKAGE_luci-base
+	help
+	  if the application is enabled, this sentence remains help text.
+	  menu, endmenu and source are ordinary words inside help.
 
 if PACKAGE_luci-app-demo
 config PACKAGE_luci-app-demo-extra

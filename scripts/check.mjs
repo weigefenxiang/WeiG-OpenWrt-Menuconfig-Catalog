@@ -18,6 +18,7 @@ const collector = readFileSync(join(ROOT, 'scripts', 'collect-results.mjs'), 'ut
 const release = readFileSync(join(ROOT, 'scripts', 'publish-release.sh'), 'utf8');
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
+const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const failures = [];
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
@@ -28,7 +29,10 @@ const demo = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo'
 const luci = menu.options.find((item) => item.symbol === 'PACKAGE_luci');
 const demoExtra = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo-extra');
 const image = menu.options.find((item) => item.symbol === 'TARGET_IMAGES_GZIP');
-if (!demo || demo.type !== 'tristate' || !demo.depends.includes('TARGET_x86')) failures.push('tristate/dependency');
+if (!demo || demo.type !== 'tristate' || !demo.depends.includes('TARGET_x86') ||
+    demo.depends.some((item) => item.includes('sentence remains help')) ||
+    !demo.help?.includes('if the application is enabled') ||
+    !demo.help?.includes('menu, endmenu and source')) failures.push('help/tristate/dependency');
 if (!luci || luci.kind !== 'menuconfig' || demo?.parent !== luci.symbol ||
     demoExtra?.parent !== demo?.symbol) failures.push('implicit menuconfig hierarchy');
 if (!image || image.path[0] !== 'Target Images') failures.push('menu path');
@@ -83,9 +87,14 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('menu: compactMenu') ||
     !generator.includes('targetSelectors') ||
     !generator.includes('targetTree') ||
+    !generator.includes('pollutedDependencies') ||
+    !generator.includes('menuI18n') ||
     !generator.includes('promptZh') ||
     !generator.includes('.translations.json') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
+const requiredLanguages = ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];
+if (!['Top level', 'General settings', 'Global build settings', 'LuCI'].every((label) =>
+  requiredLanguages.every((lang) => menuI18n[label]?.[lang]))) failures.push('menu i18n');
 if (translations.policy?.primary?.join(',') !== 'en,zh-CN' ||
     !translations.entries?.['PACKAGE_luci-app-samba4']?.usageZh) failures.push('English/Chinese translations');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
