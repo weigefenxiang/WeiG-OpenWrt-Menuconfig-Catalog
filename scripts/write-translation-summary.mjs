@@ -7,5 +7,6 @@ console.log(`- Engine: \`${summary.provider}\` / model: \`${summary.model || '-'
 console.log(`- Language: \`${summary.activeLanguage}\``);
 console.log(`- Batch: \`${summary.batchNumber || 1}/${summary.batchCount || 1}\``);
 console.log(`- This batch: \`${summary.translatedThisRun} / ${summary.queuedThisRun}\``);
+console.log(`- Retry queue: \`${summary.retryQueuedAfter || 0}\``);
 console.log(`- Remaining descriptions: \`${summary.targetPendingAfter}\``);
-if (summary.apiError) console.log(`- Warning: \`${summary.apiError.replace(/[`|\r\n]+/g, ' ')}\``);
+if (summary.warning || summary.apiError) console.log(`- Warning: \`${(summary.warning || summary.apiError).replace(/[`|\r\n]+/g, ' ')}\``);

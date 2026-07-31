@@ -45,6 +45,10 @@ for (const file of walk(previousDir).filter((item) =>
   item.endsWith('.json.gz') || item.endsWith('.translations.json'))) {
   copyFileSync(file, join(distDir, basename(file)));
 }
+for (const name of ['i18n-cache.json', 'translation-state.json', 'translation-retry-queue.json']) {
+  const file = join(previousDir, name);
+  if (existsSync(file)) copyFileSync(file, join(distDir, name));
+}
 const fallbackState = (attempt) => {
   const asset = `${safeSlug(attempt.source?.id)}--${safeSlug(attempt.branch)}.json.gz`;
   return existsSync(join(distDir, asset)) ? 'last-good' : 'unavailable';

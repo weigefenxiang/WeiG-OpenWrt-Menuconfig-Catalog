@@ -18,16 +18,18 @@ JavaScript 中写死分支、Target 或菜单项目。
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
 - The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
-  Argos runs locally by default without a key; Azure is an explicit optional engine. A failed batch
-  is not committed, while the canonical English catalog remains available.
+  Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
+  translations are published even when a batch is incomplete; remaining descriptions are kept in
+  `translation-retry-queue.json` and retried first on the next run.
 - Curated application names/usages are joined by every known source package symbol. Text that
   should remain a technical English name is left untranslated instead of showing a fake tooltip.
 
 英文以各上游源码为准；精选 Applications 的 11 语名称与用途由 Catalog 维护，11 语菜单
 分类维护在 `translations/menu-i18n.json`。每周发布复用历史翻译缓存，只翻译新增或变化
-文本；额度不足或服务异常时保留官方英文并写入待译统计，本批次不提交。
-- 手动翻译可设置每批 `100–5000` 条、`1–20` 批；`final` 模式全部成功后一次提交，
-  `each-batch` 模式每个成功批次单独提交。失败或取消的批次不提交；每周更新仍按文本指纹跳过未变化内容。
+文本；额度不足或服务异常时保留官方英文并写入待译统计与重试队列，已完成部分仍可提交。
+- Catalog 更新成功后自动触发每周翻译；自动任务默认 `500×2` 批。手动翻译可设置每批
+  `100–5000` 条、`1–20` 批；`final` 模式最后统一提交，`each-batch` 模式每个成功批次单独提交。
+  取消、零结果或校验/发布失败不会提交当前批次；每周更新仍按文本指纹跳过未变化内容。
 
 Refresh the curated LuCI seed after the main project's curated plugin table changes:
 

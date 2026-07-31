@@ -28,6 +28,8 @@ const maxItems = requestedMaxItems;
 const azureEndpoint = String(process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com').replace(/\/+$/, '');
 const cache = existsSync(previousFile) ? JSON.parse(readFileSync(previousFile, 'utf8')) : { schema: 1, entries: {} };
 const state = existsSync(previousStateFile) ? JSON.parse(readFileSync(previousStateFile, 'utf8')) : { schema: 1, phase: 'zh-CN-usage', rotationIndex: 0 };
+const retryFile = join(distDir, 'translation-retry-queue.json');
+const retryQueue = existsSync(retryFile) ? JSON.parse(readFileSync(retryFile, 'utf8')) : { schema: 1, languages: {} };
 let activeChild = null, cancelled = false, temporaryFiles = [];
 process.once('exit', () => temporaryFiles.forEach((file) => rmSync(file, { force: true })));
 const stopTranslation = (signal) => {
@@ -69,7 +71,9 @@ const zhBefore = missing('zh-CN').length;
 if (zhBefore) state.phase = 'zh-CN-usage'; else if (state.phase !== 'rotation') state.phase = 'rotation';
 const runPhase = state.phase;
 const activeLanguage = requestedLanguage !== 'auto' ? requestedLanguage : runPhase === 'zh-CN-usage' ? 'zh-CN' : rotationLanguages[state.rotationIndex];
-const candidates = missing(activeLanguage).map((id) => [id, cache.entries[id]]).filter(([, row]) => [...row.english].length <= 4500);
+const retryIds = new Set((retryQueue.languages?.[activeLanguage] || []).map((row) => row.id));
+const candidates = missing(activeLanguage).map((id) => [id, cache.entries[id]]).filter(([, row]) => [...row.english].length <= 4500)
+  .sort((a, b) => Number(retryIds.has(b[0])) - Number(retryIds.has(a[0])));
 const pending = []; let chars = 0;
 for (const row of candidates) { const length = [...row[1].english].length; if (pending.length >= maxItems || (provider === 'azure' && chars + length > runBudget)) continue; pending.push(row); chars += length; }
 let translated = 0, requestedCharacters = 0, apiError = '', model = '', rejected = 0, timedOut = false;
@@ -100,14 +104,25 @@ if (enabled && provider === 'argos' && pending.length) {
   else { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut = Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }
   rmSync(queue, { force: true }); rmSync(resultFile, { force: true }); temporaryFiles = [];
 }
-if (enabled && pending.length && translated !== pending.length && !apiError) {
-  apiError = `Batch incomplete: translated ${translated}/${pending.length} queued descriptions`;
+const incomplete = enabled && pending.length > 0 && translated !== pending.length;
+const warning = apiError || (incomplete ? `Batch incomplete: translated ${translated}/${pending.length} queued descriptions` : '');
+const fatalError = Boolean(enabled && pending.length > 0 && translated === 0);
+const fatalMessage = fatalError ? (apiError || 'No translations produced') : '';
+const ready = enabled && !fatalError && (provider !== 'azure' || Boolean(azureKey));
+if (enabled) {
+  retryQueue.schema = 1;
+  retryQueue.updatedAt = new Date().toISOString();
+  retryQueue.languages ||= {};
+  const remaining = pending.filter(([id]) => !cache.entries[id]?.translations?.[activeLanguage])
+    .map(([id, row]) => ({ id, text: row.english, reason: warning || 'not translated' }));
+  if (remaining.length) retryQueue.languages[activeLanguage] = remaining;
+  else delete retryQueue.languages[activeLanguage];
+  writeFileSync(retryFile, JSON.stringify(retryQueue, null, 2) + '\n');
 }
-const ready = enabled && !apiError && (provider !== 'azure' || Boolean(azureKey));
 if (missing('zh-CN').length === 0) state.phase = 'rotation';
-if (trigger === 'schedule' && state.phase === 'rotation' && runPhase === 'rotation' && ready && (translated || !pending.length)) state.rotationIndex = (state.rotationIndex + 1) % rotationLanguages.length;
+if (trigger === 'schedule' && state.phase === 'rotation' && runPhase === 'rotation' && ready && !incomplete && (translated || !pending.length)) state.rotationIndex = (state.rotationIndex + 1) % rotationLanguages.length;
 const nextLanguage = state.phase === 'zh-CN-usage' ? 'zh-CN' : rotationLanguages[state.rotationIndex];
-if (enabled) { state.updatedAt = new Date().toISOString(); state.lastRun = { trigger, requestedLanguage, provider, activeLanguage, translated, requestedCharacters, model, apiError }; }
+if (enabled) { state.updatedAt = new Date().toISOString(); state.lastRun = { trigger, requestedLanguage, provider, activeLanguage, translated, requestedCharacters, model, apiError: fatalMessage, warning }; }
 let localizedFields = 0, pendingFields = 0;
 const localizedByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
 const pendingByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
@@ -121,8 +136,8 @@ for (const { file, catalog } of catalogs) {
 }
 cache.schema = 2; cache.updatedAt = new Date().toISOString();
 writeFileSync(join(distDir, 'i18n-cache.json'), JSON.stringify(cache) + '\n'); writeFileSync(join(distDir, 'translation-state.json'), JSON.stringify(state, null, 2) + '\n');
-const summary = { generatedAt: cache.updatedAt, catalogs: catalogs.length, cachedTexts: Object.keys(cache.entries).length, trigger, phase: state.phase, activeLanguage, nextLanguage, rotationLanguages, frozenLanguages, batchNumber, batchCount, queuedThisRun: pending.length, batchLimit: maxItems, queuedCharacters: chars, requestedCharactersThisRun: requestedCharacters, runCharacterBudget: provider === 'azure' ? runBudget : null, translatedThisRun: translated, targetPendingBefore: candidates.length, targetPendingAfter: missing(activeLanguage).length, localizedFields, pendingFields, localizedByLanguage, pendingByLanguage, uniqueDescriptionPendingByLanguage: Object.fromEntries(languages.map((lang) => [lang, missing(lang).length])), provider, providerConfigured: provider === 'argos' ? !apiError : provider === 'azure' ? Boolean(azureKey) : true, translationEnabled: enabled, model, rejected, timedOut, apiError };
+const summary = { generatedAt: cache.updatedAt, catalogs: catalogs.length, cachedTexts: Object.keys(cache.entries).length, trigger, phase: state.phase, activeLanguage, nextLanguage, rotationLanguages, frozenLanguages, batchNumber, batchCount, queuedThisRun: pending.length, retryQueuedAfter: retryQueue.languages?.[activeLanguage]?.length || 0, batchLimit: maxItems, queuedCharacters: chars, requestedCharactersThisRun: requestedCharacters, runCharacterBudget: provider === 'azure' ? runBudget : null, translatedThisRun: translated, targetPendingBefore: candidates.length, targetPendingAfter: missing(activeLanguage).length, localizedFields, pendingFields, localizedByLanguage, pendingByLanguage, uniqueDescriptionPendingByLanguage: Object.fromEntries(languages.map((lang) => [lang, missing(lang).length])), provider, providerConfigured: provider === 'argos' ? !fatalError : provider === 'azure' ? Boolean(azureKey) : true, translationEnabled: enabled, model, rejected, timedOut, apiError: fatalMessage, warning };
 writeFileSync(join(distDir, 'translation-summary.json'), JSON.stringify(summary, null, 2) + '\n');
 for (const { name } of catalogs) { const reportFile = join(distDir, name.replace(/\.json\.gz$/, '.translations.json')); const report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : {}; report.languages = ['en', ...languages]; report.automation = summary; writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n'); }
-console.log(`translations: catalogs=${catalogs.length} cache=${Object.keys(cache.entries).length} provider=${provider} active=${activeLanguage} translated=${translated} next=${nextLanguage}${apiError ? ` warning=${apiError}` : ''}`);
-if (enabled && apiError) process.exitCode = 1;
+console.log(`translations: catalogs=${catalogs.length} cache=${Object.keys(cache.entries).length} provider=${provider} active=${activeLanguage} translated=${translated} next=${nextLanguage}${warning ? ` warning=${warning}` : ''}`);
+if (enabled && fatalError) process.exitCode = 1;

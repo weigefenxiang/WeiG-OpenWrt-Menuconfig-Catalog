@@ -1,5 +1,5 @@
 name: Translate Menuconfig Catalog
-run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ inputs.translate_batch_count || '1' }} batch(es) · run ${{ github.run_number }}
+run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }} batch(es) · run ${{ github.run_number }}
 
 on:
   workflow_dispatch:
@@ -36,6 +36,9 @@ on:
         description: Azure source-character cap (Argos ignores this)
         required: true
         default: "400000"
+  workflow_run:
+    workflows: [Build Menuconfig Catalog]
+    types: [completed]
 
 permissions:
   contents: write
@@ -47,6 +50,7 @@ concurrency:
 jobs:
   translate:
     name: 01 · Translate descriptions / 翻译说明
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -59,13 +63,13 @@ jobs:
       - name: Select translation engine
         id: translator
         env:
-          TRANSLATION_PROVIDER_REQUEST: ${{ inputs.translation_provider }}
+          TRANSLATION_PROVIDER_REQUEST: ${{ inputs.translation_provider || 'default' }}
           TRANSLATION_PROVIDER_DEFAULT: ${{ vars.TRANSLATION_PROVIDER || 'argos' }}
         run: node scripts/resolve-translation-provider.mjs >> "$GITHUB_OUTPUT"
       - name: Validate translation batches
         env:
-          TRANSLATE_BATCH_SIZE: ${{ inputs.translate_batch_size }}
-          TRANSLATE_BATCH_COUNT: ${{ inputs.translate_batch_count }}
+          TRANSLATE_BATCH_SIZE: ${{ inputs.translate_batch_size || '500' }}
+          TRANSLATE_BATCH_COUNT: ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}
         run: |
           set -euo pipefail
           case "$TRANSLATE_BATCH_SIZE" in
@@ -107,15 +111,17 @@ jobs:
           AZURE_TRANSLATOR_ENDPOINT: ${{ vars.AZURE_TRANSLATOR_ENDPOINT }}
           TRANSLATION_PROVIDER: ${{ steps.translator.outputs.provider }}
           TRANSLATE_ENABLED: ${{ steps.translator.outputs.enabled }}
-          TRANSLATE_TRIGGER: manual
-          TRANSLATE_LANGUAGE: ${{ inputs.translate_language }}
-          TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size }}
-          TRANSLATE_BATCH_COUNT: ${{ inputs.translate_batch_count }}
-          TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget }}
+          TRANSLATE_TRIGGER: ${{ github.event_name == 'workflow_run' && 'schedule' || 'manual' }}
+          TRANSLATE_LANGUAGE: ${{ inputs.translate_language || 'auto' }}
+          TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size || '500' }}
+          TRANSLATE_BATCH_COUNT: ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}
+          TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget || '400000' }}
         run: |
           set -euo pipefail
-          batch_count="${{ inputs.translate_batch_count }}"
-          publish_mode="${{ inputs.translate_publish_mode }}"
+          rm -f dist/.translation-run-started dist/translation-summary.json
+          touch dist/.translation-run-started
+          batch_count="${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}"
+          publish_mode="${{ github.event_name == 'workflow_run' && 'final' || inputs.translate_publish_mode || 'final' }}"
           publish_batch() {
             git -C dist config user.name github-actions[bot]
             git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -129,11 +135,21 @@ jobs:
           }
           for ((batch=1; batch<=batch_count; batch++)); do
             echo "::group::Batch ${batch}/${batch_count} · translate"
-            TRANSLATE_BATCH_NUMBER="$batch" node scripts/translate-catalog.mjs dist dist/i18n-cache.json
+            if TRANSLATE_BATCH_NUMBER="$batch" node scripts/translate-catalog.mjs dist dist/i18n-cache.json; then
+              translation_rc=0
+            else
+              translation_rc=$?
+            fi
             node scripts/write-translation-summary.mjs >> "$GITHUB_STEP_SUMMARY"
             echo "::endgroup::"
             translated="$(node -e "const s=require('./dist/translation-summary.json'); process.stdout.write(String(s.translatedThisRun || 0))")"
             queued="$(node -e "const s=require('./dist/translation-summary.json'); process.stdout.write(String(s.queuedThisRun || 0))")"
+            if (( translation_rc != 0 )); then
+              if [[ "$publish_mode" == "final" && ( "$translated" != "0" || "$batch" -gt 1 ) ]]; then
+                publish_batch
+              fi
+              exit "$translation_rc"
+            fi
             if [[ "$translated" == "0" || "$queued" == "0" ]]; then
               echo "No more successful translations are available; stopping after batch ${batch}/${batch_count}."
               break
@@ -143,8 +159,17 @@ jobs:
             fi
           done
       - name: Publish translated catalog-data
-        if: steps.translator.outputs.provider != 'off' && inputs.translate_publish_mode == 'final'
+        if: always() && steps.translator.outputs.provider != 'off' && (inputs.translate_publish_mode == 'final' || github.event_name == 'workflow_run')
         run: |
+          if [[ ! -f dist/.translation-run-started || ! -f dist/translation-summary.json ]]; then
+            echo "Translation did not produce a publishable result."
+            exit 0
+          fi
+          fatal="$(node -e "const s=require('./dist/translation-summary.json'); process.stdout.write(String(s.apiError || ''))")"
+          if [[ -n "$fatal" ]]; then
+            echo "Translation failed; accepted earlier batches were handled before stopping: $fatal"
+            exit 1
+          fi
           git -C dist config user.name github-actions[bot]
           git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git -C dist add .
@@ -168,5 +193,6 @@ jobs:
           path: |
             dist/translation-summary.json
             dist/translation-state.json
+            dist/translation-retry-queue.json
           retention-days: 14
           if-no-files-found: warn

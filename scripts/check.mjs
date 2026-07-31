@@ -74,6 +74,7 @@ if (!stageRunner.includes('Source ID:') ||
     !attemptWriter.includes('orderText') ||
     !collector.includes('publish-inputs.json') ||
     !collector.includes('publishState') ||
+    !collector.includes('translation-retry-queue.json') ||
     !collector.includes('last-good') ||
     !collector.includes('complete=${complete}') ||
     release.includes('gh release delete') ||
@@ -124,6 +125,7 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !autoTranslator.includes('batchCount') ||
     !autoTranslator.includes('TRANSLATE_MAX_ITEMS must be an integer from 100 to 5000') ||
     !autoTranslator.includes('Batch incomplete: translated') ||
+    !autoTranslator.includes('translation-retry-queue.json') ||
     !autoTranslator.includes('translation-state.json') ||
     !autoTranslator.includes('uniqueDescriptionPendingByLanguage') ||
     !translationWorkflow.includes('translation_provider:') ||
@@ -133,14 +135,15 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationWorkflow.includes('scripts/requirements-argos.txt') ||
     !translationWorkflow.includes('scripts/resolve-translation-provider.mjs') ||
     !translationWorkflow.includes('scripts/translate-catalog.mjs') ||
-    !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size }}') ||
-    !translationWorkflow.includes('TRANSLATE_BATCH_COUNT: ${{ inputs.translate_batch_count }}') ||
+    !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size || \'500\' }}') ||
+    !translationWorkflow.includes("TRANSLATE_BATCH_COUNT: ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}") ||
     !translationWorkflow.includes('TRANSLATE_BATCH_NUMBER="$batch"') ||
-    !translationWorkflow.includes('publish_mode="${{ inputs.translate_publish_mode }}"') ||
+    !translationWorkflow.includes("publish_mode=\"${{ github.event_name == 'workflow_run' && 'final' || inputs.translate_publish_mode || 'final' }}\"") ||
     !translationWorkflow.includes('git -C dist push origin HEAD:catalog-data') ||
     !translationWorkflow.includes('Translate with live progress') ||
     !translationWorkflow.includes('timeout-minutes: 45') ||
     !translationWorkflow.includes('dist/translation-state.json') ||
+    !translationWorkflow.includes('workflow_run:') ||
     workflow.includes('scripts/translate-catalog.mjs')) failures.push('manual translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);
