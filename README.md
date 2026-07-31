@@ -58,10 +58,15 @@ node scripts/import-curated-i18n.mjs \
 `catalog-data` 发布，主站只按当前分支加载一个 gzip 分片。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
-- 翻译阶段默认每周最多增量处理 500 条文本；历史译文按英文内容指纹复用。为启用自动
-  翻译，在仓库 Secrets 设置 `AZURE_TRANSLATOR_KEY`，按资源需要设置
+- 自动翻译只新增软件包/菜单用途说明，技术名称与符号保持官方英文。简体中文说明未完成时，
+  每周任务持续处理 `zh-CN`；完成后按 `ru → es → pt → ja → ko → de → fr → vi`
+  每周轮转一种语言。英文是源文本，繁体中文暂时冻结，不进入自动轮转。
+- 历史译文按“文本类型 + 英文正文”指纹复用；Push 触发只更新目录，不消耗翻译额度或推进
+  轮转。默认每次最多请求 400,000 个源字符、每月最多记录 1,900,000 个字符；可通过
+  Variables 的 `TRANSLATE_MONTHLY_BUDGET` 调整月预算，手动运行时也可调整单次预算和语言。
+- 为启用自动翻译，在仓库 Secrets 设置 `AZURE_TRANSLATOR_KEY`，按资源需要设置
   `AZURE_TRANSLATOR_REGION`，自定义端点可放在 Variables 的 `AZURE_TRANSLATOR_ENDPOINT`。
-  未配置时只复用人工/历史译文；翻译失败只记入 Summary 和 `translation-summary.json`。
+  未配置时 Summary 会明确显示“翻译未启用”；失败只写覆盖统计和错误，不阻断目录发布。
 - Discover、每个矩阵 Job、Publish 依次使用 `01`、`02`… 编号；Job、
   Artifact、`SUMMARY`、attempt 和失败日志共用同一编号。Actions Summary
   另列一一对应表，按编号即可找到同一任务的全部资料。

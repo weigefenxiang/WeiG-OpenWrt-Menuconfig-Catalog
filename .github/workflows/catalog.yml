@@ -4,10 +4,16 @@ run-name: Menuconfig catalog · ${{ github.event_name }} · run ${{ github.run_n
 on:
   workflow_dispatch:
     inputs:
-      translate_limit:
-        description: New or changed texts to translate (0 keeps only cached/manual text)
+      translate_language:
+        description: Description language (auto follows Simplified Chinese bootstrap / weekly rotation)
         required: false
-        default: "500"
+        type: choice
+        default: auto
+        options: [auto, zh-CN, ru, es, pt, ja, ko, de, fr, vi]
+      translate_char_budget:
+        description: Maximum source characters for this manual run
+        required: false
+        default: "400000"
   schedule:
     - cron: "17 19 * * 6"
   push:
@@ -195,7 +201,11 @@ jobs:
           AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
           AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
           AZURE_TRANSLATOR_ENDPOINT: ${{ vars.AZURE_TRANSLATOR_ENDPOINT }}
-          TRANSLATE_LIMIT: ${{ inputs.translate_limit || '500' }}
+          TRANSLATE_ENABLED: ${{ github.event_name != 'push' }}
+          TRANSLATE_TRIGGER: ${{ github.event_name }}
+          TRANSLATE_LANGUAGE: ${{ inputs.translate_language || 'auto' }}
+          TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget || '400000' }}
+          TRANSLATE_MONTHLY_BUDGET: ${{ vars.TRANSLATE_MONTHLY_BUDGET || '1900000' }}
         run: bash scripts/run-stage.sh translate node scripts/translate-catalog.mjs dist previous/i18n-cache.json
       - name: Build catalog index
         id: index
@@ -252,6 +262,7 @@ jobs:
             current-attempts/
             dist/index.json
             dist/translation-summary.json
+            dist/translation-state.json
           retention-days: 14
           if-no-files-found: error
       - name: Fail incomplete publish

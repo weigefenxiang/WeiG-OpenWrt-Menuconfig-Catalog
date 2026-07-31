@@ -1,0 +1,103 @@
+#!/usr/bin/env node
+import { strict as assert } from 'node:assert';
+import { createServer } from 'node:http';
+import {
+  copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
+import { gunzipSync, gzipSync } from 'node:zlib';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const translator = join(ROOT, 'scripts', 'translate-catalog.mjs');
+const temp = mkdtempSync(join(tmpdir(), 'weig-catalog-translation-'));
+const dist = join(temp, 'dist');
+const previous = join(temp, 'previous');
+mkdirSync(dist);
+mkdirSync(previous);
+const catalogFile = join(dist, 'immortalwrt--openwrt-25.12.json.gz');
+writeFileSync(catalogFile, gzipSync(Buffer.from(JSON.stringify({
+  menu: {
+    options: [
+      { symbol: 'PACKAGE_alpha', promptEn: 'alpha', usageEn: 'Alpha package description.' },
+      { symbol: 'PACKAGE_beta', promptEn: 'beta', usageEn: 'Beta package description.' },
+    ],
+    labels: {},
+    choices: [],
+  },
+}))));
+
+let requestCount = 0;
+const server = createServer(async (request, response) => {
+  requestCount += 1;
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  const rows = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  const target = new URL(request.url, 'http://127.0.0.1').searchParams.get('to');
+  response.setHeader('content-type', 'application/json');
+  response.end(JSON.stringify(rows.map((row) => ({
+    translations: [{ to: target, text: `${target}:${row.Text}` }],
+  }))));
+});
+
+const run = (trigger, enabled = true) => new Promise((resolve, reject) => {
+  const child = spawn(process.execPath, [
+    translator, dist, join(previous, 'i18n-cache.json'),
+  ], {
+    env: {
+      ...process.env,
+      AZURE_TRANSLATOR_KEY: 'fixture-key',
+      AZURE_TRANSLATOR_ENDPOINT: `http://127.0.0.1:${server.address().port}`,
+      TRANSLATE_ENABLED: String(enabled),
+      TRANSLATE_TRIGGER: trigger,
+      TRANSLATE_LANGUAGE: 'auto',
+      TRANSLATE_CHAR_BUDGET: '10000',
+      TRANSLATE_MONTHLY_BUDGET: '100000',
+    },
+  });
+  let output = '';
+  child.stdout.on('data', (value) => { output += value; });
+  child.stderr.on('data', (value) => { output += value; });
+  child.once('error', reject);
+  child.once('exit', (code) => code === 0 ? resolve(output) : reject(new Error(output)));
+});
+
+try {
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await run('schedule');
+  let summary = JSON.parse(readFileSync(join(dist, 'translation-summary.json'), 'utf8'));
+  let state = JSON.parse(readFileSync(join(dist, 'translation-state.json'), 'utf8'));
+  let catalog = JSON.parse(gunzipSync(readFileSync(catalogFile)));
+  assert.equal(summary.activeLanguage, 'zh-CN');
+  assert.equal(summary.translatedThisRun, 2);
+  assert.equal(summary.nextLanguage, 'ru');
+  assert.equal(state.phase, 'rotation');
+  assert.equal(catalog.menu.options[0].promptI18n?.['zh-CN'], undefined);
+  assert.match(catalog.menu.options[0].usageI18n['zh-CN'], /^zh-Hans:/);
+  assert.equal(catalog.menu.options[0].usageI18n?.['zh-TW'], undefined);
+
+  copyFileSync(join(dist, 'i18n-cache.json'), join(previous, 'i18n-cache.json'));
+  copyFileSync(join(dist, 'translation-state.json'), join(previous, 'translation-state.json'));
+  await run('schedule');
+  summary = JSON.parse(readFileSync(join(dist, 'translation-summary.json'), 'utf8'));
+  state = JSON.parse(readFileSync(join(dist, 'translation-state.json'), 'utf8'));
+  assert.equal(summary.activeLanguage, 'ru');
+  assert.equal(summary.nextLanguage, 'es');
+  assert.equal(state.rotationIndex, 1);
+
+  copyFileSync(join(dist, 'i18n-cache.json'), join(previous, 'i18n-cache.json'));
+  copyFileSync(join(dist, 'translation-state.json'), join(previous, 'translation-state.json'));
+  const requestsBeforePush = requestCount;
+  await run('push', false);
+  summary = JSON.parse(readFileSync(join(dist, 'translation-summary.json'), 'utf8'));
+  state = JSON.parse(readFileSync(join(dist, 'translation-state.json'), 'utf8'));
+  assert.equal(requestCount, requestsBeforePush);
+  assert.equal(summary.translatedThisRun, 0);
+  assert.equal(state.rotationIndex, 1);
+  console.log('translation rotation checks passed: zh-CN usage -> ru -> es; push uses cache only');
+} finally {
+  server.close();
+  rmSync(temp, { recursive: true, force: true });
+}

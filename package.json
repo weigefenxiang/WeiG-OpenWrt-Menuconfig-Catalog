@@ -7,7 +7,7 @@
     "discover": "node scripts/discover.mjs",
     "import-i18n": "node scripts/import-curated-i18n.mjs",
     "translate": "node scripts/translate-catalog.mjs",
-    "test": "node scripts/check.mjs && node scripts/check-index.mjs && node scripts/check-collector.mjs && node scripts/check-legacy-metadata.mjs"
+    "test": "node scripts/check.mjs && node scripts/check-index.mjs && node scripts/check-collector.mjs && node scripts/check-translation-rotation.mjs && node scripts/check-legacy-metadata.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -113,6 +113,14 @@ if (!translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.['zh-TW'] ||
 if (!autoTranslator.includes('i18n-cache.json') ||
     autoTranslator.includes('models.github.ai') ||
     !autoTranslator.includes('api.cognitive.microsofttranslator.com') ||
-    !autoTranslator.includes('pendingByLanguage')) failures.push('incremental translation automation');
+    !autoTranslator.includes("rotationLanguages = ['ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']") ||
+    !autoTranslator.includes("frozenLanguages = ['zh-TW']") ||
+    !autoTranslator.includes("state.phase = 'zh-CN-usage'") ||
+    !autoTranslator.includes('TRANSLATE_CHAR_BUDGET') ||
+    !autoTranslator.includes('translation-state.json') ||
+    !autoTranslator.includes('uniqueDescriptionPendingByLanguage') ||
+    !workflow.includes("TRANSLATE_ENABLED: ${{ github.event_name != 'push' }}") ||
+    !workflow.includes('TRANSLATE_MONTHLY_BUDGET') ||
+    !workflow.includes('dist/translation-state.json')) failures.push('incremental translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);

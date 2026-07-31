@@ -13,6 +13,10 @@ const attempts = existsSync(attemptsDir)
 const manifestFile = join(outDir, 'publish-inputs.json');
 const manifest = existsSync(manifestFile)
   ? JSON.parse(readFileSync(manifestFile, 'utf8')) : { branches: [] };
+const translationFile = resolve('dist/translation-summary.json');
+const translation = existsSync(translationFile)
+  ? JSON.parse(readFileSync(translationFile, 'utf8')) : {};
+const translationWarning = String(translation.apiError || '').replace(/[`|\r\n]+/g, ' ').trim();
 const publishedByArtifact = new Map((manifest.branches || [])
   .map((item) => [item.artifactName, item]));
 const stages = [
@@ -35,6 +39,20 @@ const lines = [
   `- Publish Artifact: \`${artifact}\``,
   `- Failed stage: \`${failedStage}\``,
   `- Run: [${process.env.RUN_ID || '-'} attempt ${process.env.RUN_ATTEMPT || '-'}](${process.env.RUN_URL || '#'})`,
+  '',
+  '### Translation / 翻译',
+  '',
+  `- Provider configured: \`${translation.providerConfigured || false}\``,
+  `- Phase: \`${translation.phase || '-'}\``,
+  `- This run: \`${translation.activeLanguage || '-'}\` · translated ` +
+    `\`${translation.translatedThisRun || 0}\` descriptions · requested ` +
+    `\`${translation.requestedCharactersThisRun || 0}\` characters`,
+  `- Next scheduled language: \`${translation.nextLanguage || '-'}\``,
+  `- Monthly character budget: \`${translation.monthlyRequestedCharacters || 0}` +
+    ` / ${translation.monthlyCharacterBudget || 0}\``,
+  `- Simplified Chinese descriptions pending: ` +
+    `\`${translation.uniqueDescriptionPendingByLanguage?.['zh-CN'] ?? '-'}\``,
+  ...(translationWarning ? [`- ⚠️ Translation warning: \`${translationWarning}\``] : []),
   '',
   '| No. | Job | Artifact | Build | Published | Diagnostic |',
   '|---:|---|---|---|---|---|',
