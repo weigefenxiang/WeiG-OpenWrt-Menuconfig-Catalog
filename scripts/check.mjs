@@ -10,6 +10,7 @@ const targets = parseInfoRecords(readFileSync(join(fixture, 'targetinfo'), 'utf8
 const packages = parsePackageInfo(readFileSync(join(fixture, 'packageinfo'), 'utf8'));
 const menu = parseKconfigTree(fixture);
 const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
+const translationWorkflow = readFileSync(join(ROOT, '.github', 'workflows', 'translate.yml'), 'utf8');
 const discover = readFileSync(join(ROOT, 'scripts', 'discover.mjs'), 'utf8');
 const metadata = readFileSync(join(ROOT, 'scripts', 'prepare-metadata.sh'), 'utf8');
 const stageRunner = readFileSync(join(ROOT, 'scripts', 'run-stage.sh'), 'utf8');
@@ -51,11 +52,6 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('actions/upload-artifact@v7') ||
     !workflow.includes('actions/download-artifact@v8') ||
     workflow.includes('models: read') ||
-    !workflow.includes('AZURE_TRANSLATOR_KEY') ||
-    !workflow.includes('translation_provider:') ||
-    !workflow.includes('scripts/requirements-argos.txt') ||
-    !workflow.includes('scripts/resolve-translation-provider.mjs') ||
-    !workflow.includes('scripts/translate-catalog.mjs') ||
     !workflow.includes('01 · Discover / 发现源码分支') ||
     !workflow.includes('matrix.jobName') ||
     !workflow.includes('matrix.artifactPrefix') ||
@@ -124,8 +120,14 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !autoTranslator.includes('TRANSLATE_CHAR_BUDGET') ||
     !autoTranslator.includes('translation-state.json') ||
     !autoTranslator.includes('uniqueDescriptionPendingByLanguage') ||
-    !workflow.includes('TRANSLATION_PROVIDER: ${{ steps.translator.outputs.provider }}') ||
-    !workflow.includes('TRANSLATE_MONTHLY_BUDGET') ||
-    !workflow.includes('dist/translation-state.json')) failures.push('incremental translation automation');
+    !translationWorkflow.includes('translation_provider:') ||
+    !translationWorkflow.includes('translate_batch_size:') ||
+    !translationWorkflow.includes('scripts/requirements-argos.txt') ||
+    !translationWorkflow.includes('scripts/resolve-translation-provider.mjs') ||
+    !translationWorkflow.includes('scripts/translate-catalog.mjs') ||
+    !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size }}') ||
+    !translationWorkflow.includes('Translate with live progress') ||
+    !translationWorkflow.includes('dist/translation-state.json') ||
+    workflow.includes('scripts/translate-catalog.mjs')) failures.push('manual translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);

@@ -3,23 +3,6 @@ run-name: Menuconfig catalog · ${{ github.event_name }} · run ${{ github.run_n
 
 on:
   workflow_dispatch:
-    inputs:
-      translate_language:
-        description: Description language (auto follows Simplified Chinese bootstrap / weekly rotation)
-        required: false
-        type: choice
-        default: auto
-        options: [auto, zh-CN, ru, es, pt, ja, ko, de, fr, vi]
-      translation_provider:
-        description: Translation engine (default follows repository variable, normally Argos)
-        required: false
-        type: choice
-        default: default
-        options: [default, argos, azure, off]
-      translate_char_budget:
-        description: Maximum source characters for this manual run
-        required: false
-        default: "400000"
   schedule:
     - cron: "17 19 * * 6"
   push:
@@ -199,44 +182,6 @@ jobs:
             "https://github.com/${{ github.repository }}" previous || true
           bash scripts/run-stage.sh collect node scripts/collect-results.mjs \
             current previous dist current-attempts publish-diagnostics
-      - name: Select translation engine
-        id: translator
-        if: steps.collect.outcome == 'success'
-        env:
-          TRANSLATION_PROVIDER_REQUEST: ${{ github.event_name == 'push' && 'off' || inputs.translation_provider || 'default' }}
-          TRANSLATION_PROVIDER_DEFAULT: ${{ vars.TRANSLATION_PROVIDER || 'argos' }}
-        run: node scripts/resolve-translation-provider.mjs >> "$GITHUB_OUTPUT"
-      - name: Set up Argos runtime
-        if: steps.translator.outputs.provider == 'argos'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: scripts/requirements-argos.txt
-      - name: Restore Argos language models
-        if: steps.translator.outputs.provider == 'argos'
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/argos-translate
-          key: argos-models-v1-${{ runner.os }}
-      - name: Install Argos translator
-        if: steps.translator.outputs.provider == 'argos'
-        run: python -m pip install --disable-pip-version-check -r scripts/requirements-argos.txt
-      - name: Update multilingual catalog text
-        id: translate
-        if: steps.collect.outcome == 'success'
-        continue-on-error: true
-        env:
-          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
-          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
-          AZURE_TRANSLATOR_ENDPOINT: ${{ vars.AZURE_TRANSLATOR_ENDPOINT }}
-          TRANSLATION_PROVIDER: ${{ steps.translator.outputs.provider }}
-          TRANSLATE_ENABLED: ${{ steps.translator.outputs.enabled }}
-          TRANSLATE_TRIGGER: ${{ github.event_name }}
-          TRANSLATE_LANGUAGE: ${{ inputs.translate_language || 'auto' }}
-          TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget || '400000' }}
-          TRANSLATE_MONTHLY_BUDGET: ${{ vars.TRANSLATE_MONTHLY_BUDGET || '1900000' }}
-        run: bash scripts/run-stage.sh translate node scripts/translate-catalog.mjs dist previous/i18n-cache.json
       - name: Build catalog index
         id: index
         if: steps.collect.outcome == 'success'
@@ -272,7 +217,7 @@ jobs:
           MATRIX_RESULT: ${{ needs.generate.result }}
           COLLECT_COMPLETE: ${{ steps.collect.outputs.complete }}
           COLLECT_OUTCOME: ${{ steps.collect.outcome }}
-          TRANSLATE_OUTCOME: ${{ steps.translate.outcome }}
+          TRANSLATE_OUTCOME: skipped
           INDEX_OUTCOME: ${{ steps.index.outcome }}
           DATA_OUTCOME: ${{ steps.data.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}

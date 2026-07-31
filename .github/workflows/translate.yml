@@ -1,0 +1,109 @@
+name: Translate Menuconfig Catalog
+run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · run ${{ github.run_number }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      translation_provider:
+        description: Translation engine
+        required: true
+        type: choice
+        default: default
+        options: [default, argos, azure, off]
+      translate_language:
+        description: Language (auto keeps Simplified Chinese first, then rotates)
+        required: true
+        type: choice
+        default: auto
+        options: [auto, zh-CN, ru, es, pt, ja, ko, de, fr, vi]
+      translate_batch_size:
+        description: Descriptions per run (1-5000; default 500)
+        required: true
+        default: "500"
+      translate_char_budget:
+        description: Azure source-character cap (Argos ignores this)
+        required: true
+        default: "400000"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: menuconfig-catalog
+  cancel-in-progress: false
+
+jobs:
+  translate:
+    name: 01 · Translate descriptions / 翻译说明
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: catalog-data
+          path: dist
+          fetch-depth: 1
+      - name: Select translation engine
+        id: translator
+        env:
+          TRANSLATION_PROVIDER_REQUEST: ${{ inputs.translation_provider }}
+          TRANSLATION_PROVIDER_DEFAULT: ${{ vars.TRANSLATION_PROVIDER || 'argos' }}
+        run: node scripts/resolve-translation-provider.mjs >> "$GITHUB_OUTPUT"
+      - name: Set up Argos runtime
+        if: steps.translator.outputs.provider == 'argos'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/requirements-argos.txt
+      - name: Restore Argos language models
+        if: steps.translator.outputs.provider == 'argos'
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/argos-translate
+          key: argos-models-v1-${{ runner.os }}
+      - name: Install Argos translator
+        if: steps.translator.outputs.provider == 'argos'
+        run: python -m pip install --disable-pip-version-check -r scripts/requirements-argos.txt
+      - name: Translate with live progress
+        if: steps.translator.outputs.provider != 'off'
+        env:
+          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
+          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
+          AZURE_TRANSLATOR_ENDPOINT: ${{ vars.AZURE_TRANSLATOR_ENDPOINT }}
+          TRANSLATION_PROVIDER: ${{ steps.translator.outputs.provider }}
+          TRANSLATE_ENABLED: ${{ steps.translator.outputs.enabled }}
+          TRANSLATE_TRIGGER: manual
+          TRANSLATE_LANGUAGE: ${{ inputs.translate_language }}
+          TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size }}
+          TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget }}
+        run: node scripts/translate-catalog.mjs dist dist/i18n-cache.json
+      - name: Publish translated catalog-data
+        if: steps.translator.outputs.provider != 'off'
+        run: |
+          git -C dist config user.name github-actions[bot]
+          git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C dist add .
+          if git -C dist diff --cached --quiet; then
+            echo "No translated catalog changes to publish."
+            exit 0
+          fi
+          git -C dist commit -m "data: translate menuconfig descriptions"
+          git -C dist push origin HEAD:catalog-data
+      - name: Translation summary
+        if: always() && steps.translator.outputs.provider != 'off'
+        run: node scripts/write-translation-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+      - name: Translation disabled summary
+        if: steps.translator.outputs.provider == 'off'
+        run: echo "## Translation progress\n\nTranslation was disabled." >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload translation diagnostic
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: 01-translate-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            dist/translation-summary.json
+            dist/translation-state.json
+          retention-days: 14
+          if-no-files-found: warn

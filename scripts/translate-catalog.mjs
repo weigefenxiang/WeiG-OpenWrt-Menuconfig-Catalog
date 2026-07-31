@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -18,6 +18,7 @@ const provider = String(process.env.TRANSLATION_PROVIDER || 'argos').toLowerCase
 const enabled = provider !== 'off' && process.env.TRANSLATE_ENABLED !== 'false';
 const azureKey = process.env.AZURE_TRANSLATOR_KEY || '';
 const runBudget = Math.max(0, Number(process.env.TRANSLATE_CHAR_BUDGET || 400000));
+const maxItems = Math.min(5000, Math.max(1, Number(process.env.TRANSLATE_MAX_ITEMS || 500)));
 const azureEndpoint = String(process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com').replace(/\/+$/, '');
 const cache = existsSync(previousFile) ? JSON.parse(readFileSync(previousFile, 'utf8')) : { schema: 1, entries: {} };
 const state = existsSync(previousStateFile) ? JSON.parse(readFileSync(previousStateFile, 'utf8')) : { schema: 1, phase: 'zh-CN-usage', rotationIndex: 0 };
@@ -54,7 +55,7 @@ const runPhase = state.phase;
 const activeLanguage = requestedLanguage !== 'auto' ? requestedLanguage : runPhase === 'zh-CN-usage' ? 'zh-CN' : rotationLanguages[state.rotationIndex];
 const candidates = missing(activeLanguage).map((id) => [id, cache.entries[id]]).filter(([, row]) => [...row.english].length <= 4500);
 const pending = []; let chars = 0;
-for (const row of candidates) { const length = [...row[1].english].length; if (provider === 'azure' && chars + length > runBudget) continue; pending.push(row); chars += length; }
+for (const row of candidates) { const length = [...row[1].english].length; if (pending.length >= maxItems || (provider === 'azure' && chars + length > runBudget)) continue; pending.push(row); chars += length; }
 let translated = 0, requestedCharacters = 0, apiError = '', model = '', rejected = 0, timedOut = false;
 const save = (id, text, meta) => { const row = cache.entries[id]; if (!row || !text || text === row.english || row.translations[activeLanguage]) return; row.translations[activeLanguage] = text; row.translationMeta ||= {}; row.translationMeta[activeLanguage] = { provider, model: meta, translatedAt: new Date().toISOString() }; translated += 1; };
 if (enabled && provider === 'azure') {
@@ -67,8 +68,13 @@ if (enabled && provider === 'azure') {
 if (enabled && provider === 'argos' && pending.length) {
   const queue = join(distDir, '.argos-queue.json'), resultFile = join(distDir, '.argos-result.json');
   writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 4500), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
-  const result = spawnSync(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { encoding: 'utf8' });
-  if (result.error || result.status !== 0 || !existsSync(resultFile)) apiError = result.error?.message || result.stderr.trim() || 'Argos translator failed';
+  console.log(`Argos: ${activeLanguage}, queued ${pending.length}/${candidates.length} descriptions (batch limit ${maxItems})`);
+  const result = await new Promise((done) => {
+    const child = spawn(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { stdio: 'inherit' });
+    child.once('error', (error) => done({ error, status: -1 }));
+    child.once('exit', (status) => done({ status }));
+  });
+  if (result.error || result.status !== 0 || !existsSync(resultFile)) apiError = result.error?.message || 'Argos translator failed';
   else { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut = Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }
   rmSync(queue, { force: true }); rmSync(resultFile, { force: true });
 }
@@ -90,7 +96,7 @@ for (const { file, catalog } of catalogs) {
 }
 cache.schema = 2; cache.updatedAt = new Date().toISOString();
 writeFileSync(join(distDir, 'i18n-cache.json'), JSON.stringify(cache) + '\n'); writeFileSync(join(distDir, 'translation-state.json'), JSON.stringify(state, null, 2) + '\n');
-const summary = { generatedAt: cache.updatedAt, catalogs: catalogs.length, cachedTexts: Object.keys(cache.entries).length, trigger, phase: state.phase, activeLanguage, nextLanguage, rotationLanguages, frozenLanguages, queuedThisRun: pending.length, queuedCharacters: chars, requestedCharactersThisRun: requestedCharacters, runCharacterBudget: provider === 'azure' ? runBudget : null, translatedThisRun: translated, targetPendingBefore: candidates.length, targetPendingAfter: missing(activeLanguage).length, localizedFields, pendingFields, localizedByLanguage, pendingByLanguage, uniqueDescriptionPendingByLanguage: Object.fromEntries(languages.map((lang) => [lang, missing(lang).length])), provider, providerConfigured: provider === 'argos' ? !apiError : provider === 'azure' ? Boolean(azureKey) : true, translationEnabled: enabled, model, rejected, timedOut, apiError };
+const summary = { generatedAt: cache.updatedAt, catalogs: catalogs.length, cachedTexts: Object.keys(cache.entries).length, trigger, phase: state.phase, activeLanguage, nextLanguage, rotationLanguages, frozenLanguages, queuedThisRun: pending.length, batchLimit: maxItems, queuedCharacters: chars, requestedCharactersThisRun: requestedCharacters, runCharacterBudget: provider === 'azure' ? runBudget : null, translatedThisRun: translated, targetPendingBefore: candidates.length, targetPendingAfter: missing(activeLanguage).length, localizedFields, pendingFields, localizedByLanguage, pendingByLanguage, uniqueDescriptionPendingByLanguage: Object.fromEntries(languages.map((lang) => [lang, missing(lang).length])), provider, providerConfigured: provider === 'argos' ? !apiError : provider === 'azure' ? Boolean(azureKey) : true, translationEnabled: enabled, model, rejected, timedOut, apiError };
 writeFileSync(join(distDir, 'translation-summary.json'), JSON.stringify(summary, null, 2) + '\n');
 for (const { name } of catalogs) { const reportFile = join(distDir, name.replace(/\.json\.gz$/, '.translations.json')); const report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : {}; report.languages = ['en', ...languages]; report.automation = summary; writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n'); }
 console.log(`translations: catalogs=${catalogs.length} cache=${Object.keys(cache.entries).length} provider=${provider} active=${activeLanguage} translated=${translated} next=${nextLanguage}${apiError ? ` warning=${apiError}` : ''}`);

@@ -50,6 +50,7 @@ def main(queue_file, result_file):
     translation = source_language.get_translation(target_language) if source_language and target_language else None
     model_version = "installed"
     if not translation:
+        print(f"Argos: downloading en -> {target} model...", flush=True)
         argostranslate.package.update_package_index()
         package = next((item for item in argostranslate.package.get_available_packages()
                         if item.from_code == "en" and item.to_code == target), None)
@@ -61,12 +62,15 @@ def main(queue_file, result_file):
         source_language = next(item for item in installed if item.code == "en")
         target_language = next(item for item in installed if item.code == target)
         translation = source_language.get_translation(target_language)
+    print(f"Argos: model en -> {target} ready ({model_version}).", flush=True)
 
     started = time.monotonic()
     limit = max(1, int(queue.get("timeBudgetSeconds") or 4500))
     translations, rejected = [], 0
     timed_out = False
-    for row in queue.get("rows", []):
+    rows = queue.get("rows", [])
+    total = len(rows)
+    for index, row in enumerate(rows, 1):
         if time.monotonic() - started >= limit:
             timed_out = True
             break
@@ -77,6 +81,9 @@ def main(queue_file, result_file):
             rejected += 1
             continue
         translations.append({"id": row["id"], "text": translated})
+        if index % 25 == 0 or index == total:
+            elapsed = int(time.monotonic() - started)
+            print(f"Argos: {index}/{total} ({index * 100 // max(1, total)}%) translated; {elapsed}s elapsed.", flush=True)
     json.dump({
         "provider": "argos", "model": f"en-{target}:{model_version}",
         "translations": translations, "rejected": rejected, "timedOut": timed_out,
