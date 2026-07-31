@@ -36,7 +36,7 @@ jobs:
   translate:
     name: 01 · Translate descriptions / 翻译说明
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7

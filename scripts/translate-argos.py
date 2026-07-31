@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import signal
 import sys
 import time
 
@@ -14,6 +15,13 @@ PROTECTED = re.compile(
     r"https?://[^\s]+|`[^`]+`|(?:CONFIG|PACKAGE)_[A-Za-z0-9_]+|"
     r"(?:luci-app|luci-theme|kmod)-[A-Za-z0-9_.+-]+|(?:OpenWrt|LuCI)"
 )
+cancelled = False
+
+
+def stop_translation(signal_number, _frame):
+    global cancelled
+    cancelled = True
+    print(f"Argos: signal {signal_number} received; stopping after the current item.", flush=True)
 
 
 def protect(text):
@@ -36,6 +44,8 @@ def restore(text, values):
 
 
 def main(queue_file, result_file):
+    signal.signal(signal.SIGINT, stop_translation)
+    signal.signal(signal.SIGTERM, stop_translation)
     queue = json.load(open(queue_file, encoding="utf-8"))
     target = LANGUAGES.get(queue.get("language"))
     if not target:
@@ -71,6 +81,8 @@ def main(queue_file, result_file):
     rows = queue.get("rows", [])
     total = len(rows)
     for index, row in enumerate(rows, 1):
+        if cancelled:
+            break
         if time.monotonic() - started >= limit:
             timed_out = True
             break
@@ -87,7 +99,9 @@ def main(queue_file, result_file):
     json.dump({
         "provider": "argos", "model": f"en-{target}:{model_version}",
         "translations": translations, "rejected": rejected, "timedOut": timed_out,
+        "cancelled": cancelled,
     }, open(result_file, "w", encoding="utf-8"), ensure_ascii=False)
+    return 130 if cancelled else 0
 
 
 if __name__ == "__main__":
@@ -95,6 +109,6 @@ if __name__ == "__main__":
         protected, values = protect("OpenWrt CONFIG_PACKAGE_demo uses https://example.test/x")
         assert restore(protected, values) == "OpenWrt CONFIG_PACKAGE_demo uses https://example.test/x"
     elif len(sys.argv) == 3:
-        main(sys.argv[1], sys.argv[2])
+        raise SystemExit(main(sys.argv[1], sys.argv[2]))
     else:
         raise SystemExit("usage: translate-argos.py QUEUE RESULT")

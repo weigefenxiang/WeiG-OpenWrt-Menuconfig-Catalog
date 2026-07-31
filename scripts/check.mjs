@@ -114,6 +114,8 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !autoTranslator.includes('api.cognitive.microsofttranslator.com') ||
     !autoTranslator.includes("process.env.TRANSLATION_PROVIDER || 'argos'") ||
     !autoTranslator.includes('translate-argos.py') ||
+    !autoTranslator.includes("process.once('SIGTERM'") ||
+    !autoTranslator.includes('Translation cancelled before catalog-data publish') ||
     !autoTranslator.includes("rotationLanguages = ['ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']") ||
     !autoTranslator.includes("frozenLanguages = ['zh-TW']") ||
     !autoTranslator.includes("state.phase = 'zh-CN-usage'") ||
@@ -127,6 +129,7 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationWorkflow.includes('scripts/translate-catalog.mjs') ||
     !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size }}') ||
     !translationWorkflow.includes('Translate with live progress') ||
+    !translationWorkflow.includes('timeout-minutes: 45') ||
     !translationWorkflow.includes('dist/translation-state.json') ||
     workflow.includes('scripts/translate-catalog.mjs')) failures.push('manual translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);

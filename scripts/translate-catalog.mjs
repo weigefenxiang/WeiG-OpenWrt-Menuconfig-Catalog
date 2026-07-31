@@ -22,6 +22,16 @@ const maxItems = Math.min(5000, Math.max(1, Number(process.env.TRANSLATE_MAX_ITE
 const azureEndpoint = String(process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com').replace(/\/+$/, '');
 const cache = existsSync(previousFile) ? JSON.parse(readFileSync(previousFile, 'utf8')) : { schema: 1, entries: {} };
 const state = existsSync(previousStateFile) ? JSON.parse(readFileSync(previousStateFile, 'utf8')) : { schema: 1, phase: 'zh-CN-usage', rotationIndex: 0 };
+let activeChild = null, cancelled = false, temporaryFiles = [];
+process.once('exit', () => temporaryFiles.forEach((file) => rmSync(file, { force: true })));
+const stopTranslation = (signal) => {
+  cancelled = true;
+  console.log(`Translation: ${signal} received; stopping Argos without publishing this batch...`);
+  activeChild?.kill('SIGTERM');
+  setTimeout(() => activeChild?.kill('SIGKILL'), 10000).unref();
+};
+process.once('SIGINT', () => stopTranslation('SIGINT'));
+process.once('SIGTERM', () => stopTranslation('SIGTERM'));
 if (!['argos', 'azure', 'off'].includes(provider)) throw new Error(`Unsupported translation provider: ${provider}`);
 if (requestedLanguage !== 'auto' && requestedLanguage !== 'zh-CN' && !rotationLanguages.includes(requestedLanguage)) throw new Error(`Unsupported translation language: ${requestedLanguage}`);
 cache.entries ||= {}; state.rotationIndex = Number(state.rotationIndex || 0) % rotationLanguages.length;
@@ -67,16 +77,22 @@ if (enabled && provider === 'azure') {
 }
 if (enabled && provider === 'argos' && pending.length) {
   const queue = join(distDir, '.argos-queue.json'), resultFile = join(distDir, '.argos-result.json');
+  temporaryFiles = [queue, resultFile];
   writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 4500), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
   console.log(`Argos: ${activeLanguage}, queued ${pending.length}/${candidates.length} descriptions (batch limit ${maxItems})`);
   const result = await new Promise((done) => {
-    const child = spawn(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { stdio: 'inherit' });
-    child.once('error', (error) => done({ error, status: -1 }));
-    child.once('exit', (status) => done({ status }));
+    activeChild = spawn(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { stdio: 'inherit' });
+    activeChild.once('error', (error) => done({ error, status: -1 }));
+    activeChild.once('exit', (status) => done({ status }));
   });
+  activeChild = null;
+  if (cancelled) {
+    rmSync(queue, { force: true }); rmSync(resultFile, { force: true }); temporaryFiles = [];
+    throw new Error('Translation cancelled before catalog-data publish');
+  }
   if (result.error || result.status !== 0 || !existsSync(resultFile)) apiError = result.error?.message || 'Argos translator failed';
   else { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut = Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }
-  rmSync(queue, { force: true }); rmSync(resultFile, { force: true });
+  rmSync(queue, { force: true }); rmSync(resultFile, { force: true }); temporaryFiles = [];
 }
 const ready = enabled && !apiError && (provider !== 'azure' || Boolean(azureKey));
 if (missing('zh-CN').length === 0) state.phase = 'rotation';

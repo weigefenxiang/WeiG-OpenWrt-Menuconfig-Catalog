@@ -2,7 +2,7 @@
 import { strict as assert } from 'node:assert';
 import { createServer } from 'node:http';
 import {
-  copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
+  copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -13,6 +13,7 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const translator = join(ROOT, 'scripts', 'translate-catalog.mjs');
 const fakeArgos = join(ROOT, 'scripts', 'test-argos.py');
+const slowArgos = join(ROOT, 'tests', 'slow-argos.py');
 const temp = mkdtempSync(join(tmpdir(), 'weig-catalog-translation-'));
 const dist = join(temp, 'dist');
 const previous = join(temp, 'previous');
@@ -100,6 +101,26 @@ try {
   assert.equal(requestCount, requestsBeforePush);
   assert.equal(summary.translatedThisRun, 0);
   assert.equal(state.rotationIndex, 1);
+  const cancelDist = join(temp, 'cancel-dist');
+  mkdirSync(cancelDist);
+  writeFileSync(join(cancelDist, 'immortalwrt--openwrt-25.12.json.gz'), gzipSync(Buffer.from(JSON.stringify({
+    menu: { options: [{ symbol: 'PACKAGE_cancel', promptEn: 'cancel', usageEn: 'Cancel fixture.' }], labels: {}, choices: [] },
+  }))));
+  const cancelled = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [translator, cancelDist, join(temp, 'cancel-cache.json')], {
+      env: { ...process.env, TRANSLATION_PROVIDER: 'argos', TRANSLATE_ENABLED: 'true',
+        TRANSLATE_TRIGGER: 'manual', ARGOS_TRANSLATOR_SCRIPT: slowArgos },
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const fallbackCancel = setTimeout(() => child.kill('SIGTERM'), 2000);
+    child.stdout.on('data', (chunk) => {
+      if (String(chunk).includes('slow Argos fixture started')) child.kill('SIGTERM');
+    });
+    child.once('error', reject);
+    child.once('exit', (code) => { clearTimeout(fallbackCancel); resolve(code); });
+  });
+  assert.notEqual(cancelled, 0);
+  assert.equal(existsSync(join(cancelDist, 'translation-summary.json')), false);
   console.log('translation rotation checks passed: zh-CN usage -> ru -> es; push uses cache only');
 } finally {
   server.close();
