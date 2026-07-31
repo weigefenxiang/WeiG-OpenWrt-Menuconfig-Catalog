@@ -44,7 +44,7 @@ const server = createServer(async (request, response) => {
   }))));
 });
 
-const run = (trigger, provider = 'argos') => new Promise((resolve, reject) => {
+const run = (trigger, provider = 'argos', extraEnv = {}) => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, [
     translator, dist, join(previous, 'i18n-cache.json'),
   ], {
@@ -58,6 +58,7 @@ const run = (trigger, provider = 'argos') => new Promise((resolve, reject) => {
       TRANSLATE_LANGUAGE: 'auto',
       TRANSLATE_CHAR_BUDGET: '10000',
       TRANSLATE_MONTHLY_BUDGET: '100000',
+      ...extraEnv,
     },
   });
   let output = '';
@@ -85,11 +86,14 @@ try {
 
   copyFileSync(join(dist, 'i18n-cache.json'), join(previous, 'i18n-cache.json'));
   copyFileSync(join(dist, 'translation-state.json'), join(previous, 'translation-state.json'));
-  await run('schedule');
+  await run('schedule', 'argos', { TRANSLATE_BATCH_NUMBER: '2', TRANSLATE_BATCH_COUNT: '3', TRANSLATE_MAX_ITEMS: '100' });
   summary = JSON.parse(readFileSync(join(dist, 'translation-summary.json'), 'utf8'));
   state = JSON.parse(readFileSync(join(dist, 'translation-state.json'), 'utf8'));
   assert.equal(summary.activeLanguage, 'ru');
   assert.equal(summary.nextLanguage, 'es');
+  assert.equal(summary.batchNumber, 2);
+  assert.equal(summary.batchCount, 3);
+  assert.equal(summary.batchLimit, 100);
   assert.equal(state.rotationIndex, 1);
 
   copyFileSync(join(dist, 'i18n-cache.json'), join(previous, 'i18n-cache.json'));

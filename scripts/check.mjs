@@ -120,14 +120,24 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !autoTranslator.includes("frozenLanguages = ['zh-TW']") ||
     !autoTranslator.includes("state.phase = 'zh-CN-usage'") ||
     !autoTranslator.includes('TRANSLATE_CHAR_BUDGET') ||
+    !autoTranslator.includes('TRANSLATE_BATCH_NUMBER') ||
+    !autoTranslator.includes('batchCount') ||
+    !autoTranslator.includes('TRANSLATE_MAX_ITEMS must be an integer from 100 to 5000') ||
+    !autoTranslator.includes('Batch incomplete: translated') ||
     !autoTranslator.includes('translation-state.json') ||
     !autoTranslator.includes('uniqueDescriptionPendingByLanguage') ||
     !translationWorkflow.includes('translation_provider:') ||
     !translationWorkflow.includes('translate_batch_size:') ||
+    !translationWorkflow.includes('translate_batch_count:') ||
+    !translationWorkflow.includes('translate_publish_mode:') ||
     !translationWorkflow.includes('scripts/requirements-argos.txt') ||
     !translationWorkflow.includes('scripts/resolve-translation-provider.mjs') ||
     !translationWorkflow.includes('scripts/translate-catalog.mjs') ||
     !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size }}') ||
+    !translationWorkflow.includes('TRANSLATE_BATCH_COUNT: ${{ inputs.translate_batch_count }}') ||
+    !translationWorkflow.includes('TRANSLATE_BATCH_NUMBER="$batch"') ||
+    !translationWorkflow.includes('publish_mode="${{ inputs.translate_publish_mode }}"') ||
+    !translationWorkflow.includes('git -C dist push origin HEAD:catalog-data') ||
     !translationWorkflow.includes('Translate with live progress') ||
     !translationWorkflow.includes('timeout-minutes: 45') ||
     !translationWorkflow.includes('dist/translation-state.json') ||

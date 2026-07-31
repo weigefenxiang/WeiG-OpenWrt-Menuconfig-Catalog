@@ -1,5 +1,5 @@
 name: Translate Menuconfig Catalog
-run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · run ${{ github.run_number }}
+run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ inputs.translate_batch_count || '1' }} batch(es) · run ${{ github.run_number }}
 
 on:
   workflow_dispatch:
@@ -17,9 +17,21 @@ on:
         default: auto
         options: [auto, zh-CN, ru, es, pt, ja, ko, de, fr, vi]
       translate_batch_size:
-        description: Descriptions per run (1-5000; default 500)
+        description: Descriptions per batch (100-5000; default 500)
         required: true
         default: "500"
+      translate_batch_count:
+        description: Number of batches (1-20; default 1)
+        required: true
+        type: choice
+        default: "1"
+        options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+      translate_publish_mode:
+        description: Publish after every successful batch or once at the end
+        required: true
+        type: choice
+        default: final
+        options: [final, each-batch]
       translate_char_budget:
         description: Azure source-character cap (Argos ignores this)
         required: true
@@ -50,6 +62,27 @@ jobs:
           TRANSLATION_PROVIDER_REQUEST: ${{ inputs.translation_provider }}
           TRANSLATION_PROVIDER_DEFAULT: ${{ vars.TRANSLATION_PROVIDER || 'argos' }}
         run: node scripts/resolve-translation-provider.mjs >> "$GITHUB_OUTPUT"
+      - name: Validate translation batches
+        env:
+          TRANSLATE_BATCH_SIZE: ${{ inputs.translate_batch_size }}
+          TRANSLATE_BATCH_COUNT: ${{ inputs.translate_batch_count }}
+        run: |
+          set -euo pipefail
+          case "$TRANSLATE_BATCH_SIZE" in
+            ''|*[!0-9]*) echo "Batch size must be an integer from 100 to 5000." >&2; exit 1 ;;
+          esac
+          if (( TRANSLATE_BATCH_SIZE < 100 || TRANSLATE_BATCH_SIZE > 5000 )); then
+            echo "Batch size must be between 100 and 5000." >&2
+            exit 1
+          fi
+          case "$TRANSLATE_BATCH_COUNT" in
+            ''|*[!0-9]*) echo "Batch count must be an integer from 1 to 20." >&2; exit 1 ;;
+          esac
+          if (( TRANSLATE_BATCH_COUNT < 1 || TRANSLATE_BATCH_COUNT > 20 )); then
+            echo "Batch count must be between 1 and 20." >&2
+            exit 1
+          fi
+          echo "Configured translation: ${TRANSLATE_BATCH_COUNT} batch(es) × ${TRANSLATE_BATCH_SIZE} descriptions."
       - name: Set up Argos runtime
         if: steps.translator.outputs.provider == 'argos'
         uses: actions/setup-python@v5
@@ -77,10 +110,40 @@ jobs:
           TRANSLATE_TRIGGER: manual
           TRANSLATE_LANGUAGE: ${{ inputs.translate_language }}
           TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size }}
+          TRANSLATE_BATCH_COUNT: ${{ inputs.translate_batch_count }}
           TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget }}
-        run: node scripts/translate-catalog.mjs dist dist/i18n-cache.json
+        run: |
+          set -euo pipefail
+          batch_count="${{ inputs.translate_batch_count }}"
+          publish_mode="${{ inputs.translate_publish_mode }}"
+          publish_batch() {
+            git -C dist config user.name github-actions[bot]
+            git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git -C dist add .
+            if git -C dist diff --cached --quiet; then
+              echo "Batch ${batch}/${batch_count}: no catalog changes to publish."
+              return 0
+            fi
+            git -C dist commit -m "data: translate menuconfig descriptions batch ${batch}/${batch_count}"
+            git -C dist push origin HEAD:catalog-data
+          }
+          for ((batch=1; batch<=batch_count; batch++)); do
+            echo "::group::Batch ${batch}/${batch_count} · translate"
+            TRANSLATE_BATCH_NUMBER="$batch" node scripts/translate-catalog.mjs dist dist/i18n-cache.json
+            node scripts/write-translation-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+            echo "::endgroup::"
+            translated="$(node -e "const s=require('./dist/translation-summary.json'); process.stdout.write(String(s.translatedThisRun || 0))")"
+            queued="$(node -e "const s=require('./dist/translation-summary.json'); process.stdout.write(String(s.queuedThisRun || 0))")"
+            if [[ "$translated" == "0" || "$queued" == "0" ]]; then
+              echo "No more successful translations are available; stopping after batch ${batch}/${batch_count}."
+              break
+            fi
+            if [[ "$publish_mode" == "each-batch" ]]; then
+              publish_batch
+            fi
+          done
       - name: Publish translated catalog-data
-        if: steps.translator.outputs.provider != 'off'
+        if: steps.translator.outputs.provider != 'off' && inputs.translate_publish_mode == 'final'
         run: |
           git -C dist config user.name github-actions[bot]
           git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com

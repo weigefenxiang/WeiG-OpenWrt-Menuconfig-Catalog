@@ -18,7 +18,13 @@ const provider = String(process.env.TRANSLATION_PROVIDER || 'argos').toLowerCase
 const enabled = provider !== 'off' && process.env.TRANSLATE_ENABLED !== 'false';
 const azureKey = process.env.AZURE_TRANSLATOR_KEY || '';
 const runBudget = Math.max(0, Number(process.env.TRANSLATE_CHAR_BUDGET || 400000));
-const maxItems = Math.min(5000, Math.max(1, Number(process.env.TRANSLATE_MAX_ITEMS || 500)));
+const batchNumber = Math.max(1, Number(process.env.TRANSLATE_BATCH_NUMBER || 1));
+const batchCount = Math.max(batchNumber, Number(process.env.TRANSLATE_BATCH_COUNT || 1));
+const requestedMaxItems = Number(process.env.TRANSLATE_MAX_ITEMS || 500);
+if (!Number.isInteger(requestedMaxItems) || requestedMaxItems < 100 || requestedMaxItems > 5000) {
+  throw new Error('TRANSLATE_MAX_ITEMS must be an integer from 100 to 5000');
+}
+const maxItems = requestedMaxItems;
 const azureEndpoint = String(process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com').replace(/\/+$/, '');
 const cache = existsSync(previousFile) ? JSON.parse(readFileSync(previousFile, 'utf8')) : { schema: 1, entries: {} };
 const state = existsSync(previousStateFile) ? JSON.parse(readFileSync(previousStateFile, 'utf8')) : { schema: 1, phase: 'zh-CN-usage', rotationIndex: 0 };
@@ -79,7 +85,7 @@ if (enabled && provider === 'argos' && pending.length) {
   const queue = join(distDir, '.argos-queue.json'), resultFile = join(distDir, '.argos-result.json');
   temporaryFiles = [queue, resultFile];
   writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 4500), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
-  console.log(`Argos: ${activeLanguage}, queued ${pending.length}/${candidates.length} descriptions (batch limit ${maxItems})`);
+  console.log(`Argos: ${activeLanguage}, batch ${batchNumber}/${batchCount}, queued ${pending.length}/${candidates.length} descriptions (batch limit ${maxItems})`);
   const result = await new Promise((done) => {
     activeChild = spawn(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { stdio: 'inherit' });
     activeChild.once('error', (error) => done({ error, status: -1 }));
@@ -93,6 +99,9 @@ if (enabled && provider === 'argos' && pending.length) {
   if (result.error || result.status !== 0 || !existsSync(resultFile)) apiError = result.error?.message || 'Argos translator failed';
   else { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut = Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }
   rmSync(queue, { force: true }); rmSync(resultFile, { force: true }); temporaryFiles = [];
+}
+if (enabled && pending.length && translated !== pending.length && !apiError) {
+  apiError = `Batch incomplete: translated ${translated}/${pending.length} queued descriptions`;
 }
 const ready = enabled && !apiError && (provider !== 'azure' || Boolean(azureKey));
 if (missing('zh-CN').length === 0) state.phase = 'rotation';
@@ -112,7 +121,8 @@ for (const { file, catalog } of catalogs) {
 }
 cache.schema = 2; cache.updatedAt = new Date().toISOString();
 writeFileSync(join(distDir, 'i18n-cache.json'), JSON.stringify(cache) + '\n'); writeFileSync(join(distDir, 'translation-state.json'), JSON.stringify(state, null, 2) + '\n');
-const summary = { generatedAt: cache.updatedAt, catalogs: catalogs.length, cachedTexts: Object.keys(cache.entries).length, trigger, phase: state.phase, activeLanguage, nextLanguage, rotationLanguages, frozenLanguages, queuedThisRun: pending.length, batchLimit: maxItems, queuedCharacters: chars, requestedCharactersThisRun: requestedCharacters, runCharacterBudget: provider === 'azure' ? runBudget : null, translatedThisRun: translated, targetPendingBefore: candidates.length, targetPendingAfter: missing(activeLanguage).length, localizedFields, pendingFields, localizedByLanguage, pendingByLanguage, uniqueDescriptionPendingByLanguage: Object.fromEntries(languages.map((lang) => [lang, missing(lang).length])), provider, providerConfigured: provider === 'argos' ? !apiError : provider === 'azure' ? Boolean(azureKey) : true, translationEnabled: enabled, model, rejected, timedOut, apiError };
+const summary = { generatedAt: cache.updatedAt, catalogs: catalogs.length, cachedTexts: Object.keys(cache.entries).length, trigger, phase: state.phase, activeLanguage, nextLanguage, rotationLanguages, frozenLanguages, batchNumber, batchCount, queuedThisRun: pending.length, batchLimit: maxItems, queuedCharacters: chars, requestedCharactersThisRun: requestedCharacters, runCharacterBudget: provider === 'azure' ? runBudget : null, translatedThisRun: translated, targetPendingBefore: candidates.length, targetPendingAfter: missing(activeLanguage).length, localizedFields, pendingFields, localizedByLanguage, pendingByLanguage, uniqueDescriptionPendingByLanguage: Object.fromEntries(languages.map((lang) => [lang, missing(lang).length])), provider, providerConfigured: provider === 'argos' ? !apiError : provider === 'azure' ? Boolean(azureKey) : true, translationEnabled: enabled, model, rejected, timedOut, apiError };
 writeFileSync(join(distDir, 'translation-summary.json'), JSON.stringify(summary, null, 2) + '\n');
 for (const { name } of catalogs) { const reportFile = join(distDir, name.replace(/\.json\.gz$/, '.translations.json')); const report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : {}; report.languages = ['en', ...languages]; report.automation = summary; writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n'); }
 console.log(`translations: catalogs=${catalogs.length} cache=${Object.keys(cache.entries).length} provider=${provider} active=${activeLanguage} translated=${translated} next=${nextLanguage}${apiError ? ` warning=${apiError}` : ''}`);
+if (enabled && apiError) process.exitCode = 1;
