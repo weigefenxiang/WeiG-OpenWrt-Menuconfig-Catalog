@@ -12,6 +12,7 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const translator = join(ROOT, 'scripts', 'translate-catalog.mjs');
+const fakeArgos = join(ROOT, 'scripts', 'test-argos.py');
 const temp = mkdtempSync(join(tmpdir(), 'weig-catalog-translation-'));
 const dist = join(temp, 'dist');
 const previous = join(temp, 'previous');
@@ -42,7 +43,7 @@ const server = createServer(async (request, response) => {
   }))));
 });
 
-const run = (trigger, enabled = true) => new Promise((resolve, reject) => {
+const run = (trigger, provider = 'argos') => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, [
     translator, dist, join(previous, 'i18n-cache.json'),
   ], {
@@ -50,7 +51,8 @@ const run = (trigger, enabled = true) => new Promise((resolve, reject) => {
       ...process.env,
       AZURE_TRANSLATOR_KEY: 'fixture-key',
       AZURE_TRANSLATOR_ENDPOINT: `http://127.0.0.1:${server.address().port}`,
-      TRANSLATE_ENABLED: String(enabled),
+      TRANSLATION_PROVIDER: provider,
+      ARGOS_TRANSLATOR_SCRIPT: fakeArgos,
       TRANSLATE_TRIGGER: trigger,
       TRANSLATE_LANGUAGE: 'auto',
       TRANSLATE_CHAR_BUDGET: '10000',
@@ -75,7 +77,9 @@ try {
   assert.equal(summary.nextLanguage, 'ru');
   assert.equal(state.phase, 'rotation');
   assert.equal(catalog.menu.options[0].promptI18n?.['zh-CN'], undefined);
-  assert.match(catalog.menu.options[0].usageI18n['zh-CN'], /^zh-Hans:/);
+  assert.match(catalog.menu.options[0].usageI18n['zh-CN'], /^argos:/);
+  assert.equal(summary.provider, 'argos');
+  assert.equal(summary.model, 'fixture-en-target');
   assert.equal(catalog.menu.options[0].usageI18n?.['zh-TW'], undefined);
 
   copyFileSync(join(dist, 'i18n-cache.json'), join(previous, 'i18n-cache.json'));
@@ -90,7 +94,7 @@ try {
   copyFileSync(join(dist, 'i18n-cache.json'), join(previous, 'i18n-cache.json'));
   copyFileSync(join(dist, 'translation-state.json'), join(previous, 'translation-state.json'));
   const requestsBeforePush = requestCount;
-  await run('push', false);
+  await run('push', 'off');
   summary = JSON.parse(readFileSync(join(dist, 'translation-summary.json'), 'utf8'));
   state = JSON.parse(readFileSync(join(dist, 'translation-state.json'), 'utf8'));
   assert.equal(requestCount, requestsBeforePush);

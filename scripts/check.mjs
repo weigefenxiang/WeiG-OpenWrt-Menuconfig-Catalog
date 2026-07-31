@@ -52,6 +52,9 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('actions/download-artifact@v8') ||
     workflow.includes('models: read') ||
     !workflow.includes('AZURE_TRANSLATOR_KEY') ||
+    !workflow.includes('translation_provider:') ||
+    !workflow.includes('scripts/requirements-argos.txt') ||
+    !workflow.includes('scripts/resolve-translation-provider.mjs') ||
     !workflow.includes('scripts/translate-catalog.mjs') ||
     !workflow.includes('01 · Discover / 发现源码分支') ||
     !workflow.includes('matrix.jobName') ||
@@ -113,13 +116,15 @@ if (!translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.['zh-TW'] ||
 if (!autoTranslator.includes('i18n-cache.json') ||
     autoTranslator.includes('models.github.ai') ||
     !autoTranslator.includes('api.cognitive.microsofttranslator.com') ||
+    !autoTranslator.includes("process.env.TRANSLATION_PROVIDER || 'argos'") ||
+    !autoTranslator.includes('translate-argos.py') ||
     !autoTranslator.includes("rotationLanguages = ['ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']") ||
     !autoTranslator.includes("frozenLanguages = ['zh-TW']") ||
     !autoTranslator.includes("state.phase = 'zh-CN-usage'") ||
     !autoTranslator.includes('TRANSLATE_CHAR_BUDGET') ||
     !autoTranslator.includes('translation-state.json') ||
     !autoTranslator.includes('uniqueDescriptionPendingByLanguage') ||
-    !workflow.includes("TRANSLATE_ENABLED: ${{ github.event_name != 'push' }}") ||
+    !workflow.includes('TRANSLATION_PROVIDER: ${{ steps.translator.outputs.provider }}') ||
     !workflow.includes('TRANSLATE_MONTHLY_BUDGET') ||
     !workflow.includes('dist/translation-state.json')) failures.push('incremental translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);

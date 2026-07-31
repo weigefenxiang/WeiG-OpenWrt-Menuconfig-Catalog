@@ -1,322 +1,96 @@
 #!/usr/bin/env node
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
 const [distArg = 'dist', previousArg = 'previous/i18n-cache.json'] = process.argv.slice(2);
-const distDir = resolve(distArg);
-const previousFile = resolve(previousArg);
+const distDir = resolve(distArg), previousFile = resolve(previousArg);
 const previousStateFile = join(dirname(previousFile), 'translation-state.json');
 const languages = ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];
 const rotationLanguages = ['ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];
 const frozenLanguages = ['zh-TW'];
-const languageCodes = {
-  'zh-CN': 'zh-Hans', 'zh-TW': 'zh-Hant', ru: 'ru', es: 'es', pt: 'pt',
-  ja: 'ja', ko: 'ko', de: 'de', fr: 'fr', vi: 'vi',
-};
+const languageCodes = { 'zh-CN': 'zh-Hans', ru: 'ru', es: 'es', pt: 'pt', ja: 'ja', ko: 'ko', de: 'de', fr: 'fr', vi: 'vi' };
 const trigger = process.env.TRANSLATE_TRIGGER || 'local';
 const requestedLanguage = process.env.TRANSLATE_LANGUAGE || 'auto';
-const translateEnabled = process.env.TRANSLATE_ENABLED
-  ? process.env.TRANSLATE_ENABLED === 'true'
-  : Boolean(process.env.AZURE_TRANSLATOR_KEY);
-const runBudgetSetting = Math.max(0, Number(process.env.TRANSLATE_CHAR_BUDGET || 400000));
-const monthlyBudget = Math.max(0, Number(process.env.TRANSLATE_MONTHLY_BUDGET || 1900000));
+const provider = String(process.env.TRANSLATION_PROVIDER || 'argos').toLowerCase();
+const enabled = provider !== 'off' && process.env.TRANSLATE_ENABLED !== 'false';
 const azureKey = process.env.AZURE_TRANSLATOR_KEY || '';
-const azureRegion = process.env.AZURE_TRANSLATOR_REGION || '';
-const azureEndpoint = String(process.env.AZURE_TRANSLATOR_ENDPOINT ||
-  'https://api.cognitive.microsofttranslator.com').replace(/\/+$/, '');
-const provider = azureKey ? 'azure-translator' : 'cache-only';
-const cache = existsSync(previousFile)
-  ? JSON.parse(readFileSync(previousFile, 'utf8'))
-  : { schema: 1, entries: {} };
-const state = existsSync(previousStateFile)
-  ? JSON.parse(readFileSync(previousStateFile, 'utf8'))
-  : { schema: 1, phase: 'zh-CN-usage', rotationIndex: 0 };
-cache.entries ||= {};
-state.rotationIndex = Number.isInteger(state.rotationIndex)
-  ? state.rotationIndex % rotationLanguages.length : 0;
-
-if (requestedLanguage !== 'auto' &&
-    requestedLanguage !== 'zh-CN' &&
-    !rotationLanguages.includes(requestedLanguage)) {
-  throw new Error(`Unsupported translation language: ${requestedLanguage}`);
-}
-
-const month = new Date().toISOString().slice(0, 7);
-if (state.monthly?.month !== month) state.monthly = { month, requestedCharacters: 0 };
-state.monthly.requestedCharacters = Math.max(0, Number(state.monthly.requestedCharacters || 0));
-
-const keyFor = (kind, text) => createHash('sha256').update(`${kind}\0${text}`).digest('hex');
-const cleanMap = (value, english) => Object.fromEntries(languages
-  .map((lang) => [lang, String(value?.[lang] || '').trim()])
-  .filter(([, text]) => text && text !== english));
-const fallbackDescription = (option) => {
-  const name = String(option.promptEn || option.prompt || option.symbol || '').trim();
-  if (option.symbol?.startsWith('PACKAGE_')) return `${name} package for OpenWrt firmware.`;
-  return `OpenWrt configuration option: ${name}.`;
-};
-const catalogRank = (name) => {
-  const value = name.toLowerCase();
-  if (value.startsWith('immortalwrt--openwrt-25.12')) return 0;
-  if (value.startsWith('immortalwrt--')) return 1;
-  return 2;
-};
-const catalogNames = readdirSync(distDir).filter((item) => item.endsWith('.json.gz'))
-  .sort((a, b) => catalogRank(a) - catalogRank(b) || a.localeCompare(b));
-const usageKeys = [];
-const knownUsageKeys = new Set();
-const catalogs = [];
+const runBudget = Math.max(0, Number(process.env.TRANSLATE_CHAR_BUDGET || 400000));
+const azureEndpoint = String(process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com').replace(/\/+$/, '');
+const cache = existsSync(previousFile) ? JSON.parse(readFileSync(previousFile, 'utf8')) : { schema: 1, entries: {} };
+const state = existsSync(previousStateFile) ? JSON.parse(readFileSync(previousStateFile, 'utf8')) : { schema: 1, phase: 'zh-CN-usage', rotationIndex: 0 };
+if (!['argos', 'azure', 'off'].includes(provider)) throw new Error(`Unsupported translation provider: ${provider}`);
+if (requestedLanguage !== 'auto' && requestedLanguage !== 'zh-CN' && !rotationLanguages.includes(requestedLanguage)) throw new Error(`Unsupported translation language: ${requestedLanguage}`);
+cache.entries ||= {}; state.rotationIndex = Number(state.rotationIndex || 0) % rotationLanguages.length;
+const hash = (kind, text) => createHash('sha256').update(`${kind}\0${text}`).digest('hex');
+const clean = (map, english) => Object.fromEntries(languages.map((lang) => [lang, String(map?.[lang] || '').trim()]).filter(([, text]) => text && text !== english));
+const fallback = (row) => row.symbol?.startsWith('PACKAGE_') ? `${row.promptEn || row.prompt || row.symbol} package for OpenWrt firmware.` : `OpenWrt configuration option: ${row.promptEn || row.prompt || row.symbol}.`;
+const rank = (name) => name.startsWith('immortalwrt--openwrt-25.12') ? 0 : name.startsWith('immortalwrt--') ? 1 : 2;
+const files = readdirSync(distDir).filter((name) => name.endsWith('.json.gz')).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+const usage = [], seen = new Set(), catalogs = [];
 const register = (kind, english, manual = {}) => {
-  const text = String(english || '').trim();
-  if (!text) return {};
-  const key = keyFor(kind, text);
-  const saved = cache.entries[key] || {};
-  const translations = { ...saved.translations, ...cleanMap(manual, text) };
-  cache.entries[key] = { kind, english: text, translations };
-  if (kind === 'usage' && !knownUsageKeys.has(key)) {
-    knownUsageKeys.add(key);
-    usageKeys.push(key);
-  }
+  const text = String(english || '').trim(); if (!text) return {};
+  const id = hash(kind, text), saved = cache.entries[id] || {};
+  const translations = { ...saved.translations, ...clean(manual, text) };
+  const translationMeta = { ...saved.translationMeta };
+  for (const lang of Object.keys(clean(manual, text))) translationMeta[lang] ||= { provider: 'manual' };
+  cache.entries[id] = { kind, english: text, translations, translationMeta };
+  if (kind === 'usage' && !seen.has(id)) { seen.add(id); usage.push(id); }
   return translations;
 };
-
-for (const name of catalogNames) {
-  const file = join(distDir, name);
-  const catalog = JSON.parse(gunzipSync(readFileSync(file)));
-  for (const option of catalog.menu?.options || []) {
-    option.usageEn ||= fallbackDescription(option);
-    option.promptI18n = register(
-      'title', option.promptEn || option.prompt || option.symbol, option.promptI18n,
-    );
-    option.usageI18n = register('usage', option.usageEn, option.usageI18n);
-  }
-  for (const row of Object.values(catalog.menu?.labels || {})) {
-    row.i18n = register('title', row.en, {
-      ...(row.i18n || {}), 'zh-CN': row.zhCN || row.i18n?.['zh-CN'] || '',
-    });
-    row.usageI18n = register('usage', row.usageEn, {
-      ...(row.usageI18n || {}), 'zh-CN': row.usageZh || row.usageI18n?.['zh-CN'] || '',
-    });
-  }
-  for (const choice of catalog.menu?.choices || []) {
-    choice.promptI18n = register('title', choice.promptEn || choice.prompt, {
-      ...(choice.promptI18n || {}), 'zh-CN': choice.promptZh || choice.promptI18n?.['zh-CN'] || '',
-    });
-    choice.usageI18n = register('usage', choice.usageEn, {
-      ...(choice.usageI18n || {}), 'zh-CN': choice.usageZh || choice.usageI18n?.['zh-CN'] || '',
-    });
-  }
+for (const name of files) {
+  const file = join(distDir, name), catalog = JSON.parse(gunzipSync(readFileSync(file)));
+  for (const row of catalog.menu?.options || []) { row.usageEn ||= fallback(row); row.promptI18n = register('title', row.promptEn || row.prompt || row.symbol, row.promptI18n); row.usageI18n = register('usage', row.usageEn, row.usageI18n); }
+  for (const row of Object.values(catalog.menu?.labels || {})) { row.i18n = register('title', row.en, { ...row.i18n, 'zh-CN': row.zhCN || row.i18n?.['zh-CN'] }); row.usageI18n = register('usage', row.usageEn, { ...row.usageI18n, 'zh-CN': row.usageZh || row.usageI18n?.['zh-CN'] }); }
+  for (const row of catalog.menu?.choices || []) { row.promptI18n = register('title', row.promptEn || row.prompt, { ...row.promptI18n, 'zh-CN': row.promptZh || row.promptI18n?.['zh-CN'] }); row.usageI18n = register('usage', row.usageEn, { ...row.usageI18n, 'zh-CN': row.usageZh || row.usageI18n?.['zh-CN'] }); }
   catalogs.push({ file, name, catalog });
 }
-
-const missingUsageKeys = (language) => usageKeys.filter((key) =>
-  !cache.entries[key]?.translations?.[language]);
-const zhPendingBefore = missingUsageKeys('zh-CN').length;
-if (zhPendingBefore > 0) state.phase = 'zh-CN-usage';
-else if (state.phase !== 'rotation') state.phase = 'rotation';
+const missing = (lang) => usage.filter((id) => !cache.entries[id]?.translations?.[lang]);
+const zhBefore = missing('zh-CN').length;
+if (zhBefore) state.phase = 'zh-CN-usage'; else if (state.phase !== 'rotation') state.phase = 'rotation';
 const runPhase = state.phase;
-const activeLanguage = requestedLanguage !== 'auto'
-  ? requestedLanguage
-  : runPhase === 'zh-CN-usage'
-    ? 'zh-CN'
-    : rotationLanguages[state.rotationIndex];
-const targetPending = missingUsageKeys(activeLanguage);
-const remainingMonthlyBudget = Math.max(
-  0, monthlyBudget - state.monthly.requestedCharacters,
-);
-const runBudget = translateEnabled
-  ? Math.min(runBudgetSetting, remainingMonthlyBudget) : 0;
-const pending = [];
-let queuedCharacters = 0;
-let oversizedTexts = 0;
-for (const key of targetPending) {
-  const characters = [...cache.entries[key].english].length;
-  if (characters > 4500) {
-    oversizedTexts += 1;
-    continue;
-  }
-  if (queuedCharacters + characters > runBudget) continue;
-  pending.push([key, cache.entries[key], characters]);
-  queuedCharacters += characters;
-}
-
-let translated = 0;
-let requestedCharacters = 0;
-let apiError = '';
-const translatedByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
-for (let offset = 0; azureKey && translateEnabled && offset < pending.length;) {
-  const batch = [];
-  let batchCharacters = 0;
-  while (offset < pending.length && batch.length < 50) {
-    const row = pending[offset];
-    if (batch.length && batchCharacters + row[2] > 4500) break;
-    batch.push(row);
-    batchCharacters += row[2];
-    offset += 1;
-  }
-  requestedCharacters += batchCharacters;
-  try {
-    const query = new URLSearchParams({
-      'api-version': '3.0', from: 'en', textType: 'plain',
-      to: languageCodes[activeLanguage],
-    });
-    const headers = {
-      'Ocp-Apim-Subscription-Key': azureKey,
-      'Content-Type': 'application/json',
-    };
-    if (azureRegion) headers['Ocp-Apim-Subscription-Region'] = azureRegion;
-    const response = await fetch(`${azureEndpoint}/translate?${query}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(batch.map(([, row]) => ({ Text: row.english }))),
-    });
-    if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
-    const payload = await response.json();
-    for (let index = 0; index < batch.length; index++) {
-      const [id] = batch[index];
-      const row = cache.entries[id];
-      const text = String(payload[index]?.translations?.[0]?.text || '').trim();
-      if (!row || !text || text === row.english || row.translations[activeLanguage]) continue;
-      row.translations[activeLanguage] = text;
-      translatedByLanguage[activeLanguage] += 1;
-      translated += 1;
-    }
-  } catch (error) {
-    apiError = error.message;
-    break;
+const activeLanguage = requestedLanguage !== 'auto' ? requestedLanguage : runPhase === 'zh-CN-usage' ? 'zh-CN' : rotationLanguages[state.rotationIndex];
+const candidates = missing(activeLanguage).map((id) => [id, cache.entries[id]]).filter(([, row]) => [...row.english].length <= 4500);
+const pending = []; let chars = 0;
+for (const row of candidates) { const length = [...row[1].english].length; if (provider === 'azure' && chars + length > runBudget) continue; pending.push(row); chars += length; }
+let translated = 0, requestedCharacters = 0, apiError = '', model = '', rejected = 0, timedOut = false;
+const save = (id, text, meta) => { const row = cache.entries[id]; if (!row || !text || text === row.english || row.translations[activeLanguage]) return; row.translations[activeLanguage] = text; row.translationMeta ||= {}; row.translationMeta[activeLanguage] = { provider, model: meta, translatedAt: new Date().toISOString() }; translated += 1; };
+if (enabled && provider === 'azure') {
+  if (!azureKey) apiError = 'Azure selected but AZURE_TRANSLATOR_KEY is not configured';
+  for (let offset = 0; azureKey && offset < pending.length && !apiError;) {
+    const batch = pending.slice(offset, offset + 50); offset += batch.length; requestedCharacters += batch.reduce((sum, [, row]) => sum + [...row.english].length, 0);
+    try { const query = new URLSearchParams({ 'api-version': '3.0', from: 'en', textType: 'plain', to: languageCodes[activeLanguage] }); const headers = { 'Ocp-Apim-Subscription-Key': azureKey, 'Content-Type': 'application/json' }; if (process.env.AZURE_TRANSLATOR_REGION) headers['Ocp-Apim-Subscription-Region'] = process.env.AZURE_TRANSLATOR_REGION; const response = await fetch(`${azureEndpoint}/translate?${query}`, { method: 'POST', headers, body: JSON.stringify(batch.map(([, row]) => ({ Text: row.english }))) }); if (!response.ok) throw new Error(`${response.status} ${await response.text()}`); const payload = await response.json(); batch.forEach(([id], index) => save(id, String(payload[index]?.translations?.[0]?.text || '').trim(), 'azure-translator')); model = 'azure-translator'; } catch (error) { apiError = error.message; }
   }
 }
-state.monthly.requestedCharacters += requestedCharacters;
-
-const targetPendingAfter = missingUsageKeys(activeLanguage).length;
-const zhPendingAfter = missingUsageKeys('zh-CN').length;
-if (zhPendingAfter === 0) state.phase = 'rotation';
-if (trigger === 'schedule' && state.phase === 'rotation' &&
-    runPhase === 'rotation' && azureKey && !apiError &&
-    (translated > 0 || targetPending.length === 0)) {
-  state.rotationIndex = (state.rotationIndex + 1) % rotationLanguages.length;
+if (enabled && provider === 'argos' && pending.length) {
+  const queue = join(distDir, '.argos-queue.json'), resultFile = join(distDir, '.argos-result.json');
+  writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 4500), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
+  const result = spawnSync(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { encoding: 'utf8' });
+  if (result.error || result.status !== 0 || !existsSync(resultFile)) apiError = result.error?.message || result.stderr.trim() || 'Argos translator failed';
+  else { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut = Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }
+  rmSync(queue, { force: true }); rmSync(resultFile, { force: true });
 }
-const nextLanguage = state.phase === 'zh-CN-usage'
-  ? 'zh-CN' : rotationLanguages[state.rotationIndex];
-if (translateEnabled) {
-  state.updatedAt = new Date().toISOString();
-  state.lastRun = {
-    trigger, requestedLanguage, activeLanguage, translated,
-    requestedCharacters, apiError,
-  };
-}
-
-let localizedFields = 0;
-let pendingFields = 0;
+const ready = enabled && !apiError && (provider !== 'azure' || Boolean(azureKey));
+if (missing('zh-CN').length === 0) state.phase = 'rotation';
+if (trigger === 'schedule' && state.phase === 'rotation' && runPhase === 'rotation' && ready && (translated || !pending.length)) state.rotationIndex = (state.rotationIndex + 1) % rotationLanguages.length;
+const nextLanguage = state.phase === 'zh-CN-usage' ? 'zh-CN' : rotationLanguages[state.rotationIndex];
+if (enabled) { state.updatedAt = new Date().toISOString(); state.lastRun = { trigger, requestedLanguage, provider, activeLanguage, translated, requestedCharacters, model, apiError }; }
+let localizedFields = 0, pendingFields = 0;
 const localizedByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
 const pendingByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
-const descriptionLocalizedByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
-const descriptionPendingByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
-const uniqueDescriptionPendingByLanguage = Object.fromEntries(languages
-  .map((lang) => [lang, missingUsageKeys(lang).length]));
-const countCoverage = (translations, usage = false) => {
-  for (const lang of languages) {
-    if (translations[lang]) {
-      localizedByLanguage[lang] += 1;
-      if (usage) descriptionLocalizedByLanguage[lang] += 1;
-    } else {
-      pendingByLanguage[lang] += 1;
-      if (usage) descriptionPendingByLanguage[lang] += 1;
-    }
-  }
-};
-
+const count = (translations) => languages.forEach((lang) => translations[lang] ? localizedByLanguage[lang]++ : pendingByLanguage[lang]++);
 for (const { file, catalog } of catalogs) {
-  for (const option of catalog.menu?.options || []) {
-    for (const [kind, english] of [
-      ['title', option.promptEn || option.prompt || option.symbol], ['usage', option.usageEn],
-    ]) {
-      const row = cache.entries[keyFor(kind, String(english || '').trim())];
-      const translations = cleanMap(row?.translations, english);
-      if (kind === 'title') option.promptI18n = translations;
-      else option.usageI18n = translations;
-      localizedFields += Object.keys(translations).length;
-      pendingFields += languages.filter((lang) => !translations[lang]).length;
-      countCoverage(translations, kind === 'usage');
-    }
-  }
-  for (const row of Object.values(catalog.menu?.labels || {})) {
-    row.i18n = cleanMap(cache.entries[keyFor('title', String(row.en || '').trim())]?.translations, row.en);
-    row.usageI18n = cleanMap(
-      cache.entries[keyFor('usage', String(row.usageEn || '').trim())]?.translations, row.usageEn,
-    );
-    countCoverage(row.i18n);
-    countCoverage(row.usageI18n, true);
-  }
-  for (const choice of catalog.menu?.choices || []) {
-    const title = choice.promptEn || choice.prompt;
-    choice.promptI18n = cleanMap(
-      cache.entries[keyFor('title', String(title || '').trim())]?.translations, title,
-    );
-    choice.usageI18n = cleanMap(
-      cache.entries[keyFor('usage', String(choice.usageEn || '').trim())]?.translations, choice.usageEn,
-    );
-    countCoverage(choice.promptI18n);
-    countCoverage(choice.usageI18n, true);
-  }
-  catalog.translation = {
-    ...(catalog.translation || {}),
-    languages: ['en', ...languages],
-    fallback: 'en',
-    updatedAt: new Date().toISOString(),
-  };
+  for (const row of catalog.menu?.options || []) for (const [kind, english] of [['title', row.promptEn || row.prompt || row.symbol], ['usage', row.usageEn]]) { const translations = clean(cache.entries[hash(kind, String(english || '').trim())]?.translations, english); if (kind === 'title') row.promptI18n = translations; else row.usageI18n = translations; localizedFields += Object.keys(translations).length; pendingFields += languages.filter((lang) => !translations[lang]).length; count(translations); }
+  for (const row of Object.values(catalog.menu?.labels || {})) { row.i18n = clean(cache.entries[hash('title', String(row.en || '').trim())]?.translations, row.en); row.usageI18n = clean(cache.entries[hash('usage', String(row.usageEn || '').trim())]?.translations, row.usageEn); count(row.i18n); count(row.usageI18n); }
+  for (const row of catalog.menu?.choices || []) { const title = row.promptEn || row.prompt; row.promptI18n = clean(cache.entries[hash('title', String(title || '').trim())]?.translations, title); row.usageI18n = clean(cache.entries[hash('usage', String(row.usageEn || '').trim())]?.translations, row.usageEn); count(row.promptI18n); count(row.usageI18n); }
+  catalog.translation = { ...(catalog.translation || {}), languages: ['en', ...languages], fallback: 'en', updatedAt: new Date().toISOString() };
   writeFileSync(file, gzipSync(Buffer.from(JSON.stringify(catalog)), { level: 9 }));
 }
-
-cache.schema = 1;
-cache.updatedAt = new Date().toISOString();
-writeFileSync(join(distDir, 'i18n-cache.json'), JSON.stringify(cache) + '\n');
-writeFileSync(join(distDir, 'translation-state.json'), JSON.stringify(state, null, 2) + '\n');
-const summary = {
-  generatedAt: cache.updatedAt,
-  catalogs: catalogs.length,
-  cachedTexts: Object.keys(cache.entries).length,
-  trigger,
-  phase: state.phase,
-  activeLanguage,
-  nextLanguage,
-  rotationLanguages,
-  frozenLanguages,
-  queuedThisRun: pending.length,
-  queuedCharacters,
-  requestedCharactersThisRun: requestedCharacters,
-  runCharacterBudget: runBudget,
-  monthlyRequestedCharacters: state.monthly.requestedCharacters,
-  monthlyCharacterBudget: monthlyBudget,
-  translatedThisRun: translated,
-  translatedByLanguage,
-  targetPendingBefore: targetPending.length,
-  targetPendingAfter,
-  oversizedTexts,
-  localizedFields,
-  pendingFields,
-  localizedByLanguage,
-  pendingByLanguage,
-  descriptionLocalizedByLanguage,
-  descriptionPendingByLanguage,
-  uniqueDescriptionPendingByLanguage,
-  provider,
-  providerConfigured: Boolean(azureKey),
-  translationEnabled: translateEnabled,
-  apiError: apiError || (!azureKey && translateEnabled
-    ? 'AZURE_TRANSLATOR_KEY is not configured' : ''),
-};
+cache.schema = 2; cache.updatedAt = new Date().toISOString();
+writeFileSync(join(distDir, 'i18n-cache.json'), JSON.stringify(cache) + '\n'); writeFileSync(join(distDir, 'translation-state.json'), JSON.stringify(state, null, 2) + '\n');
+const summary = { generatedAt: cache.updatedAt, catalogs: catalogs.length, cachedTexts: Object.keys(cache.entries).length, trigger, phase: state.phase, activeLanguage, nextLanguage, rotationLanguages, frozenLanguages, queuedThisRun: pending.length, queuedCharacters: chars, requestedCharactersThisRun: requestedCharacters, runCharacterBudget: provider === 'azure' ? runBudget : null, translatedThisRun: translated, targetPendingBefore: candidates.length, targetPendingAfter: missing(activeLanguage).length, localizedFields, pendingFields, localizedByLanguage, pendingByLanguage, uniqueDescriptionPendingByLanguage: Object.fromEntries(languages.map((lang) => [lang, missing(lang).length])), provider, providerConfigured: provider === 'argos' ? !apiError : provider === 'azure' ? Boolean(azureKey) : true, translationEnabled: enabled, model, rejected, timedOut, apiError };
 writeFileSync(join(distDir, 'translation-summary.json'), JSON.stringify(summary, null, 2) + '\n');
-for (const { name } of catalogs) {
-  const reportFile = join(distDir, name.replace(/\.json\.gz$/, '.translations.json'));
-  const report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : {};
-  report.languages = ['en', ...languages];
-  report.automation = summary;
-  writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n');
-}
-
-console.log(`translations: catalogs=${catalogs.length} cache=${Object.keys(cache.entries).length}` +
-  ` provider=${provider} active=${activeLanguage} translated=${translated}` +
-  ` chars=${requestedCharacters}/${runBudget} next=${nextLanguage}` +
-  `${summary.apiError ? ` api-warning=${summary.apiError}` : ''}`);
+for (const { name } of catalogs) { const reportFile = join(distDir, name.replace(/\.json\.gz$/, '.translations.json')); const report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : {}; report.languages = ['en', ...languages]; report.automation = summary; writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n'); }
+console.log(`translations: catalogs=${catalogs.length} cache=${Object.keys(cache.entries).length} provider=${provider} active=${activeLanguage} translated=${translated} next=${nextLanguage}${apiError ? ` warning=${apiError}` : ''}`);

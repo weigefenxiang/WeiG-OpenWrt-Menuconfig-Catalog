@@ -42,14 +42,14 @@ const lines = [
   '',
   '### Translation / 翻译',
   '',
+  `- Engine: \`${translation.provider || '-'}\` / model \`${translation.model || '-'}\``,
   `- Provider configured: \`${translation.providerConfigured || false}\``,
   `- Phase: \`${translation.phase || '-'}\``,
   `- This run: \`${translation.activeLanguage || '-'}\` · translated ` +
     `\`${translation.translatedThisRun || 0}\` descriptions · requested ` +
     `\`${translation.requestedCharactersThisRun || 0}\` characters`,
   `- Next scheduled language: \`${translation.nextLanguage || '-'}\``,
-  `- Monthly character budget: \`${translation.monthlyRequestedCharacters || 0}` +
-    ` / ${translation.monthlyCharacterBudget || 0}\``,
+  ...(translation.provider === 'azure' ? [`- Azure run budget: \`${translation.requestedCharactersThisRun || 0}\` / \`${translation.runCharacterBudget || 0}\``] : []),
   `- Simplified Chinese descriptions pending: ` +
     `\`${translation.uniqueDescriptionPendingByLanguage?.['zh-CN'] ?? '-'}\``,
   ...(translationWarning ? [`- ⚠️ Translation warning: \`${translationWarning}\``] : []),

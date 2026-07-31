@@ -17,8 +17,9 @@ JavaScript 中写死分支、Target 或菜单项目。
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
-- The weekly publish step reuses `i18n-cache.json` and sends only new or changed text to
-  Azure Translator when configured. Translation limits or service errors do not block canonical English catalogs.
+- The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
+  Argos runs locally by default without a key; Azure is an explicit optional engine. Either failure
+  keeps the canonical English catalog available.
 - Curated application names/usages are joined by every known source package symbol. Text that
   should remain a technical English name is left untranslated instead of showing a fake tooltip.
 
