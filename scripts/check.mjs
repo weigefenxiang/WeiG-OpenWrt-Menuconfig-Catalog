@@ -50,7 +50,8 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('retention-days: 14') ||
     !workflow.includes('actions/upload-artifact@v7') ||
     !workflow.includes('actions/download-artifact@v8') ||
-    !workflow.includes('models: read') ||
+    workflow.includes('models: read') ||
+    !workflow.includes('AZURE_TRANSLATOR_KEY') ||
     !workflow.includes('scripts/translate-catalog.mjs') ||
     !workflow.includes('01 · Discover / 发现源码分支') ||
     !workflow.includes('matrix.jobName') ||
@@ -110,7 +111,8 @@ if (!translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.['zh-TW'] ||
   failures.push('curated 11-language translations');
 }
 if (!autoTranslator.includes('i18n-cache.json') ||
-    !autoTranslator.includes('https://models.github.ai/inference/chat/completions') ||
-    !autoTranslator.includes('pendingFields')) failures.push('incremental translation automation');
+    autoTranslator.includes('models.github.ai') ||
+    !autoTranslator.includes('api.cognitive.microsofttranslator.com') ||
+    !autoTranslator.includes('pendingByLanguage')) failures.push('incremental translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);

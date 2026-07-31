@@ -19,7 +19,6 @@ on:
 
 permissions:
   contents: write
-  models: read
 
 concurrency:
   group: menuconfig-catalog
@@ -193,7 +192,9 @@ jobs:
         if: steps.collect.outcome == 'success'
         continue-on-error: true
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
+          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
+          AZURE_TRANSLATOR_ENDPOINT: ${{ vars.AZURE_TRANSLATOR_ENDPOINT }}
           TRANSLATE_LIMIT: ${{ inputs.translate_limit || '500' }}
         run: bash scripts/run-stage.sh translate node scripts/translate-catalog.mjs dist previous/i18n-cache.json
       - name: Build catalog index

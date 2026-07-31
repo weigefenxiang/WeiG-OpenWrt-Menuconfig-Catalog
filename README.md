@@ -18,7 +18,7 @@ JavaScript 中写死分支、Target 或菜单项目。
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
 - The weekly publish step reuses `i18n-cache.json` and sends only new or changed text to
-  GitHub Models. Translation limits or service errors do not block canonical English catalogs.
+  Azure Translator when configured. Translation limits or service errors do not block canonical English catalogs.
 - Curated application names/usages are joined by every known source package symbol. Text that
   should remain a technical English name is left untranslated instead of showing a fake tooltip.
 
@@ -58,8 +58,10 @@ node scripts/import-curated-i18n.mjs \
 `catalog-data` 发布，主站只按当前分支加载一个 gzip 分片。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
-- 翻译阶段具有 `models: read` 最小权限，每周最多增量处理 500 条文本；历史译文按英文
-  内容指纹复用。翻译失败只记入 Summary 和 `translation-summary.json`。
+- 翻译阶段默认每周最多增量处理 500 条文本；历史译文按英文内容指纹复用。为启用自动
+  翻译，在仓库 Secrets 设置 `AZURE_TRANSLATOR_KEY`，按资源需要设置
+  `AZURE_TRANSLATOR_REGION`，自定义端点可放在 Variables 的 `AZURE_TRANSLATOR_ENDPOINT`。
+  未配置时只复用人工/历史译文；翻译失败只记入 Summary 和 `translation-summary.json`。
 - Discover、每个矩阵 Job、Publish 依次使用 `01`、`02`… 编号；Job、
   Artifact、`SUMMARY`、attempt 和失败日志共用同一编号。Actions Summary
   另列一一对应表，按编号即可找到同一任务的全部资料。
