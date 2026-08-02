@@ -1,5 +1,5 @@
 name: Translate Menuconfig Catalog
-run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }} batch(es) · run ${{ github.run_number }}
+run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ inputs.translate_batch_size || '500' }}×${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }} · run ${{ github.run_number }}
 
 on:
   workflow_dispatch:
@@ -17,20 +17,20 @@ on:
         default: auto
         options: [auto, zh-CN, ru, es, pt, ja, ko, de, fr, vi]
       translate_batch_size:
-        description: Descriptions per batch (100-5000; default 500)
+        description: Descriptions per batch (100-5000; total per run <=5000)
         required: true
         default: "500"
       translate_batch_count:
-        description: Number of batches (1-20; default 1)
+        description: Number of batches (1-20; batch size × count must be <=5000)
         required: true
         type: choice
         default: "1"
         options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
       translate_publish_mode:
-        description: Publish after every successful batch or once at the end
+        description: Publish every successful batch (recommended) or once at the end
         required: true
         type: choice
-        default: final
+        default: each-batch
         options: [final, each-batch]
       translate_char_budget:
         description: Azure source-character cap (Argos ignores this)
@@ -50,9 +50,12 @@ concurrency:
 jobs:
   translate:
     name: 01 · Translate descriptions / 翻译说明
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'schedule')
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
@@ -67,36 +70,24 @@ jobs:
           TRANSLATION_PROVIDER_DEFAULT: ${{ vars.TRANSLATION_PROVIDER || 'argos' }}
         run: node scripts/resolve-translation-provider.mjs >> "$GITHUB_OUTPUT"
       - name: Validate translation batches
+        id: plan
         env:
           TRANSLATE_BATCH_SIZE: ${{ inputs.translate_batch_size || '500' }}
           TRANSLATE_BATCH_COUNT: ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}
-        run: |
-          set -euo pipefail
-          case "$TRANSLATE_BATCH_SIZE" in
-            ''|*[!0-9]*) echo "Batch size must be an integer from 100 to 5000." >&2; exit 1 ;;
-          esac
-          if (( TRANSLATE_BATCH_SIZE < 100 || TRANSLATE_BATCH_SIZE > 5000 )); then
-            echo "Batch size must be between 100 and 5000." >&2
-            exit 1
-          fi
-          case "$TRANSLATE_BATCH_COUNT" in
-            ''|*[!0-9]*) echo "Batch count must be an integer from 1 to 20." >&2; exit 1 ;;
-          esac
-          if (( TRANSLATE_BATCH_COUNT < 1 || TRANSLATE_BATCH_COUNT > 20 )); then
-            echo "Batch count must be between 1 and 20." >&2
-            exit 1
-          fi
-          echo "Configured translation: ${TRANSLATE_BATCH_COUNT} batch(es) × ${TRANSLATE_BATCH_SIZE} descriptions."
+          TRANSLATE_PUBLISH_MODE: ${{ inputs.translate_publish_mode || 'each-batch' }}
+          TRANSLATE_TOTAL_ITEM_LIMIT: "5000"
+          TRANSLATE_TOTAL_TIME_BUDGET_SECONDS: "3000"
+        run: node scripts/translation-plan.mjs
       - name: Set up Argos runtime
         if: steps.translator.outputs.provider == 'argos'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: scripts/requirements-argos.txt
       - name: Restore Argos language models
         if: steps.translator.outputs.provider == 'argos'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.local/share/argos-translate
           key: argos-models-v1-${{ runner.os }}
@@ -113,15 +104,16 @@ jobs:
           TRANSLATE_ENABLED: ${{ steps.translator.outputs.enabled }}
           TRANSLATE_TRIGGER: ${{ github.event_name == 'workflow_run' && 'schedule' || 'manual' }}
           TRANSLATE_LANGUAGE: ${{ inputs.translate_language || 'auto' }}
-          TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size || '500' }}
-          TRANSLATE_BATCH_COUNT: ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}
+          TRANSLATE_MAX_ITEMS: ${{ steps.plan.outputs.batch_size }}
+          TRANSLATE_BATCH_COUNT: ${{ steps.plan.outputs.batch_count }}
           TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget || '400000' }}
+          ARGOS_TIME_BUDGET_SECONDS: ${{ steps.plan.outputs.per_batch_time_budget_seconds }}
         run: |
           set -euo pipefail
-          rm -f dist/.translation-run-started dist/translation-summary.json
-          touch dist/.translation-run-started
-          batch_count="${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}"
-          publish_mode="${{ github.event_name == 'workflow_run' && 'final' || inputs.translate_publish_mode || 'final' }}"
+          rm -f "$RUNNER_TEMP/translation-run-started" dist/translation-summary.json
+          touch "$RUNNER_TEMP/translation-run-started"
+          batch_count="${{ steps.plan.outputs.batch_count }}"
+          publish_mode="${{ steps.plan.outputs.publish_mode }}"
           publish_batch() {
             git -C dist config user.name github-actions[bot]
             git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -159,9 +151,9 @@ jobs:
             fi
           done
       - name: Publish translated catalog-data
-        if: always() && steps.translator.outputs.provider != 'off' && (inputs.translate_publish_mode == 'final' || github.event_name == 'workflow_run')
+        if: always() && steps.translator.outputs.provider != 'off' && steps.plan.outputs.publish_mode == 'final'
         run: |
-          if [[ ! -f dist/.translation-run-started || ! -f dist/translation-summary.json ]]; then
+          if [[ ! -f "$RUNNER_TEMP/translation-run-started" || ! -f dist/translation-summary.json ]]; then
             echo "Translation did not produce a publishable result."
             exit 0
           fi

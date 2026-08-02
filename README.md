@@ -20,15 +20,18 @@ JavaScript 中写死分支、Target 或菜单项目。
 - The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
   translations are published even when a batch is incomplete; remaining descriptions are kept in
-  `translation-retry-queue.json` and retried first on the next run.
+  `translation-retry-queue.json` and retried first on the next run. A translation job is limited to
+  60 minutes, with a shared 50-minute translation budget and at most 5000 descriptions per run.
 - Curated application names/usages are joined by every known source package symbol. Text that
   should remain a technical English name is left untranslated instead of showing a fake tooltip.
 
 英文以各上游源码为准；精选 Applications 的 11 语名称与用途由 Catalog 维护，11 语菜单
 分类维护在 `translations/menu-i18n.json`。每周发布复用历史翻译缓存，只翻译新增或变化
 文本；额度不足或服务异常时保留官方英文并写入待译统计与重试队列，已完成部分仍可提交。
-- Catalog 更新成功后自动触发每周翻译；自动任务默认 `500×2` 批。手动翻译可设置每批
-  `100–5000` 条、`1–20` 批；`final` 模式最后统一提交，`each-batch` 模式每个成功批次单独提交。
+- 仅每周计划执行的 Catalog 更新成功后自动触发翻译；Push 和手动更新目录不会触发翻译。
+  自动任务默认 `500×2` 批。手动翻译可设置每批
+  `100–5000` 条、`1–20` 批，但单次总数最多 5000 条。任务上限 60 分钟，全部批次共享
+  50 分钟翻译预算；默认 `each-batch`，每个成功批次立即提交。`final` 可改为最后统一提交。
   取消、零结果或校验/发布失败不会提交当前批次；每周更新仍按文本指纹跳过未变化内容。
 
 Refresh the curated LuCI seed after the main project's curated plugin table changes:
@@ -69,9 +72,9 @@ node scripts/import-curated-i18n.mjs \
 - 历史译文按“文本类型 + 英文正文”指纹复用；Push 触发只更新目录，不消耗翻译额度或推进
   轮转。默认每次最多请求 400,000 个源字符、每月最多记录 1,900,000 个字符；可通过
   Variables 的 `TRANSLATE_MONTHLY_BUDGET` 调整月预算，手动运行时也可调整单次预算和语言。
-- 为启用自动翻译，在仓库 Secrets 设置 `AZURE_TRANSLATOR_KEY`，按资源需要设置
-  `AZURE_TRANSLATOR_REGION`，自定义端点可放在 Variables 的 `AZURE_TRANSLATOR_ENDPOINT`。
-  未配置时 Summary 会明确显示“翻译未启用”；失败只写覆盖统计和错误，不阻断目录发布。
+- 自动翻译默认使用无需密钥的本地 Argos。Azure 是可选引擎：使用时在仓库 Secrets 设置
+  `AZURE_TRANSLATOR_KEY`，按资源需要设置 `AZURE_TRANSLATOR_REGION`，自定义端点可放在
+  Variables 的 `AZURE_TRANSLATOR_ENDPOINT`。失败只写覆盖统计和错误，不阻断目录发布。
 - Discover、每个矩阵 Job、Publish 依次使用 `01`、`02`… 编号；Job、
   Artifact、`SUMMARY`、attempt 和失败日志共用同一编号。Actions Summary
   另列一一对应表，按编号即可找到同一任务的全部资料。

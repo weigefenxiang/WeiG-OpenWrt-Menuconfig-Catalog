@@ -88,7 +88,7 @@ if (enabled && provider === 'azure') {
 if (enabled && provider === 'argos' && pending.length) {
   const queue = join(distDir, '.argos-queue.json'), resultFile = join(distDir, '.argos-result.json');
   temporaryFiles = [queue, resultFile];
-  writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 4500), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
+  writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 3000), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
   console.log(`Argos: ${activeLanguage}, batch ${batchNumber}/${batchCount}, queued ${pending.length}/${candidates.length} descriptions (batch limit ${maxItems})`);
   const result = await new Promise((done) => {
     activeChild = spawn(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { stdio: 'inherit' });

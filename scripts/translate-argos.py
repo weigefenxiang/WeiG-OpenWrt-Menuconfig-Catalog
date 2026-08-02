@@ -75,7 +75,7 @@ def main(queue_file, result_file):
     print(f"Argos: model en -> {target} ready ({model_version}).", flush=True)
 
     started = time.monotonic()
-    limit = max(1, int(queue.get("timeBudgetSeconds") or 4500))
+    limit = max(1, int(queue.get("timeBudgetSeconds") or 3000))
     translations, rejected = [], 0
     timed_out = False
     rows = queue.get("rows", [])

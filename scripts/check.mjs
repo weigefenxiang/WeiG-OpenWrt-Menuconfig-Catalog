@@ -22,6 +22,7 @@ const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'u
 const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs'), 'utf8');
+const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
 const failures = [];
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3) failures.push('targetinfo');
@@ -134,16 +135,27 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationWorkflow.includes('translate_publish_mode:') ||
     !translationWorkflow.includes('scripts/requirements-argos.txt') ||
     !translationWorkflow.includes('scripts/resolve-translation-provider.mjs') ||
+    !translationWorkflow.includes('scripts/translation-plan.mjs') ||
     !translationWorkflow.includes('scripts/translate-catalog.mjs') ||
-    !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ inputs.translate_batch_size || \'500\' }}') ||
-    !translationWorkflow.includes("TRANSLATE_BATCH_COUNT: ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}") ||
+    !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ steps.plan.outputs.batch_size }}') ||
+    !translationWorkflow.includes('TRANSLATE_BATCH_COUNT: ${{ steps.plan.outputs.batch_count }}') ||
+    !translationWorkflow.includes('ARGOS_TIME_BUDGET_SECONDS: ${{ steps.plan.outputs.per_batch_time_budget_seconds }}') ||
     !translationWorkflow.includes('TRANSLATE_BATCH_NUMBER="$batch"') ||
-    !translationWorkflow.includes("publish_mode=\"${{ github.event_name == 'workflow_run' && 'final' || inputs.translate_publish_mode || 'final' }}\"") ||
+    !translationWorkflow.includes('publish_mode="${{ steps.plan.outputs.publish_mode }}"') ||
     !translationWorkflow.includes('git -C dist push origin HEAD:catalog-data') ||
     !translationWorkflow.includes('Translate with live progress') ||
-    !translationWorkflow.includes('timeout-minutes: 45') ||
+    !translationWorkflow.includes('timeout-minutes: 60') ||
+    !translationWorkflow.includes('actions/setup-python@v6') ||
+    !translationWorkflow.includes('actions/cache@v5') ||
+    !translationWorkflow.includes('$RUNNER_TEMP/translation-run-started') ||
+    translationWorkflow.includes('dist/.translation-run-started') ||
+    !translationPlan.includes('TRANSLATE_TOTAL_ITEM_LIMIT || 5000') ||
+    !translationPlan.includes('TRANSLATE_TOTAL_TIME_BUDGET_SECONDS || 3000') ||
+    !translationPlan.includes('perBatchTimeBudgetSeconds') ||
+    !translationPlan.includes("publishMode = env.TRANSLATE_PUBLISH_MODE || 'each-batch'") ||
     !translationWorkflow.includes('dist/translation-state.json') ||
     !translationWorkflow.includes('workflow_run:') ||
+    !translationWorkflow.includes("github.event.workflow_run.event == 'schedule'") ||
     workflow.includes('scripts/translate-catalog.mjs')) failures.push('manual translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);
