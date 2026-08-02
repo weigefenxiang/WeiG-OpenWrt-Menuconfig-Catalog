@@ -77,7 +77,7 @@ export function parsePackageInfo(text) {
       finish();
       item = {
         name: value, title: value, description: '', category: 'Other',
-        submenu: '', depends: [], provides: [],
+        submenu: '', depends: [], provides: [], conflicts: [],
       };
       lastKey = key;
       continue;
@@ -89,6 +89,7 @@ export function parsePackageInfo(text) {
     else if (key === 'Submenu') item.submenu = value;
     else if (key === 'Depends') item.depends = value.split(/\s+/).filter(Boolean);
     else if (key === 'Provides') item.provides = value.split(/\s+/).filter(Boolean);
+    else if (key === 'Conflicts') item.conflicts = value.split(/\s+/).filter(Boolean);
     else if (key === 'Menu-Depends') item.menuDepends = value;
     else if (key === 'Architecture') item.architecture = value;
   }

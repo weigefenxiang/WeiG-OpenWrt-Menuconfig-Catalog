@@ -27,7 +27,8 @@ const failures = [];
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3) failures.push('targetinfo');
 if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
-    packages[0].description !== 'Demonstration web interface package') failures.push('packageinfo');
+    packages[0].description !== 'Demonstration web interface package' ||
+    packages[0].conflicts.join(',') !== 'kmod-demo') failures.push('packageinfo');
 const demo = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo');
 const luci = menu.options.find((item) => item.symbol === 'PACKAGE_luci');
 const demoExtra = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo-extra');
@@ -100,6 +101,7 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('pollutedDependencies') ||
     !generator.includes('menuI18n') ||
     !generator.includes('promptZh') ||
+    !generator.includes('conflicts') ||
     !generator.includes('.translations.json') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
 const requiredLanguages = ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];

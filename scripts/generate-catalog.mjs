@@ -48,10 +48,13 @@ const entryTranslations = translations.entries || {};
 const translatedOptions = menuOptions.map((option) => {
   const packageName = option.symbol.startsWith('PACKAGE_') ? option.symbol.slice(8) : '';
   const packageRow = packageByName.get(packageName);
+  const conflicts = (packageRow?.conflicts || [])
+    .map((name) => `PACKAGE_${name}`);
   const translated = entryTranslations[option.symbol] || {};
   const promptRow = promptTranslations[option.prompt] || {};
   return {
     ...option,
+    conflicts,
     promptEn: packageRow?.title || option.prompt,
     promptZh: translated.titleZh || promptRow.titleZh || '',
     promptI18n: translated.titleI18n || {},
@@ -143,7 +146,7 @@ const translationReport = {
 let commit = '';
 try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
 const payload = {
-  schema: 2,
+  schema: 3,
   generatedAt: new Date().toISOString(),
   source: {
     id: args['source-id'], label: args.label || args['source-id'],

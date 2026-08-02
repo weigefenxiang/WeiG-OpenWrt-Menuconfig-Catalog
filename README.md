@@ -14,6 +14,7 @@ JavaScript 中写死分支、Target 或菜单项目。
   `translations/zh-CN.json`; the filename is retained for compatibility.
 - Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
+- Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
@@ -28,6 +29,7 @@ JavaScript 中写死分支、Target 或菜单项目。
 英文以各上游源码为准；精选 Applications 的 11 语名称与用途由 Catalog 维护，11 语菜单
 分类维护在 `translations/menu-i18n.json`。每周发布复用历史翻译缓存，只翻译新增或变化
 文本；额度不足或服务异常时保留官方英文并写入待译统计与重试队列，已完成部分仍可提交。
+软件包选项也带有上游 `.packageinfo` 的 `Conflicts:` 元数据，使用方可在编译前拒绝不可能的 `y/y` 组合。
 - 仅每周计划执行的 Catalog 更新成功后自动触发翻译；Push 和手动更新目录不会触发翻译。
   自动任务默认 `500×2` 批。手动翻译可设置每批
   `100–5000` 条、`1–20` 批，但单次总数最多 5000 条。任务上限 60 分钟，全部批次共享

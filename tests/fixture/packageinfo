@@ -4,6 +4,7 @@ Description: Demonstration web interface package
 Category: LuCI
 Submenu: Applications
 Depends: +luci-base +PACKAGE_kmod-demo:kmod-demo
+Conflicts: kmod-demo
 
 Package: kmod-demo
 Title: Demo kernel module
