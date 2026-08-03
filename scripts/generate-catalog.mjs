@@ -47,6 +47,7 @@ for (const target of targets) {
     const profileContract = profileContracts.get(profile.id);
     profile.selector = profileContract?.selector || '';
     profile.targetSelector = profileContract?.targetSelector || target.contract.targetSelector || '';
+    profile.boardSelector = profileContract?.boardSelector || target.contract.boardSelector || '';
     profile.selectable = profileContract?.selectable !== false;
     profile.unavailableReason = profileContract?.reason || '';
   }
@@ -72,6 +73,7 @@ if (!selectableTargets.length) {
 }
 const targetSymbols = new Set(['TARGET_BOARD', 'TARGET_SUBTARGET', 'TARGET_PROFILE']);
 for (const target of targets) {
+  if (target.contract.boardSelector) targetSymbols.add(target.contract.boardSelector);
   if (target.contract.targetSelector) targetSymbols.add(target.contract.targetSelector);
   for (const profile of target.profiles) {
     if (profile.targetSelector) targetSymbols.add(profile.targetSelector);

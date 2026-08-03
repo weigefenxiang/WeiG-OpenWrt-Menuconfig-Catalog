@@ -91,8 +91,9 @@ function selectorCandidates(target, profile) {
     subtarget ? `TARGET_${board}_${subtarget}` : `TARGET_${board}`,
     `TARGET_${board}`,
   ])];
+  const boardNames = board ? [`TARGET_${board}`] : [];
   const profiles = targetNames.flatMap((name) => profileNames.map((id) => `${name}_${id}`));
-  return { targetNames, profiles };
+  return { boardNames, targetNames, profiles };
 }
 
 function findActualSymbol(candidates, symbols) {
@@ -116,6 +117,7 @@ function findActualSymbol(candidates, symbols) {
 export function resolveTargetSelectors(target, profile, symbols) {
   const candidates = selectorCandidates(target, profile);
   return {
+    board: findActualSymbol(candidates.boardNames, symbols),
     target: findActualSymbol(candidates.targetNames, symbols),
     profile: findActualSymbol(candidates.profiles, symbols),
     candidates,
@@ -139,6 +141,7 @@ export function targetBuildContract(target, symbols = null) {
       id: profile.id,
       selector: selectors.profile,
       targetSelector: selectors.target,
+      boardSelector: selectors.board,
       selectable: Boolean(selectors.target && selectors.profile),
       reason: selectors.target && selectors.profile ? '' : 'missing-selector',
     };
@@ -153,6 +156,7 @@ export function targetBuildContract(target, symbols = null) {
   return {
     kind: 'buildable', selectable: true, profiles: profileCount, missing: [],
     targetSelector: profileContracts.find((item) => item.targetSelector)?.targetSelector || '',
+    boardSelector: profileContracts.find((item) => item.boardSelector)?.boardSelector || '',
     profileContracts,
   };
 }

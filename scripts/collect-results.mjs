@@ -136,6 +136,20 @@ for (const artifactDir of artifactDirs) {
           !Number.isInteger(contract.summary?.selectableTargets)) {
         issues.push('target contract 与 attempt 身份不一致');
       }
+      const probe = contract.kconfigProbe;
+      const maxRatio = Number.parseFloat(process.env.KCONFIG_MAX_QUARANTINE_RATIO || '0.2');
+      if (!probe || !Number.isInteger(probe.targets) || !Number.isInteger(probe.passed) ||
+          !Array.isArray(probe.quarantined)) {
+        issues.push('missing or invalid Kconfig probe report');
+      } else if (probe.targets > 0) {
+        const quarantined = probe.quarantined.length;
+        const ratio = quarantined / probe.targets;
+        if (probe.passed + quarantined !== probe.targets) {
+          issues.push(`Kconfig probe count mismatch ${probe.passed}+${quarantined}/${probe.targets}`);
+        } else if (!Number.isFinite(maxRatio) || ratio > maxRatio) {
+          issues.push(`Kconfig probe quarantine ratio ${quarantined}/${probe.targets} exceeds ${maxRatio}`);
+        }
+      }
     } catch (error) {
       issues.push(`target contract 无法解析:${error.message}`);
     }

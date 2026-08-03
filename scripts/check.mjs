@@ -95,7 +95,8 @@ if (legacyTarget?.subtarget || legacyTarget?.hasSubtarget ||
 const probeProfile = x86Target?.profiles[0];
 const probeSelectors = resolveTargetSelectors(x86Target, probeProfile);
 const probeFixture = buildProbeConfig(x86Target, probeProfile, probeSelectors);
-if (!verifyProbeConfig(probeFixture, x86Target, probeProfile, probeSelectors).valid ||
+if (!probeFixture.includes('CONFIG_TARGET_x86=y') ||
+    !verifyProbeConfig(probeFixture, x86Target, probeProfile, probeSelectors).valid ||
     verifyProbeConfig(probeFixture.replace(`CONFIG_${probeSelectors.profile}=y`,
       `# CONFIG_${probeSelectors.profile} is not set`), x86Target, probeProfile, probeSelectors).valid) {
   failures.push('Target/Profile Kconfig probe contract');
@@ -173,6 +174,7 @@ if (!stageRunner.includes('Source ID:') ||
     !collector.includes('translation-retry-queue.json') ||
     !collector.includes('target contract') ||
     !collector.includes('.contract.json') ||
+    !collector.includes('Kconfig probe quarantine ratio') ||
     !collector.includes('.relations.json') ||
     !collector.includes('last-good') ||
     !collector.includes('complete=${complete}') ||
@@ -194,6 +196,7 @@ if (!policy.sources.some((item) => item.id === 'hanwckf' &&
 }
 if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('targetBuildContract') ||
+    !generator.includes('profile.boardSelector') ||
     !generator.includes('selectableTargets') ||
     !generator.includes('.contract.json') ||
     !generator.includes('menu: compactMenu') ||
@@ -208,6 +211,7 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('.translations.json') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
 if (!library.includes('hasSubtarget') || !library.includes('resolveTargetSelectors') ||
+    !library.includes('boardNames') || !validator.includes('boardSelector') ||
     !library.includes('buildTargetTree') || !library.includes('systemName') ||
     library.includes("subtarget = 'generic'") || !generator.includes('kconfigSymbols') ||
     !validator.includes('quarantined') || !validator.includes('quarantineGeneratedProfiles') ||

@@ -14,8 +14,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export function buildProbeConfig(target, profile, selectors = resolveTargetSelectors(target, profile)) {
   const targetSelector = selectors.target || `TARGET_${target.board}${target.subtarget ? `_${target.subtarget}` : ''}`;
   const profileSelector = selectors.profile || `${targetSelector}_${profile.id}`;
+  const boardSelector = selectors.board || `TARGET_${target.board}`;
+  const parent = boardSelector && boardSelector !== targetSelector ? [`CONFIG_${boardSelector}=y`] : [];
   return [
     'CONFIG_HAVE_DOT_CONFIG=y',
+    ...parent,
     `CONFIG_${targetSelector}=y`,
     `CONFIG_${profileSelector}=y`,
     '',
@@ -51,11 +54,14 @@ export function quarantineGeneratedProfiles(outDir, slug, quarantined) {
   if (!existsSync(assetPath) || !existsSync(metaPath)) {
     throw new Error(`Generated catalog asset is missing: ${assetPath}`);
   }
+  // A failed target-level probe invalidates every sibling profile. Never leave
+  // an untested profile visible after its representative fails.
+  const failedTargets = new Set(quarantined.map((item) => item.target));
   const removed = new Set(quarantined.map((item) => `${item.target}\0${item.profile}`));
   const payload = JSON.parse(gunzipSync(readFileSync(assetPath)).toString('utf8'));
   for (const target of payload.targets || []) {
     const targetRemoved = new Set((target.profiles || [])
-      .filter((profile) => removed.has(`${target.id}\0${profile.id}`))
+      .filter((profile) => failedTargets.has(target.id) || removed.has(`${target.id}\0${profile.id}`))
       .map((profile) => profile.id));
     if (!targetRemoved.size) continue;
     target.profiles = (target.profiles || []).filter((profile) => !targetRemoved.has(profile.id));
@@ -77,6 +83,7 @@ export function quarantineGeneratedProfiles(outDir, slug, quarantined) {
     children: (system.children || []).map((subtarget) => ({
       ...subtarget,
       children: (subtarget.children || []).filter((profile) =>
+        !failedTargets.has(subtarget.targetId) &&
         !removed.has(`${subtarget.targetId}\0${profile.profileId || profile.value}`)),
     })).filter((subtarget) => subtarget.children?.length),
   })).filter((system) => system.children?.length);
@@ -120,10 +127,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   mkdirSync(probeDir, { recursive: true });
   const result = {
     schema: 1,
-    mode: 'representative-profile-per-target',
+    mode: 'target-chain-and-representative-profile',
     generatedAt: new Date().toISOString(),
     targets: probeTargets.length,
     passed: 0,
+    passedScope: 'target chain plus one representative profile; all siblings remain hidden on failure',
     quarantined: [],
   };
   try {

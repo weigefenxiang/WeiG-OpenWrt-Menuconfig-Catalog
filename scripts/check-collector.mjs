@@ -37,7 +37,9 @@ function addArtifact(root, order, branchName, status = 'success', {
       writeFileSync(join(dist, `openwrt--${branchName}.contract.json`), JSON.stringify({
         schema: 1,
         source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
-        summary: { selectableTargets: 1 }, unavailable: [],
+        summary: { selectableTargets: 1 },
+        kconfigProbe: { targets: 1, passed: 1, quarantined: [] },
+        unavailable: [],
       }));
     }
     if (relations) {
