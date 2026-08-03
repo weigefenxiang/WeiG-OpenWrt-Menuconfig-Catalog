@@ -42,7 +42,7 @@ const copyUnique = (file, dir, scope) => {
 };
 
 for (const file of walk(previousDir).filter((item) =>
-  item.endsWith('.json.gz') || item.endsWith('.translations.json'))) {
+  item.endsWith('.json.gz') || item.endsWith('.translations.json') || item.endsWith('.contract.json'))) {
   copyFileSync(file, join(distDir, basename(file)));
 }
 for (const name of ['i18n-cache.json', 'translation-state.json', 'translation-retry-queue.json']) {
@@ -65,7 +65,7 @@ for (const artifactDir of artifactDirs) {
   const artifactName = basename(artifactDir);
   const files = walk(artifactDir);
   const accepted = files.filter((file) =>
-    /\.(json\.gz|meta\.json|translations\.json|attempt\.json|log)$/.test(file) ||
+    /\.(json\.gz|meta\.json|contract\.json|translations\.json|attempt\.json|log)$/.test(file) ||
     file.endsWith('--SUMMARY.txt'));
   acceptedFiles += accepted.length;
   for (const file of accepted.filter((item) =>
@@ -120,8 +120,22 @@ for (const artifactDir of artifactDirs) {
   const translationName = meta?.asset?.replace(/\.json\.gz$/, '.translations.json');
   const translationFile = translationName &&
     accepted.find((file) => basename(file) === translationName);
+  const contractName = meta?.asset?.replace(/\.json\.gz$/, '.contract.json');
+  const contractFile = contractName && accepted.find((file) => basename(file) === contractName);
   if (meta && !assetFile) issues.push(`缺 ${meta.asset}`);
   if (meta && !translationFile) issues.push('缺 translations');
+  if (meta && !contractFile) issues.push('缺 target contract');
+  if (contractFile) {
+    try {
+      const contract = JSON.parse(readFileSync(contractFile, 'utf8'));
+      if (contract.source?.id !== attempt.source.id || contract.source?.branch !== attempt.branch ||
+          !Number.isInteger(contract.summary?.selectableTargets)) {
+        issues.push('target contract 与 attempt 身份不一致');
+      }
+    } catch (error) {
+      issues.push(`target contract 无法解析:${error.message}`);
+    }
+  }
   if (assetFile) {
     try {
       const jsonHash = createHash('sha256').update(gunzipSync(readFileSync(assetFile))).digest('hex');
@@ -134,6 +148,7 @@ for (const artifactDir of artifactDirs) {
   if (!issues.length) {
     fresh = copyUnique(assetFile, distDir, identity) &&
       copyUnique(metaFiles[0], distDir, identity) &&
+      copyUnique(contractFile, distDir, identity) &&
       copyUnique(translationFile, distDir, identity);
     if (!fresh) issues.push('输出文件名冲突');
   }

@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo, safeSlug,
+  targetBuildContract,
 } from './lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,6 +20,15 @@ const tree = resolve(args.tree);
 const outDir = resolve(args.out || join(ROOT, 'dist'));
 const targetInfo = join(tree, 'tmp', '.targetinfo');
 const packageInfo = join(tree, 'tmp', '.packageinfo');
+const slug = `${safeSlug(args['source-id'])}--${safeSlug(args.branch)}`;
+mkdirSync(outDir, { recursive: true });
+let commit = '';
+try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
+const source = {
+  id: args['source-id'], label: args.label || args['source-id'],
+  repo: args.repo, branch: args.branch,
+  commit, legacy: args.legacy === 'true',
+};
 const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
 const menu = parseKconfigTree(tree);
@@ -27,13 +37,25 @@ const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.j
 if (!targets.length || !menu.options.length) {
   throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
 }
-// Upstream metadata also contains abstract board parents (for example armsr)
-// with no Profile and therefore no own architecture. Only selectable leaf
-// targets are part of the build contract.
-const incompleteTargets = incompleteSelectableTargets(targets);
-if (incompleteTargets.length) {
-  throw new Error(`Target build contract is incomplete: ${incompleteTargets
-    .slice(0, 20).map((target) => target.id).join(', ')}`);
+for (const target of targets) target.contract = targetBuildContract(target);
+const selectableTargets = targets.filter((target) => target.contract.selectable);
+const unavailableTargets = incompleteSelectableTargets(targets);
+const contractReport = {
+  schema: 1, source, generatedAt: new Date().toISOString(),
+  summary: {
+    targets: targets.length, selectableTargets: selectableTargets.length,
+    unavailableTargets: unavailableTargets.length,
+    abstractTargets: targets.filter((target) => target.contract.kind === 'abstract').length,
+  },
+  unavailable: unavailableTargets.map((target) => ({
+    target: target.id, board: target.board, subtarget: target.subtarget,
+    profiles: target.contract.profiles, missing: target.contract.missing,
+  })),
+};
+writeFileSync(join(outDir, `${slug}.contract.json`), JSON.stringify(contractReport, null, 2) + '\n');
+if (!selectableTargets.length) {
+  throw new Error(`No buildable Target/Profile contract: ${targets.slice(0, 20)
+    .map((target) => `${target.id}[${target.contract.kind}]`).join(', ')}`);
 }
 const targetSymbols = new Set(['TARGET_BOARD', 'TARGET_SUBTARGET', 'TARGET_PROFILE']);
 for (const target of targets) {
@@ -104,7 +126,7 @@ const compactMenu = {
   }),
 };
 const targetTree = [];
-for (const target of targets) {
+for (const target of selectableTargets) {
   let system = targetTree.find((item) => item.value === target.board);
   if (!system) {
     system = { value: target.board, labelEn: target.name || target.board, labelZh: '', children: [] };
@@ -153,20 +175,20 @@ const translationReport = {
   missingMenusZhCN: missingMenuTranslations,
   missingChoicesZhCN: missingChoiceTranslations,
 };
-let commit = '';
-try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
 const payload = {
   schema: 3,
   generatedAt: new Date().toISOString(),
-  source: {
-    id: args['source-id'], label: args.label || args['source-id'],
-    repo: args.repo, branch: args.branch,
-    commit, legacy: args.legacy === 'true',
-  },
-  counts: { targets: targets.length, profiles: targets.reduce((n, item) => n + item.profiles.length, 0),
+  source,
+  counts: {
+    targets: targets.length,
+    selectableTargets: selectableTargets.length,
+    unavailableTargets: unavailableTargets.length,
+    abstractTargets: targets.filter((target) => target.contract.kind === 'abstract').length,
+    profiles: selectableTargets.reduce((n, item) => n + item.profiles.length, 0),
     menuOptions: compactMenu.options.length, packages: packages.length,
     translatedZhCN: translationReport.translatedZhCN,
-    missingZhCN: missingTranslations.length },
+    missingZhCN: missingTranslations.length,
+  },
   targetSelectors,
   targetTree,
   targets,
@@ -179,8 +201,6 @@ const payload = {
   },
 };
 const json = JSON.stringify(payload);
-const slug = `${safeSlug(args['source-id'])}--${safeSlug(args.branch)}`;
-mkdirSync(outDir, { recursive: true });
 const asset = `${slug}.json.gz`;
 writeFileSync(join(outDir, asset), gzipSync(Buffer.from(json), { level: 9 }));
 writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translationReport, null, 2) + '\n');
@@ -189,4 +209,6 @@ writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   generatedAt: payload.generatedAt,
   sha256: createHash('sha256').update(json).digest('hex'),
 }, null, 2) + '\n');
-console.log(`${asset}: ${targets.length} targets / ${payload.counts.profiles} profiles / ${compactMenu.options.length} menu options / ${packages.length} packages`);
+console.log(`${asset}: ${payload.counts.selectableTargets}/${targets.length} selectable targets / ` +
+  `${payload.counts.profiles} profiles / ${compactMenu.options.length} menu options / ${packages.length} packages` +
+  (unavailableTargets.length ? ` / unavailable contracts: ${unavailableTargets.length}` : ''));

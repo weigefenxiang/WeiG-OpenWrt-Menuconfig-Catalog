@@ -2,6 +2,12 @@ Target: abstract-board
 Target-Board: abstract-board
 Target-Name: Abstract board parent
 
+Target: unavailable-board
+Target-Board: unavailable-board
+Target-Name: Incomplete direct target
+Target-Profile: DEVICE_unavailable
+Target-Profile-Name: Unavailable demonstration target
+
 Target: x86/64
 Target-Board: x86
 Target-Name: x86

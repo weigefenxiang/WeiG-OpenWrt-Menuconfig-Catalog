@@ -13,7 +13,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const script = join(ROOT, 'scripts', 'collect-results.mjs');
 const temp = mkdtempSync(join(tmpdir(), 'weig-catalog-collector-'));
 
-function addArtifact(root, order, branchName, status = 'success', { translation = true } = {}) {
+function addArtifact(root, order, branchName, status = 'success', {
+  translation = true, contract = true,
+} = {}) {
   const orderText = String(order).padStart(2, '0');
   const artifact = `${orderText}-catalog-openwrt-${branchName}-run-1-attempt-1`;
   const base = join(root, 'current', artifact);
@@ -31,6 +33,13 @@ function addArtifact(root, order, branchName, status = 'success', { translation 
       source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
       asset, sha256: createHash('sha256').update(json).digest('hex'),
     }));
+    if (contract) {
+      writeFileSync(join(dist, `openwrt--${branchName}.contract.json`), JSON.stringify({
+        schema: 1,
+        source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
+        summary: { selectableTargets: 1 }, unavailable: [],
+      }));
+    }
     if (translation) writeFileSync(join(dist, `openwrt--${branchName}.translations.json`), '{}\n');
   }
   const failureLog = status === 'failure' ? `${orderText}-openwrt-${branchName}--clone.log` : '';
@@ -107,13 +116,23 @@ try {
   const quarantineJson = JSON.parse(gunzipSync(readFileSync(
     join(quarantined, 'dist', 'openwrt--main.json.gz'))));
   if (quarantineManifest.complete || quarantineManifest.fresh !== 0 ||
-      quarantineJson.generation !== 'previous') throw new Error('invalid current result overwrote last-good');
+       quarantineJson.generation !== 'previous') throw new Error('invalid current result overwrote last-good');
+
+  const contractless = fixture('contractless', (root, previous) => {
+    addPrevious(previous, 'main');
+    addArtifact(root, 2, 'main', 'success', { contract: false });
+  });
+  const contractlessManifest = run(contractless);
+  if (contractlessManifest.complete || contractlessManifest.fresh !== 0 ||
+      contractlessManifest.branches[0]?.issues.join(',') !== '缺 target contract') {
+    throw new Error('missing target contract was not quarantined');
+  }
 
   const fatal = fixture('fatal', (root) => {
     mkdirSync(join(root, 'current'), { recursive: true });
   });
   run(fatal, false);
-  console.log('catalog collector checks passed: fresh, partial, quarantine, last-good, fatal');
+  console.log('catalog collector checks passed: fresh, partial, quarantine, contract, last-good, fatal');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

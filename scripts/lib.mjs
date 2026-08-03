@@ -55,11 +55,25 @@ export function parseInfoRecords(text) {
   return targets;
 }
 
+export function targetBuildContract(target) {
+  const profileCount = (target.profiles || []).length;
+  const missing = [];
+  if (!/^[A-Za-z0-9_+-]+$/.test(target.arch)) missing.push('Target-Arch');
+  if (!/^[A-Za-z0-9._+-]+$/.test(target.archPackages)) missing.push('Target-Arch-Packages');
+  if (!profileCount) {
+    return { kind: 'abstract', selectable: false, profiles: 0, missing: [] };
+  }
+  if (missing.length) {
+    return { kind: 'unavailable', selectable: false, profiles: profileCount, missing };
+  }
+  return { kind: 'buildable', selectable: true, profiles: profileCount, missing: [] };
+}
+
 export function incompleteSelectableTargets(targets) {
-  return targets.filter((target) => (target.profiles || []).length > 0 && (
-    !/^[A-Za-z0-9_+-]+$/.test(target.arch) ||
-    !/^[A-Za-z0-9._+-]+$/.test(target.archPackages)
-  ));
+  return targets.filter((target) => {
+    const contract = targetBuildContract(target);
+    return contract.kind === 'unavailable';
+  });
 }
 
 export function parsePackageInfo(text) {

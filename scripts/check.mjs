@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
+  targetBuildContract,
 } from './lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,9 +31,13 @@ const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 const x86Target = targets.find((item) => item.id === 'x86/64');
 const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
 const abstractTarget = targets.find((item) => item.id === 'abstract-board');
-if (targets.length !== 3 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3 ||
+const unavailableTarget = targets.find((item) => item.id === 'unavailable-board');
+if (targets.length !== 4 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 4 ||
     x86Target?.arch !== 'x86_64' || filogicTarget?.arch !== 'aarch64' ||
-    abstractTarget?.profiles.length !== 0 || incompleteSelectableTargets(targets).length) {
+    abstractTarget?.profiles.length !== 0 || unavailableTarget?.profiles.length !== 1 ||
+    targetBuildContract(abstractTarget).kind !== 'abstract' ||
+    targetBuildContract(unavailableTarget).kind !== 'unavailable' ||
+    incompleteSelectableTargets(targets).map((item) => item.id).join(',') !== 'unavailable-board') {
   failures.push('targetinfo/build contract');
 }
 if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
@@ -62,6 +67,7 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('scripts/run-stage.sh') ||
     !workflow.includes('pattern: "*-catalog-*"') ||
     !workflow.includes('attempts/*--SUMMARY.txt') ||
+    !workflow.includes('dist/*.contract.json') ||
     !workflow.includes('retention-days: 14') ||
     !workflow.includes('actions/upload-artifact@v7') ||
     !workflow.includes('actions/download-artifact@v8') ||
@@ -92,6 +98,8 @@ if (!stageRunner.includes('Source ID:') ||
     !collector.includes('publish-inputs.json') ||
     !collector.includes('publishState') ||
     !collector.includes('translation-retry-queue.json') ||
+    !collector.includes('target contract') ||
+    !collector.includes('.contract.json') ||
     !collector.includes('last-good') ||
     !collector.includes('complete=${complete}') ||
     release.includes('gh release delete') ||
@@ -110,6 +118,9 @@ if (!policy.sources.some((item) => item.id === 'hanwckf' &&
   failures.push('hanwckf legacy source policy');
 }
 if (!generator.includes("option.path[0] !== 'Target Devices'") ||
+    !generator.includes('targetBuildContract') ||
+    !generator.includes('selectableTargets') ||
+    !generator.includes('.contract.json') ||
     !generator.includes('menu: compactMenu') ||
     !generator.includes('targetSelectors') ||
     !generator.includes('targetTree') ||
