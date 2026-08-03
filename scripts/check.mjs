@@ -2,7 +2,9 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseInfoRecords, parseKconfigTree, parsePackageInfo } from './lib.mjs';
+import {
+  incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
+} from './lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = join(ROOT, 'tests', 'fixture');
@@ -25,9 +27,14 @@ const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs
 const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
 const failures = [];
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
-if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3 ||
-    targets[0].arch !== 'x86_64' || targets[1].arch !== 'aarch64' ||
-    targets.some((item) => !item.archPackages)) failures.push('targetinfo/build contract');
+const x86Target = targets.find((item) => item.id === 'x86/64');
+const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
+const abstractTarget = targets.find((item) => item.id === 'abstract-board');
+if (targets.length !== 3 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3 ||
+    x86Target?.arch !== 'x86_64' || filogicTarget?.arch !== 'aarch64' ||
+    abstractTarget?.profiles.length !== 0 || incompleteSelectableTargets(targets).length) {
+  failures.push('targetinfo/build contract');
+}
 if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
     packages[0].description !== 'Demonstration web interface package' ||
     packages[0].conflicts.join(',') !== 'kmod-demo') failures.push('packageinfo');
@@ -44,6 +51,9 @@ if (!luci || luci.kind !== 'menuconfig' || demo?.parent !== luci.symbol ||
 if (!image || image.path[0] !== 'Target Images') failures.push('menu path');
 if (menu.choices.length !== 1 || !menu.options.some((item) => item.choice)) failures.push('choice');
 if (!workflow.includes('scripts/prepare-metadata.sh') ||
+    !workflow.includes('id: metadata') ||
+    !workflow.includes('run-stage.sh" metadata') ||
+    workflow.includes('id: defconfig') ||
     workflow.includes('max-parallel:') ||
     workflow.includes('apt-get') ||
     !workflow.includes('fail-fast: false') ||
@@ -75,6 +85,8 @@ if (!stageRunner.includes('Source ID:') ||
     !stageRunner.includes('CATALOG_ORDER') ||
     !stageRunner.includes('last 40 relevant lines') ||
     !attemptWriter.includes('--SUMMARY.txt') ||
+    !attemptWriter.includes("['metadata', process.env.METADATA_OUTCOME]") ||
+    attemptWriter.includes('DEFCONFIG_OUTCOME') ||
     !attemptWriter.includes('failureLog') ||
     !attemptWriter.includes('orderText') ||
     !collector.includes('publish-inputs.json') ||

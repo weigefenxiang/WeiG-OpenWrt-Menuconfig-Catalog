@@ -5,7 +5,9 @@ import { gzipSync } from 'node:zlib';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseInfoRecords, parseKconfigTree, parsePackageInfo, safeSlug } from './lib.mjs';
+import {
+  incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo, safeSlug,
+} from './lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = {};
@@ -25,9 +27,10 @@ const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.j
 if (!targets.length || !menu.options.length) {
   throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
 }
-const incompleteTargets = targets.filter((target) =>
-  !/^[A-Za-z0-9_+-]+$/.test(target.arch) ||
-  !/^[A-Za-z0-9._+-]+$/.test(target.archPackages));
+// Upstream metadata also contains abstract board parents (for example armsr)
+// with no Profile and therefore no own architecture. Only selectable leaf
+// targets are part of the build contract.
+const incompleteTargets = incompleteSelectableTargets(targets);
 if (incompleteTargets.length) {
   throw new Error(`Target build contract is incomplete: ${incompleteTargets
     .slice(0, 20).map((target) => target.id).join(', ')}`);

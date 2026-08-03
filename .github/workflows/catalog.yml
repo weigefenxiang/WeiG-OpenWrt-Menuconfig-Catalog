@@ -99,10 +99,10 @@ jobs:
         working-directory: work/upstream
         run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" feeds bash -c './scripts/feeds update -a && ./scripts/feeds install -a'
       - name: Generate upstream metadata
-        id: defconfig
+        id: metadata
         timeout-minutes: 15
         working-directory: work/upstream
-        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" defconfig bash "$GITHUB_WORKSPACE/scripts/prepare-metadata.sh" "${{ matrix.metadataCompat }}"
+        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" metadata bash "$GITHUB_WORKSPACE/scripts/prepare-metadata.sh" "${{ matrix.metadataCompat }}"
       - name: Extract catalog
         id: extract
         timeout-minutes: 5
@@ -137,7 +137,7 @@ jobs:
           TOOLS_OUTCOME: ${{ steps.tools.outcome }}
           CLONE_OUTCOME: ${{ steps.clone.outcome }}
           FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
-          DEFCONFIG_OUTCOME: ${{ steps.defconfig.outcome }}
+          METADATA_OUTCOME: ${{ steps.metadata.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
         run: node scripts/write-attempt.mjs
       - name: Upload branch result

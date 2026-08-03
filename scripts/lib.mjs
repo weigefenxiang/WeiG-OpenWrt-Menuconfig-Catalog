@@ -55,6 +55,13 @@ export function parseInfoRecords(text) {
   return targets;
 }
 
+export function incompleteSelectableTargets(targets) {
+  return targets.filter((target) => (target.profiles || []).length > 0 && (
+    !/^[A-Za-z0-9_+-]+$/.test(target.arch) ||
+    !/^[A-Za-z0-9._+-]+$/.test(target.archPackages)
+  ));
+}
+
 export function parsePackageInfo(text) {
   const packages = [];
   let item = null;

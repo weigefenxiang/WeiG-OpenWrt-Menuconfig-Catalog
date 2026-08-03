@@ -12,7 +12,7 @@ const steps = [
   ['tools', process.env.TOOLS_OUTCOME],
   ['clone', process.env.CLONE_OUTCOME],
   ['feeds', process.env.FEEDS_OUTCOME],
-  ['defconfig', process.env.DEFCONFIG_OUTCOME],
+  ['metadata', process.env.METADATA_OUTCOME],
   ['extract', process.env.EXTRACT_OUTCOME],
 ];
 const failed = steps.find(([, outcome]) => outcome && outcome !== 'success' && outcome !== 'skipped');
