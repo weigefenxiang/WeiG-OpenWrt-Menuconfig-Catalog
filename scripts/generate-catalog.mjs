@@ -25,6 +25,13 @@ const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.j
 if (!targets.length || !menu.options.length) {
   throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
 }
+const incompleteTargets = targets.filter((target) =>
+  !/^[A-Za-z0-9_+-]+$/.test(target.arch) ||
+  !/^[A-Za-z0-9._+-]+$/.test(target.archPackages));
+if (incompleteTargets.length) {
+  throw new Error(`Target build contract is incomplete: ${incompleteTargets
+    .slice(0, 20).map((target) => target.id).join(', ')}`);
+}
 const targetSymbols = new Set(['TARGET_BOARD', 'TARGET_SUBTARGET', 'TARGET_PROFILE']);
 for (const target of targets) {
   targetSymbols.add(`TARGET_${target.board}`);

@@ -11,6 +11,8 @@ if [[ "$mode" == "legacy-metadata" ]]; then
   echo "Compatibility mode: metadata only; obsolete host-version gate bypassed."
 fi
 
-make defconfig FORCE=1
+# Catalog only needs upstream target/package metadata. Do not resolve or rewrite
+# an OpenWrt .config here; build requests provide their own complete config.
+make prepare-tmpinfo FORCE=1
 test -s tmp/.targetinfo
 test -s tmp/.packageinfo

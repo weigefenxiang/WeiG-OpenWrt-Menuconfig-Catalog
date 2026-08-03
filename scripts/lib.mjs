@@ -26,7 +26,7 @@ export function parseInfoRecords(text) {
       const [board, subtarget = 'generic'] = value.split('/');
       target = {
         id: value, board, subtarget, name: value, subtargetName: subtarget,
-        archPackages: board, features: [], packages: [], profiles: [],
+        arch: '', archPackages: '', features: [], packages: [], profiles: [],
       };
       continue;
     }
@@ -46,6 +46,7 @@ export function parseInfoRecords(text) {
     }
     if (key === 'Target-Name') target.name = value;
     else if (key === 'Target-Subtarget-Name') target.subtargetName = value;
+    else if (key === 'Target-Arch') target.arch = value;
     else if (key === 'Target-Arch-Packages') target.archPackages = value;
     else if (key === 'Target-Features') target.features = value.split(/\s+/).filter(Boolean);
     else if (key === 'Target-Packages') target.packages = value.split(/\s+/).filter(Boolean);

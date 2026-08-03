@@ -25,7 +25,9 @@ const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs
 const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
 const failures = [];
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
-if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3) failures.push('targetinfo');
+if (targets.length !== 2 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 3 ||
+    targets[0].arch !== 'x86_64' || targets[1].arch !== 'aarch64' ||
+    targets.some((item) => !item.archPackages)) failures.push('targetinfo/build contract');
 if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
     packages[0].description !== 'Demonstration web interface package' ||
     packages[0].conflicts.join(',') !== 'kmod-demo') failures.push('packageinfo');
@@ -65,7 +67,8 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
 if (!discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
     !discover.includes('metadataCompat') ||
     !metadata.includes('touch staging_dir/host/.prereq-build') ||
-    !metadata.includes('make defconfig FORCE=1')) failures.push('legacy metadata compatibility');
+    !metadata.includes('make prepare-tmpinfo FORCE=1') ||
+    metadata.includes('make defconfig')) failures.push('legacy metadata compatibility');
 if (!stageRunner.includes('Source ID:') ||
     !stageRunner.includes('Upstream commit:') ||
     !stageRunner.includes('CATALOG_ARTIFACT_NAME') ||
