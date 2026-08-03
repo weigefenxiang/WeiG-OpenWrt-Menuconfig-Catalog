@@ -6,12 +6,15 @@ import {
   incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
   targetBuildContract,
 } from './lib.mjs';
+import { buildKconfigRelations } from './kconfig-relations.mjs';
+import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = join(ROOT, 'tests', 'fixture');
 const targets = parseInfoRecords(readFileSync(join(fixture, 'targetinfo'), 'utf8'));
 const packages = parsePackageInfo(readFileSync(join(fixture, 'packageinfo'), 'utf8'));
 const menu = parseKconfigTree(fixture);
+const relations = buildKconfigRelations(menu.options, packages, menu.choices);
 const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const translationWorkflow = readFileSync(join(ROOT, '.github', 'workflows', 'translate.yml'), 'utf8');
 const discover = readFileSync(join(ROOT, 'scripts', 'discover.mjs'), 'utf8');
@@ -40,6 +43,12 @@ if (targets.length !== 4 || targets.reduce((n, item) => n + item.profiles.length
     incompleteSelectableTargets(targets).map((item) => item.id).join(',') !== 'unavailable-board') {
   failures.push('targetinfo/build contract');
 }
+const probeFixture = buildProbeConfig(x86Target, x86Target?.profiles[0]);
+if (!verifyProbeConfig(probeFixture, x86Target, x86Target?.profiles[0]).valid ||
+    verifyProbeConfig(probeFixture.replace('CONFIG_TARGET_x86_64_DEVICE_generic=y', '# CONFIG_TARGET_x86_64_DEVICE_generic is not set'),
+      x86Target, x86Target?.profiles[0]).valid) {
+  failures.push('Target/Profile Kconfig probe contract');
+}
 if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
     packages[0].description !== 'Demonstration web interface package' ||
     packages[0].conflicts.join(',') !== 'kmod-demo') failures.push('packageinfo');
@@ -55,6 +64,16 @@ if (!luci || luci.kind !== 'menuconfig' || demo?.parent !== luci.symbol ||
     demoExtra?.parent !== demo?.symbol) failures.push('implicit menuconfig hierarchy');
 if (!image || image.path[0] !== 'Target Images') failures.push('menu path');
 if (menu.choices.length !== 1 || !menu.options.some((item) => item.choice)) failures.push('choice');
+const demoRelations = relations.records.find((item) => item.package === 'luci-app-demo');
+if (!demoRelations || demoRelations.states.join(',') !== 'n,m,y' ||
+    !demoRelations.kconfig.depends.includes('PACKAGE_luci') ||
+    !demoRelations.kconfig.selects.includes('PACKAGE_luci-base') ||
+    !demoRelations.dependencyPackages.includes('luci-base') ||
+    !demoRelations.conflicts.includes('kmod-demo') ||
+    !relations.validation.structurallyValid ||
+    !relations.validation.unresolvedKconfig.some((item) => item.symbol === 'PACKAGE_luci-app-demo')) {
+  failures.push('Kconfig/package relationship graph');
+}
 if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('id: metadata') ||
     !workflow.includes('run-stage.sh" metadata') ||
@@ -78,6 +97,8 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('publish-order') ||
     !workflow.includes('Upload publish diagnostic') ||
     !workflow.includes('scripts/collect-results.mjs') ||
+    !workflow.includes('verify-target-contracts.mjs') ||
+    !workflow.includes('KCONFIG_CONTRACT_OUTCOME') ||
     !workflow.includes('run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts') ||
     unsafePlainRunContinuation) failures.push('workflow resilience');
 if (!discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
@@ -92,6 +113,7 @@ if (!stageRunner.includes('Source ID:') ||
     !stageRunner.includes('last 40 relevant lines') ||
     !attemptWriter.includes('--SUMMARY.txt') ||
     !attemptWriter.includes("['metadata', process.env.METADATA_OUTCOME]") ||
+    !attemptWriter.includes("['kconfig-contract', process.env.KCONFIG_CONTRACT_OUTCOME]") ||
     attemptWriter.includes('DEFCONFIG_OUTCOME') ||
     !attemptWriter.includes('failureLog') ||
     !attemptWriter.includes('orderText') ||
@@ -100,9 +122,11 @@ if (!stageRunner.includes('Source ID:') ||
     !collector.includes('translation-retry-queue.json') ||
     !collector.includes('target contract') ||
     !collector.includes('.contract.json') ||
+    !collector.includes('.relations.json') ||
     !collector.includes('last-good') ||
     !collector.includes('complete=${complete}') ||
     release.includes('gh release delete') ||
+    !release.includes('.relations.json') ||
     !release.includes('gh release upload') ||
     !release.includes('--clobber')) failures.push('diagnostic identity');
 if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
@@ -128,6 +152,8 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('menuI18n') ||
     !generator.includes('promptZh') ||
     !generator.includes('conflicts') ||
+    !generator.includes('buildKconfigRelations') ||
+    !generator.includes('.relations.json') ||
     !generator.includes('.translations.json') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
 const requiredLanguages = ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];

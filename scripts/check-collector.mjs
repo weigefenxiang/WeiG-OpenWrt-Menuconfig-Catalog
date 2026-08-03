@@ -14,7 +14,7 @@ const script = join(ROOT, 'scripts', 'collect-results.mjs');
 const temp = mkdtempSync(join(tmpdir(), 'weig-catalog-collector-'));
 
 function addArtifact(root, order, branchName, status = 'success', {
-  translation = true, contract = true,
+  translation = true, contract = true, relations = true,
 } = {}) {
   const orderText = String(order).padStart(2, '0');
   const artifact = `${orderText}-catalog-openwrt-${branchName}-run-1-attempt-1`;
@@ -38,6 +38,13 @@ function addArtifact(root, order, branchName, status = 'success', {
         schema: 1,
         source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
         summary: { selectableTargets: 1 }, unavailable: [],
+      }));
+    }
+    if (relations) {
+      writeFileSync(join(dist, `openwrt--${branchName}.relations.json`), JSON.stringify({
+        schema: 1,
+        source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
+        summary: { packages: 1 }, validation: { structurallyValid: true }, records: [],
       }));
     }
     if (translation) writeFileSync(join(dist, `openwrt--${branchName}.translations.json`), '{}\n');
@@ -128,11 +135,21 @@ try {
     throw new Error('missing target contract was not quarantined');
   }
 
+  const relationless = fixture('relationless', (root, previous) => {
+    addPrevious(previous, 'main');
+    addArtifact(root, 2, 'main', 'success', { relations: false });
+  });
+  const relationlessManifest = run(relationless);
+  if (relationlessManifest.complete || relationlessManifest.fresh !== 0 ||
+      !relationlessManifest.branches[0]?.issues.includes('missing Kconfig relations')) {
+    throw new Error('missing Kconfig relations were not quarantined');
+  }
+
   const fatal = fixture('fatal', (root) => {
     mkdirSync(join(root, 'current'), { recursive: true });
   });
   run(fatal, false);
-  console.log('catalog collector checks passed: fresh, partial, quarantine, contract, last-good, fatal');
+  console.log('catalog collector checks passed: fresh, partial, quarantine, contract, relations, last-good, fatal');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

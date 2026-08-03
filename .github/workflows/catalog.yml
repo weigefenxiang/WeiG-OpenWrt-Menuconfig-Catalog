@@ -115,6 +115,16 @@ jobs:
             --legacy "${{ matrix.legacy }}" \
             --tree work/upstream \
             --out dist
+      - name: Verify Target/Profile Kconfig contracts
+        id: kconfig_contract
+        if: steps.extract.outcome == 'success'
+        timeout-minutes: 12
+        run: |
+          bash scripts/run-stage.sh kconfig-contract node scripts/verify-target-contracts.mjs \
+            --tree work/upstream \
+            --source-id "${{ matrix.source }}" \
+            --branch "${{ matrix.branch }}" \
+            --out dist
       - name: Record branch attempt
         if: always()
         env:
@@ -139,6 +149,7 @@ jobs:
           FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
           METADATA_OUTCOME: ${{ steps.metadata.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
+          KCONFIG_CONTRACT_OUTCOME: ${{ steps.kconfig_contract.outcome }}
         run: node scripts/write-attempt.mjs
       - name: Upload branch result
         if: always()
@@ -149,6 +160,7 @@ jobs:
             dist/*.json.gz
             dist/*.meta.json
             dist/*.contract.json
+            dist/*.relations.json
             dist/*.translations.json
             attempts/*.attempt.json
             attempts/*--SUMMARY.txt

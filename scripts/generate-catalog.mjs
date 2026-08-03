@@ -9,6 +9,7 @@ import {
   incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo, safeSlug,
   targetBuildContract,
 } from './lib.mjs';
+import { buildKconfigRelations } from './kconfig-relations.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = {};
@@ -96,6 +97,10 @@ const translatedOptions = menuOptions.map((option) => {
     translationSource: translated.source || (promptRow.titleZh ? 'Catalog glossary' : ''),
   };
 });
+const relations = buildKconfigRelations(menuOptions, packages, menu.choices);
+if (!relations.validation.structurallyValid) {
+  throw new Error(`Invalid Kconfig choice references: ${relations.validation.invalidChoices.join(', ')}`);
+}
 const menuPathNames = [...new Set(menuOptions.flatMap((option) => option.path || []))];
 const menuLabels = Object.fromEntries(menuPathNames.map((name) => [
   name,
@@ -193,6 +198,7 @@ const payload = {
   targetTree,
   targets,
   menu: compactMenu,
+  relations,
   translation: {
     languages: translationReport.languages,
     fallback: 'en',
@@ -203,6 +209,10 @@ const payload = {
 const json = JSON.stringify(payload);
 const asset = `${slug}.json.gz`;
 writeFileSync(join(outDir, asset), gzipSync(Buffer.from(json), { level: 9 }));
+writeFileSync(join(outDir, `${slug}.relations.json`), JSON.stringify({
+  schema: relations.schema, source: payload.source, generatedAt: payload.generatedAt,
+  summary: relations.summary, validation: relations.validation, records: relations.records,
+}, null, 2) + '\n');
 writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translationReport, null, 2) + '\n');
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   source: payload.source, counts: payload.counts, asset,
