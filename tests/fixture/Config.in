@@ -1,5 +1,27 @@
 mainmenu "OpenWrt Configuration"
 
+menu "Target System"
+config TARGET_x86
+	bool "x86"
+config TARGET_x86_64
+	bool "x86_64"
+	depends on TARGET_x86
+config TARGET_x86_64_DEVICE_generic
+	bool "Generic x86/64"
+	depends on TARGET_x86_64
+config TARGET_x86_64_DEVICE_q35
+	bool "QEMU Q35"
+	depends on TARGET_x86_64
+config TARGET_mediatek
+	bool "MediaTek ARM"
+config TARGET_mediatek_filogic
+	bool "Filogic 8x0 (MT798x)"
+	depends on TARGET_mediatek
+config TARGET_mediatek_filogic_DEVICE_demo
+	bool "Demo Router"
+	depends on TARGET_mediatek_filogic
+endmenu
+
 menu "Target Images"
 config TARGET_IMAGES_GZIP
 	bool "GZip images"

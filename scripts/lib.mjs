@@ -9,7 +9,18 @@ export function parseInfoRecords(text) {
   let target = null;
   let profile = null;
   const finishProfile = () => {
-    if (profile && target) target.profiles.push(profile);
+    if (profile && target) {
+      const duplicateIndex = target.profiles.findIndex((item) => item.id === profile.id);
+      if (duplicateIndex < 0) target.profiles.push(profile);
+      else {
+        const previous = target.profiles[duplicateIndex];
+        profile.aliases = [...new Set([
+          ...(previous.aliases || []), previous.name,
+          ...(profile.aliases || []),
+        ].filter((name) => name && name !== profile.name))];
+        target.profiles[duplicateIndex] = profile;
+      }
+    }
     profile = null;
   };
   const finishTarget = () => {
@@ -151,6 +162,62 @@ export function incompleteSelectableTargets(targets, symbols = null) {
     const contract = targetBuildContract(target, symbols);
     return contract.kind === 'unavailable';
   });
+}
+
+export function buildTargetTree(targets, options = []) {
+  const optionBySymbol = new Map(options.map((option) => [option.symbol, option]));
+  const systems = new Map();
+  for (const target of targets) {
+    const systemSymbol = `TARGET_${target.board}`;
+    const systemName = optionBySymbol.get(systemSymbol)?.prompt || target.board;
+    const subtargetName = target.hasSubtarget
+      ? optionBySymbol.get(target.targetSelector)?.prompt || target.subtargetName || target.subtarget
+      : 'Default';
+    target.systemName = systemName;
+    target.subtargetLabel = subtargetName;
+
+    let system = systems.get(target.board);
+    if (!system) {
+      system = { value: target.board, labelEn: systemName, labelZh: '', children: [] };
+      systems.set(target.board, system);
+    } else if (system.labelEn !== systemName) {
+      throw new Error(`Target System label conflict: ${target.board} => ${system.labelEn} / ${systemName}`);
+    }
+
+    const subtargetValue = target.subtarget || 'default';
+    if (system.children.some((item) => item.value === subtargetValue)) {
+      throw new Error(`Duplicate Target/Subtarget: ${target.board}/${subtargetValue}`);
+    }
+    const profiles = new Set();
+    const children = [];
+    for (const profile of target.profiles.filter((item) => item.selectable !== false)) {
+      if (profiles.has(profile.id)) throw new Error(`Duplicate Target Profile: ${target.id}/${profile.id}`);
+      profiles.add(profile.id);
+      children.push({
+        value: profile.id,
+        labelEn: profile.name || profile.id,
+        labelZh: '',
+        profileId: profile.id,
+        selector: profile.selector,
+        descriptionEn: profile.description || '',
+        aliasesEn: profile.aliases || [],
+      });
+    }
+    children.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
+    system.children.push({
+      value: subtargetValue,
+      labelEn: subtargetName,
+      labelZh: '',
+      targetId: target.id,
+      children,
+    });
+  }
+  const targetTree = [...systems.values()];
+  targetTree.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
+  for (const system of targetTree) {
+    system.children.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
+  }
+  return targetTree;
 }
 
 export function parsePackageInfo(text) {

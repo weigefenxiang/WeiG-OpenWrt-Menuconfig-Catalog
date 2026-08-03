@@ -6,7 +6,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo, safeSlug,
+  buildTargetTree, incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo, safeSlug,
   targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
@@ -142,35 +142,7 @@ const compactMenu = {
     };
   }),
 };
-const targetTree = [];
-for (const target of selectableTargets) {
-  let system = targetTree.find((item) => item.value === target.board);
-  if (!system) {
-    system = { value: target.board, labelEn: target.name || target.board, labelZh: '', children: [] };
-    targetTree.push(system);
-  }
-  system.children.push({
-    value: target.subtarget || 'default',
-    labelEn: target.subtargetName || target.subtarget || 'Default',
-    labelZh: '',
-    targetId: target.id,
-    children: target.profiles.filter((profile) => profile.selectable !== false).map((profile) => ({
-      value: profile.id,
-      labelEn: profile.name || profile.id,
-      labelZh: '',
-      profileId: profile.id,
-      selector: profile.selector,
-      descriptionEn: profile.description || '',
-    })),
-  });
-}
-targetTree.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
-for (const system of targetTree) {
-  system.children.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
-  for (const subtarget of system.children) {
-    subtarget.children.sort((a, b) => a.labelEn.localeCompare(b.labelEn));
-  }
-}
+const targetTree = buildTargetTree(selectableTargets, menu.options);
 const targetSelectors = [
   { id: 'system', labelEn: 'Target System', labelZh: '目标系统' },
   { id: 'subtarget', labelEn: 'Subtarget', labelZh: '子目标' },

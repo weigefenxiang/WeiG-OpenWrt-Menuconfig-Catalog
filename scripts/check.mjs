@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
+  buildTargetTree, incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
   resolveTargetSelectors, targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
@@ -37,6 +37,22 @@ const x86Target = targets.find((item) => item.id === 'x86/64');
 const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
 const abstractTarget = targets.find((item) => item.id === 'abstract-board');
 const unavailableTarget = targets.find((item) => item.id === 'unavailable-board');
+const fixtureSymbols = new Set(menu.options.map((item) => item.symbol));
+for (const target of targets) {
+  target.contract = targetBuildContract(target, fixtureSymbols);
+  target.targetSelector = target.contract.targetSelector || '';
+  const profileContracts = new Map((target.contract.profileContracts || []).map((item) => [item.id, item]));
+  for (const profile of target.profiles) {
+    const contract = profileContracts.get(profile.id);
+    profile.selector = contract?.selector || '';
+    profile.selectable = contract?.selectable !== false;
+  }
+}
+const fixtureTargetTree = buildTargetTree(targets.filter((item) => item.contract.selectable), menu.options);
+const x86System = fixtureTargetTree.find((item) => item.value === 'x86');
+const x8664 = x86System?.children.find((item) => item.value === '64');
+const mediatekSystem = fixtureTargetTree.find((item) => item.value === 'mediatek');
+const filogic = mediatekSystem?.children.find((item) => item.value === 'filogic');
 if (targets.length !== 4 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 4 ||
     x86Target?.arch !== 'x86_64' || filogicTarget?.arch !== 'aarch64' ||
     abstractTarget?.profiles.length !== 0 || unavailableTarget?.profiles.length !== 1 ||
@@ -44,6 +60,20 @@ if (targets.length !== 4 || targets.reduce((n, item) => n + item.profiles.length
     targetBuildContract(unavailableTarget).kind !== 'unavailable' ||
     incompleteSelectableTargets(targets).map((item) => item.id).join(',') !== 'unavailable-board') {
   failures.push('targetinfo/build contract');
+}
+if (x86System?.labelEn !== 'x86' || x8664?.labelEn !== 'x86_64' ||
+    x8664?.children.map((item) => item.labelEn).join(',') !== 'Generic x86/64,QEMU Q35' ||
+    mediatekSystem?.labelEn !== 'MediaTek ARM' || filogic?.labelEn !== 'Filogic 8x0 (MT798x)' ||
+    new Set(fixtureTargetTree.map((item) => item.value)).size !== fixtureTargetTree.length) {
+  failures.push('official Target/System/Subtarget/Profile hierarchy');
+}
+const aliasTargets = parseInfoRecords('Target: x86/64\nTarget-Board: x86\nTarget-Subtarget: 64\n' +
+  'Target-Arch: x86_64\nTarget-Arch-Packages: x86_64\n' +
+  'Target-Profile: DEVICE_demo\nTarget-Profile-Name: Alias Router (Demo Router)\n' +
+  'Target-Profile: DEVICE_demo\nTarget-Profile-Name: Demo Router\n');
+if (aliasTargets[0]?.profiles.length !== 1 || aliasTargets[0]?.profiles[0]?.name !== 'Demo Router' ||
+    aliasTargets[0]?.profiles[0]?.aliases?.join(',') !== 'Alias Router (Demo Router)') {
+  failures.push('Target Profile alias deduplication');
 }
 const legacyRecords = parseInfoRecords(`Target: ath25\nTarget-Board: ath25\nTarget-Arch: mips_24kc\n` +
   'Target-Arch-Packages: mips_24kc\nTarget-Profile: Default\n' +
@@ -178,6 +208,7 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('.translations.json') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
 if (!library.includes('hasSubtarget') || !library.includes('resolveTargetSelectors') ||
+    !library.includes('buildTargetTree') || !library.includes('systemName') ||
     library.includes("subtarget = 'generic'") || !generator.includes('kconfigSymbols') ||
     !validator.includes('quarantined') || !validator.includes('quarantineGeneratedProfiles') ||
     validator.includes('requiredPackages') ||
