@@ -33,14 +33,26 @@ const source = {
 const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
 const menu = parseKconfigTree(tree);
+const kconfigSymbols = new Set(menu.options.map((option) => option.symbol));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
 if (!targets.length || !menu.options.length) {
   throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
 }
-for (const target of targets) target.contract = targetBuildContract(target);
+for (const target of targets) {
+  target.contract = targetBuildContract(target, kconfigSymbols);
+  target.targetSelector = target.contract.targetSelector || '';
+  const profileContracts = new Map((target.contract.profileContracts || []).map((item) => [item.id, item]));
+  for (const profile of target.profiles) {
+    const profileContract = profileContracts.get(profile.id);
+    profile.selector = profileContract?.selector || '';
+    profile.targetSelector = profileContract?.targetSelector || target.contract.targetSelector || '';
+    profile.selectable = profileContract?.selectable !== false;
+    profile.unavailableReason = profileContract?.reason || '';
+  }
+}
 const selectableTargets = targets.filter((target) => target.contract.selectable);
-const unavailableTargets = incompleteSelectableTargets(targets);
+const unavailableTargets = incompleteSelectableTargets(targets, kconfigSymbols);
 const contractReport = {
   schema: 1, source, generatedAt: new Date().toISOString(),
   summary: {
@@ -60,10 +72,10 @@ if (!selectableTargets.length) {
 }
 const targetSymbols = new Set(['TARGET_BOARD', 'TARGET_SUBTARGET', 'TARGET_PROFILE']);
 for (const target of targets) {
-  targetSymbols.add(`TARGET_${target.board}`);
-  targetSymbols.add(`TARGET_${target.board}_${target.subtarget}`);
+  if (target.contract.targetSelector) targetSymbols.add(target.contract.targetSelector);
   for (const profile of target.profiles) {
-    targetSymbols.add(`TARGET_${target.board}_${target.subtarget}_${profile.id}`);
+    if (profile.targetSelector) targetSymbols.add(profile.targetSelector);
+    if (profile.selector) targetSymbols.add(profile.selector);
   }
 }
 const menuOptions = menu.options.filter((option) =>
@@ -138,15 +150,16 @@ for (const target of selectableTargets) {
     targetTree.push(system);
   }
   system.children.push({
-    value: target.subtarget,
-    labelEn: target.subtargetName || target.subtarget,
+    value: target.subtarget || 'default',
+    labelEn: target.subtargetName || target.subtarget || 'Default',
     labelZh: '',
     targetId: target.id,
-    children: target.profiles.map((profile) => ({
+    children: target.profiles.filter((profile) => profile.selectable !== false).map((profile) => ({
       value: profile.id,
       labelEn: profile.name || profile.id,
       labelZh: '',
       profileId: profile.id,
+      selector: profile.selector,
       descriptionEn: profile.description || '',
     })),
   });

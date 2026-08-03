@@ -23,9 +23,11 @@ export function parseInfoRecords(text) {
     const [, key, value] = match;
     if (key === 'Target') {
       finishTarget();
-      const [board, subtarget = 'generic'] = value.split('/');
+      const [board, ...subtargetParts] = value.split('/');
+      const subtarget = subtargetParts.join('/') || '';
       target = {
-        id: value, board, subtarget, name: value, subtargetName: subtarget,
+        id: value, board, subtarget, hasSubtarget: Boolean(subtarget), name: value,
+        subtargetName: subtarget,
         arch: '', archPackages: '', features: [], packages: [], profiles: [],
       };
       continue;
@@ -39,12 +41,23 @@ export function parseInfoRecords(text) {
     if (profile && key.startsWith('Target-Profile-')) {
       const field = key.slice('Target-Profile-'.length);
       if (field === 'Name') profile.name = value;
-      else if (field === 'Packages') profile.packages = value.split(/\s+/).filter(Boolean);
+      else if (field === 'Packages') {
+        profile.packages = value.split(/\s+/).filter(Boolean);
+        profile.packagesAdd = profile.packages.filter((name) => !name.startsWith('-'))
+          .map((name) => name.replace(/^\+/, '')).filter(Boolean);
+        profile.packagesRemove = profile.packages.filter((name) => name.startsWith('-'))
+          .map((name) => name.slice(1)).filter(Boolean);
+      }
       else if (field === 'Default') profile.default = value;
       else if (field === 'Description') profile.description = value;
       continue;
     }
-    if (key === 'Target-Name') target.name = value;
+    if (key === 'Target-Board') target.board = value;
+    else if (key === 'Target-Subtarget') {
+      target.subtarget = value;
+      target.hasSubtarget = Boolean(value);
+    }
+    else if (key === 'Target-Name') target.name = value;
     else if (key === 'Target-Subtarget-Name') target.subtargetName = value;
     else if (key === 'Target-Arch') target.arch = value;
     else if (key === 'Target-Arch-Packages') target.archPackages = value;
@@ -55,7 +68,50 @@ export function parseInfoRecords(text) {
   return targets;
 }
 
-export function targetBuildContract(target) {
+function selectorCandidates(target, profile) {
+  const board = String(target.board || '').trim();
+  const subtarget = String(target.subtarget || '').trim();
+  const profileId = String(profile?.id || '').trim();
+  const profileNames = [...new Set([profileId,
+    profileId.replace(/^DEVICE_/, ''),
+    profileId.startsWith('DEVICE_') ? '' : `DEVICE_${profileId}`,
+  ].filter(Boolean))];
+  const targetNames = [...new Set([
+    subtarget ? `TARGET_${board}_${subtarget}` : `TARGET_${board}`,
+    `TARGET_${board}`,
+  ])];
+  const profiles = targetNames.flatMap((name) => profileNames.map((id) => `${name}_${id}`));
+  return { targetNames, profiles };
+}
+
+function findActualSymbol(candidates, symbols) {
+  if (!symbols) return candidates[0] || '';
+  for (const candidate of candidates) if (symbols.has(candidate)) return candidate;
+  const normalizeSymbol = (value) => String(value).replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+  const normalized = new Map();
+  for (const symbol of symbols) {
+    const key = normalizeSymbol(symbol);
+    const matches = normalized.get(key) || [];
+    matches.push(symbol);
+    normalized.set(key, matches);
+  }
+  for (const candidate of candidates) {
+    const matches = normalized.get(normalizeSymbol(candidate)) || [];
+    if (matches.length === 1) return matches[0];
+  }
+  return '';
+}
+
+export function resolveTargetSelectors(target, profile, symbols) {
+  const candidates = selectorCandidates(target, profile);
+  return {
+    target: findActualSymbol(candidates.targetNames, symbols),
+    profile: findActualSymbol(candidates.profiles, symbols),
+    candidates,
+  };
+}
+
+export function targetBuildContract(target, symbols = null) {
   const profileCount = (target.profiles || []).length;
   const missing = [];
   if (!/^[A-Za-z0-9_+-]+$/.test(target.arch)) missing.push('Target-Arch');
@@ -66,12 +122,33 @@ export function targetBuildContract(target) {
   if (missing.length) {
     return { kind: 'unavailable', selectable: false, profiles: profileCount, missing };
   }
-  return { kind: 'buildable', selectable: true, profiles: profileCount, missing: [] };
+  const profileContracts = target.profiles.map((profile) => {
+    const selectors = resolveTargetSelectors(target, profile, symbols);
+    return {
+      id: profile.id,
+      selector: selectors.profile,
+      targetSelector: selectors.target,
+      selectable: Boolean(selectors.target && selectors.profile),
+      reason: selectors.target && selectors.profile ? '' : 'missing-selector',
+    };
+  });
+  const selectableProfiles = profileContracts.filter((item) => item.selectable).length;
+  if (symbols && !selectableProfiles) {
+    return {
+      kind: 'unavailable', selectable: false, profiles: profileCount, missing: ['Kconfig-selector'],
+      targetSelector: profileContracts[0]?.targetSelector || '', profileContracts,
+    };
+  }
+  return {
+    kind: 'buildable', selectable: true, profiles: profileCount, missing: [],
+    targetSelector: profileContracts.find((item) => item.targetSelector)?.targetSelector || '',
+    profileContracts,
+  };
 }
 
-export function incompleteSelectableTargets(targets) {
+export function incompleteSelectableTargets(targets, symbols = null) {
   return targets.filter((target) => {
-    const contract = targetBuildContract(target);
+    const contract = targetBuildContract(target, symbols);
     return contract.kind === 'unavailable';
   });
 }

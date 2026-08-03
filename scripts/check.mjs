@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
-  targetBuildContract,
+  resolveTargetSelectors, targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
@@ -25,6 +25,8 @@ const collector = readFileSync(join(ROOT, 'scripts', 'collect-results.mjs'), 'ut
 const release = readFileSync(join(ROOT, 'scripts', 'publish-release.sh'), 'utf8');
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
+const validator = readFileSync(join(ROOT, 'scripts', 'verify-target-contracts.mjs'), 'utf8');
+const library = readFileSync(join(ROOT, 'scripts', 'lib.mjs'), 'utf8');
 const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs'), 'utf8');
@@ -43,10 +45,29 @@ if (targets.length !== 4 || targets.reduce((n, item) => n + item.profiles.length
     incompleteSelectableTargets(targets).map((item) => item.id).join(',') !== 'unavailable-board') {
   failures.push('targetinfo/build contract');
 }
-const probeFixture = buildProbeConfig(x86Target, x86Target?.profiles[0]);
-if (!verifyProbeConfig(probeFixture, x86Target, x86Target?.profiles[0]).valid ||
-    verifyProbeConfig(probeFixture.replace('CONFIG_TARGET_x86_64_DEVICE_generic=y', '# CONFIG_TARGET_x86_64_DEVICE_generic is not set'),
-      x86Target, x86Target?.profiles[0]).valid) {
+const legacyRecords = parseInfoRecords(`Target: ath25\nTarget-Board: ath25\nTarget-Arch: mips_24kc\n` +
+  'Target-Arch-Packages: mips_24kc\nTarget-Profile: Default\n' +
+  'Target-Profile-Packages: -dnsmasq +kmod-ath9k\n');
+const legacyTarget = legacyRecords[0];
+const legacyProfile = legacyTarget?.profiles[0];
+const legacySymbols = new Set(['TARGET_ath25', 'TARGET_ath25_Default']);
+const legacySelectors = resolveTargetSelectors(legacyTarget, legacyProfile, legacySymbols);
+const legacyProbe = buildProbeConfig(legacyTarget, legacyProfile, legacySelectors);
+const legacyContract = targetBuildContract(legacyTarget, legacySymbols);
+if (legacyTarget?.subtarget || legacyTarget?.hasSubtarget ||
+    legacyProfile?.packagesAdd?.join(',') !== 'kmod-ath9k' ||
+    legacyProfile?.packagesRemove?.join(',') !== 'dnsmasq' ||
+    !legacyContract.selectable || legacySelectors.target !== 'TARGET_ath25' ||
+    legacySelectors.profile !== 'TARGET_ath25_Default' || /PACKAGE_-dnsmasq/.test(legacyProbe) ||
+    /TARGET_ath25_generic/.test(legacyProbe)) {
+  failures.push('legacy target/negative package probe');
+}
+const probeProfile = x86Target?.profiles[0];
+const probeSelectors = resolveTargetSelectors(x86Target, probeProfile);
+const probeFixture = buildProbeConfig(x86Target, probeProfile, probeSelectors);
+if (!verifyProbeConfig(probeFixture, x86Target, probeProfile, probeSelectors).valid ||
+    verifyProbeConfig(probeFixture.replace(`CONFIG_${probeSelectors.profile}=y`,
+      `# CONFIG_${probeSelectors.profile} is not set`), x86Target, probeProfile, probeSelectors).valid) {
   failures.push('Target/Profile Kconfig probe contract');
 }
 if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
@@ -156,6 +177,11 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('.relations.json') ||
     !generator.includes('.translations.json') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
+if (!library.includes('hasSubtarget') || !library.includes('resolveTargetSelectors') ||
+    library.includes("subtarget = 'generic'") || !generator.includes('kconfigSymbols') ||
+    !validator.includes('quarantined') || !validator.includes('quarantineGeneratedProfiles') ||
+    validator.includes('requiredPackages') ||
+    validator.includes('CONFIG_PACKAGE_${name}')) failures.push('Kconfig selector/package semantics');
 const requiredLanguages = ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];
 if (!['Top level', 'General settings', 'Global build settings', 'LuCI'].every((label) =>
   requiredLanguages.every((lang) => menuI18n[label]?.[lang]))) failures.push('menu i18n');

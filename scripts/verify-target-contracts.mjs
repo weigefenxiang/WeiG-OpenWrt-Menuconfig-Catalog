@@ -3,28 +3,21 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseInfoRecords, safeSlug, targetBuildContract } from './lib.mjs';
+import { createHash } from 'node:crypto';
+import { gunzipSync, gzipSync } from 'node:zlib';
+import {
+  parseInfoRecords, parseKconfigTree, resolveTargetSelectors, safeSlug, targetBuildContract,
+} from './lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-function configValue(value) {
-  return `"${String(value).replace(/"/g, '\\"')}"`;
-}
-
-export function buildProbeConfig(target, profile) {
-  const requiredPackages = [...new Set([...(target.packages || []), ...(profile.packages || [])])];
+export function buildProbeConfig(target, profile, selectors = resolveTargetSelectors(target, profile)) {
+  const targetSelector = selectors.target || `TARGET_${target.board}${target.subtarget ? `_${target.subtarget}` : ''}`;
+  const profileSelector = selectors.profile || `${targetSelector}_${profile.id}`;
   return [
     'CONFIG_HAVE_DOT_CONFIG=y',
-    `CONFIG_TARGET_${target.board}=y`,
-    `CONFIG_TARGET_${target.board}_${target.subtarget}=y`,
-    `CONFIG_TARGET_${target.board}_${target.subtarget}_${profile.id}=y`,
-    `CONFIG_${target.arch}=y`,
-    `CONFIG_ARCH=${configValue(target.arch)}`,
-    `CONFIG_TARGET_BOARD=${configValue(target.board)}`,
-    `CONFIG_TARGET_SUBTARGET=${configValue(target.subtarget)}`,
-    `CONFIG_TARGET_PROFILE=${configValue(profile.id)}`,
-    `CONFIG_TARGET_ARCH_PACKAGES=${configValue(target.archPackages)}`,
-    ...requiredPackages.map((name) => `CONFIG_PACKAGE_${name}=y`),
+    `CONFIG_${targetSelector}=y`,
+    `CONFIG_${profileSelector}=y`,
     '',
   ].join('\n');
 }
@@ -40,24 +33,68 @@ function configSymbols(text) {
   return values;
 }
 
-export function verifyProbeConfig(text, target, profile) {
+export function verifyProbeConfig(text, target, profile, selectors = resolveTargetSelectors(target, profile)) {
   const values = configSymbols(text);
   const expected = new Map([
-    [`TARGET_${target.board}`, 'y'],
-    [`TARGET_${target.board}_${target.subtarget}`, 'y'],
-    [`TARGET_${target.board}_${target.subtarget}_${profile.id}`, 'y'],
-    [target.arch, 'y'],
-    ['ARCH', configValue(target.arch)],
-    ['TARGET_BOARD', configValue(target.board)],
-    ['TARGET_SUBTARGET', configValue(target.subtarget)],
-    ['TARGET_PROFILE', configValue(profile.id)],
-    ['TARGET_ARCH_PACKAGES', configValue(target.archPackages)],
-    ...[...new Set([...(target.packages || []), ...(profile.packages || [])])]
-      .map((name) => [`PACKAGE_${name}`, 'y']),
+    [selectors.target, 'y'],
+    [selectors.profile, 'y'],
   ]);
   const changed = [...expected].flatMap(([symbol, value]) =>
-    values.get(symbol) === value ? [] : [{ symbol, expected: value, actual: values.get(symbol) ?? null }]);
+    symbol && values.get(symbol) === value ? [] : [{ symbol, expected: value, actual: values.get(symbol) ?? null }]);
   return { valid: changed.length === 0, changed };
+}
+
+export function quarantineGeneratedProfiles(outDir, slug, quarantined) {
+  if (!quarantined.length) return null;
+  const assetPath = join(outDir, `${slug}.json.gz`);
+  const metaPath = join(outDir, `${slug}.meta.json`);
+  if (!existsSync(assetPath) || !existsSync(metaPath)) {
+    throw new Error(`Generated catalog asset is missing: ${assetPath}`);
+  }
+  const removed = new Set(quarantined.map((item) => `${item.target}\0${item.profile}`));
+  const payload = JSON.parse(gunzipSync(readFileSync(assetPath)).toString('utf8'));
+  for (const target of payload.targets || []) {
+    const targetRemoved = new Set((target.profiles || [])
+      .filter((profile) => removed.has(`${target.id}\0${profile.id}`))
+      .map((profile) => profile.id));
+    if (!targetRemoved.size) continue;
+    target.profiles = (target.profiles || []).filter((profile) => !targetRemoved.has(profile.id));
+    for (const contract of target.contract?.profileContracts || []) {
+      if (targetRemoved.has(contract.id)) {
+        contract.selectable = false;
+        contract.reason = 'kconfig-probe';
+      }
+    }
+    if (!target.profiles.some((profile) => profile.selectable !== false)) {
+      target.contract = {
+        ...(target.contract || {}), kind: 'unavailable', selectable: false,
+        missing: [...new Set([...(target.contract?.missing || []), 'kconfig-probe'])],
+      };
+    }
+  }
+  payload.targetTree = (payload.targetTree || []).map((system) => ({
+    ...system,
+    children: (system.children || []).map((subtarget) => ({
+      ...subtarget,
+      children: (subtarget.children || []).filter((profile) =>
+        !removed.has(`${subtarget.targetId}\0${profile.profileId || profile.value}`)),
+    })).filter((subtarget) => subtarget.children?.length),
+  })).filter((system) => system.children?.length);
+  const selectableTargets = payload.targetTree.reduce((total, system) =>
+    total + (system.children || []).length, 0);
+  const visibleProfiles = payload.targetTree.reduce((total, system) =>
+    total + (system.children || []).reduce((count, subtarget) => count + (subtarget.children || []).length, 0), 0);
+  payload.counts = {
+    ...(payload.counts || {}), selectableTargets, profiles: visibleProfiles,
+    unavailableTargets: (payload.targets || []).filter((target) => target.contract?.kind === 'unavailable').length,
+  };
+  const json = JSON.stringify(payload);
+  writeFileSync(assetPath, gzipSync(Buffer.from(json), { level: 9 }));
+  const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
+  meta.counts = payload.counts;
+  meta.sha256 = createHash('sha256').update(json).digest('hex');
+  writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
+  return payload.counts;
 }
 
 const args = {};
@@ -75,7 +112,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (!existsSync(contractPath)) throw new Error(`Missing generated target contract: ${contractPath}`);
   const report = JSON.parse(readFileSync(contractPath, 'utf8'));
   const targets = parseInfoRecords(readFileSync(join(tree, 'tmp', '.targetinfo'), 'utf8'));
-  for (const target of targets) target.contract = targetBuildContract(target);
+  const menu = parseKconfigTree(tree);
+  const kconfigSymbols = new Set(menu.options.map((option) => option.symbol));
+  for (const target of targets) target.contract = targetBuildContract(target, kconfigSymbols);
   const probeTargets = targets.filter((target) => target.contract.selectable);
   const probeDir = join(outDir, `${slug}.kconfig-probes`);
   mkdirSync(probeDir, { recursive: true });
@@ -85,35 +124,55 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     generatedAt: new Date().toISOString(),
     targets: probeTargets.length,
     passed: 0,
-    failed: [],
+    quarantined: [],
   };
   try {
     execFileSync('make', ['-C', tree, 'scripts/config/conf'], { stdio: 'inherit' });
     const conf = join(tree, 'scripts', 'config', 'conf');
     if (!existsSync(conf)) throw new Error(`Upstream Kconfig resolver is unavailable: ${conf}`);
     for (const target of probeTargets) {
-      const profile = target.profiles[0];
-      const label = `${target.board}/${target.subtarget}/${profile.id}`;
-      const configPath = join(probeDir, `${safeSlug(target.board)}--${safeSlug(target.subtarget)}.config`);
-      writeFileSync(configPath, buildProbeConfig(target, profile));
+      const profile = target.profiles.find((item) => item.selectable !== false);
+      const selectors = resolveTargetSelectors(target, profile, kconfigSymbols);
+      const label = `${target.board}/${target.subtarget || '(no-subtarget)'}/${profile.id}`;
+      const configPath = join(probeDir, `${safeSlug(target.id)}--${safeSlug(profile.id)}.config`);
+      writeFileSync(configPath, buildProbeConfig(target, profile, selectors));
       try {
         execFileSync(conf, [`--defconfig=${configPath}`, '-w', configPath, 'Config.in'], {
           cwd: tree, stdio: 'pipe', encoding: 'utf8', timeout: 120000,
         });
-        const verification = verifyProbeConfig(readFileSync(configPath, 'utf8'), target, profile);
+        const verification = verifyProbeConfig(readFileSync(configPath, 'utf8'), target, profile, selectors);
         if (!verification.valid) throw new Error(JSON.stringify(verification.changed));
         result.passed++;
         console.log(`Kconfig target contract: ${label} OK`);
       } catch (error) {
-        result.failed.push({ target: target.id, profile: profile.id, error: error.message.slice(0, 2000) });
+        result.quarantined.push({ target: target.id, profile: profile.id, error: error.message.slice(0, 2000) });
         console.error(`Kconfig target contract: ${label} FAILED: ${error.message}`);
       }
     }
   } catch (error) {
-    result.failed.push({ target: '(resolver)', profile: '', error: error.message.slice(0, 2000) });
+    result.fatal = { target: '(resolver)', profile: '', error: error.message.slice(0, 2000) };
+  }
+  if (!result.fatal && result.targets > 0 && result.passed === 0) {
+    result.fatal = {
+      target: '(all-targets)', profile: '',
+      error: `No usable Target/Profile after Kconfig probes (${result.quarantined.length} quarantined)`,
+    };
   }
   report.kconfigProbe = result;
+  if (result.quarantined.length && !result.fatal) {
+    report.summary.quarantinedProfiles = result.quarantined.length;
+    report.unavailable = [
+      ...(report.unavailable || []),
+      ...result.quarantined.map((item) => ({
+        target: item.target, profile: item.profile, missing: ['kconfig-probe'],
+      })),
+    ];
+    const counts = quarantineGeneratedProfiles(outDir, slug, result.quarantined);
+    report.summary.selectableTargets = counts.selectableTargets;
+    report.summary.unavailableTargets = counts.unavailableTargets;
+  }
   writeFileSync(contractPath, JSON.stringify(report, null, 2) + '\n');
-  if (result.failed.length) throw new Error(`Kconfig target contract failed: ${result.failed.length}/${result.targets}`);
-  console.log(`Kconfig target contract passed: ${result.passed}/${result.targets}`);
+  if (result.fatal) throw new Error(`Kconfig resolver failed: ${result.fatal.error}`);
+  console.log(`Kconfig target contract passed: ${result.passed}/${result.targets}; ` +
+    `quarantined: ${result.quarantined.length}`);
 }
