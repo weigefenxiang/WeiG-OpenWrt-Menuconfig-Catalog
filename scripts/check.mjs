@@ -20,6 +20,7 @@ const translationWorkflow = readFileSync(join(ROOT, '.github', 'workflows', 'tra
 const discover = readFileSync(join(ROOT, 'scripts', 'discover.mjs'), 'utf8');
 const metadata = readFileSync(join(ROOT, 'scripts', 'prepare-metadata.sh'), 'utf8');
 const stageRunner = readFileSync(join(ROOT, 'scripts', 'run-stage.sh'), 'utf8');
+const cloneScript = readFileSync(join(ROOT, 'scripts', 'clone-upstream.sh'), 'utf8');
 const attemptWriter = readFileSync(join(ROOT, 'scripts', 'write-attempt.mjs'), 'utf8');
 const collector = readFileSync(join(ROOT, 'scripts', 'collect-results.mjs'), 'utf8');
 const release = readFileSync(join(ROOT, 'scripts', 'publish-release.sh'), 'utf8');
@@ -127,6 +128,7 @@ if (!demoRelations || demoRelations.states.join(',') !== 'n,m,y' ||
   failures.push('Kconfig/package relationship graph');
 }
 if (!workflow.includes('scripts/prepare-metadata.sh') ||
+    !workflow.includes('scripts/clone-upstream.sh') ||
     !workflow.includes('id: metadata') ||
     !workflow.includes('run-stage.sh" metadata') ||
     workflow.includes('id: defconfig') ||
@@ -163,6 +165,11 @@ if (!stageRunner.includes('Source ID:') ||
     !stageRunner.includes('CATALOG_ARTIFACT_NAME') ||
     !stageRunner.includes('CATALOG_ORDER') ||
     !stageRunner.includes('last 40 relevant lines') ||
+    !cloneScript.includes('CLONE_MAX_ATTEMPTS') ||
+    !cloneScript.includes('returned error: (408|429|500|502|503|504)') ||
+    !cloneScript.includes('transient network failure') ||
+    !cloneScript.includes('permanent clone failure; no retry') ||
+    !cloneScript.includes('work/upstream') ||
     !attemptWriter.includes('--SUMMARY.txt') ||
     !attemptWriter.includes("['metadata', process.env.METADATA_OUTCOME]") ||
     !attemptWriter.includes("['kconfig-contract', process.env.KCONFIG_CONTRACT_OUTCOME]") ||

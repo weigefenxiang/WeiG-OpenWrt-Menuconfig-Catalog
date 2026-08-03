@@ -92,7 +92,7 @@ jobs:
       - name: Clone ${{ matrix.repo }} @ ${{ matrix.branch }}
         id: clone
         timeout-minutes: 10
-        run: bash scripts/run-stage.sh clone git clone "https://github.com/${{ matrix.repo }}" --branch "${{ matrix.branch }}" --depth 1 work/upstream
+        run: bash scripts/run-stage.sh clone bash scripts/clone-upstream.sh "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
       - name: Prepare feeds
         id: feeds
         timeout-minutes: 25
