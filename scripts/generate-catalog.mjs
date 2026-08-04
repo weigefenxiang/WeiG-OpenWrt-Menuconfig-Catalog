@@ -7,7 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildTargetTree, incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo, safeSlug,
-  targetBuildContract,
+  resolvePackageOption, targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
 
@@ -33,6 +33,24 @@ const source = {
 const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
 const menu = parseKconfigTree(tree);
+const duplicateReport = {
+  schema: 1,
+  source,
+  generatedAt: new Date().toISOString(),
+  summary: {
+    symbols: menu.options.length,
+    duplicateSymbols: menu.validation?.duplicates?.length || 0,
+    duplicateNodes: menu.validation?.duplicateCount || 0,
+    conflicts: menu.validation?.conflicts?.length || 0,
+  },
+  duplicates: menu.validation?.duplicates || [],
+  conflicts: menu.validation?.conflicts || [],
+};
+writeFileSync(join(outDir, `${slug}.duplicates.json`), JSON.stringify(duplicateReport, null, 2) + '\n');
+if (duplicateReport.summary.conflicts) {
+  throw new Error(`Kconfig symbol merge conflicts: ${duplicateReport.conflicts
+    .slice(0, 20).map((item) => item.symbol).join(', ')}`);
+}
 const kconfigSymbols = new Set(menu.options.map((option) => option.symbol));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
@@ -90,6 +108,40 @@ if (pollutedDependencies.length) {
   throw new Error(`Kconfig 依赖疑似混入 help 正文:\n${pollutedDependencies.slice(0, 20).join('\n')}`);
 }
 const packageByName = new Map(packages.map((item) => [item.name, item]));
+const catalogPolicy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
+const curatedCandidates = Array.isArray(catalogPolicy.curatedCandidates)
+  ? catalogPolicy.curatedCandidates
+  : [];
+if (curatedCandidates.some((candidate) => !candidate || typeof candidate !== 'object' ||
+    !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$/.test(String(candidate.id || '')) ||
+    !Array.isArray(candidate.packages) || candidate.packages.length === 0 ||
+    candidate.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(String(name || ''))))) {
+  throw new Error('catalog.config.json curatedCandidates must use {id, packages:[luci-app-*]} objects');
+}
+const packageSymbols = new Set(menu.options
+  .filter((option) => option.symbol.startsWith('PACKAGE_'))
+  .map((option) => option.symbol.slice('PACKAGE_'.length)));
+const resolveCandidate = (candidate) => resolvePackageOption(candidate, packageSymbols);
+const candidateRows = curatedCandidates.map((candidate) => {
+  const packageName = resolveCandidate(candidate);
+  return {
+    id: candidate.id,
+    packages: [...candidate.packages],
+    package: packageName,
+    available: Boolean(packageName),
+  };
+});
+const luciApplications = packages.filter((item) => item.category === 'LuCI' &&
+  (item.submenu === 'Applications' || item.name.startsWith('luci-app-')))
+  .map((item) => item.name).sort();
+const candidateReport = {
+  schema: 1, source, generatedAt: new Date().toISOString(),
+  curated: candidateRows,
+  available: candidateRows.filter((item) => item.available).map((item) => item.package),
+  missing: candidateRows.filter((item) => !item.available).map((item) => item.id),
+  applications: { count: luciApplications.length, unique: [...new Set(luciApplications)].length, names: luciApplications },
+};
+writeFileSync(join(outDir, `${slug}.curated-candidates.json`), JSON.stringify(candidateReport, null, 2) + '\n');
 const promptTranslations = translations.prompts || {};
 const entryTranslations = translations.entries || {};
 const translatedOptions = menuOptions.map((option) => {
@@ -168,9 +220,16 @@ const translationReport = {
   missingChoicesZhCN: missingChoiceTranslations,
 };
 const payload = {
-  schema: 3,
+  schema: 4,
   generatedAt: new Date().toISOString(),
   source,
+  validation: {
+    symbolsUnique: true,
+    duplicateSymbols: duplicateReport.summary.duplicateSymbols,
+    duplicateNodes: duplicateReport.summary.duplicateNodes,
+    duplicateReport: `${slug}.duplicates.json`,
+    curatedCandidatesReport: `${slug}.curated-candidates.json`,
+  },
   counts: {
     targets: targets.length,
     selectableTargets: selectableTargets.length,
@@ -195,7 +254,8 @@ const payload = {
 };
 const json = JSON.stringify(payload);
 const asset = `${slug}.json.gz`;
-writeFileSync(join(outDir, asset), gzipSync(Buffer.from(json), { level: 9 }));
+const compressed = gzipSync(Buffer.from(json), { level: 9 });
+writeFileSync(join(outDir, asset), compressed);
 writeFileSync(join(outDir, `${slug}.relations.json`), JSON.stringify({
   schema: relations.schema, source: payload.source, generatedAt: payload.generatedAt,
   summary: relations.summary, validation: relations.validation, records: relations.records,
@@ -204,7 +264,11 @@ writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translat
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   source: payload.source, counts: payload.counts, asset,
   generatedAt: payload.generatedAt,
+  commit: payload.source.commit,
+  hash: createHash('sha256').update(compressed).digest('hex'),
   sha256: createHash('sha256').update(json).digest('hex'),
+  bytes: compressed.byteLength,
+  jsonBytes: Buffer.byteLength(json),
 }, null, 2) + '\n');
 console.log(`${asset}: ${payload.counts.selectableTargets}/${targets.length} selectable targets / ` +
   `${payload.counts.profiles} profiles / ${compactMenu.options.length} menu options / ${packages.length} packages` +

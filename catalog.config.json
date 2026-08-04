@@ -35,5 +35,23 @@
       "diy": "legacy",
       "legacy": true
     }
+  ],
+  "curatedCandidates": [
+    { "id": "adguardhome", "packages": ["luci-app-adguardhome"] },
+    { "id": "antiblock", "packages": ["luci-app-antiblock"] },
+    { "id": "chrony", "packages": ["luci-app-chrony"] },
+    { "id": "csshnpd", "packages": ["luci-app-csshnpd"] },
+    { "id": "email", "packages": ["luci-app-email"] },
+    { "id": "filemanager", "packages": ["luci-app-filemanager"] },
+    { "id": "irqbalance", "packages": ["luci-app-irqbalance"] },
+    { "id": "openlist", "packages": ["luci-app-openlist"] },
+    { "id": "openthread", "packages": ["luci-app-openthread"] },
+    { "id": "package-manager", "packages": ["luci-app-package-manager"] },
+    { "id": "radicale3", "packages": ["luci-app-radicale3"] },
+    { "id": "rustdesk-server", "packages": ["luci-app-rustdesk-server"] },
+    { "id": "strongswan-swanctl", "packages": ["luci-app-strongswan-swanctl"] },
+    { "id": "tailscale-community", "packages": ["luci-app-tailscale-community"] },
+    { "id": "ustreamer", "packages": ["luci-app-ustreamer"] },
+    { "id": "wifihistory", "packages": ["luci-app-wifihistory"] }
   ]
 }

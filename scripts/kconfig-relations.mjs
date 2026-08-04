@@ -39,12 +39,20 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
   for (const option of menuOptions.filter((item) => item.symbol.startsWith('PACKAGE_'))) {
     const packageName = option.symbol.slice('PACKAGE_'.length);
     const packageInfo = packageByName.get(packageName);
-    const kconfig = {
-      depends: packageSymbols(option.depends),
-      selects: packageSymbols(option.selects),
-      implies: packageSymbols(option.implies),
+    const expressionsFor = (field) => {
+      const variants = option[`${field}Variants`];
+      return Array.isArray(variants) && variants.length ? variants : [option[field] || []];
     };
-    const missingKconfig = unique(Object.values(kconfig).flat()).filter((symbol) => !optionBySymbol.has(symbol));
+    const kconfig = {
+      depends: packageSymbols(expressionsFor('depends').flat()),
+      selects: packageSymbols(expressionsFor('selects').flat()),
+      implies: packageSymbols(expressionsFor('implies').flat()),
+      dependsVariants: expressionsFor('depends').map((items) => packageSymbols(items)),
+      selectsVariants: expressionsFor('selects').map((items) => packageSymbols(items)),
+      impliesVariants: expressionsFor('implies').map((items) => packageSymbols(items)),
+    };
+    const missingKconfig = unique([kconfig.depends, kconfig.selects, kconfig.implies].flat())
+      .filter((symbol) => !optionBySymbol.has(symbol));
     const packageDepends = packageInfo?.depends || [];
     const dependencyPackages = unique(packageDepends.map(packageNameFromDependency));
     const conflicts = packageInfo?.conflicts || [];

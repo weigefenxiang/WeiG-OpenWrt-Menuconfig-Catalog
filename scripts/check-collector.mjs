@@ -14,7 +14,7 @@ const script = join(ROOT, 'scripts', 'collect-results.mjs');
 const temp = mkdtempSync(join(tmpdir(), 'weig-catalog-collector-'));
 
 function addArtifact(root, order, branchName, status = 'success', {
-  translation = true, contract = true, relations = true,
+  translation = true, contract = true, relations = true, duplicates = true,
 } = {}) {
   const orderText = String(order).padStart(2, '0');
   const artifact = `${orderText}-catalog-openwrt-${branchName}-run-1-attempt-1`;
@@ -28,10 +28,12 @@ function addArtifact(root, order, branchName, status = 'success', {
   const asset = `openwrt--${branchName}.json.gz`;
   if (status === 'success') {
     const json = JSON.stringify({ source: 'OpenWrt', branch: branchName, generation: 'current' });
-    writeFileSync(join(dist, asset), gzipSync(Buffer.from(json)));
+    const compressed = gzipSync(Buffer.from(json));
+    writeFileSync(join(dist, asset), compressed);
     writeFileSync(join(dist, `openwrt--${branchName}.meta.json`), JSON.stringify({
       source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
       asset, sha256: createHash('sha256').update(json).digest('hex'),
+      hash: createHash('sha256').update(compressed).digest('hex'), bytes: compressed.byteLength,
     }));
     if (contract) {
       writeFileSync(join(dist, `openwrt--${branchName}.contract.json`), JSON.stringify({
@@ -50,6 +52,12 @@ function addArtifact(root, order, branchName, status = 'success', {
       }));
     }
     if (translation) writeFileSync(join(dist, `openwrt--${branchName}.translations.json`), '{}\n');
+    if (duplicates) writeFileSync(join(dist, `openwrt--${branchName}.duplicates.json`), JSON.stringify({
+      schema: 1, summary: { duplicateSymbols: 0, duplicateNodes: 0, conflicts: 0 }, duplicates: [], conflicts: [],
+    }));
+    writeFileSync(join(dist, `openwrt--${branchName}.curated-candidates.json`), JSON.stringify({
+      schema: 1, curated: [], missing: [], applications: { count: 0, unique: 0, names: [] },
+    }));
   }
   const failureLog = status === 'failure' ? `${orderText}-openwrt-${branchName}--clone.log` : '';
   writeFileSync(join(attempts, `${orderText}-openwrt-${branchName}.attempt.json`), JSON.stringify({

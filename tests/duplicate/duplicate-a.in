@@ -1,0 +1,5 @@
+config PACKAGE_luci-app-rustdesk-server
+  tristate "RustDesk Server"
+  depends on TARGET_x86
+  help
+    RustDesk server package.

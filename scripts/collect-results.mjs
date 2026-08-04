@@ -43,7 +43,7 @@ const copyUnique = (file, dir, scope) => {
 
 for (const file of walk(previousDir).filter((item) =>
   item.endsWith('.json.gz') || item.endsWith('.translations.json') || item.endsWith('.contract.json') ||
-  item.endsWith('.relations.json'))) {
+  item.endsWith('.relations.json') || item.endsWith('.duplicates.json') || item.endsWith('.curated-candidates.json'))) {
   copyFileSync(file, join(distDir, basename(file)));
 }
 for (const name of ['i18n-cache.json', 'translation-state.json', 'translation-retry-queue.json']) {
@@ -66,7 +66,7 @@ for (const artifactDir of artifactDirs) {
   const artifactName = basename(artifactDir);
   const files = walk(artifactDir);
   const accepted = files.filter((file) =>
-    /\.(json\.gz|meta\.json|contract\.json|relations\.json|translations\.json|attempt\.json|log)$/.test(file) ||
+    /\.(json\.gz|meta\.json|contract\.json|relations\.json|translations\.json|duplicates\.json|curated-candidates\.json|attempt\.json|log)$/.test(file) ||
     file.endsWith('--SUMMARY.txt'));
   acceptedFiles += accepted.length;
   for (const file of accepted.filter((item) =>
@@ -125,10 +125,28 @@ for (const artifactDir of artifactDirs) {
   const contractFile = contractName && accepted.find((file) => basename(file) === contractName);
   const relationsName = meta?.asset?.replace(/\.json\.gz$/, '.relations.json');
   const relationsFile = relationsName && accepted.find((file) => basename(file) === relationsName);
+  const duplicateName = meta?.asset?.replace(/\.json\.gz$/, '.duplicates.json');
+  const duplicateFile = duplicateName && accepted.find((file) => basename(file) === duplicateName);
+  const candidateName = meta?.asset?.replace(/\.json\.gz$/, '.curated-candidates.json');
+  const candidateFile = candidateName && accepted.find((file) => basename(file) === candidateName);
   if (meta && !assetFile) issues.push(`缺 ${meta.asset}`);
   if (meta && !translationFile) issues.push('缺 translations');
   if (meta && !contractFile) issues.push('缺 target contract');
   if (meta && !relationsFile) issues.push('missing Kconfig relations');
+  if (meta && !duplicateFile) issues.push('missing symbol duplicate report');
+  if (meta && !candidateFile) issues.push('missing curated candidates report');
+  if (duplicateFile) {
+    try {
+      const report = JSON.parse(readFileSync(duplicateFile, 'utf8'));
+      if (!report.summary || !Array.isArray(report.duplicates) || !Array.isArray(report.conflicts)) {
+        issues.push('invalid symbol duplicate report');
+      } else if (report.summary.conflicts > 0) {
+        issues.push(`Kconfig symbol merge conflicts ${report.summary.conflicts}`);
+      }
+    } catch (error) {
+      issues.push(`cannot parse symbol duplicate report: ${error.message}`);
+    }
+  }
   if (contractFile) {
     try {
       const contract = JSON.parse(readFileSync(contractFile, 'utf8'));
@@ -167,8 +185,12 @@ for (const artifactDir of artifactDirs) {
   }
   if (assetFile) {
     try {
-      const jsonHash = createHash('sha256').update(gunzipSync(readFileSync(assetFile))).digest('hex');
+      const compressed = readFileSync(assetFile);
+      const jsonHash = createHash('sha256').update(gunzipSync(compressed)).digest('hex');
+      const compressedHash = createHash('sha256').update(compressed).digest('hex');
       if (meta.sha256 && meta.sha256 !== jsonHash) issues.push('catalog SHA-256 不一致');
+      if (meta.hash && meta.hash !== compressedHash) issues.push('catalog compressed hash mismatch');
+      if (meta.bytes && Number(meta.bytes) !== compressed.byteLength) issues.push('catalog byte count mismatch');
     } catch (error) {
       issues.push(`catalog 无法解压:${error.message}`);
     }
@@ -179,6 +201,8 @@ for (const artifactDir of artifactDirs) {
       copyUnique(metaFiles[0], distDir, identity) &&
       copyUnique(contractFile, distDir, identity) &&
       copyUnique(relationsFile, distDir, identity) &&
+      copyUnique(duplicateFile, distDir, identity) &&
+      copyUnique(candidateFile, distDir, identity) &&
       copyUnique(translationFile, distDir, identity);
     if (!fresh) issues.push('输出文件名冲突');
   }

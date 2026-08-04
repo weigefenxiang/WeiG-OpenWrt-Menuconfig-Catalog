@@ -14,10 +14,12 @@ JavaScript 中写死分支、Target 或菜单项目。
   `translations/zh-CN.json`; the filename is retained for compatibility.
 - Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
+- Repeated Kconfig definitions are merged by symbol. Only explicit, incompatible types are hard conflicts; split declarations such as `tristate` in one file and `prompt` in another are legal and retained as one option.
 - Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
+- The published index records each branch shard's upstream commit, compressed byte count and SHA-256. Consumers must verify that exact contract before using a shard.
 - The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
   translations are published even when a batch is incomplete; remaining descriptions are kept in
@@ -104,7 +106,7 @@ Failure logs use unique names such as
 
 每个矩阵任务、错误日志和汇总文件都会写明源码、仓库、分支版本、上游提交、
 失败阶段、Run ID/次数、任务序号、Artifact 名称和 Run 链接。日志文件名全局唯一，
-不会再因多个分支都叫 `defconfig.log` 而互相覆盖；完整错误日志保留 14 天。
+不会再因多个分支都叫 `defconfig.log` 而互相覆盖；控制台只展示重点和末尾 80 行，完整错误日志保留 14 天。
 
 OpenWrt 18.06 and 19.07 use `legacy-metadata` mode. These branches unconditionally invoke
 obsolete compiler/Python host-version gates from `prepare-tmpinfo`, although this repository

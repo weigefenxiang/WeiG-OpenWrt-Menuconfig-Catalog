@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildTargetTree, incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
-  resolveTargetSelectors, targetBuildContract,
+  resolvePackageOption, resolveTargetSelectors, targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
@@ -13,7 +13,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = join(ROOT, 'tests', 'fixture');
 const targets = parseInfoRecords(readFileSync(join(fixture, 'targetinfo'), 'utf8'));
 const packages = parsePackageInfo(readFileSync(join(fixture, 'packageinfo'), 'utf8'));
+const packageInfoOnly = parsePackageInfo('Package: luci-app-packageinfo-only\nTitle: Metadata only\nDescription: No Kconfig symbol\n');
 const menu = parseKconfigTree(fixture);
+const duplicateFixture = parseKconfigTree(join(ROOT, 'tests', 'duplicate'));
+const hardDuplicateFixture = parseKconfigTree(join(ROOT, 'tests', 'duplicate-hard'));
 const relations = buildKconfigRelations(menu.options, packages, menu.choices);
 const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const translationWorkflow = readFileSync(join(ROOT, '.github', 'workflows', 'translate.yml'), 'utf8');
@@ -33,6 +36,8 @@ const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.j
 const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs'), 'utf8');
 const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
 const failures = [];
+const curatedCandidates = policy.curatedCandidates || [];
+const curatedById = new Map(curatedCandidates.map((item) => [item.id, item]));
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 const x86Target = targets.find((item) => item.id === 'x86/64');
 const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
@@ -127,6 +132,33 @@ if (!demoRelations || demoRelations.states.join(',') !== 'n,m,y' ||
     !relations.validation.unresolvedKconfig.some((item) => item.symbol === 'PACKAGE_luci-app-demo')) {
   failures.push('Kconfig/package relationship graph');
 }
+const rustdesk = duplicateFixture.options.find((item) => item.symbol === 'PACKAGE_luci-app-rustdesk-server');
+if (duplicateFixture.options.length !== 1 || rustdesk?.nodes?.length !== 2 ||
+     rustdesk?.paths?.length !== 2 || duplicateFixture.validation.duplicateCount !== 1 ||
+     duplicateFixture.validation.conflicts.length !== 0 || rustdesk?.depends.join(',') !== 'TARGET_x86' ||
+     rustdesk?.dependsVariants?.length !== 2 ||
+     rustdesk.dependsVariants[0]?.join(',') !== 'TARGET_x86' ||
+     rustdesk.dependsVariants[1]?.join(',') !== 'PACKAGE_luci') {
+  failures.push('Kconfig symbol duplicate merge');
+}
+if (hardDuplicateFixture.validation.conflicts.length !== 1 ||
+    hardDuplicateFixture.validation.conflicts[0]?.symbol !== 'PACKAGE_demo') {
+  failures.push('Kconfig symbol hard conflict gate');
+}
+if (packageInfoOnly.length !== 1 ||
+    resolvePackageOption({ id: 'packageinfo-only', packages: ['luci-app-packageinfo-only'] }, new Set()) !== '' ||
+    resolvePackageOption({ id: 'demo', packages: ['luci-app-demo'] }, new Set(['luci-app-demo'])) !== 'luci-app-demo' ||
+    resolvePackageOption({ id: 'adguardhome', packages: ['luci-app-adguardhome'] }, new Set(['adguardhome'])) !== '' ||
+    resolvePackageOption({ id: 'tailscale-community', packages: ['luci-app-tailscale-community'] }, new Set(['tailscale-community'])) !== '') {
+  failures.push('packageinfo-only is not selectable');
+}
+if (curatedCandidates.length !== 16 || curatedCandidates.some((item) =>
+    !item || typeof item !== 'object' || !item.id || !Array.isArray(item.packages) ||
+    item.packages.length === 0 || item.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(name))) ||
+    curatedById.get('adguardhome')?.packages.join(',') !== 'luci-app-adguardhome' ||
+    curatedById.get('tailscale-community')?.packages.join(',') !== 'luci-app-tailscale-community') {
+  failures.push('curated LuCI application package contract');
+}
 if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('scripts/clone-upstream.sh') ||
     !workflow.includes('id: metadata') ||
@@ -216,7 +248,18 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('buildKconfigRelations') ||
     !generator.includes('.relations.json') ||
     !generator.includes('.translations.json') ||
+    !generator.includes('.duplicates.json') ||
+    !generator.includes('.curated-candidates.json') ||
+    !generator.includes('merge conflicts') ||
+     !generator.includes('resolvePackageOption(candidate, packageSymbols)') ||
+     !generator.includes('curatedCandidates must use {id, packages:[luci-app-*]} objects') ||
+     generator.includes('packageSymbols.has(name) || packageByName.has(name)') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
+if (!library.includes('mergeKconfigOptions') || !library.includes('dependsVariants') ||
+    !library.includes('resolvePackageOption') ||
+    !collector.includes('.duplicates.json') || !collector.includes('compressed hash mismatch')) {
+  failures.push('symbol uniqueness and catalog metadata validation');
+}
 if (!library.includes('hasSubtarget') || !library.includes('resolveTargetSelectors') ||
     !library.includes('boardNames') || !validator.includes('boardSelector') ||
     !library.includes('buildTargetTree') || !library.includes('systemName') ||

@@ -267,6 +267,18 @@ export function parsePackageInfo(text) {
   return packages;
 }
 
+// A curated package is selectable only when one of the explicitly declared
+// package names exists in Kconfig.  The Catalog is intentionally strict:
+// packageinfo metadata and implicit core-package fallbacks must never make a
+// LuCI application appear selectable by itself.
+export function resolvePackageOption(candidate, packageSymbols) {
+  if (!candidate || typeof candidate !== 'object' || !Array.isArray(candidate.packages)) return '';
+  const candidates = candidate.packages
+    .map((name) => String(name || '').trim())
+    .filter((name) => /^luci-app-[A-Za-z0-9_.+@-]+$/.test(name));
+  return candidates.find((name) => packageSymbols.has(name)) || '';
+}
+
 function quoted(line) {
   const match = line.match(/"((?:[^"\\]|\\.)*)"/);
   return match ? match[1].replace(/\\"/g, '"') : '';
@@ -363,9 +375,11 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
         finish();
         const [, kind, symbol] = line.match(/^(config|menuconfig)\s+(\S+)/);
         current = {
-          symbol, kind, type: 'bool', prompt: '', path: [...menuPath],
+          symbol, kind, type: '', prompt: '', path: [...menuPath],
           depends: [...conditions], defaults: [], selects: [], implies: [], ranges: [],
           choice: choiceStack.at(-1) || '',
+          source: relativeSource(topdir, file),
+          location: { file: relativeSource(topdir, file), line: index + 1 },
         };
         continue;
       }
@@ -447,7 +461,99 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   }
 
   parseFile(entry);
-  addImplicitMenuParents(options);
-  const categories = [...new Set(options.map((item) => item.path[0] || 'Other'))];
-  return { categories, options, choices };
+  const validation = mergeKconfigOptions(options);
+  addImplicitMenuParents(validation.options);
+  const categories = [...new Set(validation.options.map((item) => item.path[0] || 'Other'))];
+  return { categories, options: validation.options, choices, validation };
+}
+
+function relativeSource(topdir, file) {
+  const root = normalize(resolve(topdir)).replace(/[\\/]$/, '');
+  const value = normalize(resolve(file));
+  return value.startsWith(`${root}/`) || value.startsWith(`${root}\\`)
+    ? value.slice(root.length + 1).replaceAll('\\', '/')
+    : value.replaceAll('\\', '/');
+}
+
+function mergeKconfigOptions(rawOptions) {
+  const groups = new Map();
+  for (const option of rawOptions) {
+    const list = groups.get(option.symbol) || [];
+    list.push(option);
+    groups.set(option.symbol, list);
+  }
+  const options = [];
+  const duplicates = [];
+  const conflicts = [];
+  const unique = (values) => [...new Set(values.filter((value) => value !== undefined && value !== ''))];
+  const uniquePaths = (values) => {
+    const seen = new Set();
+    return values.filter((path) => {
+      const key = path.join('\0');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const nodeSnapshot = (node) => ({
+    kind: node.kind, type: node.type, symbol: node.symbol, prompt: node.prompt,
+    path: [...(node.path || [])], depends: [...(node.depends || [])],
+    defaults: [...(node.defaults || [])], selects: [...(node.selects || [])],
+    implies: [...(node.implies || [])], ranges: [...(node.ranges || [])],
+    choice: node.choice || '', help: node.help || '', source: node.source || '',
+    location: node.location || null,
+  });
+  for (const [symbol, nodes] of groups) {
+    const first = nodes[0];
+    const snapshots = nodes.map(nodeSnapshot);
+    const paths = uniquePaths(nodes.flatMap((node) => [node.path || []]));
+    const prompts = unique(nodes.map((node) => node.prompt));
+    const helps = unique(nodes.map((node) => node.help));
+    const kinds = unique(nodes.map((node) => node.kind));
+    const types = unique(nodes.map((node) => node.type));
+    const choicesForSymbol = unique(nodes.map((node) => node.choice));
+    const variants = [];
+    if (kinds.length > 1) variants.push({ field: 'kind', values: kinds });
+    if (prompts.length > 1) variants.push({ field: 'prompt', values: prompts });
+    if (choicesForSymbol.length > 1) variants.push({ field: 'choice', values: choicesForSymbol });
+    const symbolConflicts = types.length > 1 ? [{ field: 'type', values: types }] : [];
+    const merged = {
+      ...first,
+      type: types[0] || 'bool',
+      path: paths[0] || [],
+      paths,
+      nodes: snapshots,
+      locations: nodes.map((node) => node.location).filter(Boolean),
+      sources: unique(nodes.map((node) => node.source)),
+      prompts,
+      helps,
+      // Keep the first definition's semantics for existing consumers. Every
+      // other definition is retained in the node/variant arrays below instead
+      // of incorrectly turning conditional alternatives into one AND clause.
+      depends: [...(first.depends || [])],
+      defaults: unique(nodes.flatMap((node) => node.defaults || [])),
+      selects: unique(nodes.flatMap((node) => node.selects || [])),
+      implies: unique(nodes.flatMap((node) => node.implies || [])),
+      ranges: unique(nodes.flatMap((node) => node.ranges || [])),
+      conflicts: symbolConflicts,
+      variants,
+      dependsVariants: nodes.map((node) => [...(node.depends || [])]),
+      defaultsVariants: nodes.map((node) => [...(node.defaults || [])]),
+      selectsVariants: nodes.map((node) => [...(node.selects || [])]),
+      impliesVariants: nodes.map((node) => [...(node.implies || [])]),
+      rangesVariants: nodes.map((node) => [...(node.ranges || [])]),
+    };
+    if (nodes.length > 1) duplicates.push({
+      symbol, count: nodes.length, paths, locations: merged.locations,
+      sources: merged.sources, conflicts: symbolConflicts, variants,
+    });
+    if (symbolConflicts.length) conflicts.push({ symbol, count: nodes.length, conflicts: symbolConflicts });
+    options.push(merged);
+  }
+  return {
+    options,
+    duplicates,
+    conflicts,
+    duplicateCount: duplicates.reduce((sum, item) => sum + item.count - 1, 0),
+  };
 }

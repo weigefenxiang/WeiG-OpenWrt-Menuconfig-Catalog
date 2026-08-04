@@ -1,0 +1,5 @@
+config PACKAGE_luci-app-rustdesk-server
+  prompt "RustDesk Server (extra menu)"
+  depends on PACKAGE_luci
+  help
+    RustDesk server package in another menu.

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,7 +45,10 @@ for (const row of rows) {
   const branch = {
     id: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
     version: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
-    branch: row.source.branch, commit: row.source.commit, asset: row.asset, counts: row.counts,
+    branch: row.source.branch, asset: row.asset, counts: row.counts,
+    commit: row.commit || row.source.commit || '',
+    hash: row.hash || row.sha256 || '',
+    bytes: Number(row.bytes || 0),
     state: 'fresh',
     lastSuccessAt: row.generatedAt || new Date().toISOString(),
   };
@@ -89,9 +93,11 @@ for (const attempt of attempts) {
 }
 for (const source of sources) source.branches.sort((a, b) => a.branch.localeCompare(b.branch));
 const branchRows = sources.flatMap((source) => source.branches);
-writeFileSync(out, JSON.stringify({
+const generatedAt = new Date().toISOString();
+const body = {
   schema: 2,
-  generatedAt: new Date().toISOString(),
+  generatedAt,
+  commit: process.env.CATALOG_COMMIT || '',
   completeReleaseTag: 'menuconfig-catalog-complete',
   health: {
     fresh: branchRows.filter((item) => item.state === 'fresh').length,
@@ -99,6 +105,12 @@ writeFileSync(out, JSON.stringify({
     unavailable: branchRows.filter((item) => item.state === 'unavailable').length,
   },
   sources,
+};
+const bodyText = JSON.stringify(body);
+writeFileSync(out, JSON.stringify({
+  ...body,
+  hash: createHash('sha256').update(bodyText).digest('hex'),
+  bytes: Buffer.byteLength(bodyText),
 }, null, 2) + '\n');
 console.log(`index.json: ${sources.length} sources / ${branchRows.length} branches` +
   ` (fresh=${branchRows.filter((item) => item.state === 'fresh').length}` +
