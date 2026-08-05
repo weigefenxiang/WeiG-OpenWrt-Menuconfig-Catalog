@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "OpenWrt",
+    "label": "OpenWrt",
+    "repo": "openwrt/openwrt",
+    "branch": "openwrt-18.06",
+    "commit": "9f2a40c72fdb0b9b077bf5b4b01aa17eac4bfb45",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-05T15:17:11.986Z",
+  "summary": {
+    "symbols": 10712,
+    "duplicateSymbols": 3,
+    "duplicateNodes": 3,
+    "conflicts": 0
+  },
+  "duplicates": [
+    {
+      "symbol": "SQUEEZELITE_WMA",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 92259
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 92305
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_RESAMPLE",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 92265
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 92311
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_DSD",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 92271
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 92317
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    }
+  ],
+  "conflicts": []
+}

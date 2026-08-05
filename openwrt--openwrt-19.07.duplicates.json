@@ -1,0 +1,1308 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "OpenWrt",
+    "label": "OpenWrt",
+    "repo": "openwrt/openwrt",
+    "branch": "openwrt-19.07",
+    "commit": "1da2e82c1182a3fd681da5760be96821213afadd",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-05T15:17:17.832Z",
+  "summary": {
+    "symbols": 12758,
+    "duplicateSymbols": 48,
+    "duplicateNodes": 48,
+    "conflicts": 0
+  },
+  "duplicates": [
+    {
+      "symbol": "NGINX_DAV",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 18
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 11
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_UBUS",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 25
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 18
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_FLV",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 32
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 25
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_STUB_STATUS",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 39
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 32
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_CHARSET",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 46
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 39
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_GZIP",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 51
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 44
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_SSI",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 56
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 49
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_USERID",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 61
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 54
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_ACCESS",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 66
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 59
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_AUTH_BASIC",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 71
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 64
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_AUTH_REQUEST",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 76
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 69
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_AUTOINDEX",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 81
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 74
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_GEO",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 86
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 79
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_MAP",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 91
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 84
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_SPLIT_CLIENTS",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 96
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 89
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_REFERER",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 101
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 94
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_REWRITE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 106
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 99
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_PROXY",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 112
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 105
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_FASTCGI",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 117
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 110
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_UWSGI",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 122
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 115
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_SCGI",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 127
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 120
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_MEMCACHED",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 132
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 125
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_LIMIT_CONN",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 137
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 130
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_LIMIT_REQ",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 142
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 135
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_EMPTY_GIF",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 147
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 140
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_BROWSER",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 152
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 145
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_UPSTREAM_HASH",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 157
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 150
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_UPSTREAM_IP_HASH",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 162
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 155
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_UPSTREAM_LEAST_CONN",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 167
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 160
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_UPSTREAM_KEEPALIVE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 172
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 165
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_CACHE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 177
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 170
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_V2",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 182
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 175
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_PCRE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 187
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 180
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_NAXSI",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 192
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 185
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_LUA",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 197
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 190
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_REAL_IP",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 202
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 195
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_SECURE_LINK",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 207
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 200
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_SUB",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 212
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 205
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HEADERS_MORE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 217
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 210
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_HTTP_BROTLI",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 224
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 217
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_STREAM_CORE_MODULE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 231
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 224
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_STREAM_SSL_MODULE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 238
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 231
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_STREAM_SSL_PREREAD_MODULE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 246
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 239
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_RTMP_MODULE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 254
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 247
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "NGINX_TS_MODULE",
+      "count": 2,
+      "paths": [
+        [
+          "Network",
+          "Web Servers/Proxies",
+          "Configuration"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "feeds/packages/net/nginx/Config.in",
+          "line": 263
+        },
+        {
+          "file": "feeds/packages/net/nginx/Config_ssl.in",
+          "line": 255
+        }
+      ],
+      "sources": [
+        "feeds/packages/net/nginx/Config.in",
+        "feeds/packages/net/nginx/Config_ssl.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_WMA",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 140811
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 140857
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_RESAMPLE",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 140817
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 140863
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_DSD",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 140823
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 140869
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    }
+  ],
+  "conflicts": []
+}

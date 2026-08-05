@@ -1,0 +1,7733 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "lede",
+    "label": "Lean LEDE",
+    "repo": "coolsnowwolf/lede",
+    "branch": "master",
+    "commit": "64f71ae6909e21e8f138c621b36ebb3eb214b0bf",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-05T15:17:39.302Z",
+  "summary": {
+    "symbols": 16161,
+    "duplicateSymbols": 243,
+    "duplicateNodes": 270,
+    "conflicts": 0
+  },
+  "duplicates": [
+    {
+      "symbol": "TARGET_ath79_generic_DEVICE_airtight_c-75",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 13468
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 13543
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 13618
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Mojo Networks C-75 (AirTight Networks C-75)",
+            "WatchGuard AP320 (AirTight Networks C-75)",
+            "AirTight Networks C-75"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ath79_generic_DEVICE_netgear_wnr2200-16m",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 22686
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 22759
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR WNR2200 CN/RU (NETGEAR WNR2200 16M)",
+            "NETGEAR WNR2200 16M"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ath79_generic_DEVICE_sitecom_wlr-8100",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 26476
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 26551
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Sitecom X8 AC1750 (Sitecom WLR-8100)",
+            "Sitecom WLR-8100"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ath79_generic_DEVICE_tplink_archer-c6-v2-us",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 28636
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 28709
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link Archer A6 v2 (US/TW) (TP-Link Archer C6 v2 (US))",
+            "TP-Link Archer C6 v2 (US)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ath79_nand_DEVICE_dongwon_dw02-412h-64m",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 37467
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 37541
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "KT GiGA WiFi home (64M) (Dongwon T&I DW02-412H (64M))",
+            "Dongwon T&I DW02-412H (64M)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ath79_nand_DEVICE_dongwon_dw02-412h-128m",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 37615
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 37689
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "KT GiGA WiFi home (128M) (Dongwon T&I DW02-412H (128M))",
+            "Dongwon T&I DW02-412H (128M)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ath79_tiny_DEVICE_tplink_tl-wr941-v2",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 42598
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 42669
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link TL-WR941N v2/v3 (TP-Link TL-WR941ND v2/v3)",
+            "TP-Link TL-WR941ND v2/v3"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ath79_tiny_DEVICE_tplink_tl-wr941-v4",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 42740
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 42811
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link TL-WR941N v4 (TP-Link TL-WR941ND v4)",
+            "TP-Link TL-WR941ND v4"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm27xx_bcm2709_DEVICE_rpi-2",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 43101
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 43187
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 43273
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (32bit) (Raspberry Pi 2B/2B 1.2 (32bit))",
+            "Raspberry Pi 4B/400/CM4 (32bit) (Raspberry Pi 2B/2B 1.2 (32bit))",
+            "Raspberry Pi 2B/2B 1.2 (32bit)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm27xx_bcm2710_DEVICE_rpi-3",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 43359
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 43444
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Raspberry Pi 2B-1.2 (64bit) (Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (64bit))",
+            "Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (64bit)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm47xx_legacy_DEVICE_linksys_wrt54gs",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 50973
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 51046
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys WRT54G-TM v1 (Linksys WRT54GS v1/v2/v3)",
+            "Linksys WRT54GS v1/v2/v3"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_telsey_magic",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 55710
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 62338
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice W-Gate",
+            "Telsey MAGIC (Alice W-Gate)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_comtrend_ct-536plus",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 56615
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 56753
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Comtrend CT-536+",
+            "Comtrend CT-5621 (Comtrend CT-536+)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_d-link_dsl-2640u",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57243
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57313
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2640U C1",
+            "D-Link DSL-2640U/BRU/C (D-Link DSL-2640U C1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_d-link_dsl-274xb-c2",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57454
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57664
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C2",
+            "D-Link DSL-2741B C2 (D-Link DSL-2740B C2)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_d-link_dsl-274xb-c3",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57524
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57734
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C3",
+            "D-Link DSL-2741B C3 (D-Link DSL-2740B C3)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_d-link_dsl-274xb-f1",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57594
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57804
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B F1",
+            "D-Link DSL-2741B F1 (D-Link DSL-2740B F1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_d-link_dsl-275xb-d1",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 57874
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 58018
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2750B D1",
+            "D-Link DSL-2751 D1 (D-Link DSL-2750B D1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_dynalink_rta770bw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 58363
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 61644
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dynalink RTA770BW",
+            "Siemens SE515 (Dynalink RTA770BW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_generic_DEVICE_netgear_dg834gt-pn",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 60179
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 60249
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR DG834GT",
+            "NETGEAR DG834PN (NETGEAR DG834GT)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_telsey_magic",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 63107
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 70224
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice W-Gate",
+            "Telsey MAGIC (Alice W-Gate)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_comtrend_ct-536plus",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 64012
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 64150
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Comtrend CT-536+",
+            "Comtrend CT-5621 (Comtrend CT-536+)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_d-link_dsl-2640u",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 64778
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 64848
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2640U C1",
+            "D-Link DSL-2640U/BRU/C (D-Link DSL-2640U C1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_d-link_dsl-274xb-c2",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 64989
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65199
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C2",
+            "D-Link DSL-2741B C2 (D-Link DSL-2740B C2)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_d-link_dsl-274xb-c3",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65059
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65269
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C3",
+            "D-Link DSL-2741B C3 (D-Link DSL-2740B C3)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_d-link_dsl-274xb-f1",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65129
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65339
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B F1",
+            "D-Link DSL-2741B F1 (D-Link DSL-2740B F1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_d-link_dsl-275xb-d1",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65409
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65553
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2750B D1",
+            "D-Link DSL-2751 D1 (D-Link DSL-2750B D1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_dynalink_rta770bw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 65898
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 69530
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dynalink RTA770BW",
+            "Siemens SE515 (Dynalink RTA770BW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_bcm63xx_smp_DEVICE_netgear_dg834gt-pn",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 67783
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 67853
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR DG834GT",
+            "NETGEAR DG834PN (NETGEAR DG834GT)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ipq40xx_generic_DEVICE_asus_rt-ac42u",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 72652
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 72735
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 72818
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "ASUS RT-ACRH17 (ASUS RT-AC42U)",
+            "ASUS RT-AC2200 (ASUS RT-AC42U)",
+            "ASUS RT-AC42U"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ipq40xx_generic_DEVICE_asus_rt-ac58u",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 72901
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 72982
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "ASUS RT-ACRH13 (ASUS RT-AC58U)",
+            "ASUS RT-AC58U"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ipq40xx_generic_DEVICE_avm_fritzbox-7530",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 73143
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 73225
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "AVM FRITZ!Box 7520 (AVM FRITZ!Box 7530)",
+            "AVM FRITZ!Box 7530"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ipq806x_generic_DEVICE_tplink_ad7200",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 79805
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 79891
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link Talon AD7200 v1/v2 (TP-Link AD7200 v1/v2)",
+            "TP-Link AD7200 v1/v2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xrx200_DEVICE_alphanetworks_asl56026",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82409
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82983
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alpha ASL56026",
+            "BT Openreach ECI VDSL Modem V-2FUb/I (Alpha ASL56026)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xrx200_DEVICE_arcadyan_arv7519rw22",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82487
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82903
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 83708
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7519RW22",
+            "Astoria Networks ARV7519RW22 (Arcadyan ARV7519RW22)",
+            "Orange Livebox 2.1 (Arcadyan ARV7519RW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xrx200_DEVICE_arcadyan_vgv7510kw22-brn",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82567
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84276
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7510KW22 BRN",
+            "o2 Box 6431 BRN (Arcadyan VGV7510KW22 BRN)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xrx200_DEVICE_arcadyan_vgv7510kw22-nor",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82651
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84360
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7510KW22 NOR",
+            "o2 Box 6431 NOR (Arcadyan VGV7510KW22 NOR)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xrx200_DEVICE_arcadyan_vgv7519-brn",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82735
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 83300
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7519 BRN",
+            "KPN Experiabox 8 BRN (Arcadyan VGV7519 BRN)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xrx200_DEVICE_arcadyan_vgv7519-nor",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 82819
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 83384
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7519 NOR",
+            "KPN Experiabox 8 NOR (Arcadyan VGV7519 NOR)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_avm_fritz7320",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84510
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84665
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "1&1 HomeServer (AVM FRITZ!Box 7320)",
+            "AVM FRITZ!Box 7320"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv7506pw11",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84744
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84981
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice/O2 IAD 4421 (Arcadyan ARV7506PW11)",
+            "Arcadyan ARV7506PW11"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv4510pw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84821
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87025
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4510PW",
+            "Wippies BeWan iBox v1.0 (Arcadyan ARV4510PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv4519pw",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 84904
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 86477
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 86948
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4519PW",
+            "Pirelli P.RG A4201G (Arcadyan ARV4519PW)",
+            "Vodafone NetFasteR IAD 2 (Arcadyan ARV4519PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv7510pw22",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85058
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85619
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7510PW22",
+            "Astoria Networks ARV7510PW22 (Arcadyan ARV7510PW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv7518pw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85142
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85703
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7518PW",
+            "Astoria Networks ARV7518PW (Arcadyan ARV7518PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv7519pw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85222
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85783
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7519PW",
+            "Astoria Networks ARV7519PW (Arcadyan ARV7519PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv7525pw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85300
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 86629
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7525PW",
+            "Telekom Speedport W303V Typ A (Arcadyan ARV7525PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv752dpw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85376
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 86784
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV752DPW",
+            "Vodafone Easybox 802 (Arcadyan ARV752DPW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv752dpw22",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85457
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 86865
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV752DPW22",
+            "Vodafone Easybox 803 (Arcadyan ARV752DPW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_DEVICE_arcadyan_arv8539pw22",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 85540
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 86705
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV8539PW22",
+            "Telekom Speedport W504V Typ A (Arcadyan ARV8539PW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_legacy_DEVICE_arcadyan_arv4520pw",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87329
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87563
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87874
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Airties WAV-281 (Arcadyan ARV4520PW)",
+            "Arcadyan ARV4520PW",
+            "Vodafone Easybox 800 (Arcadyan ARV4520PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_legacy_DEVICE_arcadyan_arv4525pw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87643
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87798
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4525PW",
+            "Telekom Speedport W502V Typ A (Arcadyan ARV4525PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_lantiq_xway_legacy_DEVICE_arcadyan_arv452cqw",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87719
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 87954
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV452CQW",
+            "Vodafone Easybox 801 (Arcadyan ARV452CQW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mediatek_filogic_DEVICE_konka_komi-a31",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 93606
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 93683
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 93760
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "E-life ETR631-T (KONKA KOMI A31)",
+            "E-life ETR635-U (KONKA KOMI A31)",
+            "KONKA KOMI A31"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mediatek_mt7622_DEVICE_linksys_e8450",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 95483
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 95558
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Belkin RT3200 (Linksys E8450)",
+            "Linksys E8450"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mediatek_mt7622_DEVICE_linksys_e8450-ubi",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 95633
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 95708
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Belkin RT3200 UBI (Linksys E8450 UBI)",
+            "Linksys E8450 UBI"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mediatek_mt7622_DEVICE_xiaomi_redmi-router-ax6s",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 96438
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 96512
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Xiaomi Router AX3200 (Xiaomi Redmi Router AX6S)",
+            "Xiaomi Redmi Router AX6S"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa9_DEVICE_linksys_wrt1200ac",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 98539
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 98611
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Caiman (Linksys WRT1200AC)",
+            "Linksys WRT1200AC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa9_DEVICE_linksys_wrt1900acs",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 98683
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 98756
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 98829
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys WRT1900ACS v2 (Linksys WRT1900ACS v1)",
+            "Linksys Shelby (Linksys WRT1900ACS v1)",
+            "Linksys WRT1900ACS v1"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa9_DEVICE_linksys_wrt1900ac-v1",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 98902
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 98974
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Mamba (Linksys WRT1900AC v1)",
+            "Linksys WRT1900AC v1"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa9_DEVICE_linksys_wrt1900ac-v2",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 99046
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 99118
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Cobra (Linksys WRT1900AC v2)",
+            "Linksys WRT1900AC v2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa9_DEVICE_linksys_wrt3200acm",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 99190
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 99264
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Rango (Linksys WRT3200ACM)",
+            "Linksys WRT3200ACM"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa9_DEVICE_linksys_wrt32x",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 99338
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 99412
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Venom (Linksys WRT32X)",
+            "Linksys WRT32X"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa53_DEVICE_globalscale_espressobin",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100285
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100357
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board Non-eMMC (Marvell ESPRESSObin Non-eMMC)",
+            "Marvell ESPRESSObin Non-eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa53_DEVICE_globalscale_espressobin-emmc",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100429
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100501
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board eMMC (Marvell ESPRESSObin eMMC)",
+            "Marvell ESPRESSObin eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa53_DEVICE_globalscale_espressobin-v7",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100645
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100717
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board V7 Non-eMMC (Marvell ESPRESSObin V7 Non-eMMC)",
+            "Marvell ESPRESSObin V7 Non-eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa53_DEVICE_globalscale_espressobin-v7-emmc",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100789
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 100861
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board V7 eMMC (Marvell ESPRESSObin V7 eMMC)",
+            "Marvell ESPRESSObin V7 eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa72_DEVICE_marvell_macchiatobin-doubleshot",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 101358
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 101430
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SolidRun Armada 8040 Community Board Double Shot (SolidRun MACCHIATObin Double Shot)",
+            "SolidRun MACCHIATObin Double Shot"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_mvebu_cortexa72_DEVICE_marvell_macchiatobin-singleshot",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 101502
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 101574
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SolidRun Armada 8040 Community Board Single Shot (SolidRun MACCHIATObin Single Shot)",
+            "SolidRun MACCHIATObin Single Shot"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_pistachio_DEVICE_img_creator-ci40",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 104118
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 104188
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Imagination Technologies Creator Ci40 (VL-62899)",
+            "Imagination Technologies Marduk board (Imagination Technologies Creator Ci40 (VL-62899))"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_mt7621_DEVICE_buffalo_wsr-2533dhpl",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 117269
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 117340
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Buffalo WSR-2533DHP (Buffalo WSR-2533DHPL)",
+            "Buffalo WSR-2533DHPL"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_mt7621_DEVICE_edimax_ra21s",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 118547
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 118618
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Edimax Gemini RA21S (Edimax RA21S)",
+            "Edimax RA21S"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_mt7621_DEVICE_edimax_re23s",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 118689
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 118760
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Edimax Gemini RE23S (Edimax RE23S)",
+            "Edimax RE23S"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_mt7621_DEVICE_netgear_r6700-v2",
+      "count": 3,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 123130
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 123205
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 123280
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR Nighthawk AC2400 v1 (NETGEAR R6700 v2)",
+            "NETGEAR R7200 v1 (NETGEAR R6700 v2)",
+            "NETGEAR R6700 v2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_mt7621_DEVICE_winstars_ws-wn583a6",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 125964
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 126036
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Gemeita AC2100 (Winstars WS-WN583A6)",
+            "Winstars WS-WN583A6"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_mt76x8_DEVICE_wavlink_wl-wn577a2",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 132366
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 132437
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Maginon WLR-755 (Wavlink WL-WN577A2)",
+            "Wavlink WL-WN577A2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_mt76x8_DEVICE_wavlink_wl-wn578a2",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 132508
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 132579
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SilverCrest SWV 733 A2 (Wavlink WL-WN578A2)",
+            "Wavlink WL-WN578A2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_ramips_rt305x_DEVICE_aztech_hw550-3g",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 135502
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 135574
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Allnet ALL0239-3G (Aztech HW550-3G)",
+            "Aztech HW550-3G"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_sunxi_cortexa7_DEVICE_lamobo_lamobo-r1",
+      "count": 2,
+      "paths": [
+        []
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 151216
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 151781
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Bananapi BPi-R1 (Lamobo Lamobo R1)",
+            "Lamobo Lamobo R1"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_generic_DEVICE_airtight_c-75",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 163104
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 179352
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 207038
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "AirTight Networks C-75",
+            "Mojo Networks C-75 (AirTight Networks C-75)",
+            "WatchGuard AP320 (AirTight Networks C-75)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_generic_DEVICE_airtight_c-75",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 163242
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 179490
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 207176
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "AirTight Networks C-75 additional packages",
+            "Mojo Networks C-75 (AirTight Networks C-75) additional packages",
+            "WatchGuard AP320 (AirTight Networks C-75) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_generic_DEVICE_netgear_wnr2200-16m",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 181236
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 181520
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR WNR2200 16M",
+            "NETGEAR WNR2200 CN/RU (NETGEAR WNR2200 16M)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_generic_DEVICE_netgear_wnr2200-16m",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 181372
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 181656
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR WNR2200 16M additional packages",
+            "NETGEAR WNR2200 CN/RU (NETGEAR WNR2200 16M) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_generic_DEVICE_sitecom_wlr-8100",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 188950
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 189096
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Sitecom WLR-8100",
+            "Sitecom X8 AC1750 (Sitecom WLR-8100)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_generic_DEVICE_sitecom_wlr-8100",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 189090
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 189236
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Sitecom WLR-8100 additional packages",
+            "Sitecom X8 AC1750 (Sitecom WLR-8100) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_generic_DEVICE_tplink_archer-c6-v2-us",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 189824
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 191264
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link Archer A6 v2 (US/TW) (TP-Link Archer C6 v2 (US))",
+            "TP-Link Archer C6 v2 (US)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_generic_DEVICE_tplink_archer-c6-v2-us",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 189960
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 191400
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link Archer A6 v2 (US/TW) (TP-Link Archer C6 v2 (US)) additional packages",
+            "TP-Link Archer C6 v2 (US) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_nand_DEVICE_dongwon_dw02-412h-128m",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 211060
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 212206
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dongwon T&I DW02-412H (128M)",
+            "KT GiGA WiFi home (128M) (Dongwon T&I DW02-412H (128M))"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_nand_DEVICE_dongwon_dw02-412h-128m",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 211198
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 212344
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dongwon T&I DW02-412H (128M) additional packages",
+            "KT GiGA WiFi home (128M) (Dongwon T&I DW02-412H (128M)) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_nand_DEVICE_dongwon_dw02-412h-64m",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 211204
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 212350
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dongwon T&I DW02-412H (64M)",
+            "KT GiGA WiFi home (64M) (Dongwon T&I DW02-412H (64M))"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_nand_DEVICE_dongwon_dw02-412h-64m",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 211342
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 212488
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dongwon T&I DW02-412H (64M) additional packages",
+            "KT GiGA WiFi home (64M) (Dongwon T&I DW02-412H (64M)) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_tiny_DEVICE_tplink_tl-wr941-v2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221306
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221720
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link TL-WR941N v2/v3 (TP-Link TL-WR941ND v2/v3)",
+            "TP-Link TL-WR941ND v2/v3"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_tiny_DEVICE_tplink_tl-wr941-v2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221438
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221852
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link TL-WR941N v2/v3 (TP-Link TL-WR941ND v2/v3) additional packages",
+            "TP-Link TL-WR941ND v2/v3 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ath79_tiny_DEVICE_tplink_tl-wr941-v4",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221444
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221858
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link TL-WR941N v4 (TP-Link TL-WR941ND v4)",
+            "TP-Link TL-WR941ND v4"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ath79_tiny_DEVICE_tplink_tl-wr941-v4",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221576
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 221990
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link TL-WR941N v4 (TP-Link TL-WR941ND v4) additional packages",
+            "TP-Link TL-WR941ND v4 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm27xx_bcm2709_DEVICE_rpi-2",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222296
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222462
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222628
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Raspberry Pi 2B/2B 1.2 (32bit)",
+            "Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (32bit) (Raspberry Pi 2B/2B 1.2 (32bit))",
+            "Raspberry Pi 4B/400/CM4 (32bit) (Raspberry Pi 2B/2B 1.2 (32bit))"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm27xx_bcm2709_DEVICE_rpi-2",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222456
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222622
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222788
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Raspberry Pi 2B/2B 1.2 (32bit) additional packages",
+            "Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (32bit) (Raspberry Pi 2B/2B 1.2 (32bit)) additional packages",
+            "Raspberry Pi 4B/400/CM4 (32bit) (Raspberry Pi 2B/2B 1.2 (32bit)) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm27xx_bcm2710_DEVICE_rpi-3",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222794
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222960
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Raspberry Pi 2B-1.2 (64bit) (Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (64bit))",
+            "Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (64bit)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm27xx_bcm2710_DEVICE_rpi-3",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 222954
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 223120
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Raspberry Pi 2B-1.2 (64bit) (Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (64bit)) additional packages",
+            "Raspberry Pi 3A+/3B/3B+/CM3/Zero2/Zero2W (64bit) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm47xx_legacy_DEVICE_linksys_wrt54gs",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 235070
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 235640
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys WRT54G-TM v1 (Linksys WRT54GS v1/v2/v3)",
+            "Linksys WRT54GS v1/v2/v3"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm47xx_legacy_DEVICE_linksys_wrt54gs",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 235206
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 235776
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys WRT54G-TM v1 (Linksys WRT54GS v1/v2/v3) additional packages",
+            "Linksys WRT54GS v1/v2/v3 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_telsey_magic",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 243979
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 257031
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice W-Gate",
+            "Telsey MAGIC (Alice W-Gate)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_telsey_magic",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 244103
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 257155
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice W-Gate additional packages",
+            "Telsey MAGIC (Alice W-Gate) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_comtrend_ct-536plus",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 245785
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 246057
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Comtrend CT-536+",
+            "Comtrend CT-5621 (Comtrend CT-536+)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_comtrend_ct-536plus",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 245915
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 246187
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Comtrend CT-536+ additional packages",
+            "Comtrend CT-5621 (Comtrend CT-536+) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_d-link_dsl-2640u",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247033
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247169
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2640U C1",
+            "D-Link DSL-2640U/BRU/C (D-Link DSL-2640U C1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_d-link_dsl-2640u",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247163
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247299
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2640U C1 additional packages",
+            "D-Link DSL-2640U/BRU/C (D-Link DSL-2640U C1) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_d-link_dsl-274xb-c2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247447
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247855
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C2",
+            "D-Link DSL-2741B C2 (D-Link DSL-2740B C2)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_d-link_dsl-274xb-c2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247577
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247985
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C2 additional packages",
+            "D-Link DSL-2741B C2 (D-Link DSL-2740B C2) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_d-link_dsl-274xb-c3",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247583
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247991
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C3",
+            "D-Link DSL-2741B C3 (D-Link DSL-2740B C3)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_d-link_dsl-274xb-c3",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247713
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 248121
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C3 additional packages",
+            "D-Link DSL-2741B C3 (D-Link DSL-2740B C3) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_d-link_dsl-274xb-f1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247719
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 248127
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B F1",
+            "D-Link DSL-2741B F1 (D-Link DSL-2740B F1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_d-link_dsl-274xb-f1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 247849
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 248257
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B F1 additional packages",
+            "D-Link DSL-2741B F1 (D-Link DSL-2740B F1) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_d-link_dsl-275xb-d1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 248263
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 248547
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2750B D1",
+            "D-Link DSL-2751 D1 (D-Link DSL-2750B D1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_d-link_dsl-275xb-d1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 248399
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 248683
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2750B D1 additional packages",
+            "D-Link DSL-2751 D1 (D-Link DSL-2750B D1) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_dynalink_rta770bw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 249233
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 255647
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dynalink RTA770BW",
+            "Siemens SE515 (Dynalink RTA770BW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_dynalink_rta770bw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 249363
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 255777
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dynalink RTA770BW additional packages",
+            "Siemens SE515 (Dynalink RTA770BW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_generic_DEVICE_netgear_dg834gt-pn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 252861
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 252997
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR DG834GT",
+            "NETGEAR DG834PN (NETGEAR DG834GT)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_generic_DEVICE_netgear_dg834gt-pn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 252991
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 253127
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR DG834GT additional packages",
+            "NETGEAR DG834PN (NETGEAR DG834GT) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_telsey_magic",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 258569
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 272599
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice W-Gate",
+            "Telsey MAGIC (Alice W-Gate)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_telsey_magic",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 258693
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 272723
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice W-Gate additional packages",
+            "Telsey MAGIC (Alice W-Gate) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_comtrend_ct-536plus",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 260375
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 260647
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Comtrend CT-536+",
+            "Comtrend CT-5621 (Comtrend CT-536+)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_comtrend_ct-536plus",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 260505
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 260777
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Comtrend CT-536+ additional packages",
+            "Comtrend CT-5621 (Comtrend CT-536+) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_d-link_dsl-2640u",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 261899
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262035
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2640U C1",
+            "D-Link DSL-2640U/BRU/C (D-Link DSL-2640U C1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_d-link_dsl-2640u",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262029
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262165
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2640U C1 additional packages",
+            "D-Link DSL-2640U/BRU/C (D-Link DSL-2640U C1) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_d-link_dsl-274xb-c2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262313
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262721
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C2",
+            "D-Link DSL-2741B C2 (D-Link DSL-2740B C2)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_d-link_dsl-274xb-c2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262443
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262851
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C2 additional packages",
+            "D-Link DSL-2741B C2 (D-Link DSL-2740B C2) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_d-link_dsl-274xb-c3",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262449
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262857
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C3",
+            "D-Link DSL-2741B C3 (D-Link DSL-2740B C3)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_d-link_dsl-274xb-c3",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262579
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262987
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B C3 additional packages",
+            "D-Link DSL-2741B C3 (D-Link DSL-2740B C3) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_d-link_dsl-274xb-f1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262585
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262993
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B F1",
+            "D-Link DSL-2741B F1 (D-Link DSL-2740B F1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_d-link_dsl-274xb-f1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 262715
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 263123
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2740B F1 additional packages",
+            "D-Link DSL-2741B F1 (D-Link DSL-2740B F1) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_d-link_dsl-275xb-d1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 263129
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 263413
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2750B D1",
+            "D-Link DSL-2751 D1 (D-Link DSL-2750B D1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_d-link_dsl-275xb-d1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 263265
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 263549
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "D-Link DSL-2750B D1 additional packages",
+            "D-Link DSL-2751 D1 (D-Link DSL-2750B D1) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_dynalink_rta770bw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 264099
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 271215
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dynalink RTA770BW",
+            "Siemens SE515 (Dynalink RTA770BW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_dynalink_rta770bw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 264229
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 271345
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Dynalink RTA770BW additional packages",
+            "Siemens SE515 (Dynalink RTA770BW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_bcm63xx_smp_DEVICE_netgear_dg834gt-pn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 267865
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 268001
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR DG834GT",
+            "NETGEAR DG834PN (NETGEAR DG834GT)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_bcm63xx_smp_DEVICE_netgear_dg834gt-pn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 267995
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 268131
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR DG834GT additional packages",
+            "NETGEAR DG834PN (NETGEAR DG834GT) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ipq40xx_generic_DEVICE_asus_rt-ac42u",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277059
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277219
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277695
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "ASUS RT-AC2200 (ASUS RT-AC42U)",
+            "ASUS RT-AC42U",
+            "ASUS RT-ACRH17 (ASUS RT-AC42U)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ipq40xx_generic_DEVICE_asus_rt-ac42u",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277213
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277373
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277849
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "ASUS RT-AC2200 (ASUS RT-AC42U) additional packages",
+            "ASUS RT-AC42U additional packages",
+            "ASUS RT-ACRH17 (ASUS RT-AC42U) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ipq40xx_generic_DEVICE_asus_rt-ac58u",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277379
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277537
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "ASUS RT-AC58U",
+            "ASUS RT-ACRH13 (ASUS RT-AC58U)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ipq40xx_generic_DEVICE_asus_rt-ac58u",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277531
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 277689
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "ASUS RT-AC58U additional packages",
+            "ASUS RT-ACRH13 (ASUS RT-AC58U) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ipq40xx_generic_DEVICE_avm_fritzbox-7530",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 278015
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 278175
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "AVM FRITZ!Box 7520 (AVM FRITZ!Box 7530)",
+            "AVM FRITZ!Box 7530"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ipq40xx_generic_DEVICE_avm_fritzbox-7530",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 278169
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 278329
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "AVM FRITZ!Box 7520 (AVM FRITZ!Box 7530) additional packages",
+            "AVM FRITZ!Box 7530 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ipq806x_generic_DEVICE_tplink_ad7200",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 291331
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 291831
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link AD7200 v1/v2",
+            "TP-Link Talon AD7200 v1/v2 (TP-Link AD7200 v1/v2)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ipq806x_generic_DEVICE_tplink_ad7200",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 291493
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 291993
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "TP-Link AD7200 v1/v2 additional packages",
+            "TP-Link Talon AD7200 v1/v2 (TP-Link AD7200 v1/v2) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xrx200_DEVICE_alphanetworks_asl56026",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295075
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 297661
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alpha ASL56026",
+            "BT Openreach ECI VDSL Modem V-2FUb/I (Alpha ASL56026)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xrx200_DEVICE_alphanetworks_asl56026",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295221
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 297807
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alpha ASL56026 additional packages",
+            "BT Openreach ECI VDSL Modem V-2FUb/I (Alpha ASL56026) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xrx200_DEVICE_arcadyan_arv7519rw22",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295227
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 296037
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 299261
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7519RW22",
+            "Astoria Networks ARV7519RW22 (Arcadyan ARV7519RW22)",
+            "Orange Livebox 2.1 (Arcadyan ARV7519RW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xrx200_DEVICE_arcadyan_arv7519rw22",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295375
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 296185
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 299409
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7519RW22 additional packages",
+            "Astoria Networks ARV7519RW22 (Arcadyan ARV7519RW22) additional packages",
+            "Orange Livebox 2.1 (Arcadyan ARV7519RW22) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xrx200_DEVICE_arcadyan_vgv7510kw22-brn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295381
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 298933
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7510KW22 BRN",
+            "o2 Box 6431 BRN (Arcadyan VGV7510KW22 BRN)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xrx200_DEVICE_arcadyan_vgv7510kw22-brn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295539
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 299091
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7510KW22 BRN additional packages",
+            "o2 Box 6431 BRN (Arcadyan VGV7510KW22 BRN) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xrx200_DEVICE_arcadyan_vgv7510kw22-nor",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295545
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 299097
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7510KW22 NOR",
+            "o2 Box 6431 NOR (Arcadyan VGV7510KW22 NOR)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xrx200_DEVICE_arcadyan_vgv7510kw22-nor",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295703
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 299255
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7510KW22 NOR additional packages",
+            "o2 Box 6431 NOR (Arcadyan VGV7510KW22 NOR) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xrx200_DEVICE_arcadyan_vgv7519-brn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295709
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 298125
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7519 BRN",
+            "KPN Experiabox 8 BRN (Arcadyan VGV7519 BRN)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xrx200_DEVICE_arcadyan_vgv7519-brn",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295867
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 298283
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7519 BRN additional packages",
+            "KPN Experiabox 8 BRN (Arcadyan VGV7519 BRN) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xrx200_DEVICE_arcadyan_vgv7519-nor",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 295873
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 298289
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7519 NOR",
+            "KPN Experiabox 8 NOR (Arcadyan VGV7519 NOR)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xrx200_DEVICE_arcadyan_vgv7519-nor",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 296031
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 298447
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan VGV7519 NOR additional packages",
+            "KPN Experiabox 8 NOR (Arcadyan VGV7519 NOR) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_avm_fritz7320",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300391
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 303031
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "1&1 HomeServer (AVM FRITZ!Box 7320)",
+            "AVM FRITZ!Box 7320"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_avm_fritz7320",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300539
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 303179
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "1&1 HomeServer (AVM FRITZ!Box 7320) additional packages",
+            "AVM FRITZ!Box 7320 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv7506pw11",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300545
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301005
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice/O2 IAD 4421 (Arcadyan ARV7506PW11)",
+            "Arcadyan ARV7506PW11"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv7506pw11",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300689
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301149
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Alice/O2 IAD 4421 (Arcadyan ARV7506PW11) additional packages",
+            "Arcadyan ARV7506PW11 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv4510pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300695
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305327
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4510PW",
+            "Wippies BeWan iBox v1.0 (Arcadyan ARV4510PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv4510pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300851
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305483
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4510PW additional packages",
+            "Wippies BeWan iBox v1.0 (Arcadyan ARV4510PW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv4519pw",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300857
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 304259
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305179
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4519PW",
+            "Pirelli P.RG A4201G (Arcadyan ARV4519PW)",
+            "Vodafone NetFasteR IAD 2 (Arcadyan ARV4519PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv4519pw",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 300999
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 304401
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305321
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4519PW additional packages",
+            "Pirelli P.RG A4201G (Arcadyan ARV4519PW) additional packages",
+            "Vodafone NetFasteR IAD 2 (Arcadyan ARV4519PW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv7510pw22",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301155
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302249
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7510PW22",
+            "Astoria Networks ARV7510PW22 (Arcadyan ARV7510PW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv7510pw22",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301313
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302407
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7510PW22 additional packages",
+            "Astoria Networks ARV7510PW22 (Arcadyan ARV7510PW22) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv7518pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301319
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302413
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7518PW",
+            "Astoria Networks ARV7518PW (Arcadyan ARV7518PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv7518pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301469
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302563
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7518PW additional packages",
+            "Astoria Networks ARV7518PW (Arcadyan ARV7518PW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv7519pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301475
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302569
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7519PW",
+            "Astoria Networks ARV7519PW (Arcadyan ARV7519PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv7519pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301621
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302715
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7519PW additional packages",
+            "Astoria Networks ARV7519PW (Arcadyan ARV7519PW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv7525pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301627
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 304557
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7525PW",
+            "Telekom Speedport W303V Typ A (Arcadyan ARV7525PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv7525pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301769
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 304699
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV7525PW additional packages",
+            "Telekom Speedport W303V Typ A (Arcadyan ARV7525PW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv752dpw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301775
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 304859
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV752DPW",
+            "Vodafone Easybox 802 (Arcadyan ARV752DPW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv752dpw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301927
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305011
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV752DPW additional packages",
+            "Vodafone Easybox 802 (Arcadyan ARV752DPW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv752dpw22",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 301933
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305017
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV752DPW22",
+            "Vodafone Easybox 803 (Arcadyan ARV752DPW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv752dpw22",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302089
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305173
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV752DPW22 additional packages",
+            "Vodafone Easybox 803 (Arcadyan ARV752DPW22) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_DEVICE_arcadyan_arv8539pw22",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302095
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 304705
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV8539PW22",
+            "Telekom Speedport W504V Typ A (Arcadyan ARV8539PW22)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_DEVICE_arcadyan_arv8539pw22",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 302243
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 304853
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV8539PW22 additional packages",
+            "Telekom Speedport W504V Typ A (Arcadyan ARV8539PW22) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_legacy_DEVICE_arcadyan_arv4520pw",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305799
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306261
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306865
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Airties WAV-281 (Arcadyan ARV4520PW)",
+            "Arcadyan ARV4520PW",
+            "Vodafone Easybox 800 (Arcadyan ARV4520PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_legacy_DEVICE_arcadyan_arv4520pw",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 305947
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306409
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 307013
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Airties WAV-281 (Arcadyan ARV4520PW) additional packages",
+            "Arcadyan ARV4520PW additional packages",
+            "Vodafone Easybox 800 (Arcadyan ARV4520PW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_legacy_DEVICE_arcadyan_arv4525pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306415
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306717
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4525PW",
+            "Telekom Speedport W502V Typ A (Arcadyan ARV4525PW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_legacy_DEVICE_arcadyan_arv4525pw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306557
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306859
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV4525PW additional packages",
+            "Telekom Speedport W502V Typ A (Arcadyan ARV4525PW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_lantiq_xway_legacy_DEVICE_arcadyan_arv452cqw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306563
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 307019
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV452CQW",
+            "Vodafone Easybox 801 (Arcadyan ARV452CQW)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_lantiq_xway_legacy_DEVICE_arcadyan_arv452cqw",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 306711
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 307167
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Arcadyan ARV452CQW additional packages",
+            "Vodafone Easybox 801 (Arcadyan ARV452CQW) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mediatek_filogic_DEVICE_konka_komi-a31",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 314911
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 315059
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 317809
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "E-life ETR631-T (KONKA KOMI A31)",
+            "E-life ETR635-U (KONKA KOMI A31)",
+            "KONKA KOMI A31"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mediatek_filogic_DEVICE_konka_komi-a31",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 315053
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 315201
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 317951
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "E-life ETR631-T (KONKA KOMI A31) additional packages",
+            "E-life ETR635-U (KONKA KOMI A31) additional packages",
+            "KONKA KOMI A31 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mediatek_mt7622_DEVICE_linksys_e8450",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 320809
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 321541
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Belkin RT3200 (Linksys E8450)",
+            "Linksys E8450"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mediatek_mt7622_DEVICE_linksys_e8450",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 320949
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 321681
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Belkin RT3200 (Linksys E8450) additional packages",
+            "Linksys E8450 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mediatek_mt7622_DEVICE_linksys_e8450-ubi",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 320955
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 321687
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Belkin RT3200 UBI (Linksys E8450 UBI)",
+            "Linksys E8450 UBI"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mediatek_mt7622_DEVICE_linksys_e8450-ubi",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 321095
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 321827
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Belkin RT3200 UBI (Linksys E8450 UBI) additional packages",
+            "Linksys E8450 UBI additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mediatek_mt7622_DEVICE_xiaomi_redmi-router-ax6s",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 323143
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 323287
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Xiaomi Redmi Router AX6S",
+            "Xiaomi Router AX3200 (Xiaomi Redmi Router AX6S)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mediatek_mt7622_DEVICE_xiaomi_redmi-router-ax6s",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 323281
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 323425
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Xiaomi Redmi Router AX6S additional packages",
+            "Xiaomi Router AX3200 (Xiaomi Redmi Router AX6S) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa9_DEVICE_linksys_wrt1200ac",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 326905
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327753
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Caiman (Linksys WRT1200AC)",
+            "Linksys WRT1200AC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa9_DEVICE_linksys_wrt1200ac",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327039
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327887
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Caiman (Linksys WRT1200AC) additional packages",
+            "Linksys WRT1200AC additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa9_DEVICE_linksys_wrt1900ac-v2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327045
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328033
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Cobra (Linksys WRT1900AC v2)",
+            "Linksys WRT1900AC v2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa9_DEVICE_linksys_wrt1900ac-v2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327179
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328167
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Cobra (Linksys WRT1900AC v2) additional packages",
+            "Linksys WRT1900AC v2 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa9_DEVICE_linksys_wrt1900ac-v1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327185
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327893
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Mamba (Linksys WRT1900AC v1)",
+            "Linksys WRT1900AC v1"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa9_DEVICE_linksys_wrt1900ac-v1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327319
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328027
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Mamba (Linksys WRT1900AC v1) additional packages",
+            "Linksys WRT1900AC v1 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa9_DEVICE_linksys_wrt3200acm",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327325
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328453
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Rango (Linksys WRT3200ACM)",
+            "Linksys WRT3200ACM"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa9_DEVICE_linksys_wrt3200acm",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327463
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328591
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Rango (Linksys WRT3200ACM) additional packages",
+            "Linksys WRT3200ACM additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa9_DEVICE_linksys_wrt1900acs",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327469
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328173
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328313
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Shelby (Linksys WRT1900ACS v1)",
+            "Linksys WRT1900ACS v1",
+            "Linksys WRT1900ACS v2 (Linksys WRT1900ACS v1)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa9_DEVICE_linksys_wrt1900acs",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327603
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328307
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328447
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Shelby (Linksys WRT1900ACS v1) additional packages",
+            "Linksys WRT1900ACS v1 additional packages",
+            "Linksys WRT1900ACS v2 (Linksys WRT1900ACS v1) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa9_DEVICE_linksys_wrt32x",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327609
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328597
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Venom (Linksys WRT32X)",
+            "Linksys WRT32X"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa9_DEVICE_linksys_wrt32x",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 327747
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 328735
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Linksys Venom (Linksys WRT32X) additional packages",
+            "Linksys WRT32X additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa53_DEVICE_globalscale_espressobin-emmc",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330339
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331037
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board eMMC (Marvell ESPRESSObin eMMC)",
+            "Marvell ESPRESSObin eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa53_DEVICE_globalscale_espressobin-emmc",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330473
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331171
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board eMMC (Marvell ESPRESSObin eMMC) additional packages",
+            "Marvell ESPRESSObin eMMC additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa53_DEVICE_globalscale_espressobin",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330479
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331177
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board Non-eMMC (Marvell ESPRESSObin Non-eMMC)",
+            "Marvell ESPRESSObin Non-eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa53_DEVICE_globalscale_espressobin",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330613
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331311
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board Non-eMMC (Marvell ESPRESSObin Non-eMMC) additional packages",
+            "Marvell ESPRESSObin Non-eMMC additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa53_DEVICE_globalscale_espressobin-v7-emmc",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330619
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331461
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board V7 eMMC (Marvell ESPRESSObin V7 eMMC)",
+            "Marvell ESPRESSObin V7 eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa53_DEVICE_globalscale_espressobin-v7-emmc",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330753
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331595
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board V7 eMMC (Marvell ESPRESSObin V7 eMMC) additional packages",
+            "Marvell ESPRESSObin V7 eMMC additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa53_DEVICE_globalscale_espressobin-v7",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330759
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331601
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board V7 Non-eMMC (Marvell ESPRESSObin V7 Non-eMMC)",
+            "Marvell ESPRESSObin V7 Non-eMMC"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa53_DEVICE_globalscale_espressobin-v7",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 330893
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 331735
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Marvell Armada 3700 Community Board V7 Non-eMMC (Marvell ESPRESSObin V7 Non-eMMC) additional packages",
+            "Marvell ESPRESSObin V7 Non-eMMC additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa72_DEVICE_marvell_macchiatobin-doubleshot",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333157
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333721
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SolidRun Armada 8040 Community Board Double Shot (SolidRun MACCHIATObin Double Shot)",
+            "SolidRun MACCHIATObin Double Shot"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa72_DEVICE_marvell_macchiatobin-doubleshot",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333291
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333855
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SolidRun Armada 8040 Community Board Double Shot (SolidRun MACCHIATObin Double Shot) additional packages",
+            "SolidRun MACCHIATObin Double Shot additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_mvebu_cortexa72_DEVICE_marvell_macchiatobin-singleshot",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333297
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333861
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SolidRun Armada 8040 Community Board Single Shot (SolidRun MACCHIATObin Single Shot)",
+            "SolidRun MACCHIATObin Single Shot"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_mvebu_cortexa72_DEVICE_marvell_macchiatobin-singleshot",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333431
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 333995
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SolidRun Armada 8040 Community Board Single Shot (SolidRun MACCHIATObin Single Shot) additional packages",
+            "SolidRun MACCHIATObin Single Shot additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_pistachio_DEVICE_img_creator-ci40",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 336889
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 337025
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Imagination Technologies Creator Ci40 (VL-62899)",
+            "Imagination Technologies Marduk board (Imagination Technologies Creator Ci40 (VL-62899))"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_pistachio_DEVICE_img_creator-ci40",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 337019
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 337155
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Imagination Technologies Creator Ci40 (VL-62899) additional packages",
+            "Imagination Technologies Marduk board (Imagination Technologies Creator Ci40 (VL-62899)) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_mt7621_DEVICE_buffalo_wsr-2533dhpl",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 363183
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 363321
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Buffalo WSR-2533DHP (Buffalo WSR-2533DHPL)",
+            "Buffalo WSR-2533DHPL"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_mt7621_DEVICE_buffalo_wsr-2533dhpl",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 363315
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 363453
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Buffalo WSR-2533DHP (Buffalo WSR-2533DHPL) additional packages",
+            "Buffalo WSR-2533DHPL additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_mt7621_DEVICE_edimax_ra21s",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 365721
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 365997
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Edimax Gemini RA21S (Edimax RA21S)",
+            "Edimax RA21S"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_mt7621_DEVICE_edimax_ra21s",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 365853
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 366129
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Edimax Gemini RA21S (Edimax RA21S) additional packages",
+            "Edimax RA21S additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_mt7621_DEVICE_edimax_re23s",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 365859
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 366135
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Edimax Gemini RE23S (Edimax RE23S)",
+            "Edimax RE23S"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_mt7621_DEVICE_edimax_re23s",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 365991
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 366267
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Edimax Gemini RE23S (Edimax RE23S) additional packages",
+            "Edimax RE23S additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_mt7621_DEVICE_winstars_ws-wn583a6",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 368079
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 380815
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Gemeita AC2100 (Winstars WS-WN583A6)",
+            "Winstars WS-WN583A6"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_mt7621_DEVICE_winstars_ws-wn583a6",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 368213
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 380949
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Gemeita AC2100 (Winstars WS-WN583A6) additional packages",
+            "Winstars WS-WN583A6 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_mt7621_DEVICE_netgear_r6700-v2",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 374295
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 374871
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 375303
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR Nighthawk AC2400 v1 (NETGEAR R6700 v2)",
+            "NETGEAR R6700 v2",
+            "NETGEAR R7200 v1 (NETGEAR R6700 v2)"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_mt7621_DEVICE_netgear_r6700-v2",
+      "count": 3,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 374433
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 375009
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 375441
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "NETGEAR Nighthawk AC2400 v1 (NETGEAR R6700 v2) additional packages",
+            "NETGEAR R6700 v2 additional packages",
+            "NETGEAR R7200 v1 (NETGEAR R6700 v2) additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_mt76x8_DEVICE_wavlink_wl-wn577a2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 387159
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 393603
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Maginon WLR-755 (Wavlink WL-WN577A2)",
+            "Wavlink WL-WN577A2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_mt76x8_DEVICE_wavlink_wl-wn577a2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 387291
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 393735
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Maginon WLR-755 (Wavlink WL-WN577A2) additional packages",
+            "Wavlink WL-WN577A2 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_mt76x8_DEVICE_wavlink_wl-wn578a2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 389139
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 393741
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SilverCrest SWV 733 A2 (Wavlink WL-WN578A2)",
+            "Wavlink WL-WN578A2"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_mt76x8_DEVICE_wavlink_wl-wn578a2",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 389271
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 393873
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "SilverCrest SWV 733 A2 (Wavlink WL-WN578A2) additional packages",
+            "Wavlink WL-WN578A2 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_ramips_rt305x_DEVICE_aztech_hw550-3g",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 397351
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 399863
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Allnet ALL0239-3G (Aztech HW550-3G)",
+            "Aztech HW550-3G"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_ramips_rt305x_DEVICE_aztech_hw550-3g",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 397485
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 399997
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Allnet ALL0239-3G (Aztech HW550-3G) additional packages",
+            "Aztech HW550-3G additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_sunxi_cortexa7_DEVICE_lamobo_lamobo-r1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 430347
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 431473
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Bananapi BPi-R1 (Lamobo Lamobo R1)",
+            "Lamobo Lamobo R1"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "TARGET_DEVICE_PACKAGES_sunxi_cortexa7_DEVICE_lamobo_lamobo-r1",
+      "count": 2,
+      "paths": [
+        [
+          "Target Devices"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-target.in",
+          "line": 430483
+        },
+        {
+          "file": "tmp/.config-target.in",
+          "line": 431609
+        }
+      ],
+      "sources": [
+        "tmp/.config-target.in"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "Bananapi BPi-R1 (Lamobo Lamobo R1) additional packages",
+            "Lamobo Lamobo R1 additional packages"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "MT7603E_LLTD_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Generic Feature Options"
+        ],
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/lean/mt/drivers/mt7603e/config.in",
+          "line": 94
+        },
+        {
+          "file": "package/lean/mt/drivers/mt7603e/config.in",
+          "line": 450
+        }
+      ],
+      "sources": [
+        "package/lean/mt/drivers/mt7603e/config.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_WMA",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146397
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146453
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_RESAMPLE",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146404
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146460
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_DSD",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146410
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146466
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_SSL",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146416
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146472
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "SQUEEZELITE_OPUS",
+      "count": 2,
+      "paths": [
+        [
+          "Sound"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146422
+        },
+        {
+          "file": "tmp/.config-package.in",
+          "line": 146478
+        }
+      ],
+      "sources": [
+        "tmp/.config-package.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    }
+  ],
+  "conflicts": []
+}
