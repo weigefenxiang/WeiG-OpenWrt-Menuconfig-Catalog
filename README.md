@@ -13,13 +13,15 @@ JavaScript 中写死分支、Target 或菜单项目。
 - Curated application titles and descriptions in all 11 languages come from
   `translations/zh-CN.json`; the filename is retained for compatibility.
 - Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
+- The visible menu and the complete symbol table are separate: no-prompt/hidden Kconfig symbols remain out of the normal tree but are published for Advanced search and validation.
+- `relations.schema=2` records every non-Target Kconfig symbol plus packageinfo-only packages, complete dependency expressions, reverse indexes, choices, selects, implies, conflicts, provides, visibility, and user-settable state.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
 - Repeated Kconfig definitions are merged by symbol. Only explicit, incompatible types are hard conflicts; split declarations such as `tristate` in one file and `prompt` in another are legal and retained as one option.
 - Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
-- The published index records each branch shard's upstream commit, compressed byte count and SHA-256, plus an immutable `assetRef` Git commit. Consumers fetch the index and shard from one provider at a time and verify that exact contract before using a shard.
+- Catalog schema 5 records capabilities and the exact upstream source commit; the published index records each branch shard's compressed byte count, SHA-256, and immutable `assetRef` Git commit. Consumers can pin the Catalog data revision and build the same upstream commit instead of mixing weekly metadata with a newer branch HEAD.
 - The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
   translations are published even when a batch is incomplete; remaining descriptions are kept in
@@ -53,14 +55,13 @@ node scripts/import-curated-i18n.mjs \
 `tmp/.packageinfo` 和顶层 `Config.in` 树，包括：
 
 - Source / Branch / Target System / Subtarget / Target Profile
-- 顶层 `make menuconfig` 中可见的 bool、tristate、choice、string、int、hex
-- `depends on`、`select`、`imply`、`default`、`range` 与菜单路径
+- 顶层 `make menuconfig` 中可见的 bool、tristate、choice、string、int、hex，以及无 prompt 的隐藏 Kconfig 符号
+- 可见菜单与完整符号集合分离；隐藏项不会污染普通菜单，但会进入 Advanced 搜索和配置验证
+- `depends on`、`select`、`imply`、`default`、`range`、choice、provider、冲突、反向依赖与菜单路径
 - `menu/endmenu` 显式层级，以及 `menuconfig` 通过正向 `if/depends` 形成的隐式父子层级
 - 软件包 Kconfig 选项及其依赖关系
 
-网页已经用五级 Target 选择器提供设备/Profile，因此目录不会重复发布
-`Target Devices` 菜单和对应的数千个 Kconfig 项，也不会把网页未使用的
-软件包元数据塞进浏览器。
+网页已经用动态 Target 选择器提供设备/Profile，因此目录不会重复发布 `Target Devices` 菜单和对应的数千个 Kconfig 项。普通菜单仅消费可见选项；完整关系表仍发布隐藏 Kconfig 与 packageinfo-only 软件包，使消费方可以通用处理语言包残留、依赖链、choice 和 provider，而无需在 `app.js` 中写包名特例。人工构建兼容规则目前不属于 Catalog，本轮不迁移。
 
 ## 自动更新
 

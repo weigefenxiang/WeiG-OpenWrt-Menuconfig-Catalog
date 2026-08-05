@@ -46,6 +46,10 @@ if PACKAGE_luci-app-demo
 config PACKAGE_luci-app-demo-extra
 	bool "Demo LuCI app extra feature"
 endif
+
+config PACKAGE_luci-i18n-demo-zh-cn
+	tristate
+	depends on PACKAGE_luci-app-demo
 endmenu
 endif
 endmenu

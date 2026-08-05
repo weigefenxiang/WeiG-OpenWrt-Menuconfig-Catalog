@@ -12,3 +12,10 @@ Description: Demonstration kernel module
 Category: Kernel modules
 Submenu: Network Support
 Depends: @TARGET_x86
+
+Package: luci-i18n-demo-zh-cn
+Title: Demo LuCI Chinese translation
+Description: Hidden generated language package
+Category: LuCI
+Submenu: Languages
+Depends: +luci-app-demo

@@ -17,7 +17,7 @@ const packageInfoOnly = parsePackageInfo('Package: luci-app-packageinfo-only\nTi
 const menu = parseKconfigTree(fixture);
 const duplicateFixture = parseKconfigTree(join(ROOT, 'tests', 'duplicate'));
 const hardDuplicateFixture = parseKconfigTree(join(ROOT, 'tests', 'duplicate-hard'));
-const relations = buildKconfigRelations(menu.options, packages, menu.choices);
+const relations = buildKconfigRelations(menu.allOptions || menu.options, packages, menu.choices);
 const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const translationWorkflow = readFileSync(join(ROOT, '.github', 'workflows', 'translate.yml'), 'utf8');
 const discover = readFileSync(join(ROOT, 'scripts', 'discover.mjs'), 'utf8');
@@ -50,7 +50,7 @@ const x86Target = targets.find((item) => item.id === 'x86/64');
 const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
 const abstractTarget = targets.find((item) => item.id === 'abstract-board');
 const unavailableTarget = targets.find((item) => item.id === 'unavailable-board');
-const fixtureSymbols = new Set(menu.options.map((item) => item.symbol));
+const fixtureSymbols = new Set((menu.allOptions || menu.options).map((item) => item.symbol));
 for (const target of targets) {
   target.contract = targetBuildContract(target, fixtureSymbols);
   target.targetSelector = target.contract.targetSelector || '';
@@ -114,13 +114,14 @@ if (!probeFixture.includes('CONFIG_TARGET_x86=y') ||
       `# CONFIG_${probeSelectors.profile} is not set`), x86Target, probeProfile, probeSelectors).valid) {
   failures.push('Target/Profile Kconfig probe contract');
 }
-if (packages.length !== 2 || packages[0].category !== 'LuCI' ||
+if (packages.length !== 3 || packages[0].category !== 'LuCI' ||
     packages[0].description !== 'Demonstration web interface package' ||
     packages[0].conflicts.join(',') !== 'kmod-demo') failures.push('packageinfo');
 const demo = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo');
 const luci = menu.options.find((item) => item.symbol === 'PACKAGE_luci');
 const demoExtra = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo-extra');
 const image = menu.options.find((item) => item.symbol === 'TARGET_IMAGES_GZIP');
+const hiddenLanguage = (menu.allOptions || menu.options).find((item) => item.symbol === 'PACKAGE_luci-i18n-demo-zh-cn');
 if (!demo || demo.type !== 'tristate' || !demo.depends.includes('TARGET_x86') ||
     demo.depends.some((item) => item.includes('sentence remains help')) ||
     !demo.help?.includes('if the application is enabled') ||
@@ -128,6 +129,8 @@ if (!demo || demo.type !== 'tristate' || !demo.depends.includes('TARGET_x86') ||
 if (!luci || luci.kind !== 'menuconfig' || demo?.parent !== luci.symbol ||
     demoExtra?.parent !== demo?.symbol) failures.push('implicit menuconfig hierarchy');
 if (!image || image.path[0] !== 'Target Images') failures.push('menu path');
+if (!hiddenLanguage || hiddenLanguage.visible !== false || hiddenLanguage.userSettable !== false ||
+    menu.options.includes(hiddenLanguage)) failures.push('hidden Kconfig symbol collection');
 if (menu.choices.length !== 1 || !menu.options.some((item) => item.choice)) failures.push('choice');
 const demoRelations = relations.records.find((item) => item.package === 'luci-app-demo');
 if (!demoRelations || demoRelations.states.join(',') !== 'n,m,y' ||
@@ -138,6 +141,20 @@ if (!demoRelations || demoRelations.states.join(',') !== 'n,m,y' ||
     !relations.validation.structurallyValid ||
     !relations.validation.unresolvedKconfig.some((item) => item.symbol === 'PACKAGE_luci-app-demo')) {
   failures.push('Kconfig/package relationship graph');
+}
+const hiddenRelations = relations.records.find((item) => item.package === 'luci-i18n-demo-zh-cn');
+if (relations.schema !== 2 || !hiddenRelations || hiddenRelations.configSymbol !== 'PACKAGE_luci-i18n-demo-zh-cn' ||
+    hiddenRelations.visible !== false || hiddenRelations.userSettable !== false ||
+    !hiddenRelations.dependencyPackages.includes('luci-app-demo') ||
+    !relations.indexes.reverseDependencies['luci-app-demo']?.includes('luci-i18n-demo-zh-cn') ||
+    relations.indexes.bySymbol['PACKAGE_luci-i18n-demo-zh-cn'] === undefined) {
+  failures.push('hidden package relationship graph');
+}
+const rootfsRelations = relations.records.filter((item) => item.choice === menu.choices[0]?.id);
+if (rootfsRelations.length !== 2 || rootfsRelations.some((item) => item.kind !== 'config' || item.package) ||
+    !relations.indexes.choices[menu.choices[0]?.id]?.includes('TARGET_ROOTFS_SQUASHFS') ||
+    relations.indexes.bySymbol.TARGET_ROOTFS_EXT4FS === undefined) {
+  failures.push('generic Kconfig choice relationship graph');
 }
 const rustdesk = duplicateFixture.options.find((item) => item.symbol === 'PACKAGE_luci-app-rustdesk-server');
 if (duplicateFixture.options.length !== 1 || rustdesk?.nodes?.length !== 2 ||
@@ -338,4 +355,4 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationWorkflow.includes("github.event.workflow_run.event == 'schedule'") ||
     workflow.includes('scripts/translate-catalog.mjs')) failures.push('manual translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
-console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible Kconfig options`);
+console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible / ${(menu.allOptions || menu.options).length} total Kconfig options`);

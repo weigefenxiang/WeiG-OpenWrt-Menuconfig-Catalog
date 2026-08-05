@@ -355,7 +355,12 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
     const finish = () => {
       if (!current) return;
       current.depends = [...new Set(current.depends.filter(Boolean))];
-      if (current.prompt && current.symbol) options.push(current);
+      if (current.symbol) {
+        current.visible = Boolean(current.prompt);
+        current.hidden = !current.visible;
+        current.userSettable = current.visible;
+        options.push(current);
+      }
       current = null;
       help = false;
       helpIndent = -1;
@@ -463,8 +468,9 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   parseFile(entry);
   const validation = mergeKconfigOptions(options);
   addImplicitMenuParents(validation.options);
-  const categories = [...new Set(validation.options.map((item) => item.path[0] || 'Other'))];
-  return { categories, options: validation.options, choices, validation };
+  const visibleOptions = validation.options.filter((item) => item.visible !== false);
+  const categories = [...new Set(visibleOptions.map((item) => item.path[0] || 'Other'))];
+  return { categories, options: visibleOptions, allOptions: validation.options, choices, validation };
 }
 
 function relativeSource(topdir, file) {

@@ -33,12 +33,13 @@ const source = {
 const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
 const menu = parseKconfigTree(tree);
+const allMenuOptions = menu.allOptions || menu.options;
 const duplicateReport = {
   schema: 1,
   source,
   generatedAt: new Date().toISOString(),
   summary: {
-    symbols: menu.options.length,
+    symbols: allMenuOptions.length,
     duplicateSymbols: menu.validation?.duplicates?.length || 0,
     duplicateNodes: menu.validation?.duplicateCount || 0,
     conflicts: menu.validation?.conflicts?.length || 0,
@@ -51,11 +52,11 @@ if (duplicateReport.summary.conflicts) {
   throw new Error(`Kconfig symbol merge conflicts: ${duplicateReport.conflicts
     .slice(0, 20).map((item) => item.symbol).join(', ')}`);
 }
-const kconfigSymbols = new Set(menu.options.map((option) => option.symbol));
+const kconfigSymbols = new Set(allMenuOptions.map((option) => option.symbol));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
-if (!targets.length || !menu.options.length) {
-  throw new Error(`目录异常:targets=${targets.length},menu options=${menu.options.length}`);
+if (!targets.length || !allMenuOptions.length) {
+  throw new Error(`目录异常:targets=${targets.length},menu options=${allMenuOptions.length}`);
 }
 for (const target of targets) {
   target.contract = targetBuildContract(target, kconfigSymbols);
@@ -98,8 +99,9 @@ for (const target of targets) {
     if (profile.selector) targetSymbols.add(profile.selector);
   }
 }
-const menuOptions = menu.options.filter((option) =>
+const relationOptions = allMenuOptions.filter((option) =>
   option.path[0] !== 'Target Devices' && !targetSymbols.has(option.symbol));
+const menuOptions = relationOptions.filter((option) => option.visible !== false);
 const pollutedDependencies = menuOptions.flatMap((option) =>
   (option.depends || []).filter((expression) =>
     /\s/.test(expression) && !/[&|=!<>]/.test(expression))
@@ -118,7 +120,7 @@ if (curatedCandidates.some((candidate) => !candidate || typeof candidate !== 'ob
     candidate.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(String(name || ''))))) {
   throw new Error('catalog.config.json curatedCandidates must use {id, packages:[luci-app-*]} objects');
 }
-const packageSymbols = new Set(menu.options
+const packageSymbols = new Set(allMenuOptions
   .filter((option) => option.symbol.startsWith('PACKAGE_'))
   .map((option) => option.symbol.slice('PACKAGE_'.length)));
 const resolveCandidate = (candidate) => resolvePackageOption(candidate, packageSymbols);
@@ -163,7 +165,7 @@ const translatedOptions = menuOptions.map((option) => {
     translationSource: translated.source || (promptRow.titleZh ? 'Catalog glossary' : ''),
   };
 });
-const relations = buildKconfigRelations(menuOptions, packages, menu.choices);
+const relations = buildKconfigRelations(relationOptions, packages, menu.choices);
 if (!relations.validation.structurallyValid) {
   throw new Error(`Invalid Kconfig choice references: ${relations.validation.invalidChoices.join(', ')}`);
 }
@@ -196,7 +198,7 @@ const compactMenu = {
     };
   }),
 };
-const targetTree = buildTargetTree(selectableTargets, menu.options);
+const targetTree = buildTargetTree(selectableTargets, allMenuOptions);
 const targetSelectors = [
   { id: 'system', labelEn: 'Target System', labelZh: '目标系统' },
   { id: 'subtarget', labelEn: 'Subtarget', labelZh: '子目标' },
@@ -220,7 +222,14 @@ const translationReport = {
   missingChoicesZhCN: missingChoiceTranslations,
 };
 const payload = {
-  schema: 4,
+  schema: 5,
+  capabilities: [
+    'hidden-kconfig-symbols',
+    'dependency-expressions-v2',
+    'reverse-dependencies-v1',
+    'source-commit-contract-v1',
+  ],
+  engine: { minimumVersion: 1 },
   generatedAt: new Date().toISOString(),
   source,
   validation: {
@@ -236,7 +245,8 @@ const payload = {
     unavailableTargets: unavailableTargets.length,
     abstractTargets: targets.filter((target) => target.contract.kind === 'abstract').length,
     profiles: selectableTargets.reduce((n, item) => n + item.profiles.length, 0),
-    menuOptions: compactMenu.options.length, packages: packages.length,
+    menuOptions: compactMenu.options.length, hiddenMenuOptions: relationOptions.length - compactMenu.options.length,
+    packages: packages.length,
     translatedZhCN: translationReport.translatedZhCN,
     missingZhCN: missingTranslations.length,
   },
@@ -258,7 +268,7 @@ const compressed = gzipSync(Buffer.from(json), { level: 9 });
 writeFileSync(join(outDir, asset), compressed);
 writeFileSync(join(outDir, `${slug}.relations.json`), JSON.stringify({
   schema: relations.schema, source: payload.source, generatedAt: payload.generatedAt,
-  summary: relations.summary, validation: relations.validation, records: relations.records,
+  summary: relations.summary, validation: relations.validation, indexes: relations.indexes, records: relations.records,
 }, null, 2) + '\n');
 writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translationReport, null, 2) + '\n');
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
