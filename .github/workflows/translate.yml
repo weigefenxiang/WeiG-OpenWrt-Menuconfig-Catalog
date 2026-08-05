@@ -125,6 +125,11 @@ jobs:
               return 0
             fi
             git -C dist commit -m "data: translate menuconfig descriptions batch ${batch}/${batch_count}"
+            asset_commit="$(git -C dist rev-parse HEAD)"
+            node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit"
+            node scripts/sync-index-assets.mjs dist --check
+            git -C dist add index.json
+            git -C dist commit -m "data: pin translated catalog assets batch ${batch}/${batch_count}"
             git -C dist push origin HEAD:catalog-data
           }
           for ((batch=1; batch<=batch_count; batch++)); do
@@ -174,6 +179,11 @@ jobs:
             exit 0
           fi
           git -C dist commit -m "data: translate menuconfig descriptions"
+          asset_commit="$(git -C dist rev-parse HEAD)"
+          node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit"
+          node scripts/sync-index-assets.mjs dist --check
+          git -C dist add index.json
+          git -C dist commit -m "data: pin translated catalog assets"
           git -C dist push origin HEAD:catalog-data
       - name: Translation summary
         if: always() && steps.translator.outputs.provider != 'off'

@@ -19,7 +19,7 @@ JavaScript 中写死分支、Target 或菜单项目。
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
-- The published index records each branch shard's upstream commit, compressed byte count and SHA-256. Consumers must verify that exact contract before using a shard.
+- The published index records each branch shard's upstream commit, compressed byte count and SHA-256, plus an immutable `assetRef` Git commit. Consumers fetch the index and shard from one provider at a time and verify that exact contract before using a shard.
 - The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
   translations are published even when a batch is incomplete; remaining descriptions are kept in
@@ -66,8 +66,9 @@ node scripts/import-curated-i18n.mjs \
 
 `.github/workflows/catalog.yml` 每周检查配置文件中声明的全部源码与分支；
 其中 hanwckf 仅收录 `openwrt-21.02` 兼容分支。每个分支独立生成，
-失败时沿用上一次成功数据。结果以无历史膨胀的孤立分支
-`catalog-data` 发布，主站只按当前分支加载一个 gzip 分片。
+失败时沿用上一次成功数据。结果发布到保留提交历史的 `catalog-data` 分支；每次先提交数据，
+再用第二个提交把 `index.json` 的 `assetRef` 固定到前一个不可变数据提交。主站从 jsDelivr
+或 GitHub Raw 整组读取 index 与该提交中的 gzip 分片，不在 VPS 保存 Catalog。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
 - 自动翻译只新增软件包/菜单用途说明，技术名称与符号保持官方英文。简体中文说明未完成时，

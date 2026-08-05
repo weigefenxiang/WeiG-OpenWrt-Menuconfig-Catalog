@@ -208,16 +208,32 @@ jobs:
         continue-on-error: true
         run: |
           bash scripts/run-stage.sh catalog-data bash -c '
-            cd dist
-            rm -f -- *.meta.json
-            git init
-            git checkout -b catalog-data
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git add .
-            git commit -m "data: refresh menuconfig catalog"
-            git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
-            git push --force origin catalog-data
+            set -euo pipefail
+            if [[ ! -d previous/.git ]]; then
+              rm -rf previous
+              git init previous
+              git -C previous checkout -b catalog-data
+            fi
+            git -C previous config user.name github-actions[bot]
+            git -C previous config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git -C previous remote remove origin 2>/dev/null || true
+            git -C previous remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+            find previous -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
+            cp -a dist/. previous/
+            rm -f -- previous/*.meta.json
+            git -C previous add -A
+            if ! git -C previous diff --cached --quiet; then
+              git -C previous commit -m "data: refresh menuconfig catalog"
+            fi
+            asset_commit="$(git -C previous rev-parse HEAD)"
+            node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit"
+            node scripts/sync-index-assets.mjs previous --check
+            git -C previous add index.json
+            if ! git -C previous diff --cached --quiet; then
+              git -C previous commit -m "data: pin menuconfig catalog assets"
+            fi
+            git -C previous push origin HEAD:catalog-data
+            cp previous/index.json dist/index.json
           '
       - name: Publish complete catalog Release
         id: release

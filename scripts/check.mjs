@@ -35,12 +35,16 @@ const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.j
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs'), 'utf8');
 const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
+const snapshotStamper = readFileSync(join(ROOT, 'scripts', 'stamp-catalog-snapshot.mjs'), 'utf8');
 const failures = [];
 const curatedCandidates = policy.curatedCandidates || [];
 const curatedById = new Map(curatedCandidates.map((item) => [item.id, item]));
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 const translationPublishContractCount = (translationWorkflow.match(
   /node scripts\/sync-index-assets\.mjs dist\n\s+node scripts\/sync-index-assets\.mjs dist --check\n\s+git -C dist add \./g,
+) || []).length;
+const translationSnapshotContractCount = (translationWorkflow.match(
+  /node scripts\/stamp-catalog-snapshot\.mjs dist\/index\.json "\$asset_commit"/g,
 ) || []).length;
 const x86Target = targets.find((item) => item.id === 'x86/64');
 const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
@@ -189,6 +193,12 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('verify-target-contracts.mjs') ||
     !workflow.includes('KCONFIG_CONTRACT_OUTCOME') ||
     !workflow.includes('run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts') ||
+    !workflow.includes('node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit"') ||
+    !workflow.includes('git -C previous push origin HEAD:catalog-data') ||
+    !workflow.includes('cp previous/index.json dist/index.json') ||
+    workflow.includes('git push --force origin catalog-data') ||
+    !snapshotStamper.includes("assetRefType: 'git-commit'") ||
+    !snapshotStamper.includes('catalog assetRef must be a full 40-character Git commit SHA') ||
     unsafePlainRunContinuation) failures.push('workflow resilience');
 if (!discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
     !discover.includes('metadataCompat') ||
@@ -311,6 +321,7 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationWorkflow.includes('TRANSLATE_BATCH_NUMBER="$batch"') ||
     !translationWorkflow.includes('publish_mode="${{ steps.plan.outputs.publish_mode }}"') ||
     translationPublishContractCount !== 2 ||
+    translationSnapshotContractCount !== 2 ||
     !translationWorkflow.includes('git -C dist push origin HEAD:catalog-data') ||
     !translationWorkflow.includes('Translate with live progress') ||
     !translationWorkflow.includes('timeout-minutes: 60') ||
