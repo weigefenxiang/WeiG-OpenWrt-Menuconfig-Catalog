@@ -117,6 +117,8 @@ jobs:
           publish_batch() {
             git -C dist config user.name github-actions[bot]
             git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            node scripts/sync-index-assets.mjs dist
+            node scripts/sync-index-assets.mjs dist --check
             git -C dist add .
             if git -C dist diff --cached --quiet; then
               echo "Batch ${batch}/${batch_count}: no catalog changes to publish."
@@ -164,6 +166,8 @@ jobs:
           fi
           git -C dist config user.name github-actions[bot]
           git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          node scripts/sync-index-assets.mjs dist
+          node scripts/sync-index-assets.mjs dist --check
           git -C dist add .
           if git -C dist diff --cached --quiet; then
             echo "No translated catalog changes to publish."

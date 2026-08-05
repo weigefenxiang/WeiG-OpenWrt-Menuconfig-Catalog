@@ -39,6 +39,9 @@ const failures = [];
 const curatedCandidates = policy.curatedCandidates || [];
 const curatedById = new Map(curatedCandidates.map((item) => [item.id, item]));
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
+const translationPublishContractCount = (translationWorkflow.match(
+  /node scripts\/sync-index-assets\.mjs dist\n\s+node scripts\/sync-index-assets\.mjs dist --check\n\s+git -C dist add \./g,
+) || []).length;
 const x86Target = targets.find((item) => item.id === 'x86/64');
 const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
 const abstractTarget = targets.find((item) => item.id === 'abstract-board');
@@ -307,6 +310,7 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationWorkflow.includes('ARGOS_TIME_BUDGET_SECONDS: ${{ steps.plan.outputs.per_batch_time_budget_seconds }}') ||
     !translationWorkflow.includes('TRANSLATE_BATCH_NUMBER="$batch"') ||
     !translationWorkflow.includes('publish_mode="${{ steps.plan.outputs.publish_mode }}"') ||
+    translationPublishContractCount !== 2 ||
     !translationWorkflow.includes('git -C dist push origin HEAD:catalog-data') ||
     !translationWorkflow.includes('Translate with live progress') ||
     !translationWorkflow.includes('timeout-minutes: 60') ||

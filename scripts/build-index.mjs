@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stampIndex } from './index-contract.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = resolve(process.argv[2] || join(ROOT, 'dist'));
@@ -106,12 +106,10 @@ const body = {
   },
   sources,
 };
-const bodyText = JSON.stringify(body);
-writeFileSync(out, JSON.stringify({
-  ...body,
-  hash: createHash('sha256').update(bodyText).digest('hex'),
-  bytes: Buffer.byteLength(bodyText),
-}, null, 2) + '\n');
+writeFileSync(
+  out,
+  JSON.stringify(stampIndex(body), null, 2) + '\n',
+);
 console.log(`index.json: ${sources.length} sources / ${branchRows.length} branches` +
   ` (fresh=${branchRows.filter((item) => item.state === 'fresh').length}` +
   ` stale=${branchRows.filter((item) => item.state === 'stale').length}` +
