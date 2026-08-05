@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-05T15:17:48.589Z",
+  "generatedAt": "2026-08-05T17:23:01.966Z",
   "languages": [
     "en",
     "zh-CN",
@@ -19,7 +19,7 @@
     "vi"
   ],
   "options": 10281,
-  "translatedZhCN": 103,
+  "translatedZhCN": 102,
   "missingZhCN": [
     {
       "symbol": "TARGET_uml",
@@ -41351,6 +41351,14 @@
     {
       "symbol": "PACKAGE_luci-app-package-manager",
       "promptEn": "Package management application",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-qos-legacy",
+      "promptEn": "Configuration for the ancient qos-scripts package",
       "path": [
         "LuCI",
         "3. Applications"
