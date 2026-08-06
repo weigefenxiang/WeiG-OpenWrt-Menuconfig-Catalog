@@ -49,6 +49,9 @@ for (const row of rows) {
     commit: row.commit || row.source.commit || '',
     hash: row.hash || row.sha256 || '',
     bytes: Number(row.bytes || 0),
+    assets: row.assets || {},
+    schema: Number(row.schema || 5),
+    sizeReport: row.sizeReport || {},
     state: 'fresh',
     lastSuccessAt: row.generatedAt || new Date().toISOString(),
   };

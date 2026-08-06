@@ -27,13 +27,36 @@ function addArtifact(root, order, branchName, status = 'success', {
   mkdirSync(logs, { recursive: true });
   const asset = `openwrt--${branchName}.json.gz`;
   if (status === 'success') {
-    const json = JSON.stringify({ source: 'OpenWrt', branch: branchName, generation: 'current' });
+    const json = JSON.stringify({ schema: 5, source: 'OpenWrt', branch: branchName, generation: 'current' });
     const compressed = gzipSync(Buffer.from(json));
     writeFileSync(join(dist, asset), compressed);
+    const shardValues = {
+      core: { schema: 6, kind: 'core', source: { id: 'OpenWrt', branch: branchName } },
+      graph: { schema: 6, kind: 'graph', source: { id: 'OpenWrt', branch: branchName }, relations: { schema: 3 } },
+      menu: { schema: 1, kind: 'menu', options: [] },
+      hidden: { schema: 1, kind: 'hidden', options: [] },
+      help: { schema: 1, kind: 'help', options: [] },
+    };
+    const assets = {};
+    for (const [logical, value] of Object.entries(shardValues)) {
+      const filename = `openwrt--${branchName}.${logical}.json.gz`;
+      const body = Buffer.from(JSON.stringify(value));
+      const data = gzipSync(body);
+      writeFileSync(join(dist, filename), data);
+      assets[logical] = {
+        logical, asset: filename,
+        hash: createHash('sha256').update(data).digest('hex'),
+        bytes: data.byteLength,
+        sha256: createHash('sha256').update(body).digest('hex'),
+        jsonBytes: body.byteLength,
+      };
+    }
     writeFileSync(join(dist, `openwrt--${branchName}.meta.json`), JSON.stringify({
+      schema: 6,
       source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
       asset, sha256: createHash('sha256').update(json).digest('hex'),
       hash: createHash('sha256').update(compressed).digest('hex'), bytes: compressed.byteLength,
+      assets,
     }));
     if (contract) {
       writeFileSync(join(dist, `openwrt--${branchName}.contract.json`), JSON.stringify({
@@ -45,11 +68,13 @@ function addArtifact(root, order, branchName, status = 'success', {
       }));
     }
     if (relations) {
-      writeFileSync(join(dist, `openwrt--${branchName}.relations.json`), JSON.stringify({
-        schema: 1,
+      const relationDocument = {
+        schema: 3,
         source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
-        summary: { packages: 1 }, validation: { structurallyValid: true }, records: [],
-      }));
+        relations: { schema: 3, summary: { packages: 1 }, validation: { structurallyValid: true }, records: [] },
+      };
+      writeFileSync(join(dist, `openwrt--${branchName}.relations.json.gz`),
+        gzipSync(Buffer.from(JSON.stringify(relationDocument))));
     }
     if (translation) writeFileSync(join(dist, `openwrt--${branchName}.translations.json`), '{}\n');
     if (duplicates) writeFileSync(join(dist, `openwrt--${branchName}.duplicates.json`), JSON.stringify({

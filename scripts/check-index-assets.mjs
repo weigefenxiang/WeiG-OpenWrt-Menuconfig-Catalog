@@ -48,11 +48,14 @@ mkdirSync(dist);
 try {
   const asset = 'demo--main.json.gz';
   const assetFile = join(dist, asset);
+  const coreAsset = 'demo--main.core.json.gz';
+  const graphAsset = 'demo--main.graph.json.gz';
+  const coreFile = join(dist, coreAsset);
+  const graphFile = join(dist, graphAsset);
 
-  writeFileSync(
-    assetFile,
-    Buffer.from('catalog-v1'),
-  );
+  writeFileSync(assetFile, Buffer.from('catalog-v1'));
+  writeFileSync(coreFile, Buffer.from('core-v1'));
+  writeFileSync(graphFile, Buffer.from('graph-v1'));
 
   const staleIndex = stampIndex({
     schema: 2,
@@ -79,6 +82,10 @@ try {
             asset,
             hash: 'stale-hash',
             bytes: 1,
+            assets: {
+              core: { asset: coreAsset, hash: 'stale-core', bytes: 1 },
+              graph: { asset: graphAsset, hash: 'stale-graph', bytes: 1 },
+            },
             state: 'fresh',
           },
         ],
@@ -116,13 +123,12 @@ try {
   const actual =
     fileContract(assetFile);
 
-  if (
-    branch.hash !== actual.hash ||
-    branch.bytes !== actual.bytes
-  ) {
-    throw new Error(
-      'asset metadata synchronization failed',
-    );
+  const actualCore = fileContract(coreFile);
+  const actualGraph = fileContract(graphFile);
+  if (branch.hash !== actual.hash || branch.bytes !== actual.bytes ||
+      branch.assets.core.hash !== actualCore.hash || branch.assets.core.bytes !== actualCore.bytes ||
+      branch.assets.graph.hash !== actualGraph.hash || branch.assets.graph.bytes !== actualGraph.bytes) {
+    throw new Error('legacy/split asset metadata synchronization failed');
   }
 
   const root = indexContract(fixed);
@@ -162,10 +168,7 @@ try {
     { stdio: 'pipe' },
   );
 
-  writeFileSync(
-    assetFile,
-    Buffer.from('catalog-v2'),
-  );
+  writeFileSync(graphFile, Buffer.from('graph-v2'));
 
   const failed = spawnSync(
     process.execPath,
@@ -187,8 +190,8 @@ try {
 
   console.log(
     'catalog asset index checks passed: ' +
-    'update, root contract, ' +
-    'idempotence, tamper rejection',
+    'legacy/split update, root contract, ' +
+    'idempotence, shard tamper rejection',
   );
 } finally {
   rmSync(

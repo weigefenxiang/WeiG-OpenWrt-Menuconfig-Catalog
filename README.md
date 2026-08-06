@@ -14,14 +14,14 @@ JavaScript 中写死分支、Target 或菜单项目。
   `translations/zh-CN.json`; the filename is retained for compatibility.
 - Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
 - The visible menu and the complete symbol table are separate: no-prompt/hidden Kconfig symbols remain out of the normal tree but are published for Advanced search and validation.
-- `relations.schema=2` records every non-Target Kconfig symbol plus packageinfo-only packages, complete dependency expressions, reverse indexes, choices, selects, implies, conflicts, provides, visibility, and user-settable state.
+- Runtime relations use `relations.schema=3`: array records, string/expression pools, bit flags and integer adjacency lists retain every non-Target Kconfig symbol plus packageinfo-only packages without repeating object keys and symbol strings. A schema-2 readable graph is generated only for explicit diagnostics.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
 - Repeated Kconfig definitions are merged by symbol. Only explicit, incompatible types are hard conflicts; split declarations such as `tristate` in one file and `prompt` in another are legal and retained as one option.
 - Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
-- Catalog schema 5 records capabilities and the exact upstream source commit; the published index records each branch shard's compressed byte count, SHA-256, and immutable `assetRef` Git commit. Consumers can pin the Catalog data revision and build the same upstream commit instead of mixing weekly metadata with a newer branch HEAD.
+- Catalog schema 6 splits each branch into `core`, `graph`, `menu`, `hidden`, `help`, and per-language menu gzip assets. The published index records every shard's compressed byte count, SHA-256, and immutable `assetRef` Git commit. Consumers initially fetch only `core + graph`; Advanced menu text and long help are loaded on demand. The schema-5 monolithic gzip remains temporarily as a compatibility fallback.
 - The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
   translations are published even when a batch is incomplete; remaining descriptions are kept in
@@ -62,6 +62,27 @@ node scripts/import-curated-i18n.mjs \
 - 软件包 Kconfig 选项及其依赖关系
 
 网页已经用动态 Target 选择器提供设备/Profile，因此目录不会重复发布 `Target Devices` 菜单和对应的数千个 Kconfig 项。普通菜单仅消费可见选项；完整关系表仍发布隐藏 Kconfig 与 packageinfo-only 软件包，使消费方可以通用处理语言包残留、依赖链、choice 和 provider，而无需在 `app.js` 中写包名特例。人工构建兼容规则目前不属于 Catalog，本轮不迁移。
+
+## Schema 6 分片与体积报告
+
+每个分支在迁移期同时发布旧单体和新分片：
+
+- `*.core.json.gz`：Target/Profile、构建契约、来源与分片清单所需的最小启动数据。
+- `*.graph.json.gz`：`relations.schema=3` 紧凑关系图；浏览器依赖解析只读取这一份关系数据。
+- `*.menu.json.gz`：可见 Advanced 菜单的英文标题、短说明与路径。
+- `*.hidden.json.gz`：隐藏 Kconfig/packageinfo-only 的搜索显示信息。
+- `*.help.json.gz`：长 Help/usage，仅在用户查看完整说明时下载。
+- `*.menu.<lang>.json.gz`：当前语言的菜单译文，不再一次加载全部语言。
+- `*.relations.json.gz`：同一 schema-3 紧凑关系图，供离线工具和诊断使用；不再发布 40+ MB 的缩进 JSON。
+- `*.relations.debug.json.gz`：仅在 `CATALOG_DEBUG_RELATIONS=true` 时生成的可读对象版，不进入正常网页运行数据。
+
+生成后的 `*.meta.json` 包含 `sizeReport`，记录旧单体、首次 `core + graph`、全部分片、可读 Relations 与紧凑 Relations 的字节数。汇总命令：
+
+```bash
+npm run size-report -- dist
+```
+
+紧凑格式只删除重复表示，不删除 `depends/select/imply/choice/conflicts/provides`、隐藏节点或 packageinfo-only 语义。测试会先展开 schema 3，再与原关系图逐项比对。
 
 ## 自动更新
 

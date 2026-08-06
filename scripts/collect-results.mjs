@@ -123,7 +123,7 @@ for (const artifactDir of artifactDirs) {
     accepted.find((file) => basename(file) === translationName);
   const contractName = meta?.asset?.replace(/\.json\.gz$/, '.contract.json');
   const contractFile = contractName && accepted.find((file) => basename(file) === contractName);
-  const relationsName = meta?.asset?.replace(/\.json\.gz$/, '.relations.json');
+  const relationsName = meta?.asset?.replace(/\.json\.gz$/, '.relations.json.gz');
   const relationsFile = relationsName && accepted.find((file) => basename(file) === relationsName);
   const duplicateName = meta?.asset?.replace(/\.json\.gz$/, '.duplicates.json');
   const duplicateFile = duplicateName && accepted.find((file) => basename(file) === duplicateName);
@@ -174,9 +174,11 @@ for (const artifactDir of artifactDirs) {
   }
   if (relationsFile) {
     try {
-      const relations = JSON.parse(readFileSync(relationsFile, 'utf8'));
-      if (relations.source?.id !== attempt.source.id || relations.source?.branch !== attempt.branch ||
-          !Number.isInteger(relations.summary?.packages) || !relations.validation) {
+      const document = JSON.parse(gunzipSync(readFileSync(relationsFile), { finishFlush: 2 }).toString('utf8'));
+      const relations = document.relations || document;
+      if (document.source?.id !== attempt.source.id || document.source?.branch !== attempt.branch ||
+          Number(relations.schema || 0) < 3 || !Number.isInteger(relations.summary?.packages) ||
+          !relations.validation || !Array.isArray(relations.records)) {
         issues.push('Kconfig relations do not match attempt identity');
       }
     } catch (error) {
@@ -195,9 +197,35 @@ for (const artifactDir of artifactDirs) {
       issues.push(`catalog 无法解压:${error.message}`);
     }
   }
+  const shardFiles = [];
+  for (const [logical, contract] of Object.entries(meta?.assets || {})) {
+    const file = accepted.find((candidate) => basename(candidate) === contract.asset);
+    if (!file) {
+      issues.push(`missing Catalog shard ${logical}:${contract.asset || '-'}`);
+      continue;
+    }
+    shardFiles.push(file);
+    try {
+      const compressed = readFileSync(file);
+      const json = gunzipSync(compressed);
+      const compressedHash = createHash('sha256').update(compressed).digest('hex');
+      const jsonHash = createHash('sha256').update(json).digest('hex');
+      if (contract.hash !== compressedHash || Number(contract.bytes) !== compressed.byteLength ||
+          (contract.sha256 && contract.sha256 !== jsonHash)) {
+        issues.push(`Catalog shard contract mismatch ${logical}`);
+      }
+    } catch (error) {
+      issues.push(`Catalog shard cannot be decoded ${logical}:${error.message}`);
+    }
+  }
+  if (Number(meta?.schema || 0) >= 6 && (!meta.assets?.core || !meta.assets?.graph || !meta.assets?.menu ||
+      !meta.assets?.hidden || !meta.assets?.help)) {
+    issues.push('Catalog schema 6 lacks required split assets');
+  }
   let fresh = false;
   if (!issues.length) {
     fresh = copyUnique(assetFile, distDir, identity) &&
+      shardFiles.every((file) => copyUnique(file, distDir, identity)) &&
       copyUnique(metaFiles[0], distDir, identity) &&
       copyUnique(contractFile, distDir, identity) &&
       copyUnique(relationsFile, distDir, identity) &&

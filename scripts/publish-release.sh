@@ -3,7 +3,7 @@ set -euo pipefail
 
 tag="menuconfig-catalog-complete"
 shopt -s nullglob
-assets=(dist/index.json dist/*.json.gz dist/*.relations.json dist/*.translations.json)
+assets=(dist/index.json dist/*.json.gz dist/*.translations.json)
 if (( ${#assets[@]} < 3 )); then
   echo "release asset validation failed: found ${#assets[@]} files"
   exit 1

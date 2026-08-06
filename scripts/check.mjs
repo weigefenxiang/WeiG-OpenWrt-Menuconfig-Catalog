@@ -7,6 +7,8 @@ import {
   resolvePackageOption, resolveTargetSelectors, targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
+import { compactRelations, expandCompactRelations } from './compact-relations.mjs';
+import { buildCatalogSizeReport, formatCatalogSizeReport } from './catalog-size-report.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -156,6 +158,36 @@ if (rootfsRelations.length !== 2 || rootfsRelations.some((item) => item.kind !==
     relations.indexes.bySymbol.TARGET_ROOTFS_EXT4FS === undefined) {
   failures.push('generic Kconfig choice relationship graph');
 }
+const compactRelationGraph = compactRelations(relations);
+const expandedRelationGraph = expandCompactRelations(compactRelationGraph);
+const compactDemo = expandedRelationGraph.records.find((item) => item.package === 'luci-app-demo');
+const compactHidden = expandedRelationGraph.records.find((item) => item.package === 'luci-i18n-demo-zh-cn');
+const readableRelationBytes = Buffer.byteLength(JSON.stringify(relations, null, 2));
+const compactRelationBytes = Buffer.byteLength(JSON.stringify(compactRelationGraph));
+if (compactRelationGraph.schema !== 3 || !compactRelationGraph.records.every(Array.isArray) ||
+    compactRelationGraph.indexes.bySymbol || compactRelationGraph.indexes.byPackage ||
+    compactDemo?.states.join(',') !== demoRelations.states.join(',') ||
+    compactDemo?.kconfig.dependsExpressions.flat().join(',') !== demoRelations.kconfig.dependsExpressions.flat().join(',') ||
+    compactDemo?.packageInfo.depends.flatMap((item) => item.packages).join(',') !==
+      demoRelations.packageInfo.depends.flatMap((item) => item.packages).join(',') ||
+    compactDemo?.conflicts.join(',') !== demoRelations.conflicts.join(',') ||
+    compactHidden?.visible !== false || compactHidden?.userSettable !== false ||
+    !expandedRelationGraph.indexes.reverseDependencies['luci-app-demo']?.includes('luci-i18n-demo-zh-cn') ||
+    !expandedRelationGraph.indexes.choices[menu.choices[0]?.id]?.includes('TARGET_ROOTFS_SQUASHFS') ||
+    compactRelationBytes >= readableRelationBytes * 0.5) {
+  failures.push('compact relations schema 3 equivalence/size');
+}
+const sizeRows = buildCatalogSizeReport([{
+  source: { id: 'fixture', branch: 'test', commit: 'a'.repeat(40) },
+  sizeReport: {
+    legacy: { bytes: 1000 },
+    split: { initialBytes: 300, bytes: 700 },
+    readableRelationsJsonBytes: 10000,
+    compactRelationsJsonBytes: 2500,
+  },
+}]);
+if (sizeRows[0]?.initialReductionPercent !== 70 || sizeRows[0]?.relationsReductionPercent !== 75 ||
+    !formatCatalogSizeReport(sizeRows).includes('fixture/test')) failures.push('catalog size report');
 const rustdesk = duplicateFixture.options.find((item) => item.symbol === 'PACKAGE_luci-app-rustdesk-server');
 if (duplicateFixture.options.length !== 1 || rustdesk?.nodes?.length !== 2 ||
      rustdesk?.paths?.length !== 2 || duplicateFixture.validation.duplicateCount !== 1 ||
@@ -244,11 +276,11 @@ if (!stageRunner.includes('Source ID:') ||
     !collector.includes('target contract') ||
     !collector.includes('.contract.json') ||
     !collector.includes('Kconfig probe quarantine ratio') ||
-    !collector.includes('.relations.json') ||
+    !collector.includes('.relations.json.gz') ||
     !collector.includes('last-good') ||
     !collector.includes('complete=${complete}') ||
     release.includes('gh release delete') ||
-    !release.includes('.relations.json') ||
+    !release.includes('dist/*.json.gz') ||
     !release.includes('gh release upload') ||
     !release.includes('--clobber')) failures.push('diagnostic identity');
 if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
@@ -276,7 +308,15 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('promptZh') ||
     !generator.includes('conflicts') ||
     !generator.includes('buildKconfigRelations') ||
-    !generator.includes('.relations.json') ||
+    !generator.includes('.relations.json.gz') ||
+    !generator.includes('compactRelations(relations)') ||
+    !generator.includes('.core.json.gz') ||
+    !generator.includes('.graph.json.gz') ||
+    !generator.includes('.menu.json.gz') ||
+    !generator.includes('.hidden.json.gz') ||
+    !generator.includes('.help.json.gz') ||
+    !generator.includes('CATALOG_DEBUG_RELATIONS') ||
+    !generator.includes('sizeReport') ||
     !generator.includes('.translations.json') ||
     !generator.includes('.duplicates.json') ||
     !generator.includes('.curated-candidates.json') ||

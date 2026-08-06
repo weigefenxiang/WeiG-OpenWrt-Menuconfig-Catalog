@@ -10,6 +10,7 @@ import {
   resolvePackageOption, targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
+import { compactRelations } from './compact-relations.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = {};
@@ -221,6 +222,7 @@ const translationReport = {
   missingMenusZhCN: missingMenuTranslations,
   missingChoicesZhCN: missingChoiceTranslations,
 };
+const generatedAt = new Date().toISOString();
 const payload = {
   schema: 5,
   capabilities: [
@@ -230,7 +232,7 @@ const payload = {
     'source-commit-contract-v1',
   ],
   engine: { minimumVersion: 1 },
-  generatedAt: new Date().toISOString(),
+  generatedAt,
   source,
   validation: {
     symbolsUnique: true,
@@ -262,24 +264,183 @@ const payload = {
     missingZhCN: missingTranslations.length,
   },
 };
-const json = JSON.stringify(payload);
+
+function summarizeText(value, max = 240) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
+function writeGzipAsset(logical, filename, value) {
+  const json = JSON.stringify(value);
+  const compressed = gzipSync(Buffer.from(json), { level: 9 });
+  writeFileSync(join(outDir, filename), compressed);
+  return {
+    logical,
+    asset: filename,
+    hash: createHash('sha256').update(compressed).digest('hex'),
+    bytes: compressed.byteLength,
+    sha256: createHash('sha256').update(json).digest('hex'),
+    jsonBytes: Buffer.byteLength(json),
+  };
+}
+
+// Keep the schema-5 single bundle during the migration window. Schema-6 consumers
+// use the split assets below and never download menu/help data before Advanced opens.
+const legacyJson = JSON.stringify(payload);
 const asset = `${slug}.json.gz`;
-const compressed = gzipSync(Buffer.from(json), { level: 9 });
-writeFileSync(join(outDir, asset), compressed);
-writeFileSync(join(outDir, `${slug}.relations.json`), JSON.stringify({
-  schema: relations.schema, source: payload.source, generatedAt: payload.generatedAt,
-  summary: relations.summary, validation: relations.validation, indexes: relations.indexes, records: relations.records,
-}, null, 2) + '\n');
+const legacyCompressed = gzipSync(Buffer.from(legacyJson), { level: 9 });
+writeFileSync(join(outDir, asset), legacyCompressed);
+
+const compact = compactRelations(relations);
+const corePayload = {
+  schema: 6,
+  capabilities: [
+    ...payload.capabilities,
+    'compact-relations-v3',
+    'split-catalog-assets-v1',
+    'lazy-menu-v1',
+  ],
+  engine: payload.engine,
+  generatedAt,
+  source,
+  validation: payload.validation,
+  counts: payload.counts,
+  targetSelectors,
+  targetTree,
+  targets,
+  translation: payload.translation,
+};
+const graphPayload = { schema: 6, kind: 'graph', generatedAt, source, relations: compact };
+const menuPayload = {
+  schema: 1,
+  kind: 'menu',
+  generatedAt,
+  source,
+  categories: compactMenu.categories,
+  labels: Object.fromEntries(Object.entries(compactMenu.labels).map(([name, row]) => [name, {
+    en: row.en || name,
+    usageEn: summarizeText(row.usageEn),
+  }])),
+  options: translatedOptions.map((option) => ({
+    symbol: option.symbol,
+    kind: option.kind,
+    prompt: option.prompt,
+    promptEn: option.promptEn,
+    usageEn: summarizeText(option.usageEn || option.help),
+    path: option.path || [],
+    parent: option.parent || '',
+    choice: option.choice || '',
+    translationSource: option.translationSource || '',
+  })),
+  choices: compactMenu.choices.map((choice) => ({
+    id: choice.id,
+    prompt: choice.prompt,
+    promptEn: choice.promptEn || choice.prompt,
+    usageEn: summarizeText(choice.usageEn),
+    defaults: choice.defaults || [],
+    optional: choice.optional === true,
+  })),
+};
+const visibleSymbols = new Set(translatedOptions.map((option) => option.symbol));
+const hiddenPayload = {
+  schema: 1,
+  kind: 'hidden',
+  generatedAt,
+  source,
+  options: relations.records.filter((record) => !visibleSymbols.has(record.configSymbol)).map((record) => ({
+    symbol: record.configSymbol,
+    promptEn: record.title || record.prompt || record.package || record.configSymbol,
+    usageEn: summarizeText(record.description),
+    path: record.path || [],
+    parent: record.parent || '',
+    origin: record.origin || '',
+  })),
+};
+const helpPayload = {
+  schema: 1,
+  kind: 'help',
+  generatedAt,
+  source,
+  options: translatedOptions.filter((option) => option.help || option.usageEn || option.usageZh ||
+    Object.keys(option.usageI18n || {}).length).map((option) => ({
+    symbol: option.symbol,
+    en: option.usageEn || option.help || '',
+    zhCN: option.usageZh || '',
+    i18n: option.usageI18n || {},
+  })),
+};
+const languagePayloads = Object.fromEntries(translationReport.languages.filter((lang) => lang !== 'en').map((lang) => [lang, {
+  schema: 1,
+  kind: 'menu-language',
+  language: lang,
+  generatedAt,
+  source,
+  options: translatedOptions.map((option) => {
+    const title = lang === 'zh-CN' ? option.promptZh : option.promptI18n?.[lang];
+    const usage = lang === 'zh-CN' ? option.usageZh : option.usageI18n?.[lang];
+    return title || usage ? [option.symbol, title || '', usage || ''] : null;
+  }).filter(Boolean),
+  labels: Object.entries(compactMenu.labels).map(([name, row]) => {
+    const title = lang === 'zh-CN' ? row.zhCN : row.i18n?.[lang];
+    const usage = lang === 'zh-CN' ? row.usageZh : row.usageI18n?.[lang];
+    return title || usage ? [name, title || '', usage || ''] : null;
+  }).filter(Boolean),
+  choices: compactMenu.choices.map((choice) => {
+    const title = lang === 'zh-CN' ? choice.promptZh : choice.promptI18n?.[lang];
+    const usage = lang === 'zh-CN' ? choice.usageZh : choice.usageI18n?.[lang];
+    return title || usage ? [choice.id, title || '', usage || ''] : null;
+  }).filter(Boolean),
+}]));
+
+const assets = {};
+for (const contract of [
+  writeGzipAsset('core', `${slug}.core.json.gz`, corePayload),
+  writeGzipAsset('graph', `${slug}.graph.json.gz`, graphPayload),
+  writeGzipAsset('menu', `${slug}.menu.json.gz`, menuPayload),
+  writeGzipAsset('hidden', `${slug}.hidden.json.gz`, hiddenPayload),
+  writeGzipAsset('help', `${slug}.help.json.gz`, helpPayload),
+]) assets[contract.logical] = contract;
+for (const [lang, value] of Object.entries(languagePayloads)) {
+  const logical = `menu:${lang}`;
+  assets[logical] = writeGzipAsset(logical, `${slug}.menu.${safeSlug(lang)}.json.gz`, value);
+}
+writeFileSync(join(outDir, `${slug}.relations.json.gz`), gzipSync(Buffer.from(JSON.stringify({
+  schema: compact.schema,
+  source,
+  generatedAt,
+  relations: compact,
+})), { level: 9 }));
+if (process.env.CATALOG_DEBUG_RELATIONS === 'true') {
+  writeFileSync(join(outDir, `${slug}.relations.debug.json.gz`), gzipSync(Buffer.from(JSON.stringify({
+    schema: relations.schema, source, generatedAt,
+    summary: relations.summary, validation: relations.validation,
+    indexes: relations.indexes, records: relations.records,
+  }, null, 2) + '\n'), { level: 9 }));
+}
 writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translationReport, null, 2) + '\n');
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
-  source: payload.source, counts: payload.counts, asset,
-  generatedAt: payload.generatedAt,
+  schema: 6,
+  source: payload.source,
+  counts: payload.counts,
+  asset,
+  generatedAt,
   commit: payload.source.commit,
-  hash: createHash('sha256').update(compressed).digest('hex'),
-  sha256: createHash('sha256').update(json).digest('hex'),
-  bytes: compressed.byteLength,
-  jsonBytes: Buffer.byteLength(json),
+  hash: createHash('sha256').update(legacyCompressed).digest('hex'),
+  sha256: createHash('sha256').update(legacyJson).digest('hex'),
+  bytes: legacyCompressed.byteLength,
+  jsonBytes: Buffer.byteLength(legacyJson),
+  assets,
+  sizeReport: {
+    legacy: { bytes: legacyCompressed.byteLength, jsonBytes: Buffer.byteLength(legacyJson) },
+    split: {
+      bytes: Object.values(assets).reduce((sum, item) => sum + item.bytes, 0),
+      initialBytes: assets.core.bytes + assets.graph.bytes,
+      graphJsonBytes: assets.graph.jsonBytes,
+    },
+    readableRelationsJsonBytes: Buffer.byteLength(JSON.stringify(relations, null, 2) + '\n'),
+    compactRelationsJsonBytes: Buffer.byteLength(JSON.stringify(compact)),
+  },
 }, null, 2) + '\n');
 console.log(`${asset}: ${payload.counts.selectableTargets}/${targets.length} selectable targets / ` +
   `${payload.counts.profiles} profiles / ${compactMenu.options.length} menu options / ${packages.length} packages` +
+  ` / schema6 initial ${assets.core.bytes + assets.graph.bytes} bytes` +
   (unavailableTargets.length ? ` / unavailable contracts: ${unavailableTargets.length}` : ''));

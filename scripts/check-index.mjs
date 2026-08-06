@@ -26,7 +26,12 @@ try {
     counts: { targets: 1, profiles: 1, menuOptions: 10, packages: 20 },
     asset: 'immortalwrt--openwrt-23.05.json.gz',
     generatedAt: '2026-07-29T00:00:00Z',
-    hash: 'catalog-hash', bytes: 1234,
+    hash: 'catalog-hash', bytes: 1234, schema: 6,
+    assets: {
+      core: { asset: 'immortalwrt--openwrt-23.05.core.json.gz', hash: 'core-hash', bytes: 222 },
+      graph: { asset: 'immortalwrt--openwrt-23.05.graph.json.gz', hash: 'graph-hash', bytes: 333 },
+    },
+    sizeReport: { split: { initialBytes: 555 } },
   }));
   const attempt = (branch, status, stage, order) => ({
     schema: 2,
@@ -52,8 +57,10 @@ try {
   const old = branches.find((branch) => branch.branch === 'openwrt-21.02');
   const never = branches.find((branch) => branch.branch === 'openwrt-24.10');
   if (main.state !== 'fresh' || main.commit !== 'abcdef') throw new Error('fresh branch merge failed');
-  if (main.hash !== 'catalog-hash' || main.bytes !== 1234 || !index.generatedAt ||
-      !index.hash || !index.bytes) throw new Error('catalog index metadata missing');
+  if (main.hash !== 'catalog-hash' || main.bytes !== 1234 || main.schema !== 6 ||
+      main.assets?.core?.hash !== 'core-hash' || main.assets?.graph?.bytes !== 333 ||
+      main.sizeReport?.split?.initialBytes !== 555 || !index.generatedAt ||
+      !index.hash || !index.bytes) throw new Error('catalog index metadata/split assets missing');
   if (old.state !== 'stale' || !old.asset || old.errorStage !== 'defconfig') throw new Error('stale branch merge failed');
   if (never.state !== 'unavailable' || never.asset || never.errorStage !== 'feeds') throw new Error('unavailable branch merge failed');
   if (old.version !== '21.02' || old.lastAttemptCommit !== 'attempt123' ||
