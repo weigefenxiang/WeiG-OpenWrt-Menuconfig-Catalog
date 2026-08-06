@@ -40,6 +40,21 @@ export function stampIndex(index) {
   };
 }
 
+export function branchLegacyContract(branch) {
+  const row = branch && typeof branch === 'object' ? branch : {};
+  const explicit = row.legacy && typeof row.legacy === 'object' ? row.legacy : null;
+  const source = explicit || row;
+  const asset = String(source.asset || '');
+  if (!asset) return null;
+  return {
+    asset,
+    hash: String(source.hash || source.compressedSha256 || ''),
+    bytes: Number(source.bytes || source.compressedBytes || 0),
+    catalogSchema: Number(source.catalogSchema || (explicit ? 0 : 5) || 0),
+    relationsSchema: Number(source.relationsSchema || (explicit ? 0 : 2) || 0),
+  };
+}
+
 export function synchronizeIndexAssets(
   index,
   directory,
@@ -59,11 +74,36 @@ export function synchronizeIndexAssets(
   for (const source of index.sources) {
     for (const branch of source.branches || []) {
       const contracts = [];
-      if (branch.asset) contracts.push(['legacy', branch]);
-      for (const [logical, contract] of Object.entries(branch.assets || {})) {
-        if (contract?.asset) contracts.push([logical, contract]);
+      const legacy = branchLegacyContract(branch);
+      if (legacy) {
+        const rootMirror = {
+          asset: String(branch.asset || ''),
+          hash: String(branch.hash || branch.compressedSha256 || ''),
+          bytes: Number(branch.bytes || branch.compressedBytes || 0),
+        };
+        const expectedMirror = { asset: legacy.asset, hash: legacy.hash, bytes: legacy.bytes };
+        if (JSON.stringify(rootMirror) !== JSON.stringify(expectedMirror) || !branch.legacy) {
+          mismatches.push({
+            source: source.id,
+            branch: branch.branch,
+            logical: 'legacy-mirror',
+            expected: expectedMirror,
+            actual: rootMirror,
+          });
+          if (!check) {
+            branch.asset = legacy.asset;
+            branch.hash = legacy.hash;
+            branch.bytes = legacy.bytes;
+            branch.legacy = { ...legacy };
+          }
+        }
+        const contract = branch.legacy || legacy;
+        contracts.push(['legacy', contract, branch]);
       }
-      for (const [logical, contract] of contracts) {
+      for (const [logical, contract] of Object.entries(branch.assets || {})) {
+        if (contract?.asset) contracts.push([logical, contract, branch]);
+      }
+      for (const [logical, contract, owner] of contracts) {
         if (seenAssets.has(contract.asset)) throw new Error(`duplicate indexed asset: ${contract.asset}`);
         seenAssets.add(contract.asset);
         const file = join(directory, contract.asset);
@@ -78,6 +118,12 @@ export function synchronizeIndexAssets(
           if (!check) {
             contract.hash = actual.hash;
             contract.bytes = actual.bytes;
+            if (logical === 'legacy') {
+              owner.legacy = { ...contract };
+              owner.asset = contract.asset;
+              owner.hash = actual.hash;
+              owner.bytes = actual.bytes;
+            }
           }
         }
       }

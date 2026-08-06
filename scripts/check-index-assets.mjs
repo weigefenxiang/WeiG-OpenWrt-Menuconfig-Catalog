@@ -82,6 +82,7 @@ try {
             asset,
             hash: 'stale-hash',
             bytes: 1,
+            legacy: { asset, hash: 'stale-legacy', bytes: 2, catalogSchema: 5, relationsSchema: 2 },
             assets: {
               core: { asset: coreAsset, hash: 'stale-core', bytes: 1 },
               graph: { asset: graphAsset, hash: 'stale-graph', bytes: 1 },
@@ -126,7 +127,9 @@ try {
   const actualCore = fileContract(coreFile);
   const actualGraph = fileContract(graphFile);
   if (branch.hash !== actual.hash || branch.bytes !== actual.bytes ||
-      branch.assets.core.hash !== actualCore.hash || branch.assets.core.bytes !== actualCore.bytes ||
+      branch.legacy?.asset !== asset || branch.legacy?.hash !== actual.hash ||
+      branch.legacy?.bytes !== actual.bytes || branch.legacy?.catalogSchema !== 5 ||
+      branch.legacy?.relationsSchema !== 2 || branch.assets.core.hash !== actualCore.hash || branch.assets.core.bytes !== actualCore.bytes ||
       branch.assets.graph.hash !== actualGraph.hash || branch.assets.graph.bytes !== actualGraph.bytes) {
     throw new Error('legacy/split asset metadata synchronization failed');
   }

@@ -5,6 +5,36 @@ import { fileURLToPath } from 'node:url';
 import { stampIndex } from './index-contract.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+function legacyContract(value) {
+  const row = value && typeof value === 'object' ? value : {};
+  const explicit = row.legacy && typeof row.legacy === 'object' ? row.legacy : null;
+  const source = explicit || row;
+  const asset = String(source.asset || '');
+  const hash = String(source.hash || source.compressedSha256 || '');
+  const bytes = Number(source.bytes || source.compressedBytes || 0);
+  if (!asset) return null;
+  return {
+    asset,
+    hash,
+    bytes,
+    catalogSchema: Number(source.catalogSchema || (explicit ? 0 : 5) || 0),
+    relationsSchema: Number(source.relationsSchema || (explicit ? 0 : 2) || 0),
+  };
+}
+
+function normalizeLegacyMirror(branch) {
+  const legacy = legacyContract(branch);
+  if (!legacy) return branch;
+  return {
+    ...branch,
+    // Keep the root fields until every schema-5 consumer has migrated.
+    asset: legacy.asset,
+    hash: legacy.hash,
+    bytes: legacy.bytes,
+    legacy,
+  };
+}
 const dir = resolve(process.argv[2] || join(ROOT, 'dist'));
 const out = resolve(process.argv[3] || join(dir, 'index.json'));
 const previousFile = process.argv[4] ? resolve(process.argv[4]) : '';
@@ -29,7 +59,8 @@ const sources = (previous.sources || []).filter((source) => policy.sources.some(
       ...source,
       branches: (source.branches || []).filter((branch) =>
         !rule.exclude.includes(branch.branch) &&
-        (rule.branches === 'all' || rule.branches.includes(branch.branch))).map((branch) => ({ ...branch })),
+        (rule.branches === 'all' || rule.branches.includes(branch.branch)))
+        .map((branch) => normalizeLegacyMirror({ ...branch })),
     };
   });
 for (const row of rows) {
@@ -42,19 +73,22 @@ for (const row of rows) {
     sources.push(source);
   }
   source.label = row.source.label || source.label || row.source.id;
-  const branch = {
+  const legacy = legacyContract(row);
+  if (!legacy || legacy.catalogSchema < 5 || legacy.relationsSchema < 2) {
+    throw new Error(`meta lacks an explicit legacy build contract: ${row.source.id}/${row.source.branch}`);
+  }
+  const branch = normalizeLegacyMirror({
     id: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
     version: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
-    branch: row.source.branch, asset: row.asset, counts: row.counts,
+    branch: row.source.branch, counts: row.counts,
     commit: row.commit || row.source.commit || '',
-    hash: row.hash || row.sha256 || '',
-    bytes: Number(row.bytes || 0),
+    legacy,
     assets: row.assets || {},
     schema: Number(row.schema || 5),
     sizeReport: row.sizeReport || {},
     state: 'fresh',
     lastSuccessAt: row.generatedAt || new Date().toISOString(),
-  };
+  });
   const oldAt = source.branches.findIndex((item) => item.branch === branch.branch);
   if (oldAt >= 0) source.branches[oldAt] = branch;
   else source.branches.push(branch);

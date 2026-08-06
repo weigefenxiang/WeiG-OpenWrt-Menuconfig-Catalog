@@ -56,6 +56,10 @@ function addArtifact(root, order, branchName, status = 'success', {
       source: { id: 'OpenWrt', label: 'OpenWrt', repo: 'openwrt/openwrt', branch: branchName },
       asset, sha256: createHash('sha256').update(json).digest('hex'),
       hash: createHash('sha256').update(compressed).digest('hex'), bytes: compressed.byteLength,
+      legacy: {
+        asset, hash: createHash('sha256').update(compressed).digest('hex'), bytes: compressed.byteLength,
+        catalogSchema: 5, relationsSchema: 2,
+      },
       assets,
     }));
     if (contract) {

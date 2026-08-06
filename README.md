@@ -159,3 +159,12 @@ node scripts/generate-catalog.mjs \
 
 本项目保留上游英文原文，并维护 11 语菜单、常用插件用途、增量翻译缓存与覆盖报告；
 未翻译或应保持原名的技术文本统一回退官方英文。
+
+## Schema 6 runtime assets and the legacy build contract
+
+During the migration window each branch publishes two independent contracts in `index.json`:
+
+- `assets`: Schema 6 browser shards such as `core`, `graph`, and lazy menu/help assets;
+- `legacy`: the exact Schema 5 / Relations 2 single bundle used by AutoBuild Actions validation.
+
+The `legacy` object contains `asset`, compressed `hash`, compressed `bytes`, `catalogSchema`, and `relationsSchema`. Root-level `asset/hash/bytes` remain mirrored temporarily for older clients. New consumers must use `branch.legacy` as one atomic build contract and must not combine its file metadata with schemas from the split runtime model.

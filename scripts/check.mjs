@@ -316,6 +316,10 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('.hidden.json.gz') ||
     !generator.includes('.help.json.gz') ||
     !generator.includes('CATALOG_DEBUG_RELATIONS') ||
+    !generator.includes('const legacyContract = {') ||
+    !generator.includes('catalogSchema: Number(payload.schema || 0)') ||
+    !generator.includes('relationsSchema: Number(payload.relations?.schema || 0)') ||
+    !generator.includes('legacy: legacyContract') ||
     !generator.includes('sizeReport') ||
     !generator.includes('.translations.json') ||
     !generator.includes('.duplicates.json') ||

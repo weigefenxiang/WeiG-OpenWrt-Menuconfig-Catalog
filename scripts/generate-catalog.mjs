@@ -417,17 +417,26 @@ if (process.env.CATALOG_DEBUG_RELATIONS === 'true') {
   }, null, 2) + '\n'), { level: 9 }));
 }
 writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translationReport, null, 2) + '\n');
+const legacyContract = {
+  asset,
+  hash: createHash('sha256').update(legacyCompressed).digest('hex'),
+  bytes: legacyCompressed.byteLength,
+  catalogSchema: Number(payload.schema || 0),
+  relationsSchema: Number(payload.relations?.schema || 0),
+};
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   schema: 6,
   source: payload.source,
   counts: payload.counts,
-  asset,
+  // Root fields remain mirrored during the schema-6 migration for old consumers.
+  asset: legacyContract.asset,
   generatedAt,
   commit: payload.source.commit,
-  hash: createHash('sha256').update(legacyCompressed).digest('hex'),
+  hash: legacyContract.hash,
   sha256: createHash('sha256').update(legacyJson).digest('hex'),
-  bytes: legacyCompressed.byteLength,
+  bytes: legacyContract.bytes,
   jsonBytes: Buffer.byteLength(legacyJson),
+  legacy: legacyContract,
   assets,
   sizeReport: {
     legacy: { bytes: legacyCompressed.byteLength, jsonBytes: Buffer.byteLength(legacyJson) },
