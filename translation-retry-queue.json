@@ -5,1489 +5,1564 @@
       {
         "id": "32de673bcc2fe336b3f78955f9944bd9586fedc724763bbe6c81dd722bef6a59",
         "text": "Intel Wireless Wi-Fi 5150AGN firmware",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "27e32500fc1abf7f9043bb7ec48323bf6b8e68d7ad2a0abfa498869b956bbff9",
         "text": "This enables use of hardware acceleration through OpenBSD\nCryptodev API (/dev/crypto) interface.\nEven though configuration is not strictly needed, it is worth seeing\nhttps://openwrt.org/docs/techref/hardware/cryptographic.hardware.accelerators\nfor information on how to configure the engine.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "930c95f53a5f8e05d5f5576a116020f7d1a2df76dda84cd5e44af30f8b8d8829",
         "text": "Enable JIT (Just-In-Time) compiler support.\nJust-in-time compiling is a heavyweight optimization that can greatly\nspeed up pattern matching. However, it comes at the cost of extra\nprocessing before the match is performed, so it is of most benefit when\nthe same pattern is going to be matched many times. This does not\nnecessarily mean many calls of a matching function; if the pattern is\nnot anchored, matching attempts may take place many times at various\npositions in the subject, even for a single call. Therefore, if the\nsubject string is very long, it may still pay to use JIT even for\none-off matches. JIT support is available for all of the 8-bit, 16-bit\nand 32-bit PCRE2 libraries and adds about 100KB to the resulting\nlibpcre2.so. JIT support applies only to the traditional Perl-compatible\nmatching function. It does not apply when the DFA matching function is\nbeing used.\nEnabling this option can give an about 10x performance increase on JIT\noperations. It can be desireable for e.g. high performance Apache\nmod_rewrite or HA-Proxy reqrep operations.\nHowever, JIT should _only_ be enabled on architectures that are supported.\nEnabling JIT on unsupported platforms will result in a compilation\nfailure. A list of supported architectures can be found here:\nhttps://pcre.org/current/doc/html/pcre2jit.html#SEC2",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "cacea8f0866f3d6be5ce8f444faf626d748cd1814672f2ea69c557d3302067ed",
         "text": "LuCI Lua runtime libraries",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f5440159307befefaea2d10fec6dd95a5e5752989bcc87ec04b2f3dec2c0f648",
         "text": "LuCI Administration - full-featured for full control",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "a4df3892d04e4ff31bca75f5b922876d024b76ee4a9ba66bedc470e7b68fab4e",
         "text": "LuCI RPC - JSON-RPC API",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d914f35f5307060e212da24c6b6e84a1d4edcb8aaec3e32874bc27d46e765280",
         "text": "LuCI modern OpenWrt theme",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6243cabf92d538190ddf4210039eea64626be2fbbb6281b0a1ebb8e6697cc102",
         "text": "This enables the dynamic security modes documented at\nhttps://mosquitto.org/documentation/dynamic-security/\nbut does add ~88kB.  If you're not using it, you can disable it",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8b32cdb5586077f2497db737d7c7af76ebcb4d27313995ba55cf67ac59d302a6",
         "text": "installs: smbd (nmbd) smbpasswd pdbedit testparm (nmblookup) (smbcacls sharesec) (samba samba-tool ntlm_auth samba-gpupdate samba_dnsupdate samba_kcc samba_spnupdate samba_upgradedns samba_downgrade_db) This provides the basic fileserver service and is the minimum needed to serve file shares. HINT: https://fitzcarraldoblog.wordpress.com/2016/10/17/a-correct-method-of-configuring-samba-for-browsing-smb-shares-in-a-home-network/",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6d0942744be641d06c6ff2f57bfdf1449c39a9563ba85692a2e660a97182b389",
         "text": "Generic OpenWrt 3G/4G proto handler",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d43b972b8a173216a9b52a5527597888fa61439183481dedc4c69560f8b5a9a8",
         "text": "Installs the scctl command. See the following link for more info:\nhttp://www.lesbonscomptes.com/upmpdcli/scmulti.html",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c13b11f03b00fddf5b8d5e165bbefadc5bdebb0a648fbbf59abfd802f5cc226c",
         "text": "OpenWrt CLI",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c960cba0063cb93f61c3799cd2f2d7529a5b8030b3588debba6366df2c312227",
         "text": "fstools......................................... OpenWrt filesystem tools package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4ade979048e04abfef6b18049ace7d9df58f11bb9f96f6dbacd10a3eb26bdf2b",
         "text": "libatomic......................................... Atomic support library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f921ebe9cefe945e1bb892bf0cbf4f65dc36ef46de997e2a08983ab5ded401d5",
         "text": "libquadmath..................................... Quadmath support library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "04826937f7809b62caa2c0635417912d80da34a8213fa2d385c3a8127e82d45c",
         "text": "openwrt-keyring............................ ImmortalWrt Developer Keyring package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "eff9c579e3594f1a9638c49628d49aa22ddd36935836d962e79daa99a7ccd091",
         "text": "ucert........................... OpenWrt certificate verification utility package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8ed5496b9d31eabf36aa8992fcf328df85b4f66dc10592d9f5bc141a1f2e739d",
         "text": "zabbix-proxy............................ Zabbix proxy (full/with OpenSSL) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "cf06802264b1d0cf3c44a494db62b0fbab7234b8a7a79425218666ba6174c5a1",
         "text": "earlyoom...................................... Early OOM Daemon for Linux package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "91110af473ba2dbe33e13d54a8aa45f7f408e4d27b0d6ce042bb419da9c96a7d",
         "text": "netatop......................................... network counter for atop package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "a594b0f2838605d4131301f6b6f5f904c3f287756ee7e6c2285eb91db9105665",
         "text": "nyx...................................... Terminal status monitor for Tor package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "65aa746e47b4cd8723208c34b9186f41c9e197e71d236669277f05eb2da766dd",
         "text": "trusted-firmware-a-ev23x71a.... Trusted-Firmware-A for Microchip EV23X71A package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ff1f761ffe1ee788a1bec9dc1860e0e94bbfb50de3396eb8bd8836a51ee20751",
         "text": "trusted-firmware-a-ls1028a-rdb-sdboot............ Trusted-Firmware-A for package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0ad23443fd7395ba1158da7fd96bff363e2651ac2f957c4f6f2c2788759c6fbb",
         "text": "trusted-firmware-a-sunxi-a523...... Trusted-Firmware-A for Allwinner A523 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "bd4e22c7e11f90ada07c7e589e14a88f3aa24e43562ca23d240c6d4744ad0865",
         "text": "trusted-firmware-a-sunxi-a64........ Trusted-Firmware-A for Allwinner A64 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "dc0739ab9d507abd346a53ea0a972fb33fcae75b137d490ea2a11f9f1542438d",
         "text": "trusted-firmware-a-sunxi-h6.......... Trusted-Firmware-A for Allwinner H6 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "05bc1890654be58b7403918bbe1962cf5defc105991c0949ebde0540ef825515",
         "text": "trusted-firmware-a-sunxi-h616...... Trusted-Firmware-A for Allwinner H616 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0d45c0d367537a99cd604b672f5368912c95bcff8c3db7fdc2282f5cf40e86d8",
         "text": "u-boot-ib62x0........... U-Boot for RaidSonic ICY BOX NAS6210 and NAS6220 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "19accbb1ee49c29dcaee98f3e97849220ca94c2ffae36582543d03f8f9c6229a",
         "text": "ipq-wifi-netgear_wax620......... board-2.bin Overrides for Netgear WAX620 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d1d9e7bc20daf6a7e9ec978d1d8dbdc2b6a145c18aff94f14541545cb3fd6d26",
         "text": "ipq-wifi-netgear_wax630......... board-2.bin Overrides for Netgear WAX630 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "85db4793db874a083803adee8d63384bb440d2ef1056ecdba9d77c7879488021",
         "text": "aircard-pcmcia-firmware..... Sierra Wireless Aircard 555/7xx/8x0 firmware package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1e16b09dcc14f79c30067e0b0af2e4c9f7b84629371e0350a3bbf2d735e04d6d",
         "text": "ath10k-board-qca988x....................... ath10k qca988x board firmware package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0d41aa098335cf13731e6b4f5c8cdbf3382574af2cded35ce398f46531d6e455",
         "text": "edgeport-firmware......... USB Inside Out Edgeport Serial Driver firmware package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "abd30b7b7bbaa58e152f86b61f18e009b97ffc9cc23cae6ca5520f4aef674955",
         "text": "iwlwifi-firmware-iwl7265d......... Intel Wireless 7265D and 3165 firmware package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4b08c9cd254310cbf933eca2a1c0dcb95023a204de4952157eafcc9056d1f860",
         "text": "kmod-block2mtd................................ Block device MTD emulation package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "29e0fb4437337c16561cbc369c120f883195d56173d1787ecdae9c17ac8a9f6b",
         "text": "kmod-loop........................................ Loopback device support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "69c3a982a9abbcf104fddd5356b1d50eb3fd5851fb5ca5ff1ed387597f35f505",
         "text": "kmod-md-mod...................................................... MD RAID package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "87e2ad55ebb5a95309bd0bfd25d61bc0b67d6b4d636ff3b4dc430092e7d721dc",
         "text": "kmod-md-raid1............................................... RAID1 Module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "02147251095cec68a5d6d620178ac29dcc7d2fb368bdceb95bcb5a71539eaee1",
         "text": "kmod-nbd.................................... Network block device support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "630e40e8a94780e80bc7d9ed245fdda05e4df88d8845cd92e1837025686082be",
         "text": "kmod-can-c-can-pci................ PCI Bus based BOSCH C_CAN/D_CAN driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e69f6d943f6a4e8c8e4fdd4c748a04c5ddcc9e40645f433e6accc8ab1bdcd3bd",
         "text": "kmod-can-raw............................................. Raw CAN Protcol package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "da97f318764e447eac3e27c2ec2754fdc68eeace30bf021416faca9ca765f1cd",
         "text": "kmod-can-usb-peak....................... PEAK PCAN-USB/USB Pro interfaces package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "cc0f1bb3a8e92db4b14a7dc9cacf5f0dea5a4095a23e4a78cffa583c5d572f28",
         "text": "kmod-crypto-authenc...................... Combined mode wrapper for IPsec package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "59a9bc8d6d0295d9e3ab12f4c98915c12629e756c082560727149e7986ff45f2",
         "text": "kmod-crypto-cbc................... Cipher Block Chaining CryptoAPI module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9c555965119a56f6a804dd91c22ecefbaf3a7534ffe1ff4a58e8aabd836999d9",
         "text": "kmod-crypto-hw-geode.................... AMD Geode hardware crypto module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "23d6e3aa955b7b00002c46388f9cb7bc33f04114372505980161f24e1e880d0d",
         "text": "kmod-crypto-hw-talitos. Freescale integrated security engine (SEC) driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "a5c3a8dbdc9d359abc51b257f8218c334a8d0455a15947dc6599b60577af7f68",
         "text": "kmod-crypto-test................................... Test CryptoAPI module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0b3224f27c70c798ca45fe8c0031539179ab11833f1645291ef4f020f4d595c6",
         "text": "kmod-cryptodev..................... Driver for cryptographic acceleration package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "508558e74f3353581c8a7c3e524de7967499143742541621d22a3e79ea65d0cd",
         "text": "kmod-fs-cachefiles........................... Filesystem caching on files package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "85f3183b81f7dac5d1df53a1c80a18c460ccf748f25ea2444aefb295adfd9df7",
         "text": "kmod-fs-configfs........................ Configuration filesystem support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e3d70f4be179a98ebc6c502dcb9fd61a6fb390247f39f636b32a69af23c00039",
         "text": "kmod-fs-minix................................... Minix filesystem support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "40250838efb80ae45e35d99275e729f6ea49032c652faa8bf5388780dfa1c24c",
         "text": "kmod-pstore........................................... Pstore file system package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b3378ab2c74242cd92e101a09f02869934832bf5e2f943c7938da62dfa76ebb5",
         "text": "kmod-hasivo-mcu-sensor............... Hasivo management MCU sensor driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f6557078785fcfa6e13d3eb8b3e9ae2cb7788eba147021786a96f73c2c0983c4",
         "text": "kmod-hwmon-core.............................. Hardware monitoring support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7b6d21bb8ee217cfbb388a1130d194b407d1cf592db823f01f7c2c14798d0a27",
         "text": "kmod-hwmon-drivetemp............ Hard disk drives with temperature sensor package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "288c6b5e5deb51e70ad2bfbfa5394edf280805ed2a9fb51c763efb53cd267c45",
         "text": "kmod-hwmon-sch5627....................... SMSC SCH5627 monitoring support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "5d538ead71a7e164f0cf5d9ae34498ff2890331556a4805dd2fe0f6ee84b6e40",
         "text": "kmod-i2c-an7581.................................... Airoha I2C Controller package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8b1842cb2441d8dc6ab417979f8fecd26112217eb408028a888437710a758caa",
         "text": "kmod-i2c-mt7628...................... MT7621/MT7628/MT7688 I2C Controller package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9a7e57b118ee8b13855bd69de8b09a3f619bedbe70c9f981500fd777699242ea",
         "text": "kmod-i2c-mux-pca9541.................... Philips PCA9541 I2C mux/switches package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "95e928796275158a1ea8f008869e3bf8b62817305fa264c9907101fd15c23b49",
         "text": "kmod-i2c-mux-reg......................... Register-based I2C mux/switches package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d991d1ea44982181f431fb86e0345c1d0d30a4cebaf830d07a45aed907e547ea",
         "text": "kmod-i2c-tiny-usb................................... I2C Tiny USB adaptor package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2639513f0630c7c0bc4b7589aa40c9e6d2da6171a95348afbe0e26784ea7c35b",
         "text": "kmod-stm32-dfsdm-adc..................................... STM32 DFSDM ADC package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2c982e749a6e7a0c024c693084d219baccd3fb620a638c9a7ee22be9bfd7ead8",
         "text": "kmod-hid..................................................... HID Devices package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "474e54070832f2cb544e0ed7c1146b32c2c530fcdd0b602de442476000a2faee",
         "text": "kmod-hid-alps.................................... Alps HID device support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "3195081b621ee231c82aecda29fda34190581c9befb47cec8251c866ad6bec6b",
         "text": "kmod-input-core........................................ Input device core package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "854560b20caed26f68660cb82049ac08535b2711bcb13531791d0a30f85c2b6a",
         "text": "kmod-input-evdev...................................... Input event device package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8e240c46b5d9843a3aeb86749a485ff0d5bc441a7520af916022cbebc95f1e35",
         "text": "kmod-input-joydev................................ Joystick device support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "484ce3529a915ef4cadcc8c5bedeb2d0b43c299640cb5e2802cf332e9eb74d10",
         "text": "kmod-input-matrixkmap....................... Input matrix devices support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c341adaa31873a244dda6783f0f9ca71b843081c5ca0f0a9d7f855439cfeef66",
         "text": "kmod-input-leds................................. Input device LED support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1710439b8ad414de419a0554396d992c1af073c9e291879ab3872f6669e8a6e4",
         "text": "kmod-ledtrig-gpio....................................... LED GPIO Trigger package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e3ff8473e9f365b616b4346f7c970b9f6812282593e6d2f00b3ec1d93986d0d6",
         "text": "kmod-lib-textsearch................................... Textsearch support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "476826bc067419eb7c26c97e03aa2670878cb82cbb2fc1dac4a5e197132aeb56",
         "text": "kmod-oid-registry............................. Object identifier registry package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c11ae1a3e3b4a0f4b9eaff03d77fd7089f61b70b41238a0bec4155e5d14f1b0f",
         "text": "kmod-br-netfilter....................... Bridge netfilter support modules package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "48557e7cb05e789d2c76e2972b53d00ecffaa9c7c3e30382eae0b8d3cfdb3b7d",
         "text": "kmod-ebtables................................. Bridge firewalling modules package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "afe0af25e289ec61dc0eaa3140047481ebde7592b915b29f9768ab3877182455",
         "text": "kmod-ipt-cluster............................. Module for matching cluster package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b63c3d2ccf47b83e4b45048594945e726757a114d82f36884bea2253de59320d",
         "text": "kmod-ipt-condition............................ Condition netfilter module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4daab01010d9bc5442b3435a004fa0a32d785a201909c84aba1ab83de212290f",
         "text": "kmod-ipt-conntrack..................... Basic connection tracking modules package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "79db450eff10c3984c62360f0cccf19f0fc9d4402d133c4e9afabb215fe24ef3",
         "text": "kmod-ipt-conntrack-label.. Module for handling connection tracking labels package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e10ee2b28399be9be48490895e28e4fbcd96af99ca7248e966cf24f26a7e63e3",
         "text": "kmod-ipt-core.............................................. Iptables core package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "fb058a07e5d136f34f0bd2fa243ff7c9e6d0d1e19c8463dc867c42ad71396383",
         "text": "kmod-ipt-debug.......................... Module for debugging/development package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d6aa05d2a1d9c0e7bc8c4473edb4afe78eb5ac0aa06c9c8421c3e249792c30e6",
         "text": "kmod-ipt-filter.................... Modules for packet content inspection package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0c55dec16d0a40128f823b860acd37beda237ced45eb5c57d84837a48ab858cf",
         "text": "kmod-ipt-hashlimit............................. Netfilter hashlimit match package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c35d289f858e027ee22ff2a873d8d53bc5d7f096b33d707a5d1111859b1fa833",
         "text": "kmod-ipt-ipopt........... Modules for matching/changing IP packet options package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b2cc7831a1c2a7ff40eac5b3d9b9c71aba007fc96c5bb37e0ea1e8a0a4379333",
         "text": "kmod-ipt-iprange........................... Module for matching ip ranges package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e226bf362c9f085d8a1aaa0e3a9b4b432db72119a15abb30e0966fd32594639f",
         "text": "kmod-ipt-ipsec........................ Modules for matching IPSec packets package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e24eab1728ab9a7e4cf3cddcb3d3b292c01cb20678f12ea4ac86f98b5d0d287a",
         "text": "kmod-ipt-led............... Module to trigger a LED with a Netfilter rule package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "31024ce501080258405b17e13aa3cd43ec94fae6bbb950c6344450552f5699c7",
         "text": "kmod-ipt-nflog...................... Module for user-space packet logging package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "68b9593dc32d3a0f59fc09273ae859fbc83fc211d5d06e4d223b69cdb2202880",
         "text": "kmod-ipt-nfqueue.................... Module for user-space packet queuing package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "eb7f586eb89149ab8d370df6f6aaa5418e5c0fdedaac3fa562f3771ffc90fe39",
         "text": "kmod-ipt-offload................... Netfilter routing/NAT offload support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4439295f671dd8ba0e975ccbd26cdcaf001eecc0c3321b14587362e35b95a536",
         "text": "kmod-ipt-raw............................ Netfilter IPv4 raw table support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ffa022827d67aa60bf8184ee1c20dc453884bca4a9aaee4292711019bc5108dd",
         "text": "kmod-ipt-raw6........................... Netfilter IPv6 raw table support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "a51f30e4921976ca94ae9efbbcef133de7ff945c98abddaa27559341b06daf77",
         "text": "kmod-ipt-rpfilter............................... Netfilter rpfilter match package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "da21cd623ff804aeb028c43439f993c5d76cf3de0e874cbc1c23ad0e4ac0763b",
         "text": "kmod-ipt-rtpengine.................... Sipwise rtpengine netfilter module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e19c3b0ca15d2ee3ade011287d9d20b866ffc00aff0938342b1423e7c7bc19d0",
         "text": "kmod-ipt-socket......................... Iptables socket matching support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "096c8e93eb9681af5cc0aef93696d046080e371bb6f038bbe13480f221435c60",
         "text": "kmod-ipt-tproxy............................. Transparent proxying support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e088672c5eecaa232d3ee82333aceb191a05943e67a16000f541afd3277f0b00",
         "text": "kmod-nf-conntrack.......................... Netfilter connection tracking package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e790d9954f2f3ba208255ebfe82de7bfc955d6ad78bef7ce5fd6943f5f25490a",
         "text": "kmod-nf-conntrack-netlink.......... Connection tracking netlink interface package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "88bff2aa0dad1acdd6f0d63832539d0a476cfb2a4bcf822db46dfa52c6111bb9",
         "text": "kmod-nf-flow................................. Netfilter flowtable support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7498da7282bf71a520327168cb55614514eef3b0ee8135e17964590c463b6b2b",
         "text": "kmod-nf-ipt................................................ Iptables core package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ee15da5ccb6476ae12cea3dd6e5e020c360cc188919234ea029ffd23ea4f6e15",
         "text": "kmod-nf-nathelper-broadcast................... Broadcast conntrack helper package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "026a4a1d944e6ff178072f4d20b02df63b50ceaecdba6e9db20a3cab42722324",
         "text": "kmod-nf-socket........................... Netfilter socket lookup support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "bb72f00f84d8230105ae602ee3de6468e4c22c5c0921acd8ece27f7d93c08590",
         "text": "kmod-nf-tproxy.................................. Netfilter tproxy support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9142430c1be9b74aebe491ad05193a1ef056dae909a539d4f69e14a4e051af6d",
         "text": "kmod-nfnetlink......................... Netlink-based userspace interface package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7a35be56c20a1bc27da059bbf9f457f85232f721f33ab348bccc516bcebb2822",
         "text": "kmod-nfnetlink-cttimeout......... Netfilter conntrack expectation timeout package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "360b91422b3d1087884d4cf12a75899e68057853a51282dbf7221cee24dbaf9c",
         "text": "kmod-nfnetlink-log................ Netfilter LOG over NFNETLINK interface package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "35a613220ceee3483ca004aad474c02d335558c681fe9bc035409d5df5e582c7",
         "text": "kmod-nft-arp....................... Netfilter nf_tables ARP table support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "86aa3be66f9042378c49a54dbb154435476155c469c31dd1e495747927892b71",
         "text": "kmod-nft-bridge................. Netfilter nf_tables bridge table support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "066d5f9c43ce5ef5e0f86adf37d549c00022375b139e770316b47fd83ecd9413",
         "text": "kmod-nft-compat....................... Netfilter nf_tables compat support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d80768b14dc40ca2d49eb7757b372cff35b1959ba5f3fb461b9accd29a3f335e",
         "text": "kmod-nft-connlimit................. Netfilter nf_tables connlimit support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f4dda1ed7103831742ff9494240b6b40f54dc0253a488289505ff0a736aafa65",
         "text": "kmod-nft-core................................ Netfilter nf_tables support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0d25068459ca79aabacea4b54b752bcc982a400f36722be528c0d77ae8a83d4c",
         "text": "kmod-nft-dup-inet.. Netfilter nf_tables dup in ip/ip6/inet family support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "40303d51f59fd1bf6b003e2f1269b0172577efb6d92519e71fafc3cbc0c5099d",
         "text": "kmod-nft-fib............................. Netfilter nf_tables fib support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "25fa8d658f65cd72b221c1b86da0bb193eba66e10ce1661f580d9147b460c769",
         "text": "kmod-nft-nat............................. Netfilter nf_tables NAT support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "21ab7f9b6441d2bb55e6ad0e943f58fca0e74fde328909e0c9c058e49c53a12d",
         "text": "kmod-nft-netdev....................... Netfilter nf_tables netdev support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f6f157c096a67776b9cb64904523f7be13c7176d4e821b90be4d0b48463f73fc",
         "text": "kmod-nft-offload......... Netfilter nf_tables routing/NAT offload support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "75491142c40135cffe4d58007c6af580e51a3f21a478fe4f689b7645a4404402",
         "text": "kmod-nft-queue......................... Netfilter nf_tables queue support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e985bc82e4e66c838be78f5f384959f1a8616ab05398223d084b482aef3fde8b",
         "text": "kmod-nft-socket....................... Netfilter nf_tables socket support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "85a6221487ebdec4dbb2350d2de834be6335d4ac62ba0712fca3a756587d1fbf",
         "text": "kmod-nft-tproxy....................... Netfilter nf_tables tproxy support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "40c0ffeec2c4736c97da5a82d1e7fadb1b18f10e65f1ab9ba0a5ee6f528cd473",
         "text": "kmod-nft-xfrm................... Netfilter nf_tables xfrm support (ipsec) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "cde8784aee6ac6d7695c72dcf175b6c1f8acebe5304600efe199c8c464fd7d77",
         "text": "kmod-dsa-ks8995................. Micrel/Kendin KS8995 Ethernet DSA Switch package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "49ece308134777154c9692bc937023c62895e2b03f2c29becd9e1674827bacfa",
         "text": "kmod-dsa-notag...................................... DSA No-op tag driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c82315b021443278f6c0941153ace8487d08b638e13c5347d0af74aa5f8c9ccd",
         "text": "kmod-dsa-realtek......... Realtek common module RTL83xx DSA switch family package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0b1ea8b0a430b18c6867150ddc002fff383c0a10f77770a1691d88140d759ac6",
         "text": "kmod-dummy.......................................... Dummy network device package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "bbfa3290492df2549794959d502cb997b88b18b719c6469d2aa88ee49af3acdc",
         "text": "kmod-dwmac-renesas-gbeth.......................... Renesas GBETH Ethernet package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0b13e495816a55f84899683ecea153f51a3e7dda2233d7979da2a0d04aa168fc",
         "text": "kmod-enc28j60..................... Microchip ENC28J60 SPI Ethernet driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "51b21f5835afc79169281914a495fc67f92863fdaeaf5970559d89fa960d1565",
         "text": "kmod-fsl-dpaa1-net.................... NXP DPAA1 (LS1043/LS1046) Ethernet package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7d4581650ddaaf386c5c1c6f0c10860c860d15c86f751c26b2b956b92184587e",
         "text": "kmod-mhi-wwan-ctrl...................................... MHI WWAN Control package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2fc46a36e32807d3b15e9eb5188a29c31e6cd3fef19dd0bb4eaad7bf793e8084",
         "text": "kmod-mhi-wwan-mbim.............................................. MHI MBIM package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "12be8e0720ce044f0311a6d0c22968150058416773f46d99d410c99f3d124573",
         "text": "kmod-net-selftests...................... Network generic selftest support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "39047fbb821a49f1960b691fd499ffe24c300f1a12388b52d64a4e7ea3daa2fe",
         "text": "kmod-phy-micrel.............................................. Micrel PHYs package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ac9e49a3d6cf09f06abfe8d7d862bdeb66569baf0530bbc4474a6817eb263401",
         "text": "kmod-qede..... QLogic FastLinQ 10/25/40/100Gb Ethernet NIC device support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "bde3e3e6bb6bed09bb3b2f6ffee7ab94e4e7a5f73d250461505ae8ad2861a35d",
         "text": "kmod-sun4i-emac.......................... AllWinner EMAC Ethernet support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "568ac04e1d2453a2a28399b42bfabdc60e7bc9a02e5a56b559e2809261e419c3",
         "text": "kmod-thunderx-net............... Marvell (Cavium) Thunder network drivers package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0a398bec64b8d30ad6db2309f37624989cc4a85ca0b70afdd77184f1cb38a560",
         "text": "kmod-tulip........................... Tulip family network device support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4f099ede945326e746a8aa23fa3b701bff1b9afac3daf92baec0f6c52d60598e",
         "text": "kmod-appletalk................................ Appletalk protocol support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "af6abc344aaa5dfb08084086733dd2b05fa01f12e8786c4396189814cefb1ee0",
         "text": "kmod-bonding..................................... Ethernet bonding driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b5bec66b8a982e5e39fc96ac5a25b1dad5eea5cb901b64f66b98732ddac911cf",
         "text": "kmod-dnsresolver.................................. In-kernel DNS Resolver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "fe5139ecefbb1d0c14c2eb718e32062f083921dd8b6536ba945cdf8d6becd708",
         "text": "kmod-jool-netfilter................................... Jool kernel module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9ef3484a409f37aac99bebe6254c88c3e6ef16a438761f6ee7b808c693d2875f",
         "text": "kmod-netconsole.......................... Network console logging support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "68b9fbccc70f246ad0782cce85eae99dd34926508d38d0ca2e7e8019f070aab8",
         "text": "kmod-netem............................... Network emulation functionality package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "fe9a685cd3df3f18fd9e8035f160ed384985c3e3f4dcf55afb04c8d9ceda7f0d",
         "text": "kmod-netlink-diag.................... Netlink diag support for ss utility package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "56a48d0001c80d0f97a5b449f484d1682ac60afca5584d07d3c0f9196a5e3d33",
         "text": "kmod-nlmon............................. Virtual netlink monitoring device package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8ea3f076eceab796cdc5ae401a9afe927012e920b64d1b7fc486bd4b362b94de",
         "text": "kmod-packet-diag..................... Packet sockets monitoring interface package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "72e7c490c4b633716bae170f0e1a072d570b918724aaa233e4d07090ebb6e738",
         "text": "kmod-pktgen..................................... Network packet generator package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "018724cddac492df1123bb378c0bc41992a8970a55ec99c4c2b3b16aa4302016",
         "text": "kmod-qrtr-mhi.................................... MHI IPC Router channels package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "851e69cd84a790ed0a9acc42256339baa8d51c48c29f08d8eaca191680a15584",
         "text": "kmod-qrtr-smd.................................... SMD IPC Router channels package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "88083e15b2e469957b353adeb0febf1d61fb9c7509288d18bd860c409af952d4",
         "text": "kmod-sched-cake........................ Cake fq_codel/blue derived shaper package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "aa2d10d90587832cb1400f93f0e7d4a0d9c819b4ea6c7130ce5add6d5898abea",
         "text": "kmod-sched-connmark................ Traffic shaper conntrack mark support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "49d14a06bebf114b2c8c70fb2ac0a9cccca213bf7ff857162f71c9612b9904a4",
         "text": "kmod-sched-core....................................... Traffic schedulers package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "15eabdf76efeb45e9a0b9486f5f13f87b13e962459abeefd9773a69ee7f66e88",
         "text": "kmod-sched-ctinfo.......................... Traffic shaper ctinfo support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "3f56fa47bf7530e22479b654abac877ea64632a62072d2cef7ed9f3fdf403ca1",
         "text": "kmod-sched-flower.............................. Flower traffic classifier package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c719ade94566031ee3562faf63649cc51cbd37b526d48e5a77c0052907a2a38a",
         "text": "kmod-sched-ipset............................ Traffic shaper ipset support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0888e4d81a8a50d3e5f770a47cf98c6802aa34c3d2de2885e191c774a0bc839f",
         "text": "kmod-team........................................... Ethernet team driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7d186c102a228104d2cea10301312a5007f34c80f1058c619eb1e7b1f4804f73",
         "text": "kmod-team-mode-activebackup................... Active-backup mode support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0943e96b75d53fc9704d59010abfc6f7610cc0150db3c646088ece9668a0694c",
         "text": "kmod-team-mode-broadcast.......................... Broadcast mode support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "bbbf0d9b7e2b58a65f3a6b1898301ee7f0b0d1dad83303c4350abfd19029ab68",
         "text": "kmod-team-mode-loadbalance..................... Load-balance mode support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6e15b7883f8216eae6b07a82861cce598647b829425a06fb98b4485d3d00c529",
         "text": "kmod-team-mode-roundrobin....................... Round-robin mode support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9f7fe41a85c8da3d3fc15969768da7375d92e31d0e0f28a73ed958ff587adc06",
         "text": "kmod-tls........................... In-kernel TLS Support with HW Offload package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1ebe48dfa438b50037a3a8157bf320cb4cb487be6f6c5f5a973d2283f3c1631d",
         "text": "kmod-veth................................... Virtual ethernet pair device package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "244f84f087908329c8e78c81b42252e297b6a1ed292f356107eb6631a716dbd4",
         "text": "kmod-wireguard........................... WireGuard secure network tunnel package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "dea31a2cd1415ddd8a6b4c5822aecf4e5ff5d9f739c0b79db4c4e266a0148cca",
         "text": "kmod-dma-ralink....................................... Ralink GDMA Engine package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "22f37791888d8168ec7fd76951c0af9a784687f1498d2486de0a77b8d9810bbb",
         "text": "kmod-google-firmware. Google firmware drivers (Coreboot, VPD, Memconsole) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ff01b41fb2d6e06900389943f3e7a1d3c8a848aa9b965b5f1430427cccc3e5e4",
         "text": "kmod-lp........................ Parallel port line printer device support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "651ac7dbb5773c00a25792bd3ff2ed028729745b9e15920c886ac5e9a6243076",
         "text": "kmod-mlxreg-lc....................... Mellanox line card platform support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "33bcb772a4a3e39188851b6e255e21b6c4fa8e16828537b2d7a8d27a6a6a4a9b",
         "text": "kmod-mtd-rw............................. Write-enabler for MTD partitions package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7caf2e0b50b6e082b4322689387e484abf3d183c4470bf395c85a757b41a3fdf",
         "text": "kmod-mtdoops............................. Log panic/oops to an MTD buffer package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8231ed4d962071e592c6d2e7151b756b1a9cbafd8682c6f23be40f91e6a1a8f6",
         "text": "kmod-mtdram.................................... Test MTD driver using RAM package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d74ac2070714d3ca7526f5f8d7eccbb2d4b889fc158e77ef121089cc1f89754a",
         "text": "kmod-parport-pc............... Parallel port interface (PC-style) support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "19fbc9b4792bd679fabd4d6814757836116d584d3c553d15d40ba13dd66e6b86",
         "text": "kmod-ppdev......................................... Parallel port support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9cc5ae9fa4054a097d07dfb2367c99941a871565618c690f539ad206a2a1fbc1",
         "text": "kmod-regulator-userspace-consumer... Userspace regulator consumer support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "768b39b22dfc641f6207be98ba56563091cc4217fef0a3ae6755fc7e1f62a1fe",
         "text": "kmod-softdog.................................... Software watchdog driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "69f4ab15359dc7ff4dd9916c083c69fb65c678b1c289926d23f833e5ad3496be",
         "text": "kmod-st-thermal. Thermal sensors on STMicroelectronics STi series of SoCs package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "93fd13ca6c4e4fdf200d6e43c26caf6aef7119d6226383fbd8cd41b59827565a",
         "text": "kmod-stm32-timers........................................... STM32 Timers package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "bc6c32f7db9f6b4f4097d8572c8285043244733a204f259b471b04df9e13864f",
         "text": "kmod-tpm-i2c-infineon............................ TPM I2C Infineon driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "360eda348110bc7116dc229b72c7682a32b9ae2a1685857d820a5ea2d56ff8f1",
         "text": "kmod-w83627hf-wdt......................... Winbond 83627HF Watchdog Timer package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8e4ad39e63dd3e22288caae6d0d6cf1668478084049042bf87037e9e8cf74f78",
         "text": "kmod-pcmcia-serial................................ Serial devices support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6300462ae96987c8820e147fa670860323521c3641169e17e0398ea501220011",
         "text": "kmod-pse-regulator................ Regulator based PSE controller support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9a63b0dca3e796753213e7bae1b6bb142f2fd02a2983aed075f99be023afe7ed",
         "text": "kmod-spi-dev................................. User mode SPI device driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6077aefe8ba7d3106aa1f30e8382f8581003f62fba1b0f5570c85afeb4e5b871",
         "text": "kmod-sound-core............................................ Sound support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "484db56ab347690f2e2d0528b155546aebb16340b5491d1ba90f13027aa5d544",
         "text": "kmod-sound-dummy......................... Null sound output driver (sink) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b8c6048739d403a776aedfa6ce781ea8e6821176bb82e8662932485f2e69909f",
         "text": "kmod-sound-dynamic-minors..... Support more than 8 audio and MIDI devices package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ab772a432bd728428d42cee1ab3ca6c086efea852bdde616bd302b531e666c8b",
         "text": "kmod-sound-seq......................................... Sequencer support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "5779a80e7380a1c1949e90e2b30a3a8dc09604fe7087c6a38aa2a24a558352c8",
         "text": "kmod-sound-soc-mt7986...................... MediaTek MT7986 Audio support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "576ffdc6ebdfe290c69eeddda04a6fb128a4a10a5a76c7e408e23931145491f8",
         "text": "kmod-sound-soc-mt7986-wm8960............... MediaTek MT7986 Audio support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "836a09ef88257c13cc995a1343264e5923f56c7e0d59e12655c84bfe07b99c56",
         "text": "kmod-sound-via82xx.............................. VIA 82xx AC97 Controller package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "53ca3c217ddc2928d898ee54732affa24e9a46134bd64a960758c16d6c7ca9b0",
         "text": "kmod-chaoskey.............................. Chaoskey hardware RNG support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1851fc6c2d80c73207361aa1fa15d1be23985e6cfdf210e98810d0fce96b8696",
         "text": "kmod-phy-sf19a2890-usb............. Siflower SF19A2890 USB 2.0 PHY Driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8a49f01e5208ef3e4a39e22c70213078137c8a0a01d6b465e2c892c253fec5fe",
         "text": "kmod-phy-sf21-usb....................... Siflower SF21 USB 2.0 PHY Driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ccb3e845fea843c77e3f115bb3e453c7d7fc887e6ddc6d2c9587ff473847c071",
         "text": "kmod-usb-acm......................... Support for modems/isdn controllers package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "763732f06f7c22f984ecff3f82ff6a52877045725728a452aa3bee493398535a",
         "text": "kmod-usb-chipidea....... Host and device support for Chipidea controllers package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4424161e08bf605dd03fe976a454293e0056b66252b88e40ab6f09d1e67746a8",
         "text": "kmod-usb-chipidea2..... Host and device support for Chipidea2 controllers package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9e2f4d01c1715fa2496c067ec83d07a84db4d78c1ac4739f583e6734c9784577",
         "text": "kmod-usb-net-cdc-ether.............. Support for cdc ethernet connections package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "dfc2c72cc533c7381d09b6d72753d13cc2ed569d7ed44ba66a651cf27b2b6185",
         "text": "kmod-usb-printer.................................... Support for printers package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "dfd91cc4622062c2057c9aa95cd7ed1ac04a36ac4b75ac3d4580c1fd673e74e8",
         "text": "kmod-backlight-pwm................................. PWM Backlight support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "5c628eb5656946a33630d8afb6f1cfefcf796f6db96cb150f857b93db2587cb5",
         "text": "kmod-fb...................... Framebuffer and framebuffer console support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f3d8c30575fa004cc870a4db5a4f5646331420e9c85ecbd3a3ea7c73332d7514",
         "text": "kmod-fb-cfb-copyarea.............. Framebuffer software copy area support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c15635242d16f2baeb2bc9c00c0ab4628068af98a0302cf6c0b2f099338c9c5a",
         "text": "kmod-fb-cfb-fillrect...... Framebuffer software rectangle filling support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "3e0ad144007cb5f44e314bc26e4f549f7749c779ebe28fc4a6e148eedde0bfe8",
         "text": "kmod-fb-cfb-imgblt............... Framebuffer software image blit support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1271bacfdeec4b8cb93734ebc719c23d0886ac30056aa2f2e1dff7998e0ee372",
         "text": "kmod-fb-sys-fops.................... Framebuffer software sys ops support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1804112a816ccfb9b3c54c6758a5001562a419545be51ee51503cace7853f0c1",
         "text": "kmod-fb-sys-ram........................ Framebuffer in system RAM support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "49def367d6f39b0cfb3b7aa1567416f423a8baf439380ea7e2629a78c1482275",
         "text": "kmod-fb-tft.................... Support for small TFT LCD display modules package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2d123a65606febd7b917992a173e315cdd58ca87015a77a92f5bce587ca7792f",
         "text": "kmod-video-core...................................... Video4Linux support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "08a374fb8198b2e11688bf001301d8f87d710a582d84d993eca3f5e922c2a832",
         "text": "kmod-vhost..................... Host kernel accelerator for virtio (base) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0b3219e64c8207cd0668f418c1c3464a8a76203c8de7cb53f3fe1222b95a3619",
         "text": "kmod-vhost-net.................... Host kernel accelerator for virtio-net package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ecb1df15150c4dc6a706eff6b4b1cede3e1012883adb7ca465f149b0ba02fee0",
         "text": "kmod-dahdi-hfcs............................... DAHDI driver for HFC-S PCI package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b400c2df522b740966c68c943d79413949082c6d284f4d45f27e2cb6f86b247d",
         "text": "kmod-w1-slave-therm........................ Thermal family implementation package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "18c5402f40ebe76357230a75e2088317c7cfad297117b69d882cd8fc9a4214e7",
         "text": "kmod-fakelb.......................................... Fake LR-WPAN driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b3ffdbbd6f21996c525c5ee08e85dfe38a9aea418b77a8effd2d10b791198db5",
         "text": "kmod-hasivo-mcu-wdt........................... Hasivo MCU watchdog driver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "31f9f6f815623e7212332064592e885987aaf5733e596c4fa548720f6a0bd5c3",
         "text": "kmod-ath...................................... Atheros common driver part package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "06345d6bec071885823d5a2cdb6c815929845924f65b521a42f4fb9d3581361b",
         "text": "kmod-ath5k........................... Atheros 5xxx wireless cards support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "454392f12d9965806282558f82867762423329bb37eb780addc8e775cb22eba5",
         "text": "kmod-iwlwifi.................................. Intel AGN Wireless support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "25e6c1c5a90c31bc88db49a85274c053972c436dd7de5ffdf8c62144a2bd5b6c",
         "text": "kmod-owl-loader.... Owl loader for initializing Atheros PCI(e) Wifi chips package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "111d21b0eb6fd4181666522b6b6a88050f71e6d72279042df5a8df05a3783879",
         "text": "erlang-ssh.................................... Secure Shell (SSH) support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "51449ea91d20997bfda34c12eb09ab2af13cd420f9b9656fd58f04f083a327ce",
         "text": "erlang-tools........................................ Erlang tools support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "19bc3df94ea037745cf2a8a62127b2156b74739c2976695ebc049ea8b80ff509",
         "text": "node-homebridge-eufy-security...... Control Eufy Security from homebridge package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "dd3f13eb7f82574dd282000e2f4e002d3a4980cfd7647cbdb36dc2fed3a40f42",
         "text": "node-pty................................. Fork pseudoterminals in Node.JS package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f0af8b60748099b88d51676edbb5ee97f12639802f7d7872fcd31f2e1c3be148",
         "text": "node-red................. A visual tool for wiring the Internet of Things package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7a0e7795a4f2c90cb8078fe4ab90cf99290b6ef71458fc6ffdc0ebd58505286d",
         "text": "node-red-node-discovery...... A Node-RED node to discover nearby services package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f22095b605a00888c586f6e9774164d2abe3adb176bc44992018c637aee0d36d",
         "text": "node-socketio-jwt.......... authenticate socket.io connections using JWTs package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "3d2b26fffe97b833fe0e83ffa4a01182b977cb596495c9c43882add20e528de9",
         "text": "node-ubus............................. OpenWrt Ubus interface for Node-js package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c64eb9404c598e96b552c8b199589f87d32521c845366918e490e1fe6136690d",
         "text": "php8-mod-pdo-mysql.................... PDO driver for MySQL shared module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "dc1d8eb2adc0e24321afd46ed1a7913170290c65c5dd49133583caf820877923",
         "text": "php8-pecl-http..................................... Extended HTTP Support package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4f79122dceb3e9ffac117926f56234023948991521b8b44e0dbe4d2c3f7c827f",
         "text": "perlbase-config....................................... Config perl module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ffa887b58e4b02fc262ba13b21312780749a1738e3a209821c4be4c0886bdbda",
         "text": "python3-ajsonrpc............ Async JSON-RPC 2.0 protocol + asyncio server package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "690aa5408607f4cba14357fa72c449acc3c97555082d73d4fa892c280e182f60",
         "text": "python3-asgiref.................... ASGI specs, helper code, and adapters package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2bb197f2dcfd3928f012ddfa638e7a93870ee543543fcc2b1b8229fa037073a8",
         "text": "python3-gnupg........................................ A wrapper for GnuPG package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "544fb1bf453b4e5436a9a31c4147c84371855ec201ee53b1c633b1fe13d06061",
         "text": "python3-pyopenssl........................................ OpenSSL wrapper package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "12af5b77a2ab13fec9e87f031d165ecf648a1abe11db841e4bdb08979cab08ba",
         "text": "libunrar................................................. UnRAR (library) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4f2fde58ba070cbb0402dda3574a795155d965e1e4cb5457dd3289abea3360a3",
         "text": "libodbccr........................................ unixODBC Cursor library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "15772245a494f3f16c57f92810d87dbb276d94128e888e0040893015e996899e",
         "text": "libupm-dfrorp....................................... dfrorp C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0fe333be85df8ab628db37a3720f4329cb1a5b8f0c6ab091672112c0a4d46892",
         "text": "libupm-electromagnet......................... electromagnet C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2f121cf9470e2782657fc9cd1332e8026ef5e10a7c9052512dd89961ea1d9ebe",
         "text": "libupm-enc03r....................................... enc03r C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "75b32a443031cd307df4624639aa06451aa2d72ca78186627f30d1dc2661ec84",
         "text": "libupm-hwxpxx....................................... hwxpxx C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "96cc1fa5ddef23c79038ca4baf66cf2c879bc6d89f3b5da137e9636b7400d9f2",
         "text": "libupm-lis3dh....................................... lis3dh C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "cbb0472c74a2de5d60bc182fce0a5160aa34bd64da329d35075ddfcf1da170f1",
         "text": "libupm-loudness-python3......................... loudness Python3 library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0bfbebe501433ab614c183bc3bf3fa0bd3aae24034d2dbc8b76285403c94b584",
         "text": "libupm-mb704x....................................... mb704x C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f6a3ebb0b7adb67d539febfad7db299247facc38d4400240b4e0ed40d2a637cb",
         "text": "libupm-nunchuck-python3......................... nunchuck Python3 library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f6ac5b33218bea6aea35c41df8e1a83c96dbaf8e95b94e65e6a5c3fac85823ec",
         "text": "libupm-relay......................................... relay C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "3240f5f691baa7f1a8e5f51a2a4cffb3452a8f1bc0078b2cf4066445c4c812b3",
         "text": "libupm-servo......................................... servo C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8eff4679db04f007338ad6c3d7e80c7f4c4313c96eb3a24f311d7872f1287ed4",
         "text": "libupm-tex00......................................... tex00 C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "23c809d36e5cea58adbda0c614509877c5237d3f4c6be9f122daba21fd857d74",
         "text": "libupm-uartat....................................... uartat C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "b369fd021c5f3b740e77e86406e0498df3cc85a72da98642045581422e95d217",
         "text": "libupm-vcap........................................... vcap C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "75eadb1fd77643259ca29ae70f870a28855cfb884a62a07a3e92d8c8102dae8f",
         "text": "libupm-zfm20......................................... zfm20 C/C++ library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "60f26fd983cdb311351638fb94960d567a8ac0a6628c9f1219e48fb90af9c7e2",
         "text": "libunbound................................ Recursive DNS Server (library) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0b188d158935aff779030f56f6413d08654ddcac7311240b40737cf80210f07e",
         "text": "libassimp.................................... Open Asset Importer Library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7af57305f64ae8bee1ec98c115ebfe63f575569bd01e9fb9175d9283699f55b3",
         "text": "libvulkan-nouveau........... Mesa3D nouveau Vulkan driver for nVidia GPUs package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9c4b1175a506cc3471d7f54b2da071a3a9d2c8595aac67df1fb17b43304e778a",
         "text": "ell............................................... Embedded Linux Library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "31221ef4c821566e35d5123bfe4c3bb0e6915357335de4d1afaf6c18e14cb515",
         "text": "ivykis................................................. Async I/O library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "75c419236569f566204321e582116fdb67199e672cb7d0f1c69cf5c2d8cca805",
         "text": "libnl............................................... Full Netlink Library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0ecf06e6438f5cecbf08fea067860dc02ea73c33cacad3bfd72409e358266b15",
         "text": "libnl-tiny........................................ netlink socket library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "197320bba3ba60cdae2d2ae5aafd3a1013b228d791cca346065ae2796ac90bba",
         "text": "libnpupnp........................................ A C++ base UPnP library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6f2a0623814c7d5bfe3b2bfd0b0519b646fc3fc2a9c2f28fb1602e1f415110a7",
         "text": "libopensc-profile-authentic............ authentic card profile for opensc package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "252ab1dfb347e797db1dc3f53bf38ebdf47946ba2933fc9e8db72a517f4cba03",
         "text": "libopensc-profile-cyberflex............ cyberflex card profile for opensc package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "5a8187d3e083c3aa53f40716ab55263a75703fb6589cdb7558cf124d975f2958",
         "text": "libopensc-profile-entersafe............ entersafe card profile for opensc package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f94e0acf7ef0234678bee82d848f2e65b0e2e9a6dd0d43876238232dafbb392f",
         "text": "libopensc-profile-isoApplet............ isoApplet card profile for opensc package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "27ea0b090e369c6ea72c75b86d614c19e8d69accb4f1c2a123005be5e0861386",
         "text": "libtiff..................................................... TIFF library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9066486925c011a4cc45cdb22d06d18903bdd771ccdefe98a4b12e29a2a586d4",
         "text": "libustream-wolfssl......................... ustream SSL Library (wolfssl) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "5aca45863af4a7019b3ddbef23cf16071199d65d7364f9195611dde550831b36",
         "text": "rpcd-mod-rad3-enc......................... Radicale v3 Hashing RPC module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "48ea5646ff283a029a0f4ab852e95115c3a90a8cb0b177fe212034155dc6b344",
         "text": "yajl............................................ Yet Another JSON Library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "d30575a4e0ad4d6263d92131c6fec483aa5d3a44db9ad409d6c3272a18567631",
         "text": "luci-mod-dashboard.................................. LuCI Dashboard Pages package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "5d56fad238fb5971901e6f1c3f9724ed5cc4e23c9444a8e3a01718c17daabeba",
         "text": "luci-app-cjdns............ Encrypted near-zero-conf mesh routing protocol package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "e7c2bd72e379a92359e92ce965662a63dd26a1964345fab972c370b51d8f8917",
         "text": "luci-app-dockerman............................... LuCI Support for docker package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "a93840b16ba11ed663074797526e2ad7be12d0de3d182c1fab5258d1ab775194",
         "text": "luci-app-dump1090.............................. LuCI Support for dump1090 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c57a65ab607fdbb5db4517983121f39f2dfd2e8caec0c6184ba33e28e8cadce3",
         "text": "luci-app-filebrowser............................ LuCI File Browser module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9566434aac38f8f1925cede3efcc161acf1e1c4df801831358ac5082021c2e13",
         "text": "luci-app-filemanager............................ LuCI File Manager module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "3a21738ff4c4a2115e3c3994c1a15d0b94164622f7f1fdffaebd197e70c2ba8e",
         "text": "luci-app-firewall............... Firewall and port forwarding application package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "9fd65df705045ecc3409d959703e21c2e3d5fba22e3c05f78b2d717284204781",
         "text": "luci-app-frpc................................ LuCI Support for frp client package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6423feb5e67ee666b4ec8fcd083feaa2b5745662f1cef7c3e48e89d1650882f9",
         "text": "luci-app-frps................................ LuCI Support for frp server package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "ef5826578c1c7bd54800a5144d6287ecc58371b7e7ffb7c1e24baede2692520f",
         "text": "luci-app-homeproxy. The modern ImmortalWrt proxy platform for ARM64/AMD64 package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "eaa519ba76e680cc0f2e9d7a369f4327f7d12fc80f8f8f2e23f3d9b4fd8a0f4c",
         "text": "luci-app-k3screenctrl...................... LuCI Support for k3screenctrl package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "53352da67ab72caa1f57e29a873375ad6d10a21fea3c26069396e54f3946d9f4",
         "text": "luci-app-ledtrig-rssi................... LuCI Support for ledtrigger rssi package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "085672ebb2ed57660c16c9758e389661d38e56f0852d9d8f8c97792a2b7e382b",
         "text": "luci-app-ledtrig-switch............... LuCI Support for ledtrigger switch package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "37c7bd50aac998d37b1b7e20745cf173341484bab259931951a792a242dec004",
         "text": "luci-app-ledtrig-usbport............. LuCI Support for ledtrigger usbport package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2d63f1fa6a06cd45ff912d34718ccfd447406d3bcc5f5a743664f5454664632a",
         "text": "luci-app-minidlna.............................. LuCI Support for miniDLNA package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "3a996d115526b9af1bf3421771f15e07257176f9ad51adf93564a3b5a38edd6a",
         "text": "luci-app-natmap.................................. LuCI Support for natmap package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "f76d45e2a5c6af725c1b5b1692bb14fdb47264888f0a9c7cc077542f2623999d",
         "text": "luci-app-nlbwmon...................... Netlink based bandwidth accounting package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2287ba5343c82752bd05cc0c2ee6844cac6d99bbf80777d95249bfcc7d4c1007",
         "text": "luci-app-oscam.................................... LuCI Support for oscam package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "4966dae6692254fb0c5a64fc09a85fe000e4469c9aa6a59c8d52a8b0896b3b33",
         "text": "luci-app-package-manager.................. Package management application package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "467d61eed02e1f28b13e4f4296e74733c22bd287d4ed4d0a101a13272095b99a",
         "text": "luci-app-scutclient.......................... LuCI Support for scutclient package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1a3d63a24b26f1a55d640975d4d46ba4cc31400050fa9fbe142cd4bfed32ea9f",
         "text": "luci-app-ser2net................................ LuCI Support for ser2net package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6041da8bcb5a023dbb9610d048e9b1d1bed17773f90bb56c8997998dcc0b9be7",
         "text": "luci-app-softether...................... Softether management application package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "120fefaaedd30a1824083ffe11dc34b23d33d6c700da1e9f10272266427f8f37",
         "text": "luci-app-squid...................................... Squid LuCI Interface package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6a6dd9e195dd3f694497c5fdbaa2a8c6d84aeec09f6f57f1e49dacfd585001a0",
         "text": "luci-app-sysuh3c................. LuCI support for SYSU H3C 802.1X Client package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "bb85ac13b0638c35f9fa5e6193c1c68ee89c1c8e9a2823bb49d62c141dc92b13",
         "text": "luci-app-udpxy.................................... LuCI Support for udpxy package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "2be85c4a4bea92f5b1331bc91c182d654c7c503c248de8fa8a2c53925e09b082",
         "text": "luci-app-xfrpc.................................... LuCI Support for xfrpc package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "00d075f5523f4488b6ac30881a83ff6250d5a17cc4a9cf0e3e84ea2c98f2b3d5",
         "text": "luci-app-xinetd.................................. LuCI Support for xinetd package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "21f6ee4062be2807ddcea18724a492f3809a7b7c0b4d20757e7b1d8d5cad1708",
         "text": "luci-theme-argon............................................. Argon Theme package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "6ec463b8c5ebe706ade5dc0a3745886d1ad2db5e343cd01fcd766f0d13f6832d",
         "text": "luci-lib-json.......................................... LuCI JSON library package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "1576ae4baac4f54a0208f825d52ec98e9e36756af81c65aea74d30d8227cffb2",
         "text": "exim-gnutls.................... Exim message transfer agent (with GnuTLS) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "0e6d0fc0c27b0ac85deb5fe60311ac84731e33fa932d3b9938b8467ba45c693f",
         "text": "ffprobe...................................... FFmpeg CLI media identifier package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "50053ddce6137474cd0e5f1dc92edc5084623bab45ac243f8c8771a08993f0af",
         "text": "transmission-web........................ BitTorrent client (webinterface) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "52a1f7a1cc0556a604b98ebd56b10eaea8cf6daf20862ba4699c9e9fb5071717",
         "text": "ariang................................. AriaNg webui for uhttpd webserver package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "7d4fa79f7783bc5251472f30287e96df5ba4df7fefd6330a351fce863e67f202",
         "text": "aria2....................................... lightweight download utility package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "63020c40335a01429bf0751993489b87420a5c53597de03e61525c150acfcb66",
         "text": "fwknop.................................... FireWall KNock OPerator Client package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "c7b6759de9d597e463ea75a44dfe818e8bad50d56d12ca35103f6ef36ed43a10",
         "text": "freeradius3......................... A flexible RADIUS server (version 3) package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "41ecfa11880fff80ebb4e16830803b067f1669ef1f83cdb5550e57681dbf1e7a",
         "text": "freeradius3-mod-dynamic-clients........... Dynamic Clients Authentication package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       },
       {
         "id": "8c625cdb74c2c20e69a5d9630852d7ce0c8b231efe8980a8cbe42be02e69438a",
         "text": "freeradius3-mod-exec......................................... EXEC module package for OpenWrt firmware.",
-        "reason": "Batch incomplete: translated 203/500 queued descriptions"
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "4e2064b5c7524d85138895b910f74db8b9dadd50508bdb00b1fb9132c1b03a3e",
+        "text": "freeradius3-mod-utf8......................................... UTF8 module package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "9c9969675f807b93c3601a0f98b5d68c565089f5dea2ade00e9ce80367863b44",
+        "text": "bind-nslookup...................................... bind nslookup utility package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "2fa16d9a0ce1c54727e4a1c4c6184eb3e77b6487d0b4eaefc713c5baf675602a",
+        "text": "ddns-scripts-freedns......................... Extension for freedns.42.pl package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "50098931ec382a07ced6f797101b1c8d42362bf61124735e97c6bc55f1d80372",
+        "text": "ddns-scripts-luadns.......................... Extension for LuaDNS API v1 package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "cfd5f533f29563a9b3ffcbbf2cd7974f5b7cd7306e60758e4b796d7be1b2c835",
+        "text": "ddns-scripts-netcup-com..................... Extension for netcup.com API package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "32634b812061ef94e2ae9b965d5d547c6e12ec9d7b43620e8849502b6bf69a39",
+        "text": "ddns-scripts-route53........................ Extension for route53 API v1 package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "47be8aa32b8b04b2b85eb98289cd71bee96bab2b1fd60f1d3c2a24ed3bf90939",
+        "text": "isc-dhcp-client-ipv6....................... ISC's DHCP client (with IPv6) package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "d10b6ee6483760661c09501cd106f5c3bd6b81d8e0473c614c79b94645d01623",
+        "text": "isc-dhcp-relay-ipv4...................... ISC's DHCP relay (without IPv6) package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "e77e3de6dc28cfd0614e7c9b42512da18f75c723a6d5bae14cdb6e57988f5e2a",
+        "text": "isc-dhcp-relay-ipv6......................... ISC's DHCP relay (with IPv6) package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "3da46a8f4606d7f1725fc7f207d327801f49c402824b24ec71329e1799cbfa6f",
+        "text": "isc-dhcp-server-ipv4.................... ISC's DHCP server (without IPv6) package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "ac7b426f93bc952c26750da13b11ba43b4e3f24f7ffcfb76edd157a0f58c3e86",
+        "text": "isc-dhcp-server-ipv6....................... ISC's DHCP server (with IPv6) package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "bf1de8184faf8256bfef3afe17a58bfb14af78ab043c1637e0b5cb80d2e10d1e",
+        "text": "kea-dhcp4......................................... ISC Kea DHCP Server v4 package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "4e38e9a3893b4740a4860ce62c9f3f591bc3aeecfeb0ac278269a11a808b336a",
+        "text": "kea-dhcp6......................................... ISC Kea DHCP Server v6 package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "15dc9f8d153476177f0232fdacebaefe7caa688080dbde69c1c02ad74617d409",
+        "text": "kea-libs............................................... ISC Kea Libraries package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
+      },
+      {
+        "id": "93003909e8187c4238eff57c5c2555f883a077f7c6af951e0b824feca605ceea",
+        "text": "unbound-checkconf.................. Recursive DNS Server (config checker) package for OpenWrt firmware.",
+        "reason": "Batch incomplete: translated 188/500 queued descriptions"
       }
     ]
   },
-  "updatedAt": "2026-08-08T19:57:07.944Z"
+  "updatedAt": "2026-08-08T20:03:18.858Z"
 }
