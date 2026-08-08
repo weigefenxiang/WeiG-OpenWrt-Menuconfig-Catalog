@@ -4,7 +4,7 @@
     "id": "lede",
     "branch": "master"
   },
-  "generatedAt": "2026-08-06T06:01:54.725Z",
+  "generatedAt": "2026-08-08T19:44:35.881Z",
   "languages": [
     "en",
     "zh-CN",
@@ -11191,14 +11191,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-saradc-rockchip",
-      "promptEn": "Rockchip SARADC support",
-      "path": [
-        "Kernel modules",
-        "Industrial I/O Modules"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-scmi-iio",
       "promptEn": "IIO SCMI",
       "path": [
@@ -18524,6 +18516,14 @@
     {
       "symbol": "PACKAGE_kmod-drm-rockchip",
       "promptEn": "Rockchip DRM support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rocket",
+      "promptEn": "Rockchip NPU support",
       "path": [
         "Kernel modules",
         "Video Support"

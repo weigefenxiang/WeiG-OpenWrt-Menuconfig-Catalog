@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-06T06:05:31.442Z",
+  "generatedAt": "2026-08-08T19:45:08.027Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10006,
+  "options": 9996,
   "translatedZhCN": 102,
   "missingZhCN": [
     {
@@ -5237,41 +5237,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_u-boot-an7581_gemtek_w1700k",
-      "promptEn": "U-Boot for Gemtek W1700K (UBI)",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7581_nokia_valyrian",
-      "promptEn": "U-Boot for Nokia Valyrian",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7581_nokia_xg-040g-md",
-      "promptEn": "U-Boot for Nokia XG-040G-MD",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7581_rfb",
-      "promptEn": "U-Boot for AN7581 Reference Board",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7583_rfb",
-      "promptEn": "U-Boot for AN7583 Reference Board",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
       "symbol": "PACKAGE_u-boot-apalis_imx6",
       "promptEn": "U-Boot for Toradex Apalis",
       "path": [
@@ -5561,13 +5526,6 @@
     {
       "symbol": "PACKAGE_u-boot-easy80920_sfspl",
       "promptEn": "U-Boot for Lantiq EASY80920 (SPI SPL)",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-en7523_rfb",
-      "promptEn": "U-Boot for EN7523 Reference Board",
       "path": [
         "Boot Loaders"
       ]
@@ -10873,14 +10831,6 @@
     {
       "symbol": "PACKAGE_kmod-i2c-algo-pcf",
       "promptEn": "I2C PCF 8584 interfaces",
-      "path": [
-        "Kernel modules",
-        "I2C support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-i2c-an7581",
-      "promptEn": "Airoha I2C Controller",
       "path": [
         "Kernel modules",
         "I2C support"
@@ -41237,14 +41187,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_luci-mod-rpc",
-      "promptEn": "LuCI RPC - JSON-RPC API",
-      "path": [
-        "LuCI",
-        "2. Modules"
-      ]
-    },
-    {
       "symbol": "PACKAGE_luci-mod-status",
       "promptEn": "LuCI Status Pages",
       "path": [
@@ -41767,14 +41709,6 @@
     {
       "symbol": "PACKAGE_luci-lib-nixio",
       "promptEn": "NIXIO POSIX library",
-      "path": [
-        "LuCI",
-        "7. Libraries"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_luci-lib-px5g",
-      "promptEn": "RSA/X.509 Key Generator (required for LuCId SSL support)",
       "path": [
         "LuCI",
         "7. Libraries"
@@ -67762,13 +67696,6 @@
     {
       "symbol": "PACKAGE_checkpolicy",
       "promptEn": "SELinux policy compiler",
-      "path": [
-        "Utilities"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_checksec",
-      "promptEn": "Utility to check PIE, RELRO, ASLR etc.",
       "path": [
         "Utilities"
       ]
