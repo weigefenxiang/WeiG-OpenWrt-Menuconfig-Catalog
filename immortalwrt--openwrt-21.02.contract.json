@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "ImmortalWrt",
+    "label": "ImmortalWrt",
+    "repo": "immortalwrt/immortalwrt",
+    "branch": "openwrt-21.02",
+    "commit": "fc9fe90e5a804d7af5449260f2e5b7ae6d414266",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-09T14:24:59.632Z",
+  "summary": {
+    "targets": 100,
+    "selectableTargets": 68,
+    "unavailableTargets": 3,
+    "abstractTargets": 29
+  },
+  "unavailable": [
+    {
+      "target": "bcm63xx",
+      "board": "bcm63xx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "realtek",
+      "board": "realtek",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "sunxi",
+      "board": "sunxi",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    }
+  ],
+  "kconfigProbe": {
+    "schema": 1,
+    "mode": "target-chain-and-representative-profile",
+    "generatedAt": "2026-08-09T14:25:04.615Z",
+    "targets": 68,
+    "passed": 68,
+    "passedScope": "target chain plus one representative profile; all siblings remain hidden on failure",
+    "quarantined": []
+  }
+}
