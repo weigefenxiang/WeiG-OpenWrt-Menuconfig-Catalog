@@ -1,0 +1,339 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "ImmortalWrt",
+    "label": "ImmortalWrt",
+    "repo": "immortalwrt/immortalwrt",
+    "branch": "openwrt-24.10",
+    "commit": "bade505f70d5a38cba12324835106cf6325beb36",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-09T14:18:55.157Z",
+  "curated": [
+    {
+      "id": "adguardhome",
+      "packages": [
+        "luci-app-adguardhome"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "antiblock",
+      "packages": [
+        "luci-app-antiblock"
+      ],
+      "package": "luci-app-antiblock",
+      "available": true
+    },
+    {
+      "id": "chrony",
+      "packages": [
+        "luci-app-chrony"
+      ],
+      "package": "luci-app-chrony",
+      "available": true
+    },
+    {
+      "id": "csshnpd",
+      "packages": [
+        "luci-app-csshnpd"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "email",
+      "packages": [
+        "luci-app-email"
+      ],
+      "package": "luci-app-email",
+      "available": true
+    },
+    {
+      "id": "filemanager",
+      "packages": [
+        "luci-app-filemanager"
+      ],
+      "package": "luci-app-filemanager",
+      "available": true
+    },
+    {
+      "id": "irqbalance",
+      "packages": [
+        "luci-app-irqbalance"
+      ],
+      "package": "luci-app-irqbalance",
+      "available": true
+    },
+    {
+      "id": "openlist",
+      "packages": [
+        "luci-app-openlist"
+      ],
+      "package": "luci-app-openlist",
+      "available": true
+    },
+    {
+      "id": "openthread",
+      "packages": [
+        "luci-app-openthread"
+      ],
+      "package": "luci-app-openthread",
+      "available": true
+    },
+    {
+      "id": "package-manager",
+      "packages": [
+        "luci-app-package-manager"
+      ],
+      "package": "luci-app-package-manager",
+      "available": true
+    },
+    {
+      "id": "radicale3",
+      "packages": [
+        "luci-app-radicale3"
+      ],
+      "package": "luci-app-radicale3",
+      "available": true
+    },
+    {
+      "id": "rustdesk-server",
+      "packages": [
+        "luci-app-rustdesk-server"
+      ],
+      "package": "luci-app-rustdesk-server",
+      "available": true
+    },
+    {
+      "id": "strongswan-swanctl",
+      "packages": [
+        "luci-app-strongswan-swanctl"
+      ],
+      "package": "luci-app-strongswan-swanctl",
+      "available": true
+    },
+    {
+      "id": "tailscale-community",
+      "packages": [
+        "luci-app-tailscale-community"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "ustreamer",
+      "packages": [
+        "luci-app-ustreamer"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "wifihistory",
+      "packages": [
+        "luci-app-wifihistory"
+      ],
+      "package": "",
+      "available": false
+    }
+  ],
+  "available": [
+    "luci-app-antiblock",
+    "luci-app-chrony",
+    "luci-app-email",
+    "luci-app-filemanager",
+    "luci-app-irqbalance",
+    "luci-app-openlist",
+    "luci-app-openthread",
+    "luci-app-package-manager",
+    "luci-app-radicale3",
+    "luci-app-rustdesk-server",
+    "luci-app-strongswan-swanctl"
+  ],
+  "missing": [
+    "adguardhome",
+    "csshnpd",
+    "tailscale-community",
+    "ustreamer",
+    "wifihistory"
+  ],
+  "applications": {
+    "count": 171,
+    "unique": 171,
+    "names": [
+      "luci-app-3cat",
+      "luci-app-3ginfo-lite",
+      "luci-app-acl",
+      "luci-app-acme",
+      "luci-app-adblock",
+      "luci-app-adblock-fast",
+      "luci-app-advanced-reboot",
+      "luci-app-airplay2",
+      "luci-app-amule",
+      "luci-app-antiblock",
+      "luci-app-apinger",
+      "luci-app-appfilter",
+      "luci-app-argon-config",
+      "luci-app-aria2",
+      "luci-app-arpbind",
+      "luci-app-attendedsysupgrade",
+      "luci-app-autoreboot",
+      "luci-app-babeld",
+      "luci-app-banip",
+      "luci-app-bcp38",
+      "luci-app-bitsrunlogin-go",
+      "luci-app-bmx7",
+      "luci-app-cd8021x",
+      "luci-app-chrony",
+      "luci-app-cifs-mount",
+      "luci-app-cjdns",
+      "luci-app-clamav",
+      "luci-app-cloudflared",
+      "luci-app-commands",
+      "luci-app-coovachilli",
+      "luci-app-cpufreq",
+      "luci-app-cpulimit",
+      "luci-app-crowdsec-firewall-bouncer",
+      "luci-app-cshark",
+      "luci-app-dae",
+      "luci-app-daed",
+      "luci-app-dawn",
+      "luci-app-dcwapd",
+      "luci-app-ddns",
+      "luci-app-ddns-go",
+      "luci-app-diskman",
+      "luci-app-docker",
+      "luci-app-dockerman",
+      "luci-app-dufs",
+      "luci-app-dump1090",
+      "luci-app-dynapoint",
+      "luci-app-email",
+      "luci-app-eoip",
+      "luci-app-eqos",
+      "luci-app-example",
+      "luci-app-filebrowser",
+      "luci-app-filebrowser-go",
+      "luci-app-filemanager",
+      "luci-app-firewall",
+      "luci-app-frpc",
+      "luci-app-frps",
+      "luci-app-fwknopd",
+      "luci-app-gost",
+      "luci-app-haproxy-tcp",
+      "luci-app-hd-idle",
+      "luci-app-hnet",
+      "luci-app-homeproxy",
+      "luci-app-https-dns-proxy",
+      "luci-app-ipsec-vpnd",
+      "luci-app-irqbalance",
+      "luci-app-k3screenctrl",
+      "luci-app-keepalived",
+      "luci-app-ksmbd",
+      "luci-app-ledtrig-rssi",
+      "luci-app-ledtrig-switch",
+      "luci-app-ledtrig-usbport",
+      "luci-app-libreswan",
+      "luci-app-lldpd",
+      "luci-app-lorawan-basicstation",
+      "luci-app-ltqtapi",
+      "luci-app-lxc",
+      "luci-app-microsocks",
+      "luci-app-minidlna",
+      "luci-app-mjpg-streamer",
+      "luci-app-modemband",
+      "luci-app-mosquitto",
+      "luci-app-msd_lite",
+      "luci-app-music-remote-center",
+      "luci-app-mwan3",
+      "luci-app-n2n",
+      "luci-app-natmap",
+      "luci-app-netdata",
+      "luci-app-nextdns",
+      "luci-app-nfs",
+      "luci-app-nft-qos",
+      "luci-app-ngrokc",
+      "luci-app-njitclient",
+      "luci-app-nlbwmon",
+      "luci-app-nps",
+      "luci-app-nut",
+      "luci-app-ocserv",
+      "luci-app-oled",
+      "luci-app-olsr",
+      "luci-app-olsr-services",
+      "luci-app-olsr-viz",
+      "luci-app-olsrd2",
+      "luci-app-omcproxy",
+      "luci-app-openclash",
+      "luci-app-openlist",
+      "luci-app-openthread",
+      "luci-app-openvpn",
+      "luci-app-openvpn-server",
+      "luci-app-openwisp",
+      "luci-app-oscam",
+      "luci-app-p910nd",
+      "luci-app-package-manager",
+      "luci-app-pagekitec",
+      "luci-app-passwall",
+      "luci-app-pbr",
+      "luci-app-pppoe-relay",
+      "luci-app-pppoe-server",
+      "luci-app-privoxy",
+      "luci-app-ps3netsrv",
+      "luci-app-qbittorrent",
+      "luci-app-qos",
+      "luci-app-radicale3",
+      "luci-app-ramfree",
+      "luci-app-rclone",
+      "luci-app-rp-pppoe-server",
+      "luci-app-rtp2httpd",
+      "luci-app-rustdesk-server",
+      "luci-app-samba4",
+      "luci-app-scutclient",
+      "luci-app-ser2net",
+      "luci-app-siitwizard",
+      "luci-app-smartdns",
+      "luci-app-sms-tool-js",
+      "luci-app-snmpd",
+      "luci-app-softether",
+      "luci-app-softethervpn",
+      "luci-app-splash",
+      "luci-app-spotifyd",
+      "luci-app-sqm",
+      "luci-app-squid",
+      "luci-app-sshtunnel",
+      "luci-app-statistics",
+      "luci-app-strongswan-swanctl",
+      "luci-app-syncdial",
+      "luci-app-syncthing",
+      "luci-app-sysuh3c",
+      "luci-app-timewol",
+      "luci-app-tinyproxy",
+      "luci-app-tor",
+      "luci-app-transmission",
+      "luci-app-travelmate",
+      "luci-app-ttyd",
+      "luci-app-ua2f",
+      "luci-app-udpxy",
+      "luci-app-uhttpd",
+      "luci-app-unblockneteasemusic",
+      "luci-app-unbound",
+      "luci-app-upnp",
+      "luci-app-usb-printer",
+      "luci-app-usteer",
+      "luci-app-v2raya",
+      "luci-app-vlmcsd",
+      "luci-app-vnstat2",
+      "luci-app-vsftpd",
+      "luci-app-watchcat",
+      "luci-app-wechatpush",
+      "luci-app-wifischedule",
+      "luci-app-wol",
+      "luci-app-xfrpc",
+      "luci-app-xinetd",
+      "luci-app-xlnetacc",
+      "luci-app-zerotier"
+    ]
+  }
+}
