@@ -17,13 +17,14 @@ const translationFile = resolve('dist/translation-summary.json');
 const translation = existsSync(translationFile)
   ? JSON.parse(readFileSync(translationFile, 'utf8')) : {};
 const translationWarning = String(translation.apiError || '').replace(/[`|\r\n]+/g, ' ').trim();
+const dataBranch = process.env.CATALOG_DATA_BRANCH || 'catalog-data';
 const publishedByArtifact = new Map((manifest.branches || [])
   .map((item) => [item.artifactName, item]));
 const stages = [
   ['collect', process.env.COLLECT_OUTCOME || 'not-run'],
   ['translate', process.env.TRANSLATE_OUTCOME || 'not-run'],
   ['index', process.env.INDEX_OUTCOME || 'not-run'],
-  ['catalog-data', process.env.DATA_OUTCOME || 'not-run'],
+  [dataBranch, process.env.DATA_OUTCOME || 'not-run'],
   ['release', process.env.RELEASE_OUTCOME || 'skipped'],
 ];
 const failedStage = stages.filter(([name]) => name !== 'translate')
@@ -69,7 +70,7 @@ const lines = [
     `\`${item.artifactName || '-'}\` | ${item.status} | ${state} | ${diagnostic} |`);
   }),
   `| ${order} | Publish / 发布目录与 Release | \`${artifact}\` | ` +
-    `${failedStage === '-' ? 'success' : 'failure'} | Rolling catalog-data | ${failedStage} |`,
+    `${failedStage === '-' ? 'success' : 'failure'} | Rolling ${dataBranch} | ${failedStage} |`,
   '',
   'Publish stages:',
   ...stages.map(([name, outcome]) => `- ${name}: ${outcome}`),

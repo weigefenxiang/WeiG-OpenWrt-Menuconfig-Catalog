@@ -52,10 +52,13 @@ try {
   const graphAsset = 'demo--main.graph.json.gz';
   const coreFile = join(dist, coreAsset);
   const graphFile = join(dist, graphAsset);
+  const compatibilityAsset = 'compatibility.json.gz';
+  const compatibilityFile = join(dist, compatibilityAsset);
 
   writeFileSync(assetFile, Buffer.from('catalog-v1'));
   writeFileSync(coreFile, Buffer.from('core-v1'));
   writeFileSync(graphFile, Buffer.from('graph-v1'));
+  writeFileSync(compatibilityFile, Buffer.from('compatibility-v1'));
 
   const staleIndex = stampIndex({
     schema: 2,
@@ -64,6 +67,9 @@ try {
     commit: 'demo',
     completeReleaseTag:
       'menuconfig-catalog-complete',
+    assets: {
+      compatibility: { asset: compatibilityAsset, hash: 'stale-compatibility', bytes: 1, schema: 1 },
+    },
     health: {
       fresh: 1,
       stale: 0,
@@ -126,11 +132,14 @@ try {
 
   const actualCore = fileContract(coreFile);
   const actualGraph = fileContract(graphFile);
+  const actualCompatibility = fileContract(compatibilityFile);
   if (branch.hash !== actual.hash || branch.bytes !== actual.bytes ||
       branch.legacy?.asset !== asset || branch.legacy?.hash !== actual.hash ||
       branch.legacy?.bytes !== actual.bytes || branch.legacy?.catalogSchema !== 5 ||
       branch.legacy?.relationsSchema !== 2 || branch.assets.core.hash !== actualCore.hash || branch.assets.core.bytes !== actualCore.bytes ||
-      branch.assets.graph.hash !== actualGraph.hash || branch.assets.graph.bytes !== actualGraph.bytes) {
+      branch.assets.graph.hash !== actualGraph.hash || branch.assets.graph.bytes !== actualGraph.bytes ||
+      fixed.assets.compatibility.hash !== actualCompatibility.hash ||
+      fixed.assets.compatibility.bytes !== actualCompatibility.bytes) {
     throw new Error('legacy/split asset metadata synchronization failed');
   }
 
@@ -194,7 +203,7 @@ try {
   console.log(
     'catalog asset index checks passed: ' +
     'legacy/split update, root contract, ' +
-    'idempotence, shard tamper rejection',
+    'idempotence, global asset, shard tamper rejection',
   );
 } finally {
   rmSync(

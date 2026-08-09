@@ -56,6 +56,13 @@ try {
   ], { stdio: 'pipe' });
   const index = JSON.parse(readFileSync(out, 'utf8'));
   if (index.schema !== 2) throw new Error('index schema 2 missing');
+  if (index.assets?.compatibility?.asset !== 'compatibility.json.gz' ||
+      !/^[a-f0-9]{64}$/.test(index.assets.compatibility.hash) ||
+      index.assets.compatibility.bytes <= 0 || index.assets.compatibility.schema !== 1 ||
+      index.assets.compatibility.rules !== 1 || index.assets.compatibility.jsonBytes <= 0 ||
+      index.assets.compatibility.jsonBytes > 512 * 1024) {
+    throw new Error('global compatibility asset contract missing');
+  }
   const branches = index.sources.find((source) => source.id === 'ImmortalWrt').branches;
   const main = branches.find((branch) => branch.branch === 'openwrt-23.05');
   const old = branches.find((branch) => branch.branch === 'openwrt-21.02');
@@ -77,7 +84,7 @@ try {
   if (index.health.fresh !== 1 || index.health.stale !== 1 || index.health.unavailable !== 1) {
     throw new Error('health counts failed');
   }
-  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1');
+  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1 compatibility=1');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

@@ -22,6 +22,7 @@ JavaScript 中写死分支、Target 或菜单项目。
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
 - Catalog schema 6 splits each branch into `core`, `graph`, `menu`, `hidden`, `help`, and per-language menu gzip assets. The published index records every shard's compressed byte count, SHA-256, and immutable `assetRef` Git commit. Consumers initially fetch only `core + graph`; Advanced menu text and long help are loaded on demand. The schema-5 monolithic gzip remains temporarily as a compatibility fallback.
+- Confirmed facts that upstream Kconfig cannot express live in the small global `compatibility.json`; it references package IDs only and never duplicates symbols, states, names, dependencies, or hashes. See [中文规则说明](docs/COMPATIBILITY.md) and [English rules](docs/COMPATIBILITY.en.md).
 - The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
   translations are published even when a batch is incomplete; remaining descriptions are kept in
@@ -61,7 +62,7 @@ node scripts/import-curated-i18n.mjs \
 - `menu/endmenu` 显式层级，以及 `menuconfig` 通过正向 `if/depends` 形成的隐式父子层级
 - 软件包 Kconfig 选项及其依赖关系
 
-网页已经用动态 Target 选择器提供设备/Profile，因此目录不会重复发布 `Target Devices` 菜单和对应的数千个 Kconfig 项。普通菜单仅消费可见选项；完整关系表仍发布隐藏 Kconfig 与 packageinfo-only 软件包，使消费方可以通用处理语言包残留、依赖链、choice 和 provider，而无需在 `app.js` 中写包名特例。人工构建兼容规则目前不属于 Catalog，本轮不迁移。
+网页已经用动态 Target 选择器提供设备/Profile，因此目录不会重复发布 `Target Devices` 菜单和对应的数千个 Kconfig 项。普通菜单仅消费可见选项；完整关系表仍发布隐藏 Kconfig 与 packageinfo-only 软件包，使消费方可以通用处理语言包残留、依赖链、choice 和 provider，而无需在 `app.js` 中写包名特例。已有构建证据、但 Kconfig 无法表达的少量事实统一保存在根目录 `compatibility.json`；字段边界和维护规则见 [中文说明](docs/COMPATIBILITY.md) 与 [English](docs/COMPATIBILITY.en.md)。
 
 ## Schema 6 分片与体积报告
 
@@ -88,9 +89,12 @@ npm run size-report -- dist
 
 `.github/workflows/catalog.yml` 每周检查配置文件中声明的全部源码与分支；
 其中 hanwckf 仅收录 `openwrt-21.02` 兼容分支。每个分支独立生成，
-失败时沿用上一次成功数据。结果发布到保留提交历史的 `catalog-data` 分支；每次先提交数据，
+失败时沿用同一通道的上一次成功数据。`main` 发布到 `catalog-data`，`staging` 发布到
+`catalog-staging`，`dev` 发布到 `catalog-dev`，`fix/*` 发布到 `catalog-fix`；每次先提交数据，
 再用第二个提交把 `index.json` 的 `assetRef` 固定到前一个不可变数据提交。主站从 jsDelivr
 或 GitHub Raw 整组读取 index 与该提交中的 gzip 分片，不在 VPS 保存 Catalog。
+
+所有数据分支直接保存同名 `compatibility.json.gz`。只有 `main` 更新正式 Release；预览通道不创建 Release 或 Pages 地址。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
 - 自动翻译只新增软件包/菜单用途说明，技术名称与符号保持官方英文。简体中文说明未完成时，

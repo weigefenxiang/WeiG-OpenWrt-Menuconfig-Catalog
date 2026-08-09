@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "rules": [
+    {
+      "id": "OWN-0001",
+      "kind": "ownership",
+      "scope": {
+        "ImmortalWrt": [
+          "openwrt-25.12"
+        ]
+      },
+      "if": "USE_APK",
+      "packages": [
+        "luci-app-openvpn-server",
+        "openvpn-openssl"
+      ],
+      "paths": [
+        "/etc/config/openvpn"
+      ],
+      "refs": [
+        "run:31248199953"
+      ]
+    }
+  ]
+}

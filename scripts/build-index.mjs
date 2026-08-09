@@ -2,7 +2,9 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { stampIndex } from './index-contract.mjs';
+import { gzipSync } from 'node:zlib';
+import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
+import { fileContract, stampIndex } from './index-contract.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -52,6 +54,20 @@ if (!rows.length && !(previous.sources || []).length && !attempts.length) {
   throw new Error('没有当前、历史或失败状态数据');
 }
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
+const compatibility = normalizeCompatibilityDocument(
+  JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8')),
+  policy,
+);
+const compatibilityAsset = 'compatibility.json.gz';
+const compatibilityJson = JSON.stringify(compatibility);
+writeFileSync(join(dir, compatibilityAsset), gzipSync(Buffer.from(compatibilityJson), { level: 9 }));
+const compatibilityContract = {
+  asset: compatibilityAsset,
+  ...fileContract(join(dir, compatibilityAsset)),
+  schema: compatibility.schema,
+  rules: compatibility.rules.length,
+  jsonBytes: Buffer.byteLength(compatibilityJson),
+};
 const sources = (previous.sources || []).filter((source) => policy.sources.some((item) => item.id === source.id))
   .map((source) => {
     const rule = policy.sources.find((item) => item.id === source.id);
@@ -141,6 +157,7 @@ const body = {
     stale: branchRows.filter((item) => item.state === 'stale').length,
     unavailable: branchRows.filter((item) => item.state === 'unavailable').length,
   },
+  assets: { compatibility: compatibilityContract },
   sources,
 };
 writeFileSync(
@@ -150,4 +167,5 @@ writeFileSync(
 console.log(`index.json: ${sources.length} sources / ${branchRows.length} branches` +
   ` (fresh=${branchRows.filter((item) => item.state === 'fresh').length}` +
   ` stale=${branchRows.filter((item) => item.state === 'stale').length}` +
-  ` unavailable=${branchRows.filter((item) => item.state === 'unavailable').length})`);
+  ` unavailable=${branchRows.filter((item) => item.state === 'unavailable').length})` +
+  ` / compatibility=${compatibility.rules.length} rules, ${compatibilityContract.bytes} bytes`);

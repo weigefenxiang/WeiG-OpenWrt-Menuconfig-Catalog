@@ -4,6 +4,12 @@ set -euo pipefail
 tag="menuconfig-catalog-complete"
 shopt -s nullglob
 assets=(dist/index.json dist/*.json.gz dist/*.translations.json)
+filtered=()
+for asset in "${assets[@]}"; do
+  [[ "$asset" == "dist/compatibility.json.gz" ]] && continue
+  filtered+=("$asset")
+done
+assets=("${filtered[@]}")
 if (( ${#assets[@]} < 3 )); then
   echo "release asset validation failed: found ${#assets[@]} files"
   exit 1

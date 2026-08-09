@@ -9,6 +9,7 @@ import {
 import { buildKconfigRelations } from './kconfig-relations.mjs';
 import { compactRelations, expandCompactRelations } from './compact-relations.mjs';
 import { buildCatalogSizeReport, formatCatalogSizeReport } from './catalog-size-report.mjs';
+import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +31,7 @@ const attemptWriter = readFileSync(join(ROOT, 'scripts', 'write-attempt.mjs'), '
 const collector = readFileSync(join(ROOT, 'scripts', 'collect-results.mjs'), 'utf8');
 const release = readFileSync(join(ROOT, 'scripts', 'publish-release.sh'), 'utf8');
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
+const compatibility = JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8'));
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
 const validator = readFileSync(join(ROOT, 'scripts', 'verify-target-contracts.mjs'), 'utf8');
 const library = readFileSync(join(ROOT, 'scripts', 'lib.mjs'), 'utf8');
@@ -39,6 +41,17 @@ const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs
 const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
 const snapshotStamper = readFileSync(join(ROOT, 'scripts', 'stamp-catalog-snapshot.mjs'), 'utf8');
 const failures = [];
+
+function mutatedCompatibility(mutator) {
+  const value = structuredClone(compatibility);
+  mutator(value);
+  try {
+    normalizeCompatibilityDocument(value, policy);
+    return false;
+  } catch {
+    return true;
+  }
+}
 const curatedCandidates = policy.curatedCandidates || [];
 const curatedById = new Map(curatedCandidates.map((item) => [item.id, item]));
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
@@ -223,7 +236,7 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     workflow.includes('max-parallel:') ||
     workflow.includes('apt-get') ||
     !workflow.includes('fail-fast: false') ||
-    !workflow.includes("if: needs.generate.result == 'success'") ||
+    !workflow.includes("if: always() && needs.discover.result == 'success'") ||
     !workflow.includes('scripts/write-attempt.mjs') ||
     !workflow.includes('scripts/run-stage.sh') ||
     !workflow.includes('pattern: "*-catalog-*"') ||
@@ -243,7 +256,14 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('KCONFIG_CONTRACT_OUTCOME') ||
     !workflow.includes('run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts') ||
     !workflow.includes('node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit"') ||
-    !workflow.includes('git -C previous push origin HEAD:catalog-data') ||
+    !workflow.includes("startsWith(github.ref_name, 'fix/') && 'catalog-fix'") ||
+    !workflow.includes("github.ref_name == 'dev' && 'catalog-dev'") ||
+    !workflow.includes("github.ref_name == 'staging' && 'catalog-staging'") ||
+    !workflow.includes("github.ref_name == 'main' && 'catalog-data'") ||
+    !workflow.includes('branches: [main, dev, staging, "fix/**"]') ||
+    !workflow.includes('git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"') ||
+    !workflow.includes("if: github.ref_name == 'main' && needs.generate.result == 'success'") ||
+    !workflow.includes('RELEASE_REQUIRED:') ||
     !workflow.includes('cp previous/index.json dist/index.json') ||
     workflow.includes('git push --force origin catalog-data') ||
     !snapshotStamper.includes("assetRefType: 'git-commit'") ||
@@ -282,6 +302,7 @@ if (!stageRunner.includes('Source ID:') ||
     release.includes('gh release delete') ||
     !release.includes('dist/*.json.gz') ||
     !release.includes('gh release upload') ||
+    !release.includes('dist/compatibility.json.gz') ||
     !release.includes('--clobber')) failures.push('diagnostic identity');
 if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
     policy.sources[0].branches.join(',') !==
@@ -294,6 +315,20 @@ if (!policy.sources.some((item) => item.id === 'hanwckf' &&
     item.repo === 'hanwckf/immortalwrt-mt798x' &&
     item.branches.join(',') === 'openwrt-21.02' && item.legacy === true)) {
   failures.push('hanwckf legacy source policy');
+}
+const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
+if (normalizedCompatibility.rules.length !== 1 ||
+    normalizedCompatibility.rules[0]?.id !== 'OWN-0001' ||
+    normalizedCompatibility.rules[0]?.scope?.ImmortalWrt?.join(',') !== 'openwrt-25.12' ||
+    !mutatedCompatibility((value) => { value.rules[0].symbols = ['PACKAGE_demo']; }) ||
+    !mutatedCompatibility((value) => { delete value.rules[0].paths; }) ||
+    !mutatedCompatibility((value) => { value.rules.push(structuredClone(value.rules[0])); }) ||
+    !mutatedCompatibility((value) => { value.rules[0].packages.push(value.rules[0].packages[0]); }) ||
+    !mutatedCompatibility((value) => { value.rules[0].scope = { Missing: ['main'] }; }) ||
+    !mutatedCompatibility((value) => { value.rules[0].scope.ImmortalWrt = ['openwrt-24.11']; }) ||
+    !mutatedCompatibility((value) => { value.rules[0].paths = ['relative/path']; }) ||
+    !mutatedCompatibility((value) => { value.rules[0].refs = ['bad ref']; })) {
+  failures.push('compatibility evidence mutation validation');
 }
 if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('targetBuildContract') ||

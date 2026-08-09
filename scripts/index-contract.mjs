@@ -71,6 +71,26 @@ export function synchronizeIndexAssets(
   const missing = [];
   const seenAssets = new Set();
 
+  for (const [logical, contract] of Object.entries(index.assets || {})) {
+    if (!contract?.asset) continue;
+    if (seenAssets.has(contract.asset)) throw new Error(`duplicate indexed asset: ${contract.asset}`);
+    seenAssets.add(contract.asset);
+    const file = join(directory, contract.asset);
+    if (!existsSync(file)) {
+      missing.push({ source: 'index', branch: 'root', logical, asset: contract.asset });
+      continue;
+    }
+    const actual = fileContract(file);
+    const expected = { hash: String(contract.hash || ''), bytes: Number(contract.bytes || 0) };
+    if (expected.hash !== actual.hash || expected.bytes !== actual.bytes) {
+      mismatches.push({ source: 'index', branch: 'root', logical, asset: contract.asset, expected, actual });
+      if (!check) {
+        contract.hash = actual.hash;
+        contract.bytes = actual.bytes;
+      }
+    }
+  }
+
   for (const source of index.sources) {
     for (const branch of source.branches || []) {
       const contracts = [];
