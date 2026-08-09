@@ -1,9 +1,10 @@
 {
-  "schema": 1,
+  "schema": 2,
   "rules": [
     {
       "id": "OWN-0001",
-      "kind": "ownership",
+      "issue": "file-ownership",
+      "match": "all-installed",
       "scope": {
         "ImmortalWrt": [
           "openwrt-25.12"
@@ -19,6 +20,22 @@
       ],
       "refs": [
         "run:31248199953"
+      ]
+    },
+    {
+      "id": "BLD-0001",
+      "issue": "build-failure",
+      "match": "all-selected",
+      "scope": {
+        "ImmortalWrt": [
+          "openwrt-25.12"
+        ]
+      },
+      "packages": [
+        "oscam"
+      ],
+      "refs": [
+        "run:31319173318"
       ]
     }
   ]

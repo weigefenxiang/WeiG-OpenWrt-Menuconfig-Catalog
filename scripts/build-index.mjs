@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
-import { fileContract, stampIndex } from './index-contract.mjs';
+import { fileContract, indexBody, indexContract, stampIndex } from './index-contract.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -37,6 +37,63 @@ function normalizeLegacyMirror(branch) {
     legacy,
   };
 }
+
+function writeCompatibilityAsset(directory, policy) {
+  mkdirSync(directory, { recursive: true });
+  const compatibility = normalizeCompatibilityDocument(
+    JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8')),
+    policy,
+  );
+  const asset = 'compatibility.json.gz';
+  const json = JSON.stringify(compatibility);
+  writeFileSync(join(directory, asset), gzipSync(Buffer.from(json), { level: 9 }));
+  return {
+    compatibility,
+    contract: {
+      asset,
+      ...fileContract(join(directory, asset)),
+      schema: compatibility.schema,
+      rules: compatibility.rules.length,
+      jsonBytes: Buffer.byteLength(json),
+    },
+  };
+}
+
+if (process.argv[2] === '--compatibility-only') {
+  const previousFile = resolve(process.argv[3] || '');
+  const out = resolve(process.argv[4] || previousFile);
+  if (!previousFile || !existsSync(previousFile)) {
+    throw new Error('compatibility-only mode requires an existing index.json');
+  }
+  const previous = JSON.parse(readFileSync(previousFile, 'utf8'));
+  if (!Array.isArray(previous.sources) || previous.assets?.compatibility?.asset !== 'compatibility.json.gz') {
+    throw new Error('compatibility-only mode requires a complete existing Catalog index');
+  }
+  const expectedIndex = indexContract(previous);
+  if (previous.hash !== expectedIndex.hash || previous.bytes !== expectedIndex.bytes) {
+    throw new Error('compatibility-only mode rejected an invalid existing index contract');
+  }
+  const previousAsset = join(dirname(previousFile), 'compatibility.json.gz');
+  if (!existsSync(previousAsset)) {
+    throw new Error('compatibility-only mode requires the existing compatibility asset');
+  }
+  const actualAsset = fileContract(previousAsset);
+  const expectedAsset = previous.assets.compatibility;
+  if (actualAsset.hash !== expectedAsset.hash || actualAsset.bytes !== expectedAsset.bytes) {
+    throw new Error('compatibility-only mode rejected an invalid existing compatibility contract');
+  }
+  const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
+  const { compatibility, contract } = writeCompatibilityAsset(dirname(out), policy);
+  const body = indexBody(previous);
+  const next = stampIndex({
+    ...body,
+    assets: { ...body.assets, compatibility: contract },
+  });
+  writeFileSync(out, JSON.stringify(next, null, 2) + '\n');
+  console.log(`index.json: compatibility-only schema=${compatibility.schema}` +
+    ` rules=${compatibility.rules.length} bytes=${contract.bytes}`);
+  process.exit(0);
+}
 const dir = resolve(process.argv[2] || join(ROOT, 'dist'));
 const out = resolve(process.argv[3] || join(dir, 'index.json'));
 const previousFile = process.argv[4] ? resolve(process.argv[4]) : '';
@@ -54,20 +111,7 @@ if (!rows.length && !(previous.sources || []).length && !attempts.length) {
   throw new Error('没有当前、历史或失败状态数据');
 }
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
-const compatibility = normalizeCompatibilityDocument(
-  JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8')),
-  policy,
-);
-const compatibilityAsset = 'compatibility.json.gz';
-const compatibilityJson = JSON.stringify(compatibility);
-writeFileSync(join(dir, compatibilityAsset), gzipSync(Buffer.from(compatibilityJson), { level: 9 }));
-const compatibilityContract = {
-  asset: compatibilityAsset,
-  ...fileContract(join(dir, compatibilityAsset)),
-  schema: compatibility.schema,
-  rules: compatibility.rules.length,
-  jsonBytes: Buffer.byteLength(compatibilityJson),
-};
+const { compatibility, contract: compatibilityContract } = writeCompatibilityAsset(dir, policy);
 const sources = (previous.sources || []).filter((source) => policy.sources.some((item) => item.id === source.id))
   .map((source) => {
     const rule = policy.sources.find((item) => item.id === source.id);

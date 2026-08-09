@@ -317,8 +317,58 @@ if (!policy.sources.some((item) => item.id === 'hanwckf' &&
   failures.push('hanwckf legacy source policy');
 }
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
-if (normalizedCompatibility.rules.length !== 1 ||
+const compatibilityFastPublish =
+  workflow.includes('if: needs.mode.outputs.compatibility_only != \'true\'') &&
+  workflow.includes('if: needs.mode.outputs.compatibility_only == \'true\'') &&
+  workflow.includes('"${#changed[@]}" -eq 1') &&
+  workflow.includes('"${changed[0]}" == compatibility.json') &&
+  workflow.includes('git clone --filter=blob:none --no-checkout --single-branch') &&
+  workflow.includes('sparse-checkout set /index.json /compatibility.json.gz') &&
+  workflow.includes('build-index.mjs --compatibility-only previous/index.json previous/index.json') &&
+  workflow.includes('Compatibility contract is unchanged; nothing to publish.') &&
+  workflow.includes('case "$CATALOG_DATA_BRANCH" in');
+const legacyCompatibility = normalizeCompatibilityDocument({
+  schema: 1,
+  rules: [{
+    id: 'OWN-LEGACY', kind: 'ownership', scope: { ImmortalWrt: ['openwrt-25.12'] },
+    if: 'USE_APK', packages: ['legacy-a', 'legacy-b'], paths: ['/legacy'], refs: ['run:1'],
+  }],
+}, policy);
+let legacyMissingConditionRejected = false;
+try {
+  normalizeCompatibilityDocument({
+    schema: 1,
+    rules: [{
+      id: 'OWN-LEGACY', kind: 'ownership', scope: { ImmortalWrt: ['openwrt-25.12'] },
+      packages: ['legacy-a', 'legacy-b'], paths: ['/legacy'], refs: ['run:1'],
+    }],
+  }, policy);
+} catch {
+  legacyMissingConditionRejected = true;
+}
+let oversizedCompatibilityRejected = false;
+try {
+  normalizeCompatibilityDocument({
+    schema: 2,
+    rules: Array.from({ length: 5000 }, (_, index) => ({
+      id: `BLD-SIZE-${index}`, issue: 'build-failure', match: 'all-selected',
+      scope: { ImmortalWrt: ['openwrt-25.12'] }, packages: [`size-${index}`], refs: [`run:${index}`],
+    })),
+  }, policy);
+} catch (error) {
+  oversizedCompatibilityRejected = /exceeds/.test(error.message);
+}
+if (!compatibilityFastPublish || normalizedCompatibility.schema !== 2 || normalizedCompatibility.rules.length !== 2 ||
     normalizedCompatibility.rules[0]?.id !== 'OWN-0001' ||
+    normalizedCompatibility.rules[0]?.issue !== 'file-ownership' ||
+    normalizedCompatibility.rules[0]?.match !== 'all-installed' ||
+    normalizedCompatibility.rules[1]?.id !== 'BLD-0001' ||
+    normalizedCompatibility.rules[1]?.issue !== 'build-failure' ||
+    normalizedCompatibility.rules[1]?.match !== 'all-selected' ||
+    normalizedCompatibility.rules[1]?.packages?.join(',') !== 'oscam' ||
+    legacyCompatibility.schema !== 2 || legacyCompatibility.rules[0]?.match !== 'all-installed' ||
+    !legacyMissingConditionRejected ||
+    !oversizedCompatibilityRejected ||
     normalizedCompatibility.rules[0]?.scope?.ImmortalWrt?.join(',') !== 'openwrt-25.12' ||
     !mutatedCompatibility((value) => { value.rules[0].symbols = ['PACKAGE_demo']; }) ||
     !mutatedCompatibility((value) => { delete value.rules[0].paths; }) ||
@@ -327,7 +377,11 @@ if (normalizedCompatibility.rules.length !== 1 ||
     !mutatedCompatibility((value) => { value.rules[0].scope = { Missing: ['main'] }; }) ||
     !mutatedCompatibility((value) => { value.rules[0].scope.ImmortalWrt = ['openwrt-24.11']; }) ||
     !mutatedCompatibility((value) => { value.rules[0].paths = ['relative/path']; }) ||
-    !mutatedCompatibility((value) => { value.rules[0].refs = ['bad ref']; })) {
+    !mutatedCompatibility((value) => { value.rules[0].refs = ['bad ref']; }) ||
+    !mutatedCompatibility((value) => { value.rules[1].paths = ['/not-applicable']; }) ||
+    !mutatedCompatibility((value) => { value.rules[1].packages = []; }) ||
+    !mutatedCompatibility((value) => { value.rules[1].issue = 'unknown'; }) ||
+    !mutatedCompatibility((value) => { value.rules[1].match = 'any'; })) {
   failures.push('compatibility evidence mutation validation');
 }
 if (!generator.includes("option.path[0] !== 'Target Devices'") ||

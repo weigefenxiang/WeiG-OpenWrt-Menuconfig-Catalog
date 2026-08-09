@@ -1,5 +1,6 @@
 const DOCUMENT_KEYS = new Set(['schema', 'rules']);
-const RULE_KEYS = new Set(['id', 'kind', 'scope', 'if', 'packages', 'paths', 'refs']);
+const LEGACY_RULE_KEYS = new Set(['id', 'kind', 'scope', 'if', 'packages', 'paths', 'refs']);
+const RULE_KEYS = new Set(['id', 'issue', 'match', 'scope', 'if', 'packages', 'paths', 'refs']);
 const RULE_ID_RE = /^[A-Z][A-Z0-9-]{2,31}$/;
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
 const SOURCE_RE = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -59,33 +60,49 @@ function normalizeScope(value, sourcePolicy, label) {
 export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
   if (!plainObject(raw)) throw new Error('compatibility document must be an object');
   rejectUnknownKeys(raw, DOCUMENT_KEYS, 'compatibility document');
-  if (Number(raw.schema) !== 1 || !Array.isArray(raw.rules)) {
-    throw new Error('compatibility document requires schema 1 and a rules array');
+  const schema = Number(raw.schema);
+  if (![1, 2].includes(schema) || !Array.isArray(raw.rules)) {
+    throw new Error('compatibility document requires schema 1 or 2 and a rules array');
   }
   const sourcePolicy = new Map((policy.sources || []).map((source) => [source.id, source]));
   const seen = new Set();
   const rules = raw.rules.map((rule, index) => {
     const label = `compatibility.rules[${index}]`;
     if (!plainObject(rule)) throw new Error(`${label} must be an object`);
-    rejectUnknownKeys(rule, RULE_KEYS, label);
+    rejectUnknownKeys(rule, schema === 1 ? LEGACY_RULE_KEYS : RULE_KEYS, label);
     const id = String(rule.id || '').trim();
     if (!RULE_ID_RE.test(id)) throw new Error(`${label}.id is invalid`);
     if (seen.has(id)) throw new Error(`duplicate compatibility rule id: ${id}`);
     seen.add(id);
-    if (rule.kind !== 'ownership') throw new Error(`${id}.kind must be ownership`);
+    const issue = schema === 1 ? (rule.kind === 'ownership' ? 'file-ownership' : '') : rule.issue;
+    const match = schema === 1 ? 'all-installed' : rule.match;
+    if (!['file-ownership', 'build-failure'].includes(issue)) {
+      throw new Error(`${id}.issue is invalid`);
+    }
+    if (!['all-installed', 'all-selected'].includes(match)) {
+      throw new Error(`${id}.match is invalid`);
+    }
     const condition = String(rule.if || '').trim();
-    if (!CONDITION_RE.test(condition)) throw new Error(`${id}.if is invalid`);
-    return {
+    if ((schema === 1 && !condition) || (condition && !CONDITION_RE.test(condition))) {
+      throw new Error(`${id}.if is invalid`);
+    }
+    const normalized = {
       id,
-      kind: 'ownership',
+      issue,
+      match,
       scope: normalizeScope(rule.scope, sourcePolicy, `${id}.scope`),
-      if: condition,
-      packages: uniqueStrings(rule.packages, { label: `${id}.packages`, min: 2, max: 16, pattern: PACKAGE_RE }),
-      paths: uniqueStrings(rule.paths, { label: `${id}.paths`, min: 1, max: 16, pattern: PATH_RE }),
+      ...(condition ? { if: condition } : {}),
+      packages: uniqueStrings(rule.packages, { label: `${id}.packages`, min: 1, max: 16, pattern: PACKAGE_RE }),
       refs: uniqueStrings(rule.refs, { label: `${id}.refs`, min: 1, max: 8, pattern: REF_RE }),
     };
+    if (issue === 'file-ownership') {
+      normalized.paths = uniqueStrings(rule.paths, { label: `${id}.paths`, min: 1, max: 16, pattern: PATH_RE });
+    } else if (rule.paths !== undefined) {
+      throw new Error(`${id}.paths is only valid for file-ownership`);
+    }
+    return normalized;
   });
-  const result = { schema: 1, rules };
+  const result = { schema: 2, rules };
   if (Buffer.byteLength(JSON.stringify(result)) > MAX_DOCUMENT_BYTES) {
     throw new Error(`compatibility document exceeds ${MAX_DOCUMENT_BYTES} bytes`);
   }

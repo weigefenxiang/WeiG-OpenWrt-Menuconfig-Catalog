@@ -21,8 +21,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  mode:
+    name: 00 · Select publish mode / 选择发布模式
+    runs-on: ubuntu-24.04
+    outputs:
+      compatibility_only: ${{ steps.mode.outputs.compatibility_only }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - id: mode
+        name: Detect compatibility-only push
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          compatibility_only=false
+          if [[ "$GITHUB_EVENT_NAME" == push && "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
+                "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]] &&
+             git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
+            if [[ "${#changed[@]}" -eq 1 && "${changed[0]}" == compatibility.json ]]; then
+              compatibility_only=true
+            fi
+          fi
+          echo "compatibility_only=$compatibility_only" >> "$GITHUB_OUTPUT"
+
   discover:
     name: 01 · Discover / 发现源码分支
+    needs: mode
+    if: needs.mode.outputs.compatibility_only != 'true'
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -169,6 +196,56 @@ jobs:
             failure-logs/*.log
           retention-days: 14
           if-no-files-found: error
+
+  publish-compatibility:
+    name: 02 · Publish compatibility only / 仅发布兼容性规则
+    needs: mode
+    if: needs.mode.outputs.compatibility_only == 'true'
+    runs-on: ubuntu-24.04
+    env:
+      CATALOG_DATA_BRANCH: ${{ startsWith(github.ref_name, 'fix/') && 'catalog-fix' || github.ref_name == 'dev' && 'catalog-dev' || github.ref_name == 'staging' && 'catalog-staging' || github.ref_name == 'main' && 'catalog-data' || '' }}
+    steps:
+      - name: Validate publish channel
+        run: |
+          case "$CATALOG_DATA_BRANCH" in
+            catalog-fix|catalog-dev|catalog-staging|catalog-data) ;;
+            *) echo "unsupported Catalog code branch: $GITHUB_REF_NAME"; exit 1 ;;
+          esac
+          if [[ "$GITHUB_REF_NAME" != main && "$CATALOG_DATA_BRANCH" == catalog-data ]]; then
+            echo "non-main code may not publish catalog-data"
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+      - name: Fetch only compatibility contracts
+        run: |
+          git clone --filter=blob:none --no-checkout --single-branch \
+            --branch "$CATALOG_DATA_BRANCH" \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" previous
+          git -C previous sparse-checkout init --no-cone
+          git -C previous sparse-checkout set /index.json /compatibility.json.gz
+          git -C previous checkout "$CATALOG_DATA_BRANCH"
+          test -f previous/index.json
+          test -f previous/compatibility.json.gz
+      - name: Rebuild compatibility contract
+        run: node scripts/build-index.mjs --compatibility-only previous/index.json previous/index.json
+      - name: Publish compatibility contract
+        run: |
+          set -euo pipefail
+          git -C previous config user.name github-actions[bot]
+          git -C previous config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C previous add --sparse index.json compatibility.json.gz
+          if git -C previous diff --cached --quiet; then
+            echo "Compatibility contract is unchanged; nothing to publish."
+            exit 0
+          fi
+          git -C previous commit -m "data: refresh compatibility rules"
+          asset_commit="$(git -C previous rev-parse HEAD)"
+          node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit"
+          git -C previous add --sparse index.json
+          if ! git -C previous diff --cached --quiet; then
+            git -C previous commit -m "data: pin compatibility snapshot"
+          fi
+          git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"
 
   publish:
     name: ${{ needs.discover.outputs.publish-order }} · Publish / 发布目录与 Release

@@ -50,7 +50,7 @@ try {
   writeFileSync(join(attempts, '23.attempt.json'), JSON.stringify(attempt('openwrt-23.05', 'success', 'complete', 3)));
   writeFileSync(join(attempts, '21.attempt.json'), JSON.stringify(attempt('openwrt-21.02', 'failure', 'defconfig', 2)));
   writeFileSync(join(attempts, '24.attempt.json'), JSON.stringify(attempt('openwrt-24.10', 'failure', 'feeds', 4)));
-  const out = join(temp, 'index.json');
+  const out = join(dist, 'index.json');
   execFileSync(process.execPath, [
     join(ROOT, 'scripts', 'build-index.mjs'), dist, out, join(temp, 'previous.json'), attempts,
   ], { stdio: 'pipe' });
@@ -58,8 +58,8 @@ try {
   if (index.schema !== 2) throw new Error('index schema 2 missing');
   if (index.assets?.compatibility?.asset !== 'compatibility.json.gz' ||
       !/^[a-f0-9]{64}$/.test(index.assets.compatibility.hash) ||
-      index.assets.compatibility.bytes <= 0 || index.assets.compatibility.schema !== 1 ||
-      index.assets.compatibility.rules !== 1 || index.assets.compatibility.jsonBytes <= 0 ||
+      index.assets.compatibility.bytes <= 0 || index.assets.compatibility.schema !== 2 ||
+      index.assets.compatibility.rules !== 2 || index.assets.compatibility.jsonBytes <= 0 ||
       index.assets.compatibility.jsonBytes > 512 * 1024) {
     throw new Error('global compatibility asset contract missing');
   }
@@ -84,7 +84,52 @@ try {
   if (index.health.fresh !== 1 || index.health.stale !== 1 || index.health.unavailable !== 1) {
     throw new Error('health counts failed');
   }
-  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1 compatibility=1');
+  const fastDir = join(temp, 'fast');
+  mkdirSync(fastDir);
+  const fastOut = join(fastDir, 'index.json');
+  execFileSync(process.execPath, [
+    join(ROOT, 'scripts', 'build-index.mjs'), '--compatibility-only', out, fastOut,
+  ], { stdio: 'pipe' });
+  const fast = JSON.parse(readFileSync(fastOut, 'utf8'));
+  if (JSON.stringify(fast.sources) !== JSON.stringify(index.sources) ||
+      JSON.stringify(fast.health) !== JSON.stringify(index.health) ||
+      fast.generatedAt !== index.generatedAt || fast.assets.compatibility.schema !== 2 ||
+      fast.assets.compatibility.rules !== 2) {
+    throw new Error('compatibility-only publish changed non-compatibility Catalog data');
+  }
+  const firstFast = readFileSync(fastOut, 'utf8');
+  execFileSync(process.execPath, [
+    join(ROOT, 'scripts', 'build-index.mjs'), '--compatibility-only', fastOut, fastOut,
+  ], { stdio: 'pipe' });
+  if (readFileSync(fastOut, 'utf8') !== firstFast) {
+    throw new Error('identical compatibility-only publish was not deterministic');
+  }
+  writeFileSync(fastOut, JSON.stringify({ ...fast, hash: '0'.repeat(64) }));
+  let invalidIndexRejected = false;
+  try {
+    execFileSync(process.execPath, [
+      join(ROOT, 'scripts', 'build-index.mjs'), '--compatibility-only', fastOut, fastOut,
+    ], { stdio: 'pipe' });
+  } catch {
+    invalidIndexRejected = true;
+  }
+  writeFileSync(fastOut, firstFast);
+  const fastAsset = join(fastDir, 'compatibility.json.gz');
+  const validAsset = readFileSync(fastAsset);
+  writeFileSync(fastAsset, Buffer.from('tampered'));
+  let invalidAssetRejected = false;
+  try {
+    execFileSync(process.execPath, [
+      join(ROOT, 'scripts', 'build-index.mjs'), '--compatibility-only', fastOut, fastOut,
+    ], { stdio: 'pipe' });
+  } catch {
+    invalidAssetRejected = true;
+  }
+  writeFileSync(fastAsset, validAsset);
+  if (!invalidIndexRejected || !invalidAssetRejected) {
+    throw new Error('compatibility-only publish accepted a tampered contract');
+  }
+  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1 compatibility=2 fast=stable');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

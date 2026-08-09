@@ -1,31 +1,50 @@
 # Compatibility Evidence Rules
 
-`compatibility.json` records package-compatibility facts that the upstream Catalog/Kconfig data cannot currently express but that real build evidence has confirmed. It is not a second dependency database and must not contain plugin presentation data.
+`compatibility.json` records only compatibility problems that upstream Catalog/Kconfig data cannot currently express and that real build evidence has confirmed. It is not a second dependency database. Symbol types, N/M/Y capabilities, display names, translations, dependencies, providers, conflicts, hashes, and timestamps remain Catalog-owned facts.
 
-## Data-authority boundary
+## Schema 2
 
-Before adding a field, inspect Kconfig, Catalog relations, the Catalog index, and the existing runtime model. Existing facts must be referenced by stable IDs. Do not copy symbol types, N/M/Y states, display names, translations, dependencies, providers, conflicts, hashes, byte counts, or generation timestamps.
+The document allows only `schema` and `rules`. Each rule allows:
 
-Rules allow only `id`, `kind`, `scope`, `if`, `packages`, `paths`, and `refs`. The web client resolves package IDs through the Catalog model, reads config-symbol capabilities and dependency facts there, and derives the smallest valid change through the existing intent engine.
+- `id`: stable ID. Use `OWN-xxxx` for ownership and `BLD-xxxx` for known build failures.
+- `issue`: `file-ownership` or `build-failure`; it selects generic validation and copy only.
+- `match`: `all-installed` requires every package to be `Y`; `all-selected` requires every package to be `M/Y`.
+- `scope`: Source IDs mapped to exact branch-name arrays.
+- `if`: optional additional Kconfig expression; do not duplicate dependency facts.
+- `packages`: 1–16 real package IDs. The browser resolves symbols, legal states, and cascades through Catalog.
+- `paths`: required only for `file-ownership`; confirmed absolute paths with duplicate ownership.
+- `refs`: 1–8 short evidence references such as a GitHub Actions Run ID; never copy complete logs.
 
-## Fields
+The browser uniformly calls `evaluateCompatibilityRules()`, `deriveCompatibilityPlans()`, and the single state executor `applyUserIntent()`. Rules cannot contain commands, patches, or package-specific execution logic. The build backend must not turn them into locks or configuration rewrites. Users may apply the recommendation, choose custom N/M/Y states, or force continuation after a second confirmation.
 
-- `id`: stable rule ID; ownership rules use `OWN-xxxx`.
-- `kind`: version 1 accepts only `ownership`.
-- `scope`: mapping from Source IDs to exact branch-name arrays.
-- `if`: an additional condition evaluated by the existing Kconfig expression engine.
-- `packages`: real package IDs involved in the compatibility problem.
-- `paths`: confirmed absolute paths with duplicate ownership.
-- `refs`: short evidence references such as a GitHub Actions Run ID; never copy complete logs.
+Readers accept legacy schema-1 `ownership` during migration; publishers always emit schema 2. Normalized JSON has a 512 KiB uncompressed limit. Split by Source or Source/Branch only through an explicit future schema migration when the limit becomes relevant; do not maintain empty parallel datasets.
 
-## Lifecycle
+## Registered rules
 
-Every rule requires real evidence. Verify an actual failure before adding another branch; similar source layouts are not sufficient. When upstream fixes the issue, narrow the scope or remove the rule immediately instead of retaining a zombie rule.
+### OWN-0001
 
-Manual evidence rules are web-side soft warnings. Users may apply a plan derived by the Catalog engine, adjust states inside the modal, or keep their current selection. The build backend must not turn them into package locks.
+- Scope: ImmortalWrt `openwrt-25.12` with `USE_APK` satisfied.
+- Trigger: `luci-app-openvpn-server=Y` and `openvpn-openssl=Y`.
+- Problem: both packages own `/etc/config/openvpn`, causing an APK file-ownership collision.
+- Evidence: GitHub Actions Run `31248199953`.
+- Handling: generic Catalog intents compare the cascades of disabling either participant. Only a unique minimum-cost plan is recommended; the user may still force continuation.
+- Removal: after upstream removes duplicate ownership, verify a real build and immediately narrow `scope` or remove the rule.
 
-Publication creates one `compatibility.json.gz` directly in the `catalog-fix`, `catalog-dev`, `catalog-staging`, or `catalog-data` data branch. Preview channels do not create Releases.
+### BLD-0001
 
-Normalized JSON has a hard 512 KiB uncompressed limit. The index records both compressed and uncompressed byte counts, and clients verify both. Only when the file approaches this limit should an explicit schema migration split it by Source or Source/Branch; do not maintain empty parallel datasets in advance.
+- Scope: ImmortalWrt `openwrt-25.12`.
+- Trigger: `oscam=M/Y`.
+- Problem: this branch builds OSCam with internally defaulted `WITH_EMU` and `WITH_SOFTCAM`, and the linker has confirmed missing `_binary_SoftCam_Key_start/end`. No current OpenWrt Kconfig symbol independently disables it.
+- Evidence: GitHub Actions Run `31319173318`.
+- Handling: the recommendation uses Catalog `applyUserIntent()` only to set the whole `oscam` package to `N`. Forcing continuation does not patch source and may still fail; retaining OSCam requires an upstream fix.
+- Removal: after upstream fixes the link or exposes a usable Kconfig option, verify a real build before narrowing `scope` or deleting the rule.
 
-中文说明：[COMPATIBILITY.md](COMPATIBILITY.md)
+The `OSCAM_S_CACHEEX` versus package-Makefile `CONFIG_OSCAM_CS_CACHEEX` naming mismatch is independent. Do not fold it into BLD-0001 without evidence that it causes an actual failure.
+
+## Maintenance and publication
+
+Verify an actual failure before adding a branch to `scope`; similar source layouts are insufficient. Remove or narrow rules promptly after upstream fixes them. Zombie rules are forbidden.
+
+When only `compatibility.json` changes, the workflow reads the existing `index.json` and `compatibility.json.gz` from the selected data branch and reuses `build-index.mjs --compatibility-only`. Source/Branch assets and hashes remain unchanged, and identical content creates no commit. Generator, validator, workflow, or collection-policy changes still run the complete matrix.
+
+中文：[COMPATIBILITY.md](COMPATIBILITY.md)
