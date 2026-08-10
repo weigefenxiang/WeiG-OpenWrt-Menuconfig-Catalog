@@ -287,11 +287,13 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !snapshotStamper.includes("assetRefType: 'git-commit'") ||
     !snapshotStamper.includes('catalog assetRef must be a full 40-character Git commit SHA') ||
     unsafePlainRunContinuation) failures.push('workflow resilience');
-if (!discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
-    !discover.includes('metadataCompat') ||
+if (!discover.includes("metadataCompat: 'metadata-only'") ||
+    discover.includes("source.id === 'OpenWrt'") ||
+    discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
     !metadata.includes('touch staging_dir/host/.prereq-build') ||
+    !metadata.includes('Unsupported metadata mode') ||
     !metadata.includes('make prepare-tmpinfo FORCE=1') ||
-    metadata.includes('make defconfig')) failures.push('legacy metadata compatibility');
+    metadata.includes('make defconfig')) failures.push('source-independent metadata-only boundary');
 if (!stageRunner.includes('Source ID:') ||
     !stageRunner.includes('Upstream commit:') ||
     !stageRunner.includes('CATALOG_ARTIFACT_NAME') ||

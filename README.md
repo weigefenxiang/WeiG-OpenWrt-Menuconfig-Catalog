@@ -137,14 +137,16 @@ Failure logs use unique names such as
 失败阶段、Run ID/次数、任务序号、Artifact 名称和 Run 链接。日志文件名全局唯一，
 不会再因多个分支都叫 `defconfig.log` 而互相覆盖；控制台只展示重点和末尾 80 行，完整错误日志保留 60 天。
 
-OpenWrt 18.06 and 19.07 use `legacy-metadata` mode. These branches unconditionally invoke
-obsolete compiler/Python host-version gates from `prepare-tmpinfo`, although this repository
-only extracts Kconfig/Perl metadata and never builds firmware. The compatibility mode creates
-a fresh prerequisite cookie before `make defconfig FORCE=1`; modern branches keep the native
-path unchanged.
+Every Source/Branch uses one `metadata-only` boundary. Catalog extraction needs Kconfig/Perl
+metadata but never compiles host tools or firmware, so it creates a fresh prerequisite cookie
+before `make prepare-tmpinfo FORCE=1`. The rule is capability-based rather than a Source or
+Branch allowlist, and therefore also covers future branches that retain obsolete Python/GCC
+host checks.
 
-OpenWrt 18.06/19.07 使用仅限元数据的兼容模式，跳过已经过时的 GCC/Python
-版本门槛；它不用于固件编译，也不会改变现代分支的正常检查链路。
+所有 Source/Branch 统一使用 `metadata-only` 边界：Catalog 只提取 Kconfig/Perl
+元数据，不编译主机工具或固件，因此在 `make prepare-tmpinfo FORCE=1` 前创建全新的
+先决条件标记。该机制不按 Source/Branch 特判，也能自动覆盖仍保留旧 Python/GCC
+主机检查的未来分支。
 
 ## 本地检查
 

@@ -45,8 +45,7 @@ for (const source of config.sources) {
       branch,
       version,
       jobKey: safeKey(`${source.id}-${branch}`),
-      metadataCompat: source.id === 'OpenWrt' &&
-        ['openwrt-18.06', 'openwrt-19.07'].includes(branch) ? 'legacy-metadata' : 'native',
+      metadataCompat: 'metadata-only',
       diy: source.diy,
       legacy: Boolean(source.legacy),
     });

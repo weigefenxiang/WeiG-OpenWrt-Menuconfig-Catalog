@@ -23,27 +23,26 @@ function makeTree() {
   return tree;
 }
 
-const nativeTree = makeTree();
-const compatTree = makeTree();
+const metadataTree = makeTree();
 try {
-  const native = spawnSync('bash', ['./prepare-metadata.sh', 'native'], {
-    cwd: nativeTree, encoding: 'utf8',
+  const invalid = spawnSync('bash', ['./prepare-metadata.sh', 'firmware-build'], {
+    cwd: metadataTree, encoding: 'utf8',
   });
-  if (native.status === 0 ||
-      !`${native.stdout}\n${native.stderr}`.includes('obsolete host-version gate')) {
-    throw new Error('native fixture did not enforce the obsolete prerequisite gate');
+  if (invalid.status !== 2 ||
+      !`${invalid.stdout}\n${invalid.stderr}`.includes('Unsupported metadata mode')) {
+    throw new Error('unsupported metadata mode was not rejected');
   }
-  const compat = spawnSync('bash', ['./prepare-metadata.sh', 'legacy-metadata'], {
-    cwd: compatTree, encoding: 'utf8',
+  const metadata = spawnSync('bash', ['./prepare-metadata.sh', 'metadata-only'], {
+    cwd: metadataTree, encoding: 'utf8',
   });
-  if (compat.status !== 0 ||
-      !existsSync(join(compatTree, 'tmp', '.targetinfo')) ||
-      !existsSync(join(compatTree, 'tmp', '.packageinfo')) ||
-      !readFileSync(join(compatTree, 'tmp', '.targetinfo'), 'utf8').includes('fixture')) {
-    throw new Error(`legacy metadata compatibility failed:\n${compat.stdout}\n${compat.stderr}`);
+  if (metadata.status !== 0 ||
+      !existsSync(join(metadataTree, 'staging_dir', 'host', '.prereq-build')) ||
+      !existsSync(join(metadataTree, 'tmp', '.targetinfo')) ||
+      !existsSync(join(metadataTree, 'tmp', '.packageinfo')) ||
+      !readFileSync(join(metadataTree, 'tmp', '.targetinfo'), 'utf8').includes('fixture')) {
+    throw new Error(`metadata-only boundary failed:\n${metadata.stdout}\n${metadata.stderr}`);
   }
-  console.log('legacy metadata compatibility checks passed: native=blocked compat=metadata-generated');
+  console.log('metadata-only boundary checks passed: invalid=rejected metadata=generated');
 } finally {
-  rmSync(nativeTree, { recursive: true, force: true });
-  rmSync(compatTree, { recursive: true, force: true });
+  rmSync(metadataTree, { recursive: true, force: true });
 }
