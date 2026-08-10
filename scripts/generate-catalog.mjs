@@ -112,14 +112,14 @@ if (pollutedDependencies.length) {
 }
 const packageByName = new Map(packages.map((item) => [item.name, item]));
 const catalogPolicy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
-const curatedCandidates = Array.isArray(catalogPolicy.curatedCandidates)
-  ? catalogPolicy.curatedCandidates
+const curatedCandidates = Array.isArray(catalogPolicy.curatedApplications)
+  ? catalogPolicy.curatedApplications
   : [];
 if (curatedCandidates.some((candidate) => !candidate || typeof candidate !== 'object' ||
     !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$/.test(String(candidate.id || '')) ||
     !Array.isArray(candidate.packages) || candidate.packages.length === 0 ||
     candidate.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(String(name || ''))))) {
-  throw new Error('catalog.config.json curatedCandidates must use {id, packages:[luci-app-*]} objects');
+  throw new Error('catalog.config.json curatedApplications must use {id, packages:[luci-app-*],group} objects');
 }
 const packageSymbols = new Set(allMenuOptions
   .filter((option) => option.symbol.startsWith('PACKAGE_'))

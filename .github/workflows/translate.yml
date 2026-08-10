@@ -200,5 +200,5 @@ jobs:
             dist/translation-summary.json
             dist/translation-state.json
             dist/translation-retry-queue.json
-          retention-days: 14
+          retention-days: 60
           if-no-files-found: warn

@@ -5,6 +5,8 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "discover": "node scripts/discover.mjs",
+    "refresh:curated": "node scripts/refresh-curated-applications.mjs",
+    "refresh:sizes": "node scripts/refresh-curated-sizes.mjs",
     "import-i18n": "node scripts/import-curated-i18n.mjs",
     "translate": "node scripts/translate-catalog.mjs",
     "test": "node scripts/check.mjs && node scripts/check-index.mjs && node scripts/check-index-assets.mjs && node scripts/check-collector.mjs && node scripts/check-translation-plan.mjs && node scripts/check-translation-rotation.mjs && node scripts/check-legacy-metadata.mjs && node scripts/check-catalog-snapshot.mjs",

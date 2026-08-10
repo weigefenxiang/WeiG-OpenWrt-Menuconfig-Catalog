@@ -1,10 +1,12 @@
+import { matchPattern, sourceBranchPatterns } from './source-policy.mjs';
+
 const DOCUMENT_KEYS = new Set(['schema', 'rules']);
-const LEGACY_RULE_KEYS = new Set(['id', 'kind', 'scope', 'if', 'packages', 'paths', 'refs']);
 const RULE_KEYS = new Set(['id', 'issue', 'match', 'scope', 'if', 'packages', 'paths', 'refs']);
 const RULE_ID_RE = /^[A-Z][A-Z0-9-]{2,31}$/;
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
 const SOURCE_RE = /^[A-Za-z0-9_.-]{1,64}$/;
 const BRANCH_RE = /^[A-Za-z0-9._/-]{1,160}$/;
+const BRANCH_PATTERN_RE = /^(?:\*|[A-Za-z0-9._/-]*\*[A-Za-z0-9._/-]*|[A-Za-z0-9._/-]{1,160})$/;
 const PATH_RE = /^\/(?!.*(?:^|\/)\.\.(?:\/|$))[^\0\r\n]{1,255}$/;
 const REF_RE = /^[A-Za-z0-9][A-Za-z0-9+_.:/@#-]{0,255}$/;
 const CONDITION_RE = /^[A-Za-z0-9_().!&|=<>+\-\s\"']{1,512}$/;
@@ -34,22 +36,23 @@ function normalizeScope(value, sourcePolicy, label) {
   if (!plainObject(value) || !Object.keys(value).length) throw new Error(`${label} must be a non-empty object`);
   const result = {};
   for (const [sourceId, rawBranches] of Object.entries(value)) {
-    if (!SOURCE_RE.test(sourceId) || !sourcePolicy.has(sourceId)) {
+    if ((sourceId !== '*' && !SOURCE_RE.test(sourceId)) || (sourceId !== '*' && !sourcePolicy.has(sourceId))) {
       throw new Error(`${label} references an unknown source: ${sourceId}`);
     }
     const branches = uniqueStrings(rawBranches, {
-      label: `${label}.${sourceId}`, min: 1, max: 32, pattern: BRANCH_RE,
+      label: `${label}.${sourceId}`, min: 1, max: 32, pattern: BRANCH_PATTERN_RE,
     });
-    const policy = sourcePolicy.get(sourceId);
-    if (Array.isArray(policy.branches)) {
-      for (const branch of branches) {
-        if (!policy.branches.includes(branch) || policy.exclude?.includes(branch)) {
-          throw new Error(`${label}.${sourceId} references a branch outside catalog.config.json: ${branch}`);
-        }
-      }
-    } else {
-      for (const branch of branches) {
-        if (policy.exclude?.includes(branch)) throw new Error(`${label}.${sourceId} references an excluded branch: ${branch}`);
+    if (sourceId === '*' && Object.keys(value).length > 1) {
+      throw new Error(`${label} cannot mix the wildcard source with named sources`);
+    }
+    const policies = sourceId === '*' ? [...sourcePolicy.values()] : [sourcePolicy.get(sourceId)];
+    for (const branch of branches) {
+      if (branch === '*') continue;
+      const known = policies.some((policy) => sourceBranchPatterns(policy).some((pattern) =>
+        matchPattern(branch, pattern) || matchPattern(pattern, branch)) &&
+        !policy.exclude?.some((pattern) => matchPattern(branch, pattern)));
+      if (!known) {
+        throw new Error(`${label}.${sourceId} references a branch outside catalog.config.json: ${branch}`);
       }
     }
     result[sourceId] = branches;
@@ -57,25 +60,30 @@ function normalizeScope(value, sourcePolicy, label) {
   return result;
 }
 
+export function compatibilityScopeMatches(scope, source, branch) {
+  const patterns = scope?.[source] || scope?.['*'] || [];
+  return patterns.some((pattern) => matchPattern(branch, pattern));
+}
+
 export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
   if (!plainObject(raw)) throw new Error('compatibility document must be an object');
   rejectUnknownKeys(raw, DOCUMENT_KEYS, 'compatibility document');
   const schema = Number(raw.schema);
-  if (![1, 2].includes(schema) || !Array.isArray(raw.rules)) {
-    throw new Error('compatibility document requires schema 1 or 2 and a rules array');
+  if (schema !== 2 || !Array.isArray(raw.rules)) {
+    throw new Error('compatibility document requires schema 2 and a rules array');
   }
   const sourcePolicy = new Map((policy.sources || []).map((source) => [source.id, source]));
   const seen = new Set();
   const rules = raw.rules.map((rule, index) => {
     const label = `compatibility.rules[${index}]`;
     if (!plainObject(rule)) throw new Error(`${label} must be an object`);
-    rejectUnknownKeys(rule, schema === 1 ? LEGACY_RULE_KEYS : RULE_KEYS, label);
+    rejectUnknownKeys(rule, RULE_KEYS, label);
     const id = String(rule.id || '').trim();
     if (!RULE_ID_RE.test(id)) throw new Error(`${label}.id is invalid`);
     if (seen.has(id)) throw new Error(`duplicate compatibility rule id: ${id}`);
     seen.add(id);
-    const issue = schema === 1 ? (rule.kind === 'ownership' ? 'file-ownership' : '') : rule.issue;
-    const match = schema === 1 ? 'all-installed' : rule.match;
+    const issue = rule.issue;
+    const match = rule.match;
     if (!['file-ownership', 'build-failure'].includes(issue)) {
       throw new Error(`${id}.issue is invalid`);
     }
@@ -83,7 +91,7 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
       throw new Error(`${id}.match is invalid`);
     }
     const condition = String(rule.if || '').trim();
-    if ((schema === 1 && !condition) || (condition && !CONDITION_RE.test(condition))) {
+    if (condition && !CONDITION_RE.test(condition)) {
       throw new Error(`${id}.if is invalid`);
     }
     const normalized = {

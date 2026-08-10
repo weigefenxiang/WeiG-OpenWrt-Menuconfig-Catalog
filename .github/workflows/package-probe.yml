@@ -1,0 +1,64 @@
+name: Package probe controller
+run-name: Package probe plan · ${{ inputs.mode }} · ${{ inputs.packages }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: "1-8 package IDs, comma separated"
+        required: true
+        default: "oscam"
+      mode:
+        description: "compile checks package compilation; co-install also stages selected packages"
+        required: true
+        type: choice
+        options: [compile, co-install]
+        default: compile
+      source:
+        description: "Catalog Source glob"
+        required: true
+        default: "*"
+      branch:
+        description: "Catalog Branch glob"
+        required: true
+        default: "*"
+      max_parallel:
+        description: "Owner 1-20; other collaborators are capped at 3"
+        required: true
+        default: "3"
+      dry_run:
+        description: "Only validate and display the child Run plan"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+      - name: Dispatch bounded child Runs from the Catalog index
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          CODE_REF: ${{ github.ref_name }}
+          PROBE_PACKAGES: ${{ inputs.packages }}
+          PROBE_MODE: ${{ inputs.mode }}
+          SOURCE_PATTERN: ${{ inputs.source }}
+          BRANCH_PATTERN: ${{ inputs.branch }}
+          MAX_PARALLEL: ${{ inputs.max_parallel }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: node scripts/package-probe-controller.mjs
+      - name: Upload probe plan and Run results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-probe-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: probe-diagnostics/
+          retention-days: 60
+          if-no-files-found: error

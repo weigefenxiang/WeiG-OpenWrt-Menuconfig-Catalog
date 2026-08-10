@@ -63,6 +63,12 @@ try {
       index.assets.compatibility.jsonBytes > 512 * 1024) {
     throw new Error('global compatibility asset contract missing');
   }
+  if (index.assets?.applications?.asset !== 'applications.json.gz' ||
+      !/^[a-f0-9]{64}$/.test(index.assets.applications.hash) ||
+      index.assets.applications.bytes <= 0 || index.assets.applications.schema !== 1 ||
+      index.assets.applications.items <= 0 || index.assets.applications.jsonBytes <= 0) {
+    throw new Error('global applications asset contract missing');
+  }
   const branches = index.sources.find((source) => source.id === 'ImmortalWrt').branches;
   const main = branches.find((branch) => branch.branch === 'openwrt-23.05');
   const old = branches.find((branch) => branch.branch === 'openwrt-21.02');
@@ -104,6 +110,27 @@ try {
   if (readFileSync(fastOut, 'utf8') !== firstFast) {
     throw new Error('identical compatibility-only publish was not deterministic');
   }
+  const applicationDir = join(temp, 'applications-fast');
+  mkdirSync(applicationDir);
+  const applicationOut = join(applicationDir, 'index.json');
+  execFileSync(process.execPath, [
+    join(ROOT, 'scripts', 'build-index.mjs'), '--applications-only', out, applicationOut,
+  ], { stdio: 'pipe' });
+  const applicationFast = JSON.parse(readFileSync(applicationOut, 'utf8'));
+  if (JSON.stringify(applicationFast.sources) !== JSON.stringify(index.sources) ||
+      JSON.stringify(applicationFast.health) !== JSON.stringify(index.health) ||
+      applicationFast.generatedAt !== index.generatedAt ||
+      applicationFast.assets.applications.schema !== 1 ||
+      applicationFast.assets.applications.items !== index.assets.applications.items) {
+    throw new Error('applications-only publish changed branch Catalog data');
+  }
+  const firstApplicationsFast = readFileSync(applicationOut, 'utf8');
+  execFileSync(process.execPath, [
+    join(ROOT, 'scripts', 'build-index.mjs'), '--applications-only', applicationOut, applicationOut,
+  ], { stdio: 'pipe' });
+  if (readFileSync(applicationOut, 'utf8') !== firstApplicationsFast) {
+    throw new Error('identical applications-only publish was not deterministic');
+  }
   writeFileSync(fastOut, JSON.stringify({ ...fast, hash: '0'.repeat(64) }));
   let invalidIndexRejected = false;
   try {
@@ -129,7 +156,7 @@ try {
   if (!invalidIndexRejected || !invalidAssetRejected) {
     throw new Error('compatibility-only publish accepted a tampered contract');
   }
-  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1 compatibility=2 fast=stable');
+  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1 compatibility=2 root-assets=stable');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

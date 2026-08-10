@@ -4,7 +4,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
+import { buildCuratedApplications } from './curated-applications.mjs';
 import { fileContract, indexBody, indexContract, stampIndex } from './index-contract.mjs';
+import { compareBranches, sourceAllowsBranch } from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -59,39 +61,65 @@ function writeCompatibilityAsset(directory, policy) {
   };
 }
 
-if (process.argv[2] === '--compatibility-only') {
+function writeApplicationsAsset(directory) {
+  mkdirSync(directory, { recursive: true });
+  const applications = buildCuratedApplications(ROOT);
+  const asset = 'applications.json.gz';
+  const json = JSON.stringify(applications);
+  writeFileSync(join(directory, asset), gzipSync(Buffer.from(json), { level: 9 }));
+  return {
+    applications,
+    contract: {
+      asset,
+      ...fileContract(join(directory, asset)),
+      schema: applications.schema,
+      items: applications.items.length,
+      jsonBytes: Buffer.byteLength(json),
+    },
+  };
+}
+
+const fastAssetMode = process.argv[2] === '--compatibility-only' ? 'compatibility'
+  : process.argv[2] === '--applications-only' ? 'applications' : '';
+if (fastAssetMode) {
   const previousFile = resolve(process.argv[3] || '');
   const out = resolve(process.argv[4] || previousFile);
   if (!previousFile || !existsSync(previousFile)) {
-    throw new Error('compatibility-only mode requires an existing index.json');
+    throw new Error(`${fastAssetMode}-only mode requires an existing index.json`);
   }
   const previous = JSON.parse(readFileSync(previousFile, 'utf8'));
-  if (!Array.isArray(previous.sources) || previous.assets?.compatibility?.asset !== 'compatibility.json.gz') {
-    throw new Error('compatibility-only mode requires a complete existing Catalog index');
+  if (!Array.isArray(previous.sources) || previous.assets?.compatibility?.asset !== 'compatibility.json.gz' ||
+      previous.assets?.applications?.asset !== 'applications.json.gz') {
+    throw new Error(`${fastAssetMode}-only mode requires a complete existing Catalog index`);
   }
   const expectedIndex = indexContract(previous);
   if (previous.hash !== expectedIndex.hash || previous.bytes !== expectedIndex.bytes) {
-    throw new Error('compatibility-only mode rejected an invalid existing index contract');
+    throw new Error(`${fastAssetMode}-only mode rejected an invalid existing index contract`);
   }
-  const previousAsset = join(dirname(previousFile), 'compatibility.json.gz');
+  const assetName = `${fastAssetMode}.json.gz`;
+  const previousAsset = join(dirname(previousFile), assetName);
   if (!existsSync(previousAsset)) {
-    throw new Error('compatibility-only mode requires the existing compatibility asset');
+    throw new Error(`${fastAssetMode}-only mode requires the existing ${fastAssetMode} asset`);
   }
   const actualAsset = fileContract(previousAsset);
-  const expectedAsset = previous.assets.compatibility;
+  const expectedAsset = previous.assets[fastAssetMode];
   if (actualAsset.hash !== expectedAsset.hash || actualAsset.bytes !== expectedAsset.bytes) {
-    throw new Error('compatibility-only mode rejected an invalid existing compatibility contract');
+    throw new Error(`${fastAssetMode}-only mode rejected an invalid existing ${fastAssetMode} contract`);
   }
   const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
-  const { compatibility, contract } = writeCompatibilityAsset(dirname(out), policy);
+  const generated = fastAssetMode === 'compatibility'
+    ? writeCompatibilityAsset(dirname(out), policy)
+    : writeApplicationsAsset(dirname(out));
   const body = indexBody(previous);
   const next = stampIndex({
     ...body,
-    assets: { ...body.assets, compatibility: contract },
+    assets: { ...body.assets, [fastAssetMode]: generated.contract },
   });
   writeFileSync(out, JSON.stringify(next, null, 2) + '\n');
-  console.log(`index.json: compatibility-only schema=${compatibility.schema}` +
-    ` rules=${compatibility.rules.length} bytes=${contract.bytes}`);
+  const count = fastAssetMode === 'compatibility'
+    ? `${generated.compatibility.rules.length} rules`
+    : `${generated.applications.items.length} items`;
+  console.log(`index.json: ${fastAssetMode}-only ${count} bytes=${generated.contract.bytes}`);
   process.exit(0);
 }
 const dir = resolve(process.argv[2] || join(ROOT, 'dist'));
@@ -112,14 +140,15 @@ if (!rows.length && !(previous.sources || []).length && !attempts.length) {
 }
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
 const { compatibility, contract: compatibilityContract } = writeCompatibilityAsset(dir, policy);
+const { applications, contract: applicationsContract } = writeApplicationsAsset(dir);
 const sources = (previous.sources || []).filter((source) => policy.sources.some((item) => item.id === source.id))
   .map((source) => {
     const rule = policy.sources.find((item) => item.id === source.id);
     return {
       ...source,
+      build: rule.build,
       branches: (source.branches || []).filter((branch) =>
-        !rule.exclude.includes(branch.branch) &&
-        (rule.branches === 'all' || rule.branches.includes(branch.branch)))
+        sourceAllowsBranch(rule, branch.branch))
         .map((branch) => normalizeLegacyMirror({ ...branch })),
     };
   });
@@ -128,11 +157,14 @@ for (const row of rows) {
   if (!source) {
     source = {
       id: row.source.id, label: row.source.label || row.source.id,
-      repo: row.source.repo, legacy: row.source.legacy, branches: [],
+      repo: row.source.repo, legacy: row.source.legacy,
+      build: policy.sources.find((item) => item.id === row.source.id)?.build,
+      branches: [],
     };
     sources.push(source);
   }
   source.label = row.source.label || source.label || row.source.id;
+  source.build = policy.sources.find((item) => item.id === row.source.id)?.build;
   const legacy = legacyContract(row);
   if (!legacy || legacy.catalogSchema < 5 || legacy.relationsSchema < 2) {
     throw new Error(`meta lacks an explicit legacy build contract: ${row.source.id}/${row.source.branch}`);
@@ -156,7 +188,11 @@ for (const row of rows) {
 for (const attempt of attempts) {
   let source = sources.find((item) => item.id === attempt.source.id);
   if (!source) {
-    source = { ...attempt.source, branches: [] };
+    source = {
+      ...attempt.source,
+      build: policy.sources.find((item) => item.id === attempt.source.id)?.build,
+      branches: [],
+    };
     sources.push(source);
   }
   let branch = source.branches.find((item) => item.branch === attempt.branch);
@@ -188,7 +224,7 @@ for (const attempt of attempts) {
     branch.errorStage = attempt.stage || 'unknown';
   }
 }
-for (const source of sources) source.branches.sort((a, b) => a.branch.localeCompare(b.branch));
+for (const source of sources) source.branches.sort((a, b) => compareBranches(a.branch, b.branch));
 const branchRows = sources.flatMap((source) => source.branches);
 const generatedAt = new Date().toISOString();
 const body = {
@@ -201,7 +237,7 @@ const body = {
     stale: branchRows.filter((item) => item.state === 'stale').length,
     unavailable: branchRows.filter((item) => item.state === 'unavailable').length,
   },
-  assets: { compatibility: compatibilityContract },
+  assets: { compatibility: compatibilityContract, applications: applicationsContract },
   sources,
 };
 writeFileSync(
@@ -212,4 +248,5 @@ console.log(`index.json: ${sources.length} sources / ${branchRows.length} branch
   ` (fresh=${branchRows.filter((item) => item.state === 'fresh').length}` +
   ` stale=${branchRows.filter((item) => item.state === 'stale').length}` +
   ` unavailable=${branchRows.filter((item) => item.state === 'unavailable').length})` +
-  ` / compatibility=${compatibility.rules.length} rules, ${compatibilityContract.bytes} bytes`);
+  ` / compatibility=${compatibility.rules.length} rules, ${compatibilityContract.bytes} bytes` +
+  ` / applications=${applications.items.length}, ${applicationsContract.bytes} bytes`);

@@ -11,6 +11,9 @@ import { compactRelations, expandCompactRelations } from './compact-relations.mj
 import { buildCatalogSizeReport, formatCatalogSizeReport } from './catalog-size-report.mjs';
 import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
+import { buildCuratedApplications } from './curated-applications.mjs';
+import { aggregateCuratedSizes, parseApkDump, parseOpkgPackages } from './curated-sizes.mjs';
+import { matchPattern, sourceAllowsBranch } from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = join(ROOT, 'tests', 'fixture');
@@ -52,8 +55,9 @@ function mutatedCompatibility(mutator) {
     return true;
   }
 }
-const curatedCandidates = policy.curatedCandidates || [];
+const curatedCandidates = policy.curatedApplications || [];
 const curatedById = new Map(curatedCandidates.map((item) => [item.id, item]));
+const curatedApplications = buildCuratedApplications(ROOT);
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 const translationPublishContractCount = (translationWorkflow.match(
   /node scripts\/sync-index-assets\.mjs dist\n\s+node scripts\/sync-index-assets\.mjs dist --check\n\s+git -C dist add \./g,
@@ -221,13 +225,27 @@ if (packageInfoOnly.length !== 1 ||
     resolvePackageOption({ id: 'tailscale-community', packages: ['luci-app-tailscale-community'] }, new Set(['tailscale-community'])) !== '') {
   failures.push('packageinfo-only is not selectable');
 }
-if (curatedCandidates.length !== 16 || curatedCandidates.some((item) =>
+if (curatedCandidates.length !== 176 || curatedCandidates.some((item) =>
     !item || typeof item !== 'object' || !item.id || !Array.isArray(item.packages) ||
-    item.packages.length === 0 || item.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(name))) ||
+    item.packages.length === 0 || !policy.curatedGroups.includes(item.group) ||
+    item.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(name))) ||
     curatedById.get('adguardhome')?.packages.join(',') !== 'luci-app-adguardhome' ||
-    curatedById.get('tailscale-community')?.packages.join(',') !== 'luci-app-tailscale-community') {
+    curatedById.get('mosdns')?.packages.join(',') !== 'luci-app-mosdns' ||
+    curatedApplications.items.length !== curatedCandidates.length ||
+    curatedApplications.items.some((item) => !item.titleZh || !item.usageZh)) {
   failures.push('curated LuCI application package contract');
 }
+const opkgFixture = parseOpkgPackages('Package: luci-app-demo\nSize: 100\nDepends: demo-lib (>= 1), +demo-data\n\n' +
+  'Package: demo-lib\nSize: 20\n\nPackage: demo-data\nSize: 5\n');
+const apkFixture = parseApkDump({ packages: [
+  { info: { name: 'luci-app-demo', file_size: 120, depends: ['demo-lib>=1'] } },
+  { info: { name: 'demo-lib', file_size: 30, depends: [] } },
+] });
+const sizeFixture = aggregateCuratedSizes(['luci-app-demo'], [
+  { source: 'opkg', packages: opkgFixture }, { source: 'apk', packages: apkFixture },
+]);
+if (sizeFixture.bytes['luci-app-demo'] !== 150 ||
+    sizeFixture.coverage['luci-app-demo']?.length !== 2) failures.push('curated package size closure');
 if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('scripts/clone-upstream.sh') ||
     !workflow.includes('id: metadata') ||
@@ -242,7 +260,7 @@ if (!workflow.includes('scripts/prepare-metadata.sh') ||
     !workflow.includes('pattern: "*-catalog-*"') ||
     !workflow.includes('attempts/*--SUMMARY.txt') ||
     !workflow.includes('dist/*.contract.json') ||
-    !workflow.includes('retention-days: 14') ||
+    !workflow.includes('retention-days: 60') ||
     !workflow.includes('actions/upload-artifact@v7') ||
     !workflow.includes('actions/download-artifact@v8') ||
     workflow.includes('models: read') ||
@@ -305,11 +323,14 @@ if (!stageRunner.includes('Source ID:') ||
     !release.includes('dist/compatibility.json.gz') ||
     !release.includes('--clobber')) failures.push('diagnostic identity');
 if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
-    policy.sources[0].branches.join(',') !==
-      'openwrt-21.02,openwrt-23.05,openwrt-24.10,openwrt-25.12') failures.push('stable branch policy');
+    policy.sources[0].branches?.include?.join(',') !== 'master,openwrt-*' ||
+    !sourceAllowsBranch(policy.sources[0], 'openwrt-26.01') ||
+    !sourceAllowsBranch(policy.sources[0], 'master') ||
+    sourceAllowsBranch(policy.sources[0], 'main')) failures.push('stable branch policy');
 const openwrt = policy.sources.find((item) => item.id === 'OpenWrt');
-if (openwrt?.branches !== 'all' ||
-    openwrt.exclude.join(',') !== 'lede-17.01,pcs-standalone-back,master') failures.push('OpenWrt branch policy');
+if (openwrt?.branches?.include?.join(',') !== 'main,openwrt-*' || openwrt.exclude.length ||
+    !sourceAllowsBranch(openwrt, 'openwrt-26.01') || !sourceAllowsBranch(openwrt, 'main') ||
+    sourceAllowsBranch(openwrt, 'master')) failures.push('OpenWrt branch policy');
 if (!policy.sources.some((item) => item.id === 'lede' && item.label === 'Lean LEDE')) failures.push('LEDE source policy');
 if (!policy.sources.some((item) => item.id === 'hanwckf' &&
     item.repo === 'hanwckf/immortalwrt-mt798x' &&
@@ -318,34 +339,30 @@ if (!policy.sources.some((item) => item.id === 'hanwckf' &&
 }
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
 const compatibilityFastPublish =
-  workflow.includes('if: needs.mode.outputs.compatibility_only != \'true\'') &&
-  workflow.includes('if: needs.mode.outputs.compatibility_only == \'true\'') &&
+  workflow.includes("if: needs.mode.outputs.fast_asset == 'none'") &&
+  workflow.includes("if: needs.mode.outputs.fast_asset != 'none'") &&
   workflow.includes('"${#changed[@]}" -eq 1') &&
   workflow.includes('"${changed[0]}" == compatibility.json') &&
+  workflow.includes('"${changed[0]}" == curated-sizes.json') &&
   workflow.includes('git clone --filter=blob:none --no-checkout --single-branch') &&
-  workflow.includes('sparse-checkout set /index.json /compatibility.json.gz') &&
-  workflow.includes('build-index.mjs --compatibility-only previous/index.json previous/index.json') &&
-  workflow.includes('Compatibility contract is unchanged; nothing to publish.') &&
+  workflow.includes('sparse-checkout set /index.json "/$FAST_ASSET.json.gz"') &&
+  workflow.includes('build-index.mjs "--$FAST_ASSET-only" previous/index.json previous/index.json') &&
+  workflow.includes('$FAST_ASSET contract is unchanged; nothing to publish.') &&
   workflow.includes('case "$CATALOG_DATA_BRANCH" in');
-const legacyCompatibility = normalizeCompatibilityDocument({
-  schema: 1,
-  rules: [{
-    id: 'OWN-LEGACY', kind: 'ownership', scope: { ImmortalWrt: ['openwrt-25.12'] },
-    if: 'USE_APK', packages: ['legacy-a', 'legacy-b'], paths: ['/legacy'], refs: ['run:1'],
-  }],
-}, policy);
-let legacyMissingConditionRejected = false;
-try {
-  normalizeCompatibilityDocument({
-    schema: 1,
-    rules: [{
-      id: 'OWN-LEGACY', kind: 'ownership', scope: { ImmortalWrt: ['openwrt-25.12'] },
-      packages: ['legacy-a', 'legacy-b'], paths: ['/legacy'], refs: ['run:1'],
-    }],
-  }, policy);
-} catch {
-  legacyMissingConditionRejected = true;
-}
+const unsupportedSchemasRejected = [1, 0, 3].every((schema) => {
+  try {
+    normalizeCompatibilityDocument({
+      schema,
+      rules: [{
+        id: 'OWN-LEGACY', kind: 'ownership', scope: { ImmortalWrt: ['openwrt-25.12'] },
+        if: 'USE_APK', packages: ['legacy-a', 'legacy-b'], paths: ['/legacy'], refs: ['run:1'],
+      }],
+    }, policy);
+    return false;
+  } catch {
+    return true;
+  }
+});
 let oversizedCompatibilityRejected = false;
 try {
   normalizeCompatibilityDocument({
@@ -366,8 +383,10 @@ if (!compatibilityFastPublish || normalizedCompatibility.schema !== 2 || normali
     normalizedCompatibility.rules[1]?.issue !== 'build-failure' ||
     normalizedCompatibility.rules[1]?.match !== 'all-selected' ||
     normalizedCompatibility.rules[1]?.packages?.join(',') !== 'oscam' ||
-    legacyCompatibility.schema !== 2 || legacyCompatibility.rules[0]?.match !== 'all-installed' ||
-    !legacyMissingConditionRejected ||
+    normalizedCompatibility.rules[1]?.scope?.ImmortalWrt?.join(',') !== '*' ||
+    normalizedCompatibility.rules[1]?.scope?.lede?.join(',') !== '*' ||
+    !matchPattern('openwrt-26.01', normalizedCompatibility.rules[1].scope.ImmortalWrt[0]) ||
+    !unsupportedSchemasRejected ||
     !oversizedCompatibilityRejected ||
     normalizedCompatibility.rules[0]?.scope?.ImmortalWrt?.join(',') !== 'openwrt-25.12' ||
     !mutatedCompatibility((value) => { value.rules[0].symbols = ['PACKAGE_demo']; }) ||
@@ -375,7 +394,7 @@ if (!compatibilityFastPublish || normalizedCompatibility.schema !== 2 || normali
     !mutatedCompatibility((value) => { value.rules.push(structuredClone(value.rules[0])); }) ||
     !mutatedCompatibility((value) => { value.rules[0].packages.push(value.rules[0].packages[0]); }) ||
     !mutatedCompatibility((value) => { value.rules[0].scope = { Missing: ['main'] }; }) ||
-    !mutatedCompatibility((value) => { value.rules[0].scope.ImmortalWrt = ['openwrt-24.11']; }) ||
+    !mutatedCompatibility((value) => { value.rules[0].scope.ImmortalWrt = ['release-24.11']; }) ||
     !mutatedCompatibility((value) => { value.rules[0].paths = ['relative/path']; }) ||
     !mutatedCompatibility((value) => { value.rules[0].refs = ['bad ref']; }) ||
     !mutatedCompatibility((value) => { value.rules[1].paths = ['/not-applicable']; }) ||
@@ -415,7 +434,7 @@ if (!generator.includes("option.path[0] !== 'Target Devices'") ||
     !generator.includes('.curated-candidates.json') ||
     !generator.includes('merge conflicts') ||
      !generator.includes('resolvePackageOption(candidate, packageSymbols)') ||
-     !generator.includes('curatedCandidates must use {id, packages:[luci-app-*]} objects') ||
+     !generator.includes('curatedApplications must use {id, packages:[luci-app-*],group} objects') ||
      generator.includes('packageSymbols.has(name) || packageByName.has(name)') ||
     generator.includes('\n  packages,\n')) failures.push('compact payload');
 if (!library.includes('mergeKconfigOptions') || !library.includes('dependsVariants') ||

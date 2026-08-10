@@ -41,13 +41,15 @@ JavaScript 中写死分支、Target 或菜单项目。
   50 分钟翻译预算；默认 `each-batch`，每个成功批次立即提交。`final` 可改为最后统一提交。
   取消、零结果或校验/发布失败不会提交当前批次；每周更新仍按文本指纹跳过未变化内容。
 
-Refresh the curated LuCI seed after the main project's curated plugin table changes:
+Refresh the curated application union manually after reviewing upstream application IDs and Chinese/English descriptions:
 
 ```bash
-node scripts/import-curated-i18n.mjs \
-  ../WeiG-OpenWrt-AutoBuild/tools/plugins-meta.json \
-  ../WeiG-OpenWrt-AutoBuild/tools/plugins-i18n.json
+npm run refresh:curated
+node scripts/collect-curated-size-samples.mjs size-samples
+npm run refresh:sizes -- --samples size-samples --write
 ```
+
+The curated list is deliberately manual; weekly Source/Branch discovery does not silently change UI IDs or translations. Official OPKG/APK index observations update `curated-sizes.json`, and the published `applications.json.gz` joins IDs, descriptions, and optional size bytes. The manual Package probe controller compiles selected package closures across filtered Source/Branch Runs without building firmware images.
 
 为 WeiG OpenWrt 在线定制器生成静态 menuconfig 目录。项目本身不编译固件。
 
@@ -87,8 +89,8 @@ npm run size-report -- dist
 
 ## 自动更新
 
-`.github/workflows/catalog.yml` 每周检查配置文件中声明的全部源码与分支；
-其中 hanwckf 仅收录 `openwrt-21.02` 兼容分支。每个分支独立生成，
+`.github/workflows/catalog.yml` 每周按 include/exclude pattern 自动发现远程分支；OpenWrt 覆盖 `main` 与 `openwrt-*`，ImmortalWrt 覆盖 `master` 与 `openwrt-*`，未来版本无需人工加表；
+hanwckf 仍只收录 `openwrt-21.02` 兼容分支。每个分支独立生成，
 失败时沿用同一通道的上一次成功数据。`main` 发布到 `catalog-data`，`staging` 发布到
 `catalog-staging`，`dev` 发布到 `catalog-dev`，`fix/*` 发布到 `catalog-fix`；每次先提交数据，
 再用第二个提交把 `index.json` 的 `assetRef` 固定到前一个不可变数据提交。主站从 jsDelivr
@@ -111,7 +113,7 @@ npm run size-report -- dist
   另列一一对应表，按编号即可找到同一任务的全部资料。
 - 每个分支独立校验 catalog、meta、translations、gzip 和 SHA-256；一个分支损坏只隔离该分支，不阻断其他成功分支发布。
 - 成功阶段只输出名称和耗时；失败阶段在控制台显示关键错误及末尾 80 行，
-  完整错误日志放入该分支唯一的结果 Artifact，保留 14 天。
+  完整错误日志放入该分支唯一的结果 Artifact，保留 60 天。
 - 本次失败或校验损坏但曾成功的分支沿用 `catalog-data` 中的 last-good 并标为
   `stale`；从未成功的分支标为 `unavailable`，不会伪装成最新数据。
 - 只有全部分支成功时才更新固定 Release `menuconfig-catalog-complete`；
@@ -129,11 +131,11 @@ display version, upstream commit, stage, run ID/attempt, job index, artifact and
 Failure logs use unique names such as
 `07-openwrt-openwrt-18.06--defconfig.log`; the same artifact also contains a readable
 `--SUMMARY.txt` and a machine-readable `.attempt.json`. Full failure logs are retained for
-14 days, while the Actions console shows only key errors and the last 40 relevant lines.
+60 days, while the Actions console shows only key errors and the last 40 relevant lines.
 
 每个矩阵任务、错误日志和汇总文件都会写明源码、仓库、分支版本、上游提交、
 失败阶段、Run ID/次数、任务序号、Artifact 名称和 Run 链接。日志文件名全局唯一，
-不会再因多个分支都叫 `defconfig.log` 而互相覆盖；控制台只展示重点和末尾 80 行，完整错误日志保留 14 天。
+不会再因多个分支都叫 `defconfig.log` 而互相覆盖；控制台只展示重点和末尾 80 行，完整错误日志保留 60 天。
 
 OpenWrt 18.06 and 19.07 use `legacy-metadata` mode. These branches unconditionally invoke
 obsolete compiler/Python host-version gates from `prepare-tmpinfo`, although this repository

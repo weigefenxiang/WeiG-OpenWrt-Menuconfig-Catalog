@@ -3,6 +3,9 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  compareBranches, sourceAllowsBranch, sourceNeedsDiscovery, validateSourcePolicy,
+} from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
@@ -30,8 +33,9 @@ async function remoteBranches(repo) {
 
 const include = [];
 for (const source of config.sources) {
-  const branches = source.branches === 'all' ? await remoteBranches(source.repo) : source.branches;
-  for (const branch of [...new Set(branches)].filter((item) => !source.exclude.includes(item)).sort()) {
+  const policy = validateSourcePolicy(source);
+  const branches = sourceNeedsDiscovery(source) ? await remoteBranches(source.repo) : policy.patterns;
+  for (const branch of [...new Set(branches)].filter((item) => sourceAllowsBranch(source, item)).sort(compareBranches)) {
     if (!/^[A-Za-z0-9._/-]{1,96}$/.test(branch)) throw new Error(`非法分支名:${source.repo}/${branch}`);
     const version = branch.startsWith('openwrt-') ? branch.slice(8) : branch;
     include.push({

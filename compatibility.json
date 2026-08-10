@@ -28,14 +28,21 @@
       "match": "all-selected",
       "scope": {
         "ImmortalWrt": [
-          "openwrt-25.12"
+          "*"
+        ],
+        "lede": [
+          "*"
         ]
       },
       "packages": [
         "oscam"
       ],
       "refs": [
-        "run:31319173318"
+        "run:31319173318",
+        "run:31343335898",
+        "run:31343364994",
+        "run:31343384324",
+        "run:31343420988"
       ]
     }
   ]

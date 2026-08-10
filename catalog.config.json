@@ -1,57 +1,1371 @@
 {
   "schema": 1,
   "releaseTag": "menuconfig-catalog",
+  "curatedSizeSources": [
+    {
+      "id": "OpenWrt",
+      "branch": "main",
+      "architecture": "aarch64_cortex-a53",
+      "baseUrl": "https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53",
+      "feeds": ["base", "packages", "luci", "routing", "telephony"],
+      "format": "apk"
+    },
+    {
+      "id": "ImmortalWrt",
+      "branch": "master",
+      "architecture": "aarch64_cortex-a53",
+      "baseUrl": "https://downloads.immortalwrt.org/snapshots/packages/aarch64_cortex-a53",
+      "feeds": ["base", "packages", "luci", "routing", "telephony"],
+      "format": "apk"
+    }
+  ],
   "sources": [
     {
       "id": "ImmortalWrt",
       "label": "ImmortalWrt",
       "repo": "immortalwrt/immortalwrt",
-      "branches": ["openwrt-21.02", "openwrt-23.05", "openwrt-24.10", "openwrt-25.12"],
+      "branches": {
+        "include": [
+          "master",
+          "openwrt-*"
+        ]
+      },
       "exclude": [],
-      "diy": "immortalwrt"
+      "diy": "immortalwrt",
+      "build": { "diy1": "diy-immortalwrt.sh", "diy2": "diy2-generic.sh" }
     },
     {
       "id": "OpenWrt",
       "label": "OpenWrt",
       "repo": "openwrt/openwrt",
-      "branches": "all",
-      "exclude": ["lede-17.01", "pcs-standalone-back", "master"],
-      "diy": "openwrt"
+      "branches": {
+        "include": [
+          "main",
+          "openwrt-*"
+        ]
+      },
+      "exclude": [],
+      "diy": "openwrt",
+      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-openwrt.sh" }
     },
     {
       "id": "lede",
       "label": "Lean LEDE",
       "repo": "coolsnowwolf/lede",
-      "branches": ["master"],
+      "branches": [
+        "master"
+      ],
       "exclude": [],
-      "diy": "lede"
+      "diy": "lede",
+      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-lede.sh" }
     },
     {
       "id": "hanwckf",
       "label": "hanwckf mt798x",
       "repo": "hanwckf/immortalwrt-mt798x",
-      "branches": ["openwrt-21.02"],
+      "branches": [
+        "openwrt-21.02"
+      ],
       "exclude": [],
       "diy": "legacy",
-      "legacy": true
+      "legacy": true,
+      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-generic.sh" }
     }
   ],
-  "curatedCandidates": [
-    { "id": "adguardhome", "packages": ["luci-app-adguardhome"] },
-    { "id": "antiblock", "packages": ["luci-app-antiblock"] },
-    { "id": "chrony", "packages": ["luci-app-chrony"] },
-    { "id": "csshnpd", "packages": ["luci-app-csshnpd"] },
-    { "id": "email", "packages": ["luci-app-email"] },
-    { "id": "filemanager", "packages": ["luci-app-filemanager"] },
-    { "id": "irqbalance", "packages": ["luci-app-irqbalance"] },
-    { "id": "openlist", "packages": ["luci-app-openlist"] },
-    { "id": "openthread", "packages": ["luci-app-openthread"] },
-    { "id": "package-manager", "packages": ["luci-app-package-manager"] },
-    { "id": "radicale3", "packages": ["luci-app-radicale3"] },
-    { "id": "rustdesk-server", "packages": ["luci-app-rustdesk-server"] },
-    { "id": "strongswan-swanctl", "packages": ["luci-app-strongswan-swanctl"] },
-    { "id": "tailscale-community", "packages": ["luci-app-tailscale-community"] },
-    { "id": "ustreamer", "packages": ["luci-app-ustreamer"] },
-    { "id": "wifihistory", "packages": ["luci-app-wifihistory"] }
+  "curatedAuditSources": [
+    {
+      "id": "OpenWrt",
+      "repo": "openwrt/luci",
+      "ref": "master"
+    },
+    {
+      "id": "ImmortalWrt",
+      "repo": "immortalwrt/luci",
+      "ref": "master"
+    },
+    {
+      "id": "lede",
+      "repo": "coolsnowwolf/luci",
+      "ref": "openwrt-25.12"
+    }
+  ],
+  "curatedGroups": [
+    "系统基础",
+    "广告过滤与DNS",
+    "内网穿透与组网",
+    "存储与下载",
+    "多媒体与外设",
+    "网络管理",
+    "监控统计",
+    "管控与安全",
+    "定时与唤醒",
+    "校园网认证",
+    "系统工具",
+    "其他与高级",
+    "魔法与加速"
+  ],
+  "curatedApplications": [
+    {
+      "id": "3cat",
+      "packages": [
+        "luci-app-3cat"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "3ginfo-lite",
+      "packages": [
+        "luci-app-3ginfo-lite"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "acl",
+      "packages": [
+        "luci-app-acl"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "acme",
+      "packages": [
+        "luci-app-acme"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "adblock",
+      "packages": [
+        "luci-app-adblock"
+      ],
+      "group": "广告过滤与DNS",
+      "hot": true
+    },
+    {
+      "id": "adblock-fast",
+      "packages": [
+        "luci-app-adblock-fast"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "adguardhome",
+      "packages": [
+        "luci-app-adguardhome"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "advanced-reboot",
+      "packages": [
+        "luci-app-advanced-reboot"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "airoha-npu",
+      "packages": [
+        "luci-app-airoha-npu"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "airplay2",
+      "packages": [
+        "luci-app-airplay2"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "amule",
+      "packages": [
+        "luci-app-amule"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "antiblock",
+      "packages": [
+        "luci-app-antiblock"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "apinger",
+      "packages": [
+        "luci-app-apinger"
+      ],
+      "group": "监控统计"
+    },
+    {
+      "id": "appfilter",
+      "packages": [
+        "luci-app-appfilter"
+      ],
+      "group": "管控与安全",
+      "hot": true
+    },
+    {
+      "id": "argon-config",
+      "packages": [
+        "luci-app-argon-config"
+      ],
+      "group": "系统工具",
+      "hot": true
+    },
+    {
+      "id": "aria2",
+      "packages": [
+        "luci-app-aria2"
+      ],
+      "group": "存储与下载",
+      "hot": true
+    },
+    {
+      "id": "arpbind",
+      "packages": [
+        "luci-app-arpbind"
+      ],
+      "group": "管控与安全"
+    },
+    {
+      "id": "attendedsysupgrade",
+      "packages": [
+        "luci-app-attendedsysupgrade"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "autoreboot",
+      "packages": [
+        "luci-app-autoreboot"
+      ],
+      "group": "定时与唤醒",
+      "hot": true
+    },
+    {
+      "id": "babeld",
+      "packages": [
+        "luci-app-babeld"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "banip",
+      "packages": [
+        "luci-app-banip"
+      ],
+      "group": "管控与安全"
+    },
+    {
+      "id": "bcp38",
+      "packages": [
+        "luci-app-bcp38"
+      ],
+      "group": "管控与安全"
+    },
+    {
+      "id": "bitsrunlogin-go",
+      "packages": [
+        "luci-app-bitsrunlogin-go"
+      ],
+      "group": "校园网认证"
+    },
+    {
+      "id": "bmx7",
+      "packages": [
+        "luci-app-bmx7"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "cd8021x",
+      "packages": [
+        "luci-app-cd8021x"
+      ],
+      "group": "校园网认证"
+    },
+    {
+      "id": "chrony",
+      "packages": [
+        "luci-app-chrony"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "cifs-mount",
+      "packages": [
+        "luci-app-cifs-mount"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "clamav",
+      "packages": [
+        "luci-app-clamav"
+      ],
+      "group": "管控与安全"
+    },
+    {
+      "id": "cloudflared",
+      "packages": [
+        "luci-app-cloudflared"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "commands",
+      "packages": [
+        "luci-app-commands"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "coovachilli",
+      "packages": [
+        "luci-app-coovachilli"
+      ],
+      "group": "管控与安全"
+    },
+    {
+      "id": "cpufreq",
+      "packages": [
+        "luci-app-cpufreq"
+      ],
+      "group": "系统工具",
+      "hot": true
+    },
+    {
+      "id": "cpulimit",
+      "packages": [
+        "luci-app-cpulimit"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "crowdsec-firewall-bouncer",
+      "packages": [
+        "luci-app-crowdsec-firewall-bouncer"
+      ],
+      "group": "管控与安全"
+    },
+    {
+      "id": "csshnpd",
+      "packages": [
+        "luci-app-csshnpd"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "dae",
+      "packages": [
+        "luci-app-dae"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "daed",
+      "packages": [
+        "luci-app-daed"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "dawn",
+      "packages": [
+        "luci-app-dawn"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "dcwapd",
+      "packages": [
+        "luci-app-dcwapd"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "ddns",
+      "packages": [
+        "luci-app-ddns"
+      ],
+      "group": "内网穿透与组网",
+      "hot": true
+    },
+    {
+      "id": "ddns-go",
+      "packages": [
+        "luci-app-ddns-go"
+      ],
+      "group": "内网穿透与组网",
+      "hot": true
+    },
+    {
+      "id": "diskman",
+      "packages": [
+        "luci-app-diskman"
+      ],
+      "group": "存储与下载",
+      "hot": true
+    },
+    {
+      "id": "docker",
+      "packages": [
+        "luci-app-docker"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "dockerman",
+      "packages": [
+        "luci-app-dockerman"
+      ],
+      "group": "系统工具",
+      "hot": true
+    },
+    {
+      "id": "dufs",
+      "packages": [
+        "luci-app-dufs"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "dump1090",
+      "packages": [
+        "luci-app-dump1090"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "email",
+      "packages": [
+        "luci-app-email"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "eoip",
+      "packages": [
+        "luci-app-eoip"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "eqos",
+      "packages": [
+        "luci-app-eqos"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "example",
+      "packages": [
+        "luci-app-example"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "filebrowser",
+      "packages": [
+        "luci-app-filebrowser"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "filebrowser-go",
+      "packages": [
+        "luci-app-filebrowser-go"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "filemanager",
+      "packages": [
+        "luci-app-filemanager"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "firewall",
+      "packages": [
+        "luci-app-firewall"
+      ],
+      "group": "系统基础"
+    },
+    {
+      "id": "frpc",
+      "packages": [
+        "luci-app-frpc"
+      ],
+      "group": "内网穿透与组网",
+      "hot": true
+    },
+    {
+      "id": "frps",
+      "packages": [
+        "luci-app-frps"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "fwknopd",
+      "packages": [
+        "luci-app-fwknopd"
+      ],
+      "group": "管控与安全"
+    },
+    {
+      "id": "gost",
+      "packages": [
+        "luci-app-gost"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "hd-idle",
+      "packages": [
+        "luci-app-hd-idle"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "homeproxy",
+      "packages": [
+        "luci-app-homeproxy"
+      ],
+      "group": "魔法与加速",
+      "hot": true
+    },
+    {
+      "id": "https-dns-proxy",
+      "packages": [
+        "luci-app-https-dns-proxy"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "ipsec-vpnd",
+      "packages": [
+        "luci-app-ipsec-vpnd"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "irqbalance",
+      "packages": [
+        "luci-app-irqbalance"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "k3screenctrl",
+      "packages": [
+        "luci-app-k3screenctrl"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "keepalived",
+      "packages": [
+        "luci-app-keepalived"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "ksmbd",
+      "packages": [
+        "luci-app-ksmbd"
+      ],
+      "group": "存储与下载",
+      "hot": true
+    },
+    {
+      "id": "ledtrig-rssi",
+      "packages": [
+        "luci-app-ledtrig-rssi"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "ledtrig-switch",
+      "packages": [
+        "luci-app-ledtrig-switch"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "ledtrig-usbport",
+      "packages": [
+        "luci-app-ledtrig-usbport"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "libreswan",
+      "packages": [
+        "luci-app-libreswan"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "lldpd",
+      "packages": [
+        "luci-app-lldpd"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "lorawan-basicstation",
+      "packages": [
+        "luci-app-lorawan-basicstation"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "lucky",
+      "packages": [
+        "luci-app-lucky"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "lxc",
+      "packages": [
+        "luci-app-lxc"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "microsocks",
+      "packages": [
+        "luci-app-microsocks"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "minidlna",
+      "packages": [
+        "luci-app-minidlna"
+      ],
+      "group": "多媒体与外设",
+      "hot": true
+    },
+    {
+      "id": "mjpg-streamer",
+      "packages": [
+        "luci-app-mjpg-streamer"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "modemband",
+      "packages": [
+        "luci-app-modemband"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "mosdns",
+      "packages": [
+        "luci-app-mosdns"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "mosquitto",
+      "packages": [
+        "luci-app-mosquitto"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "msd_lite",
+      "packages": [
+        "luci-app-msd_lite"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "music-remote-center",
+      "packages": [
+        "luci-app-music-remote-center"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "mwan3",
+      "packages": [
+        "luci-app-mwan3"
+      ],
+      "group": "网络管理",
+      "hot": true
+    },
+    {
+      "id": "n2n",
+      "packages": [
+        "luci-app-n2n"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "natmap",
+      "packages": [
+        "luci-app-natmap"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "netdata",
+      "packages": [
+        "luci-app-netdata"
+      ],
+      "group": "监控统计",
+      "hot": true
+    },
+    {
+      "id": "nextdns",
+      "packages": [
+        "luci-app-nextdns"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "nfs",
+      "packages": [
+        "luci-app-nfs"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "ngrokc",
+      "packages": [
+        "luci-app-ngrokc"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "njitclient",
+      "packages": [
+        "luci-app-njitclient"
+      ],
+      "group": "校园网认证"
+    },
+    {
+      "id": "nlbwmon",
+      "packages": [
+        "luci-app-nlbwmon"
+      ],
+      "group": "监控统计",
+      "hot": true
+    },
+    {
+      "id": "nps",
+      "packages": [
+        "luci-app-nps"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "nut",
+      "packages": [
+        "luci-app-nut"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "ocserv",
+      "packages": [
+        "luci-app-ocserv"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "oled",
+      "packages": [
+        "luci-app-oled"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "olsr",
+      "packages": [
+        "luci-app-olsr"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "olsr-services",
+      "packages": [
+        "luci-app-olsr-services"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "olsr-viz",
+      "packages": [
+        "luci-app-olsr-viz"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "omcproxy",
+      "packages": [
+        "luci-app-omcproxy"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "onekeyap",
+      "packages": [
+        "luci-app-onekeyap"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "openclash",
+      "packages": [
+        "luci-app-openclash"
+      ],
+      "group": "魔法与加速",
+      "hot": true
+    },
+    {
+      "id": "openlist",
+      "packages": [
+        "luci-app-openlist"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "openvpn",
+      "packages": [
+        "luci-app-openvpn"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "openvpn-server",
+      "packages": [
+        "luci-app-openvpn-server"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "openwisp",
+      "packages": [
+        "luci-app-openwisp"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "oscam",
+      "packages": [
+        "luci-app-oscam"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "p910nd",
+      "packages": [
+        "luci-app-p910nd"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "package-manager",
+      "packages": [
+        "luci-app-package-manager"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "pagekitec",
+      "packages": [
+        "luci-app-pagekitec"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "passwall",
+      "packages": [
+        "luci-app-passwall"
+      ],
+      "group": "魔法与加速",
+      "hot": true
+    },
+    {
+      "id": "pbr",
+      "packages": [
+        "luci-app-pbr"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "pppoe-relay",
+      "packages": [
+        "luci-app-pppoe-relay"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "pppoe-server",
+      "packages": [
+        "luci-app-pppoe-server"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "privoxy",
+      "packages": [
+        "luci-app-privoxy"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "ps3netsrv",
+      "packages": [
+        "luci-app-ps3netsrv"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "qbittorrent",
+      "packages": [
+        "luci-app-qbittorrent"
+      ],
+      "group": "存储与下载",
+      "hot": true
+    },
+    {
+      "id": "qiyougamebooster",
+      "packages": [
+        "luci-app-qiyougamebooster"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "qos",
+      "packages": [
+        "luci-app-qos"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "qos-legacy",
+      "packages": [
+        "luci-app-qos-legacy"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "qosify",
+      "packages": [
+        "luci-app-qosify"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "radicale3",
+      "packages": [
+        "luci-app-radicale3"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "ramfree",
+      "packages": [
+        "luci-app-ramfree"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "rclone",
+      "packages": [
+        "luci-app-rclone"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "repeater",
+      "packages": [
+        "luci-app-repeater"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "rp-pppoe-server",
+      "packages": [
+        "luci-app-rp-pppoe-server"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "rtp2httpd",
+      "packages": [
+        "luci-app-rtp2httpd"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "rustdesk-server",
+      "packages": [
+        "luci-app-rustdesk-server"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "samba",
+      "packages": [
+        "luci-app-samba"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "samba4",
+      "packages": [
+        "luci-app-samba4"
+      ],
+      "group": "存储与下载",
+      "hot": true
+    },
+    {
+      "id": "scutclient",
+      "packages": [
+        "luci-app-scutclient"
+      ],
+      "group": "校园网认证"
+    },
+    {
+      "id": "ser2net",
+      "packages": [
+        "luci-app-ser2net"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "smartdns",
+      "packages": [
+        "luci-app-smartdns"
+      ],
+      "group": "广告过滤与DNS",
+      "hot": true
+    },
+    {
+      "id": "sms-tool-js",
+      "packages": [
+        "luci-app-sms-tool-js"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "snmpd",
+      "packages": [
+        "luci-app-snmpd"
+      ],
+      "group": "监控统计"
+    },
+    {
+      "id": "softether",
+      "packages": [
+        "luci-app-softether"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "softethervpn",
+      "packages": [
+        "luci-app-softethervpn"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "spotifyd",
+      "packages": [
+        "luci-app-spotifyd"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "sqm",
+      "packages": [
+        "luci-app-sqm"
+      ],
+      "group": "网络管理",
+      "hot": true
+    },
+    {
+      "id": "squid",
+      "packages": [
+        "luci-app-squid"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "sshtunnel",
+      "packages": [
+        "luci-app-sshtunnel"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "statistics",
+      "packages": [
+        "luci-app-statistics"
+      ],
+      "group": "监控统计"
+    },
+    {
+      "id": "strongswan-swanctl",
+      "packages": [
+        "luci-app-strongswan-swanctl"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "syncdial",
+      "packages": [
+        "luci-app-syncdial"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "syncthing",
+      "packages": [
+        "luci-app-syncthing"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "sysuh3c",
+      "packages": [
+        "luci-app-sysuh3c"
+      ],
+      "group": "校园网认证"
+    },
+    {
+      "id": "tailscale-community",
+      "packages": [
+        "luci-app-tailscale-community"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "timewol",
+      "packages": [
+        "luci-app-timewol"
+      ],
+      "group": "定时与唤醒"
+    },
+    {
+      "id": "tinyproxy",
+      "packages": [
+        "luci-app-tinyproxy"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "tor",
+      "packages": [
+        "luci-app-tor"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "transmission",
+      "packages": [
+        "luci-app-transmission"
+      ],
+      "group": "存储与下载",
+      "hot": true
+    },
+    {
+      "id": "travelmate",
+      "packages": [
+        "luci-app-travelmate"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "ttyd",
+      "packages": [
+        "luci-app-ttyd"
+      ],
+      "group": "系统工具",
+      "hot": true
+    },
+    {
+      "id": "turboacc",
+      "packages": [
+        "luci-app-turboacc"
+      ],
+      "group": "魔法与加速",
+      "hot": true
+    },
+    {
+      "id": "ua2f",
+      "packages": [
+        "luci-app-ua2f"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "udpxy",
+      "packages": [
+        "luci-app-udpxy"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "uhttpd",
+      "packages": [
+        "luci-app-uhttpd"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "unblockneteasemusic",
+      "packages": [
+        "luci-app-unblockneteasemusic"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "unbound",
+      "packages": [
+        "luci-app-unbound"
+      ],
+      "group": "广告过滤与DNS"
+    },
+    {
+      "id": "upnp",
+      "packages": [
+        "luci-app-upnp"
+      ],
+      "group": "网络管理",
+      "hot": true
+    },
+    {
+      "id": "usb-printer",
+      "packages": [
+        "luci-app-usb-printer"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "usteer",
+      "packages": [
+        "luci-app-usteer"
+      ],
+      "group": "网络管理"
+    },
+    {
+      "id": "ustreamer",
+      "packages": [
+        "luci-app-ustreamer"
+      ],
+      "group": "多媒体与外设"
+    },
+    {
+      "id": "uugamebooster",
+      "packages": [
+        "luci-app-uugamebooster"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "v2raya",
+      "packages": [
+        "luci-app-v2raya"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "vlmcsd",
+      "packages": [
+        "luci-app-vlmcsd"
+      ],
+      "group": "系统工具"
+    },
+    {
+      "id": "vnstat2",
+      "packages": [
+        "luci-app-vnstat2"
+      ],
+      "group": "监控统计"
+    },
+    {
+      "id": "vsftpd",
+      "packages": [
+        "luci-app-vsftpd"
+      ],
+      "group": "存储与下载"
+    },
+    {
+      "id": "watchcat",
+      "packages": [
+        "luci-app-watchcat"
+      ],
+      "group": "定时与唤醒"
+    },
+    {
+      "id": "wechatpush",
+      "packages": [
+        "luci-app-wechatpush"
+      ],
+      "group": "监控统计"
+    },
+    {
+      "id": "wifihistory",
+      "packages": [
+        "luci-app-wifihistory"
+      ],
+      "group": "监控统计"
+    },
+    {
+      "id": "wifischedule",
+      "packages": [
+        "luci-app-wifischedule"
+      ],
+      "group": "定时与唤醒",
+      "hot": true
+    },
+    {
+      "id": "wol",
+      "packages": [
+        "luci-app-wol"
+      ],
+      "group": "定时与唤醒",
+      "hot": true
+    },
+    {
+      "id": "xfrpc",
+      "packages": [
+        "luci-app-xfrpc"
+      ],
+      "group": "内网穿透与组网"
+    },
+    {
+      "id": "xinetd",
+      "packages": [
+        "luci-app-xinetd"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "xlnetacc",
+      "packages": [
+        "luci-app-xlnetacc"
+      ],
+      "group": "魔法与加速"
+    },
+    {
+      "id": "zerotier",
+      "packages": [
+        "luci-app-zerotier"
+      ],
+      "group": "内网穿透与组网",
+      "hot": true
+    }
   ]
 }

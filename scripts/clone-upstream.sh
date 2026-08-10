@@ -30,7 +30,8 @@ for ((attempt = 1; attempt <= max_attempts; attempt++)); do
   rm -rf -- "$destination"
   attempt_log="$(mktemp)"
   echo "[clone] attempt ${attempt}/${max_attempts}: ${repo_url} @ ${branch}"
-  if GIT_TERMINAL_PROMPT=0 git clone --branch "$branch" --depth 1 "$repo_url" "$destination" >"$attempt_log" 2>&1; then
+  if GIT_TERMINAL_PROMPT=0 git clone --branch "$branch" --depth 1 --single-branch --no-tags \
+      --filter=blob:none "$repo_url" "$destination" >"$attempt_log" 2>&1; then
     cat "$attempt_log"
     echo "[clone] succeeded on attempt ${attempt}/${max_attempts}"
     exit 0
