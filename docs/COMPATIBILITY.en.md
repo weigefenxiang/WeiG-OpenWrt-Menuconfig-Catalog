@@ -32,7 +32,7 @@ Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only 
 - Scope: ImmortalWrt `openwrt-25.12` with `USE_APK` satisfied.
 - Trigger: `luci-app-openvpn-server=Y` and `openvpn-openssl=Y`.
 - Problem: both packages own `/etc/config/openvpn`, causing an APK ownership collision.
-- Evidence: Run `31248199953`.
+- Evidence: Runs `31248199953` and `31382153641`; both report `trying to overwrite etc/config/openvpn owned by openvpn-openssl`.
 - Handling: generic Catalog intents compare the cascades of disabling each participant. Only a unique lowest-cost plan is recommended; force remains available.
 - Removal: after upstream removes duplicate ownership and a real build confirms it, narrow scope or delete immediately.
 
@@ -45,11 +45,24 @@ Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only 
 - Handling: the recommendation uses `applyUserIntent()` only to set `oscam` to N. Force does not patch source and may still fail.
 - Removal: after one upstream range is fixed, confirm with a package probe and a real build before narrowing scope; delete after every covered range is fixed.
 
+### BLD-0002
+
+- Scope: ImmortalWrt `master`.
+- Trigger: `luci-app-openvpn-server=M/Y`.
+- Problem: the current Branch fails while compiling the `ovpn-dco` dependency at `tcp.c` against Linux 6.18. This is an upstream package-closure build failure, not the `/etc/config/openvpn` ownership collision.
+- Evidence: Run `31382119111`.
+- Handling: the recommendation uses generic `applyUserIntent()` only to set the package to N; force does not patch upstream source.
+- Removal: delete after an upstream fix passes both a package probe and a real build.
+
 ## Maintenance, probes, and publication
 
 Inspect upstream source and real evidence before adding a rule, then audit the same Source/Branch mechanism horizontally. A future Branch already covered by a glob needs no JSON row, but its first real probe should still be recorded. Narrow rules promptly after fixes; zombie rules are forbidden.
 
-Catalog's manual **Package probe controller** accepts package IDs, Source/Branch globs, `compile` or `co-install`. It dispatches one child Run per index match and builds only selected package closures; `co-install` also runs `package/install` to expose co-install and ownership failures. The owner may request 1–20 parallel Runs; other write collaborators are capped at 3. Dry-run defaults to true.
+Catalog's manual **Package Compatibility Probe** accepts 1–8 Catalog application or package IDs, Source/Branch globs, and `compile` or `co-install`. The controller reads `index.json`, `applications.json.gz`, and each matched Branch's `core` shard from the data branch paired with the current code channel. Catalog supplies a legal Target/Profile (x86/64 when available, otherwise the first buildable path), then the controller builds one dynamic Matrix. Each item compiles only the selected package closure rather than a firmware image; `co-install` also runs `package/install` to expose co-install and ownership failures. The Matrix is capped at 256 jobs. The repository owner can set `0` to use every planned job concurrently, other write collaborators are capped at 3, and ordinary visitors cannot manually run it in this repository. Run Summary is public; normalized evidence is retained for 60 days and complete logs for 30 days. Dry-run defaults to true.
+
+Source/Branch combinations come exclusively from the Catalog index. Future `openwrt-*` branches under `ImmortalWrt`, `OpenWrt`, or `lede` naturally join the next complete probe after discovery; the probe keeps no version list. Evidence is review input and never mutates `compatibility.json` automatically.
+
+The hard order for a new plugin or rule is: reuse existing Catalog data, audit the same data type/execution path/risk class, run the package probe first, and only then maintain a generic rule from real evidence. AutoBuild must not contain package names or dedicated executors.
 
 When only `compatibility.json` changes, the Workflow sparse-checks out `index.json` and `compatibility.json.gz` and runs `build-index.mjs --compatibility-only`, without the Source/Branch matrix. A `curated-sizes.json`-only change similarly runs `--applications-only` for `applications.json.gz`. Generator, Source-policy, or Workflow changes still run the complete matrix.
 

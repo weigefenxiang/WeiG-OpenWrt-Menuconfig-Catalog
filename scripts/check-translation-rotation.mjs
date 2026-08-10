@@ -20,7 +20,21 @@ const previous = join(temp, 'previous');
 mkdirSync(dist);
 mkdirSync(previous);
 const catalogFile = join(dist, 'immortalwrt--openwrt-25.12.json.gz');
+const languageFile = join(dist, 'immortalwrt--openwrt-25.12.menu.zh-cn.json.gz');
+const writeIndex = (directory, legacyAsset, languageAsset) => {
+  writeFileSync(join(directory, 'index.json'), JSON.stringify({
+    schema: 2,
+    sources: [{ id: 'ImmortalWrt', branches: [{
+      branch: 'openwrt-25.12',
+      legacy: { asset: legacyAsset },
+      assets: { 'menu:zh-CN': { asset: languageAsset } },
+    }] }],
+  }));
+  writeFileSync(join(directory, languageAsset), gzipSync(Buffer.from('{}')));
+};
+writeIndex(dist, 'immortalwrt--openwrt-25.12.json.gz', 'immortalwrt--openwrt-25.12.menu.zh-cn.json.gz');
 writeFileSync(catalogFile, gzipSync(Buffer.from(JSON.stringify({
+  source: { id: 'ImmortalWrt', branch: 'openwrt-25.12' },
   menu: {
     options: [
       { symbol: 'PACKAGE_alpha', promptEn: 'alpha', usageEn: 'Alpha package description.' },
@@ -80,6 +94,9 @@ try {
   assert.equal(state.phase, 'rotation');
   assert.equal(catalog.menu.options[0].promptI18n?.['zh-CN'], undefined);
   assert.match(catalog.menu.options[0].usageI18n['zh-CN'], /^argos:/);
+  const languageCatalog = JSON.parse(gunzipSync(readFileSync(languageFile)));
+  assert.equal(languageCatalog.kind, 'menu-language');
+  assert.match(languageCatalog.options.find((row) => row[0] === 'PACKAGE_alpha')[2], /^argos:/);
   assert.equal(summary.provider, 'argos');
   assert.equal(summary.model, 'fixture-en-target');
   assert.equal(catalog.menu.options[0].usageI18n?.['zh-TW'], undefined);
@@ -107,6 +124,7 @@ try {
   assert.equal(state.rotationIndex, 1);
   const cancelDist = join(temp, 'cancel-dist');
   mkdirSync(cancelDist);
+  writeIndex(cancelDist, 'immortalwrt--openwrt-25.12.json.gz', 'immortalwrt--openwrt-25.12.menu.zh-cn.json.gz');
   writeFileSync(join(cancelDist, 'immortalwrt--openwrt-25.12.json.gz'), gzipSync(Buffer.from(JSON.stringify({
     menu: { options: [{ symbol: 'PACKAGE_cancel', promptEn: 'cancel', usageEn: 'Cancel fixture.' }], labels: {}, choices: [] },
   }))));

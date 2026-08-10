@@ -23,7 +23,7 @@ JavaScript 中写死分支、Target 或菜单项目。
 - Every generation writes a `*.translations.json` coverage report.
 - Catalog schema 6 splits each branch into `core`, `graph`, `menu`, `hidden`, `help`, and per-language menu gzip assets. The published index records every shard's compressed byte count, SHA-256, and immutable `assetRef` Git commit. Consumers initially fetch only `core + graph`; Advanced menu text and long help are loaded on demand. The schema-5 monolithic gzip remains temporarily as a compatibility fallback.
 - Confirmed facts that upstream Kconfig cannot express live in the small global `compatibility.json`; it references package IDs only and never duplicates symbols, states, names, dependencies, or hashes. See [中文规则说明](docs/COMPATIBILITY.md) and [English rules](docs/COMPATIBILITY.en.md).
-- The weekly publish step reuses `i18n-cache.json` and translates only new or changed descriptions.
+- The daily translation workflow reads branch assets from `index.json`, reuses `i18n-cache.json`, and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
   translations are published even when a batch is incomplete; remaining descriptions are kept in
   `translation-retry-queue.json` and retried first on the next run. A translation job is limited to
@@ -32,11 +32,11 @@ JavaScript 中写死分支、Target 或菜单项目。
   should remain a technical English name is left untranslated instead of showing a fake tooltip.
 
 英文以各上游源码为准；精选 Applications 的 11 语名称与用途由 Catalog 维护，11 语菜单
-分类维护在 `translations/menu-i18n.json`。每周发布复用历史翻译缓存，只翻译新增或变化
+分类维护在 `translations/menu-i18n.json`。每日翻译任务复用历史翻译缓存，只翻译新增或变化
 文本；额度不足或服务异常时保留官方英文并写入待译统计与重试队列，已完成部分仍可提交。
 软件包选项也带有上游 `.packageinfo` 的 `Conflicts:` 元数据，使用方可在编译前拒绝不可能的 `y/y` 组合。
-- 仅每周计划执行的 Catalog 更新成功后自动触发翻译；Push 和手动更新目录不会触发翻译。
-  自动任务默认 `500×2` 批。手动翻译可设置每批
+- 翻译任务每天上海时间 04:37 独立运行，不因普通 Push 或 Catalog 发布重复启动。
+  自动与手动任务默认 `500×5` 批；手动任务可选择代码分支与 `catalog-data/catalog-dev/catalog-staging/catalog-fix` 数据通道，并可设置每批
   `100–5000` 条、`1–20` 批，但单次总数最多 5000 条。任务上限 60 分钟，全部批次共享
   50 分钟翻译预算；默认 `each-batch`，每个成功批次立即提交。`final` 可改为最后统一提交。
   取消、零结果或校验/发布失败不会提交当前批次；每周更新仍按文本指纹跳过未变化内容。
@@ -49,7 +49,7 @@ node scripts/collect-curated-size-samples.mjs size-samples
 npm run refresh:sizes -- --samples size-samples --write
 ```
 
-The curated list is deliberately manual; weekly Source/Branch discovery does not silently change UI IDs or translations. Official OPKG/APK index observations update `curated-sizes.json`, and the published `applications.json.gz` joins IDs, descriptions, and optional size bytes. The manual Package probe controller compiles selected package closures across filtered Source/Branch Runs without building firmware images.
+The curated list is deliberately manual; weekly Source/Branch discovery does not silently change UI IDs or translations. Official OPKG/APK index observations update `curated-sizes.json`, and the published `applications.json.gz` joins IDs, descriptions, and optional size bytes. The manual Package Compatibility Probe maps Catalog application IDs to packages and compiles selected closures in an index-driven Matrix without building firmware images.
 
 为 WeiG OpenWrt 在线定制器生成静态 menuconfig 目录。项目本身不编译固件。
 
@@ -89,7 +89,7 @@ npm run size-report -- dist
 
 ## 自动更新
 
-`.github/workflows/catalog.yml` 每周按 include/exclude pattern 自动发现远程分支；OpenWrt 覆盖 `main` 与 `openwrt-*`，ImmortalWrt 覆盖 `master` 与 `openwrt-*`，未来版本无需人工加表；
+`.github/workflows/catalog.yml` 每周按 include/exclude pattern 自动发现远程分支；OpenWrt 覆盖 `main` 与 `openwrt-*`，ImmortalWrt 与 LEDE 覆盖 `master` 与 `openwrt-*`，未来版本无需人工加表；
 hanwckf 仍只收录 `openwrt-21.02` 兼容分支。每个分支独立生成，
 失败时沿用同一通道的上一次成功数据。`main` 发布到 `catalog-data`，`staging` 发布到
 `catalog-staging`，`dev` 发布到 `catalog-dev`，`fix/*` 发布到 `catalog-fix`；每次先提交数据，
@@ -99,9 +99,9 @@ hanwckf 仍只收录 `openwrt-21.02` 兼容分支。每个分支独立生成，
 所有数据分支直接保存同名 `compatibility.json.gz`。只有 `main` 更新正式 Release；预览通道不创建 Release 或 Pages 地址。
 
 - 矩阵不限制 `max-parallel`，由 GitHub 按账户并发额度调度。
-- 自动翻译只新增软件包/菜单用途说明，技术名称与符号保持官方英文。简体中文说明未完成时，
-  每周任务持续处理 `zh-CN`；完成后按 `ru → es → pt → ja → ko → de → fr → vi`
-  每周轮转一种语言。英文是源文本，繁体中文暂时冻结，不进入自动轮转。
+- 自动翻译只新增软件包/菜单用途说明，技术名称与符号保持官方英文。脚本严格按 `index.json` 枚举旧单体和 schema 6 `menu:<lang>` 分片，并同步更新两者；不会扫描或改写 `core/graph/applications/compatibility`。简体中文说明未完成时，
+  每日任务持续处理 `zh-CN`；完成后按 `ru → es → pt → ja → ko → de → fr → vi`
+  每日轮转一种语言。英文是源文本，繁体中文暂时冻结，不进入自动轮转。
 - 历史译文按“文本类型 + 英文正文”指纹复用；Push 触发只更新目录，不消耗翻译额度或推进
   轮转。默认每次最多请求 400,000 个源字符、每月最多记录 1,900,000 个字符；可通过
   Variables 的 `TRANSLATE_MONTHLY_BUDGET` 调整月预算，手动运行时也可调整单次预算和语言。

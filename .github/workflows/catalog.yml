@@ -9,9 +9,18 @@ on:
     branches: [main, dev, staging, "fix/**"]
     paths:
       - "scripts/**"
+      - "!scripts/check-*.mjs"
+      - "!scripts/package-probe-*.mjs"
+      - "!scripts/write-package-probe-evidence.mjs"
+      - "!scripts/translate-*.mjs"
+      - "!scripts/translation-*.mjs"
+      - "!scripts/sync-translation-assets.mjs"
+      - "!scripts/resolve-translation-provider.mjs"
+      - "!scripts/write-translation-summary.mjs"
       - "catalog.config.json"
       - "compatibility.json"
       - "curated-sizes.json"
+      - "translations/**"
       - ".github/workflows/catalog.yml"
 
 permissions:

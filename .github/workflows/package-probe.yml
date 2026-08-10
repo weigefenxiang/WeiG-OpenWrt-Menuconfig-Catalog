@@ -1,15 +1,15 @@
-name: Package probe controller
-run-name: Package probe plan · ${{ inputs.mode }} · ${{ inputs.packages }}
+name: Package Compatibility Probe
+run-name: Package probe · ${{ inputs.mode }} · ${{ inputs.packages }}
 
 on:
   workflow_dispatch:
     inputs:
       packages:
-        description: "1-8 package IDs, comma separated"
+        description: "1-8 Catalog application or package IDs, comma separated"
         required: true
         default: "oscam"
       mode:
-        description: "compile checks package compilation; co-install also stages selected packages"
+        description: "compile checks compilation; co-install also stages all selected packages"
         required: true
         type: choice
         options: [compile, co-install]
@@ -23,26 +23,38 @@ on:
         required: true
         default: "*"
       max_parallel:
-        description: "Owner 1-20; other collaborators are capped at 3"
+        description: "Owner: 0 means all planned jobs; write collaborators are capped at 3"
         required: true
-        default: "3"
+        default: "0"
       dry_run:
-        description: "Only validate and display the child Run plan"
+        description: "Only validate and display the dynamic Matrix plan"
         required: true
         type: boolean
         default: true
 
 permissions:
   contents: read
-  actions: write
+
+concurrency:
+  group: package-probe-${{ github.actor }}-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  dispatch:
+  plan:
+    name: 00 · Resolve Catalog plan / 解析 Catalog 计划
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      max_parallel: ${{ steps.plan.outputs.max_parallel }}
+      dry_run: ${{ steps.plan.outputs.dry_run }}
+      plan_count: ${{ steps.plan.outputs.plan_count }}
+      packages: ${{ steps.plan.outputs.packages }}
+      data_branch: ${{ steps.plan.outputs.data_branch }}
+      mode: ${{ steps.plan.outputs.mode }}
     steps:
       - uses: actions/checkout@v7
-      - name: Dispatch bounded child Runs from the Catalog index
+      - id: plan
+        name: Build bounded Matrix from index.json
         env:
           GITHUB_TOKEN: ${{ github.token }}
           REPOSITORY_OWNER: ${{ github.repository_owner }}
@@ -54,11 +66,141 @@ jobs:
           MAX_PARALLEL: ${{ inputs.max_parallel }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: node scripts/package-probe-controller.mjs
-      - name: Upload probe plan and Run results
+      - name: Upload normalized probe plan
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: package-probe-plan-${{ github.run_id }}-${{ github.run_attempt }}
-          path: probe-diagnostics/
+          path: probe-diagnostics/plan.json
           retention-days: 60
           if-no-files-found: error
+
+  probe:
+    name: Probe · ${{ matrix.source }} · ${{ matrix.branch }}
+    needs: plan
+    if: needs.plan.outputs.dry_run != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(needs.plan.outputs.max_parallel) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      PROBE_SOURCE: ${{ matrix.source }}
+      PROBE_REPO: ${{ matrix.repo }}
+      PROBE_BRANCH: ${{ matrix.branch }}
+      PROBE_UPSTREAM_COMMIT: ${{ matrix.upstreamCommit }}
+      PROBE_TARGET: ${{ matrix.target }}
+      PROBE_PROFILE: ${{ matrix.profile }}
+      PROBE_TARGET_CONFIG: ${{ matrix.targetConfig }}
+      PROBE_PACKAGES: ${{ matrix.packages }}
+      PROBE_MODE: ${{ needs.plan.outputs.mode }}
+      PROBE_CONFIG: work/upstream/.config
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install build dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+            gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
+      - name: Clone exact Catalog Source snapshot
+        run: |
+          bash scripts/clone-upstream.sh "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
+          if [[ -n "${{ matrix.upstreamCommit }}" && "$(git -C work/upstream rev-parse HEAD)" != "${{ matrix.upstreamCommit }}" ]]; then
+            git -C work/upstream fetch --depth 1 origin "${{ matrix.upstreamCommit }}"
+            git -C work/upstream checkout --detach "${{ matrix.upstreamCommit }}"
+          fi
+          if [[ -n "${{ matrix.upstreamCommit }}" ]]; then
+            test "$(git -C work/upstream rev-parse HEAD)" = "${{ matrix.upstreamCommit }}"
+          fi
+      - name: Install feeds
+        working-directory: work/upstream
+        run: ./scripts/feeds update -a && ./scripts/feeds install -a
+      - name: Compile selected packages without firmware images
+        id: build
+        continue-on-error: true
+        working-directory: work/upstream
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            printf '%s\n' "$PROBE_TARGET_CONFIG" > .config
+            IFS=',' read -ra packages <<< "$PROBE_PACKAGES"
+            package_state=m
+            if [[ "$PROBE_MODE" == co-install ]]; then package_state=y; fi
+            for package in "${packages[@]}"; do
+              printf 'CONFIG_PACKAGE_%s=%s\n' "$package" "$package_state" >> .config
+            done
+            make defconfig
+            for package in "${packages[@]}"; do
+              if [[ "$PROBE_MODE" == co-install ]]; then
+                grep -qx "CONFIG_PACKAGE_${package}=y" .config || {
+                  echo "ERROR: requested package states did not survive make defconfig: ${package}=y"
+                  exit 2
+                }
+              else
+                grep -Eq "^CONFIG_PACKAGE_${package}=[my]$" .config || {
+                  echo "ERROR: requested package states did not survive make defconfig: ${package}=m|y"
+                  exit 2
+                }
+              fi
+            done
+            make -j"$(nproc)" tools/install toolchain/install
+            for package in "${packages[@]}"; do
+              make -j"$(nproc)" "package/${package}/compile" V=s
+            done
+            if [[ "$PROBE_MODE" == co-install ]]; then make -j1 package/install V=s; fi
+          } 2>&1 | tee "$GITHUB_WORKSPACE/probe.log"
+      - name: Write normalized evidence and public Summary
+        if: always()
+        env:
+          PROBE_CONCLUSION: ${{ steps.build.outcome }}
+        run: node scripts/write-package-probe-evidence.mjs
+      - name: Upload normalized evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-probe-evidence-${{ matrix.key }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: probe-evidence/
+          retention-days: 60
+          if-no-files-found: error
+      - name: Upload complete probe log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-probe-log-${{ matrix.key }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: probe.log
+          retention-days: 30
+          if-no-files-found: error
+      - name: Finalize probe result
+        if: steps.build.outcome != 'success'
+        run: exit 1
+
+  summary:
+    name: 99 · Probe result / 探针结果
+    needs: [plan, probe]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Publish controller Summary
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          PROBE_RESULT: ${{ needs.probe.result }}
+          PLAN_COUNT: ${{ needs.plan.outputs.plan_count }}
+          DRY_RUN: ${{ needs.plan.outputs.dry_run }}
+          DATA_BRANCH: ${{ needs.plan.outputs.data_branch }}
+        run: |
+          {
+            echo '## Package compatibility probe result'
+            echo
+            echo "- Catalog channel: \`$DATA_BRANCH\`"
+            echo "- Planned Source/Branch jobs: ${PLAN_COUNT:-0}"
+            echo "- Dry run: ${DRY_RUN:-unknown}"
+            echo "- Plan: \`$PLAN_RESULT\`"
+            echo "- Matrix: \`$PROBE_RESULT\`"
+            echo "- Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$PLAN_RESULT" == success ]]
+          [[ "$DRY_RUN" == true || "$PROBE_RESULT" == success ]]

@@ -32,7 +32,7 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 - 范围：ImmortalWrt `openwrt-25.12`，且 `USE_APK` 成立。
 - 触发：`luci-app-openvpn-server=Y` 与 `openvpn-openssl=Y`。
 - 问题：两包同时拥有 `/etc/config/openvpn`，APK 安装阶段发生文件归属冲突。
-- 证据：Run `31248199953`。
+- 证据：Run `31248199953`、`31382153641`；两次均为 `trying to overwrite etc/config/openvpn owned by openvpn-openssl`。
 - 处理：Catalog 通用 intent 比较关闭任一参与包的级联成本；只有唯一最低成本方案才推荐。用户仍可强制继续。
 - 删除条件：上游消除重复归属并通过真实构建后，立即缩小 scope 或删规则。
 
@@ -45,11 +45,24 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 - 处理：推荐方案只通过 `applyUserIntent()` 把 `oscam` 调整为 N。强制继续不会修复源码，构建仍可能失败。
 - 删除条件：任一上游范围修复后先用包级探测和真实构建确认，再缩小 scope；全部修复后删除。
 
+### BLD-0002
+
+- 范围：ImmortalWrt `master`。
+- 触发：`luci-app-openvpn-server=M/Y`。
+- 问题：该 Branch 当前由 `ovpn-dco` 在 Linux 6.18 的 `tcp.c` 编译失败；这是单包依赖闭包的源码构建失败，不是 `/etc/config/openvpn` 文件归属冲突。
+- 证据：Run `31382119111`。
+- 处理：推荐方案只通过通用 `applyUserIntent()` 把该包调整为 N；强制继续不会修补上游源码。
+- 删除条件：上游修复并经包级探测与真实构建确认后删除。
+
 ## 维护、探测与发布
 
 新增规则前先查上游源码和真实证据；确认一个范围后横向检查同 Source/Branch 机制。Source/Branch 新版本若已被 glob 覆盖，无需增加 JSON 项，但首次真实探测仍应记录证据。上游修复后及时删减，禁止 zombie rule。
 
-Catalog 的手动 **Package probe controller** 可输入包 ID、Source/Branch glob、`compile` 或 `co-install`。它按数据分支 index 为每个组合派发独立 Run，仅编译选择的软件包闭包；`co-install` 还执行 `package/install`，用于暴露同装与文件归属问题。仓库所有者可选 1–20 并发，其他有写权限的协作者最多 3；dry-run 默认开启。
+Catalog 的手动 **Package Compatibility Probe** 可输入 1–8 个 Catalog 应用 ID 或 package ID、Source/Branch glob、`compile` 或 `co-install`。控制器直接读取当前代码频道对应数据分支的 `index.json`、`applications.json.gz` 与匹配 Branch 的 `core` 分片，由 Catalog 选择合法 Target/Profile（优先 x86/64，否则首个可构建路径），再动态生成一个 Matrix；每项只编译所选软件包闭包，不构建完整固件，`co-install` 还执行 `package/install` 以暴露同装和文件归属问题。Matrix 最多 256 项；仓库所有者设置 `0` 可使用全部计划并发，其他有写权限的协作者强制最多 3，普通访客不能在本仓库手动运行。Run Summary 公开；规范化证据保留 60 天，完整日志保留 30 天，dry-run 默认开启。
+
+Source/Branch 组合完全来自 Catalog index。`ImmortalWrt`、`OpenWrt`、`lede` 的 `openwrt-*` 新分支会在下一次自动发现后自然进入全量探测，不在探针中维护版本清单。证据只用于人工审查，不自动改写 `compatibility.json`。
+
+新增插件或规则前的硬顺序是：复用现有 Catalog 数据 → 横向审计同数据类型、执行路径和风险类别 → 先运行包级探针 → 再以真实证据维护通用规则。AutoBuild 不得写插件名或专用执行器。
 
 仅 `compatibility.json` 变化时，Workflow 以稀疏 checkout 读取 `index.json` 和 `compatibility.json.gz`，调用 `build-index.mjs --compatibility-only`，不重跑 Source/Branch 矩阵。仅 `curated-sizes.json` 变化时同理调用 `--applications-only` 更新 `applications.json.gz`。生成器、Source 策略或 Workflow 变化仍运行完整矩阵。
 

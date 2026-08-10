@@ -52,9 +52,12 @@
       "id": "lede",
       "label": "Lean LEDE",
       "repo": "coolsnowwolf/lede",
-      "branches": [
-        "master"
-      ],
+      "branches": {
+        "include": [
+          "master",
+          "openwrt-*"
+        ]
+      },
       "exclude": [],
       "diy": "lede",
       "build": { "diy1": "diy-generic.sh", "diy2": "diy2-lede.sh" }

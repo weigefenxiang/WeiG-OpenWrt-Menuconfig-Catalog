@@ -19,7 +19,8 @@
         "/etc/config/openvpn"
       ],
       "refs": [
-        "run:31248199953"
+        "run:31248199953",
+        "run:31382153641"
       ]
     },
     {
@@ -43,6 +44,22 @@
         "run:31343364994",
         "run:31343384324",
         "run:31343420988"
+      ]
+    },
+    {
+      "id": "BLD-0002",
+      "issue": "build-failure",
+      "match": "all-selected",
+      "scope": {
+        "ImmortalWrt": [
+          "master"
+        ]
+      },
+      "packages": [
+        "luci-app-openvpn-server"
+      ],
+      "refs": [
+        "run:31382119111"
       ]
     }
   ]

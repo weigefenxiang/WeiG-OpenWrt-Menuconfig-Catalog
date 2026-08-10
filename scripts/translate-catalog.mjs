@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import {
+  indexedTranslationCatalogs,
+  readTranslationIndex,
+  writeIndexedLanguageAssets,
+} from './translation-catalog-assets.mjs';
 
 const [distArg = 'dist', previousArg = 'previous/i18n-cache.json'] = process.argv.slice(2);
 const distDir = resolve(distArg), previousFile = resolve(previousArg);
@@ -46,8 +51,6 @@ cache.entries ||= {}; state.rotationIndex = Number(state.rotationIndex || 0) % r
 const hash = (kind, text) => createHash('sha256').update(`${kind}\0${text}`).digest('hex');
 const clean = (map, english) => Object.fromEntries(languages.map((lang) => [lang, String(map?.[lang] || '').trim()]).filter(([, text]) => text && text !== english));
 const fallback = (row) => row.symbol?.startsWith('PACKAGE_') ? `${row.promptEn || row.prompt || row.symbol} package for OpenWrt firmware.` : `OpenWrt configuration option: ${row.promptEn || row.prompt || row.symbol}.`;
-const rank = (name) => name.startsWith('immortalwrt--openwrt-25.12') ? 0 : name.startsWith('immortalwrt--') ? 1 : 2;
-const files = readdirSync(distDir).filter((name) => name.endsWith('.json.gz')).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 const usage = [], seen = new Set(), catalogs = [];
 const register = (kind, english, manual = {}) => {
   const text = String(english || '').trim(); if (!text) return {};
@@ -59,12 +62,14 @@ const register = (kind, english, manual = {}) => {
   if (kind === 'usage' && !seen.has(id)) { seen.add(id); usage.push(id); }
   return translations;
 };
-for (const name of files) {
-  const file = join(distDir, name), catalog = JSON.parse(gunzipSync(readFileSync(file)));
+for (const entry of indexedTranslationCatalogs(readTranslationIndex(distDir), distDir)) {
+  const { file, name } = entry;
+  const originalText = gunzipSync(readFileSync(file)).toString('utf8');
+  const catalog = JSON.parse(originalText);
   for (const row of catalog.menu?.options || []) { row.usageEn ||= fallback(row); row.promptI18n = register('title', row.promptEn || row.prompt || row.symbol, row.promptI18n); row.usageI18n = register('usage', row.usageEn, row.usageI18n); }
   for (const row of Object.values(catalog.menu?.labels || {})) { row.i18n = register('title', row.en, { ...row.i18n, 'zh-CN': row.zhCN || row.i18n?.['zh-CN'] }); row.usageI18n = register('usage', row.usageEn, { ...row.usageI18n, 'zh-CN': row.usageZh || row.usageI18n?.['zh-CN'] }); }
   for (const row of catalog.menu?.choices || []) { row.promptI18n = register('title', row.promptEn || row.prompt, { ...row.promptI18n, 'zh-CN': row.promptZh || row.promptI18n?.['zh-CN'] }); row.usageI18n = register('usage', row.usageEn, { ...row.usageI18n, 'zh-CN': row.usageZh || row.usageI18n?.['zh-CN'] }); }
-  catalogs.push({ file, name, catalog });
+  catalogs.push({ entry, file, name, catalog, originalText });
 }
 const missing = (lang) => usage.filter((id) => !cache.entries[id]?.translations?.[lang]);
 const zhBefore = missing('zh-CN').length;
@@ -127,12 +132,16 @@ let localizedFields = 0, pendingFields = 0;
 const localizedByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
 const pendingByLanguage = Object.fromEntries(languages.map((lang) => [lang, 0]));
 const count = (translations) => languages.forEach((lang) => translations[lang] ? localizedByLanguage[lang]++ : pendingByLanguage[lang]++);
-for (const { file, catalog } of catalogs) {
+for (const { entry, file, catalog, originalText } of catalogs) {
   for (const row of catalog.menu?.options || []) for (const [kind, english] of [['title', row.promptEn || row.prompt || row.symbol], ['usage', row.usageEn]]) { const translations = clean(cache.entries[hash(kind, String(english || '').trim())]?.translations, english); if (kind === 'title') row.promptI18n = translations; else row.usageI18n = translations; localizedFields += Object.keys(translations).length; pendingFields += languages.filter((lang) => !translations[lang]).length; count(translations); }
   for (const row of Object.values(catalog.menu?.labels || {})) { row.i18n = clean(cache.entries[hash('title', String(row.en || '').trim())]?.translations, row.en); row.usageI18n = clean(cache.entries[hash('usage', String(row.usageEn || '').trim())]?.translations, row.usageEn); count(row.i18n); count(row.usageI18n); }
   for (const row of catalog.menu?.choices || []) { const title = row.promptEn || row.prompt; row.promptI18n = clean(cache.entries[hash('title', String(title || '').trim())]?.translations, title); row.usageI18n = clean(cache.entries[hash('usage', String(row.usageEn || '').trim())]?.translations, row.usageEn); count(row.promptI18n); count(row.usageI18n); }
-  catalog.translation = { ...(catalog.translation || {}), languages: ['en', ...languages], fallback: 'en', updatedAt: new Date().toISOString() };
-  writeFileSync(file, gzipSync(Buffer.from(JSON.stringify(catalog)), { level: 9 }));
+  const translationUpdatedAt = new Date().toISOString();
+  if (JSON.stringify(catalog) !== originalText) {
+    catalog.translation = { ...(catalog.translation || {}), languages: ['en', ...languages], fallback: 'en', updatedAt: translationUpdatedAt };
+    writeFileSync(file, gzipSync(Buffer.from(JSON.stringify(catalog)), { level: 9 }));
+  }
+  writeIndexedLanguageAssets(entry, catalog, translationUpdatedAt);
 }
 cache.schema = 2; cache.updatedAt = new Date().toISOString();
 writeFileSync(join(distDir, 'i18n-cache.json'), JSON.stringify(cache) + '\n'); writeFileSync(join(distDir, 'translation-state.json'), JSON.stringify(state, null, 2) + '\n');

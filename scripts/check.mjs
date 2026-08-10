@@ -35,12 +35,14 @@ const collector = readFileSync(join(ROOT, 'scripts', 'collect-results.mjs'), 'ut
 const release = readFileSync(join(ROOT, 'scripts', 'publish-release.sh'), 'utf8');
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
 const compatibility = JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8'));
+const automationPolicy = JSON.parse(readFileSync(join(ROOT, '.github', 'automation-policy.json'), 'utf8'));
 const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
 const validator = readFileSync(join(ROOT, 'scripts', 'verify-target-contracts.mjs'), 'utf8');
 const library = readFileSync(join(ROOT, 'scripts', 'lib.mjs'), 'utf8');
 const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
 const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
 const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs'), 'utf8');
+const translationAssets = readFileSync(join(ROOT, 'scripts', 'translation-catalog-assets.mjs'), 'utf8');
 const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
 const snapshotStamper = readFileSync(join(ROOT, 'scripts', 'stamp-catalog-snapshot.mjs'), 'utf8');
 const failures = [];
@@ -60,7 +62,7 @@ const curatedById = new Map(curatedCandidates.map((item) => [item.id, item]));
 const curatedApplications = buildCuratedApplications(ROOT);
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 const translationPublishContractCount = (translationWorkflow.match(
-  /node scripts\/sync-index-assets\.mjs dist\n\s+node scripts\/sync-index-assets\.mjs dist --check\n\s+git -C dist add \./g,
+  /node scripts\/sync-translation-assets\.mjs dist\/index\.json\n\s+node scripts\/sync-translation-assets\.mjs dist\/index\.json --check\n\s+git -C dist add --sparse \./g,
 ) || []).length;
 const translationSnapshotContractCount = (translationWorkflow.match(
   /node scripts\/stamp-catalog-snapshot\.mjs dist\/index\.json "\$asset_commit"/g,
@@ -329,11 +331,23 @@ if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
     !sourceAllowsBranch(policy.sources[0], 'openwrt-26.01') ||
     !sourceAllowsBranch(policy.sources[0], 'master') ||
     sourceAllowsBranch(policy.sources[0], 'main')) failures.push('stable branch policy');
+if (automationPolicy.schema !== 1 || automationPolicy.probe?.collaboratorMaxParallel !== 3 ||
+    automationPolicy.probe?.ownerDefaultParallel !== 0 || automationPolicy.probe?.maxMatrixJobs !== 256 ||
+    automationPolicy.probe?.normalizedEvidenceDays !== 60 || automationPolicy.probe?.fullLogDays !== 30 ||
+    automationPolicy.translation?.defaultDataBranch !== 'catalog-data' ||
+    automationPolicy.translation?.batchSize !== 500 || automationPolicy.translation?.batchCount !== 5 ||
+    automationPolicy.translation?.totalItemLimit !== 5000 ||
+    automationPolicy.translation?.totalTimeBudgetSeconds !== 3000 ||
+    automationPolicy.translation?.diagnosticsDays !== 60 || automationPolicy.catalog?.cloneAttempts !== 3) {
+  failures.push('automation policy contract');
+}
 const openwrt = policy.sources.find((item) => item.id === 'OpenWrt');
 if (openwrt?.branches?.include?.join(',') !== 'main,openwrt-*' || openwrt.exclude.length ||
     !sourceAllowsBranch(openwrt, 'openwrt-26.01') || !sourceAllowsBranch(openwrt, 'main') ||
     sourceAllowsBranch(openwrt, 'master')) failures.push('OpenWrt branch policy');
-if (!policy.sources.some((item) => item.id === 'lede' && item.label === 'Lean LEDE')) failures.push('LEDE source policy');
+const lede = policy.sources.find((item) => item.id === 'lede');
+if (lede?.label !== 'Lean LEDE' || lede.branches?.include?.join(',') !== 'master,openwrt-*' ||
+    !sourceAllowsBranch(lede, 'master') || !sourceAllowsBranch(lede, 'openwrt-30.00')) failures.push('LEDE source policy');
 if (!policy.sources.some((item) => item.id === 'hanwckf' &&
     item.repo === 'hanwckf/immortalwrt-mt798x' &&
     item.branches.join(',') === 'openwrt-21.02' && item.legacy === true)) {
@@ -351,6 +365,16 @@ const compatibilityFastPublish =
   workflow.includes('build-index.mjs "--$FAST_ASSET-only" previous/index.json previous/index.json') &&
   workflow.includes('$FAST_ASSET contract is unchanged; nothing to publish.') &&
   workflow.includes('case "$CATALOG_DATA_BRANCH" in');
+const catalogTriggerIsDataBound = [
+  '!scripts/check-*.mjs',
+  '!scripts/package-probe-*.mjs',
+  '!scripts/write-package-probe-evidence.mjs',
+  '!scripts/translate-*.mjs',
+  '!scripts/translation-*.mjs',
+  '!scripts/sync-translation-assets.mjs',
+].every((pattern) => workflow.includes(`- "${pattern}"`)) &&
+  !workflow.includes('.github/workflows/package-probe.yml') &&
+  !workflow.includes('.github/workflows/translate.yml');
 const unsupportedSchemasRejected = [1, 0, 3].every((schema) => {
   try {
     normalizeCompatibilityDocument({
@@ -377,7 +401,7 @@ try {
 } catch (error) {
   oversizedCompatibilityRejected = /exceeds/.test(error.message);
 }
-if (!compatibilityFastPublish || normalizedCompatibility.schema !== 2 || normalizedCompatibility.rules.length !== 2 ||
+if (!compatibilityFastPublish || !catalogTriggerIsDataBound || normalizedCompatibility.schema !== 2 || normalizedCompatibility.rules.length !== 3 ||
     normalizedCompatibility.rules[0]?.id !== 'OWN-0001' ||
     normalizedCompatibility.rules[0]?.issue !== 'file-ownership' ||
     normalizedCompatibility.rules[0]?.match !== 'all-installed' ||
@@ -388,6 +412,13 @@ if (!compatibilityFastPublish || normalizedCompatibility.schema !== 2 || normali
     normalizedCompatibility.rules[1]?.scope?.ImmortalWrt?.join(',') !== '*' ||
     normalizedCompatibility.rules[1]?.scope?.lede?.join(',') !== '*' ||
     !matchPattern('openwrt-26.01', normalizedCompatibility.rules[1].scope.ImmortalWrt[0]) ||
+    normalizedCompatibility.rules[2]?.id !== 'BLD-0002' ||
+    normalizedCompatibility.rules[2]?.issue !== 'build-failure' ||
+    normalizedCompatibility.rules[2]?.match !== 'all-selected' ||
+    normalizedCompatibility.rules[2]?.packages?.join(',') !== 'luci-app-openvpn-server' ||
+    normalizedCompatibility.rules[2]?.scope?.ImmortalWrt?.join(',') !== 'master' ||
+    normalizedCompatibility.rules[2]?.refs?.join(',') !== 'run:31382119111' ||
+    normalizedCompatibility.rules[0]?.refs?.join(',') !== 'run:31248199953,run:31382153641' ||
     !unsupportedSchemasRejected ||
     !oversizedCompatibilityRejected ||
     normalizedCompatibility.rules[0]?.scope?.ImmortalWrt?.join(',') !== 'openwrt-25.12' ||
@@ -478,6 +509,12 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !autoTranslator.includes('translation-retry-queue.json') ||
     !autoTranslator.includes('translation-state.json') ||
     !autoTranslator.includes('uniqueDescriptionPendingByLanguage') ||
+    !autoTranslator.includes('indexedTranslationCatalogs(readTranslationIndex(distDir), distDir)') ||
+    !autoTranslator.includes('writeIndexedLanguageAssets(entry, catalog, translationUpdatedAt)') ||
+    autoTranslator.includes('readdirSync') ||
+    !translationAssets.includes("logical.startsWith('menu:')") ||
+    !translationAssets.includes('menuLanguagePayload') ||
+    !translationAssets.includes('writeIndexedLanguageAssets') ||
     !translationWorkflow.includes('translation_provider:') ||
     !translationWorkflow.includes('translate_batch_size:') ||
     !translationWorkflow.includes('translate_batch_count:') ||
@@ -493,7 +530,15 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationWorkflow.includes('publish_mode="${{ steps.plan.outputs.publish_mode }}"') ||
     translationPublishContractCount !== 2 ||
     translationSnapshotContractCount !== 2 ||
-    !translationWorkflow.includes('git -C dist push origin HEAD:catalog-data') ||
+    !translationWorkflow.includes('git -C dist push origin "HEAD:$CATALOG_DATA_BRANCH"') ||
+    !translationWorkflow.includes('code_channel:') ||
+    !translationWorkflow.includes('data_channel:') ||
+    !translationWorkflow.includes('default: catalog-data') ||
+    !translationWorkflow.includes('default: "5"') ||
+    !translationWorkflow.includes('cron: "37 20 * * *"') ||
+    !translationWorkflow.includes('git clone --filter=blob:none --no-checkout --single-branch') ||
+    !translationWorkflow.includes('scripts/translation-sparse-paths.mjs') ||
+    !translationWorkflow.includes('scripts/sync-translation-assets.mjs') ||
     !translationWorkflow.includes('Translate with live progress') ||
     !translationWorkflow.includes('timeout-minutes: 60') ||
     !translationWorkflow.includes('actions/setup-python@v6') ||
@@ -505,8 +550,7 @@ if (!autoTranslator.includes('i18n-cache.json') ||
     !translationPlan.includes('perBatchTimeBudgetSeconds') ||
     !translationPlan.includes("publishMode = env.TRANSLATE_PUBLISH_MODE || 'each-batch'") ||
     !translationWorkflow.includes('dist/translation-state.json') ||
-    !translationWorkflow.includes('workflow_run:') ||
-    !translationWorkflow.includes("github.event.workflow_run.event == 'schedule'") ||
+    translationWorkflow.includes('workflow_run:') ||
     workflow.includes('scripts/translate-catalog.mjs')) failures.push('manual translation automation');
 if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
 console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible / ${(menu.allOptions || menu.options).length} total Kconfig options`);

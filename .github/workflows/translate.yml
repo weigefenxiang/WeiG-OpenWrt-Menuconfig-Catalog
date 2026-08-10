@@ -1,9 +1,23 @@
 name: Translate Menuconfig Catalog
-run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ inputs.translate_batch_size || '500' }}×${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }} · run ${{ github.run_number }}
+run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ inputs.translate_batch_size || '500' }}×${{ inputs.translate_batch_count || '5' }} · ${{ inputs.data_channel || 'catalog-data' }} · run ${{ github.run_number }}
 
 on:
+  schedule:
+    - cron: "37 20 * * *"
   workflow_dispatch:
     inputs:
+      code_channel:
+        description: Workflow code branch
+        required: true
+        type: choice
+        default: main
+        options: [main, dev, staging]
+      data_channel:
+        description: Catalog data branch
+        required: true
+        type: choice
+        default: catalog-data
+        options: [catalog-data, catalog-dev, catalog-staging, catalog-fix]
       translation_provider:
         description: Translation engine
         required: true
@@ -24,7 +38,7 @@ on:
         description: Number of batches (1-20; batch size × count must be <=5000)
         required: true
         type: choice
-        default: "1"
+        default: "5"
         options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
       translate_publish_mode:
         description: Publish every successful batch (recommended) or once at the end
@@ -36,33 +50,35 @@ on:
         description: Azure source-character cap (Argos ignores this)
         required: true
         default: "400000"
-  workflow_run:
-    workflows: [Build Menuconfig Catalog]
-    types: [completed]
-
 permissions:
   contents: write
 
 concurrency:
-  group: menuconfig-catalog
+  group: menuconfig-translation-${{ inputs.data_channel || 'catalog-data' }}
   cancel-in-progress: false
 
 jobs:
   translate:
     name: 01 · Translate descriptions / 翻译说明
-    if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'schedule')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/checkout@v7
         with:
-          ref: catalog-data
-          path: dist
-          fetch-depth: 1
+          ref: ${{ inputs.code_channel || github.event.repository.default_branch }}
+      - name: Fetch indexed translation assets only
+        env:
+          CATALOG_DATA_BRANCH: ${{ inputs.data_channel || 'catalog-data' }}
+        run: |
+          git clone --filter=blob:none --no-checkout --single-branch \
+            --branch "$CATALOG_DATA_BRANCH" \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" dist
+          git -C dist sparse-checkout init --no-cone
+          printf '/index.json\n' | git -C dist sparse-checkout set --stdin
+          git -C dist checkout "$CATALOG_DATA_BRANCH"
+          node scripts/translation-sparse-paths.mjs dist/index.json > "$RUNNER_TEMP/translation-sparse-paths"
+          git -C dist sparse-checkout set --stdin < "$RUNNER_TEMP/translation-sparse-paths"
+          git -C dist checkout "$CATALOG_DATA_BRANCH"
       - name: Select translation engine
         id: translator
         env:
@@ -73,7 +89,7 @@ jobs:
         id: plan
         env:
           TRANSLATE_BATCH_SIZE: ${{ inputs.translate_batch_size || '500' }}
-          TRANSLATE_BATCH_COUNT: ${{ github.event_name == 'workflow_run' && '2' || inputs.translate_batch_count || '1' }}
+          TRANSLATE_BATCH_COUNT: ${{ inputs.translate_batch_count || '5' }}
           TRANSLATE_PUBLISH_MODE: ${{ inputs.translate_publish_mode || 'each-batch' }}
           TRANSLATE_TOTAL_ITEM_LIMIT: "5000"
           TRANSLATE_TOTAL_TIME_BUDGET_SECONDS: "3000"
@@ -102,12 +118,13 @@ jobs:
           AZURE_TRANSLATOR_ENDPOINT: ${{ vars.AZURE_TRANSLATOR_ENDPOINT }}
           TRANSLATION_PROVIDER: ${{ steps.translator.outputs.provider }}
           TRANSLATE_ENABLED: ${{ steps.translator.outputs.enabled }}
-          TRANSLATE_TRIGGER: ${{ github.event_name == 'workflow_run' && 'schedule' || 'manual' }}
+          TRANSLATE_TRIGGER: ${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
           TRANSLATE_LANGUAGE: ${{ inputs.translate_language || 'auto' }}
           TRANSLATE_MAX_ITEMS: ${{ steps.plan.outputs.batch_size }}
           TRANSLATE_BATCH_COUNT: ${{ steps.plan.outputs.batch_count }}
           TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget || '400000' }}
           ARGOS_TIME_BUDGET_SECONDS: ${{ steps.plan.outputs.per_batch_time_budget_seconds }}
+          CATALOG_DATA_BRANCH: ${{ inputs.data_channel || 'catalog-data' }}
         run: |
           set -euo pipefail
           rm -f "$RUNNER_TEMP/translation-run-started" dist/translation-summary.json
@@ -117,9 +134,9 @@ jobs:
           publish_batch() {
             git -C dist config user.name github-actions[bot]
             git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            node scripts/sync-index-assets.mjs dist
-            node scripts/sync-index-assets.mjs dist --check
-            git -C dist add .
+            node scripts/sync-translation-assets.mjs dist/index.json
+            node scripts/sync-translation-assets.mjs dist/index.json --check
+            git -C dist add --sparse .
             if git -C dist diff --cached --quiet; then
               echo "Batch ${batch}/${batch_count}: no catalog changes to publish."
               return 0
@@ -127,10 +144,10 @@ jobs:
             git -C dist commit -m "data: translate menuconfig descriptions batch ${batch}/${batch_count}"
             asset_commit="$(git -C dist rev-parse HEAD)"
             node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit"
-            node scripts/sync-index-assets.mjs dist --check
+            node scripts/sync-translation-assets.mjs dist/index.json --check
             git -C dist add index.json
             git -C dist commit -m "data: pin translated catalog assets batch ${batch}/${batch_count}"
-            git -C dist push origin HEAD:catalog-data
+            git -C dist push origin "HEAD:$CATALOG_DATA_BRANCH"
           }
           for ((batch=1; batch<=batch_count; batch++)); do
             echo "::group::Batch ${batch}/${batch_count} · translate"
@@ -171,9 +188,9 @@ jobs:
           fi
           git -C dist config user.name github-actions[bot]
           git -C dist config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          node scripts/sync-index-assets.mjs dist
-          node scripts/sync-index-assets.mjs dist --check
-          git -C dist add .
+          node scripts/sync-translation-assets.mjs dist/index.json
+          node scripts/sync-translation-assets.mjs dist/index.json --check
+          git -C dist add --sparse .
           if git -C dist diff --cached --quiet; then
             echo "No translated catalog changes to publish."
             exit 0
@@ -181,10 +198,10 @@ jobs:
           git -C dist commit -m "data: translate menuconfig descriptions"
           asset_commit="$(git -C dist rev-parse HEAD)"
           node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit"
-          node scripts/sync-index-assets.mjs dist --check
+          node scripts/sync-translation-assets.mjs dist/index.json --check
           git -C dist add index.json
           git -C dist commit -m "data: pin translated catalog assets"
-          git -C dist push origin HEAD:catalog-data
+          git -C dist push origin "HEAD:${{ inputs.data_channel || 'catalog-data' }}"
       - name: Translation summary
         if: always() && steps.translator.outputs.provider != 'off'
         run: node scripts/write-translation-summary.mjs >> "$GITHUB_STEP_SUMMARY"

@@ -59,7 +59,7 @@ try {
   if (index.assets?.compatibility?.asset !== 'compatibility.json.gz' ||
       !/^[a-f0-9]{64}$/.test(index.assets.compatibility.hash) ||
       index.assets.compatibility.bytes <= 0 || index.assets.compatibility.schema !== 2 ||
-      index.assets.compatibility.rules !== 2 || index.assets.compatibility.jsonBytes <= 0 ||
+      index.assets.compatibility.rules !== 3 || index.assets.compatibility.jsonBytes <= 0 ||
       index.assets.compatibility.jsonBytes > 512 * 1024) {
     throw new Error('global compatibility asset contract missing');
   }
@@ -100,7 +100,7 @@ try {
   if (JSON.stringify(fast.sources) !== JSON.stringify(index.sources) ||
       JSON.stringify(fast.health) !== JSON.stringify(index.health) ||
       fast.generatedAt !== index.generatedAt || fast.assets.compatibility.schema !== 2 ||
-      fast.assets.compatibility.rules !== 2) {
+      fast.assets.compatibility.rules !== 3) {
     throw new Error('compatibility-only publish changed non-compatibility Catalog data');
   }
   const firstFast = readFileSync(fastOut, 'utf8');
@@ -156,7 +156,7 @@ try {
   if (!invalidIndexRejected || !invalidAssetRejected) {
     throw new Error('compatibility-only publish accepted a tampered contract');
   }
-  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1 compatibility=2 root-assets=stable');
+  console.log('catalog index checks passed: fresh=1 stale=1 unavailable=1 compatibility=3 root-assets=stable');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }
