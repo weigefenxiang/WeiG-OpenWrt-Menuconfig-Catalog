@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-10T05:28:51.880Z",
+  "generatedAt": "2026-08-10T14:32:00.551Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 9996,
+  "options": 9997,
   "translatedZhCN": 121,
   "missingZhCN": [
     {
@@ -47490,7 +47490,7 @@
     },
     {
       "symbol": "PACKAGE_bird3cl",
-      "promptEn": "The BIRD lightweight command-line client (v2)",
+      "promptEn": "The BIRD lightweight command-line client (v3)",
       "path": [
         "Network",
         "Routing and Redirection"
@@ -70639,6 +70639,13 @@
     {
       "symbol": "PACKAGE_librespeed-cli",
       "promptEn": "Command line client for LibreSpeed",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_librespeed-cli-rust",
+      "promptEn": "Command line client for LibreSpeed (Rust)",
       "path": [
         "Utilities"
       ]
