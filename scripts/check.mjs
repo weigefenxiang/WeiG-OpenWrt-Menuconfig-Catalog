@@ -45,7 +45,19 @@ const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs
 const translationAssets = readFileSync(join(ROOT, 'scripts', 'translation-catalog-assets.mjs'), 'utf8');
 const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
 const snapshotStamper = readFileSync(join(ROOT, 'scripts', 'stamp-catalog-snapshot.mjs'), 'utf8');
+const license = readFileSync(join(ROOT, 'LICENSE'), 'utf8');
+const notice = readFileSync(join(ROOT, 'NOTICE'), 'utf8');
+const reuse = readFileSync(join(ROOT, 'REUSE.toml'), 'utf8');
+const licenseZh = readFileSync(join(ROOT, 'LICENSE.zh-CN.md'), 'utf8');
 const failures = [];
+
+if (!license.includes('GNU GENERAL PUBLIC LICENSE') || !license.includes('Version 3, 29 June 2007') ||
+    !license.includes('END OF TERMS AND CONDITIONS') || !notice.includes('GPL-3.0-or-later') ||
+    !notice.includes('weigefenxiang@gmail.com') ||
+    !reuse.includes('SPDX-License-Identifier = "GPL-3.0-or-later"') ||
+    !licenseZh.includes('非官方中文说明') || !licenseZh.includes('LICENSE')) {
+  failures.push('project license contract');
+}
 
 function mutatedCompatibility(mutator) {
   const value = structuredClone(compatibility);
@@ -58,7 +70,6 @@ function mutatedCompatibility(mutator) {
   }
 }
 const curatedCandidates = policy.curatedApplications || [];
-const curatedById = new Map(curatedCandidates.map((item) => [item.id, item]));
 const curatedApplications = buildCuratedApplications(ROOT);
 const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
 const translationPublishContractCount = (translationWorkflow.match(
@@ -227,12 +238,14 @@ if (packageInfoOnly.length !== 1 ||
     resolvePackageOption({ id: 'tailscale-community', packages: ['luci-app-tailscale-community'] }, new Set(['tailscale-community'])) !== '') {
   failures.push('packageinfo-only is not selectable');
 }
-if (curatedCandidates.length !== 176 || curatedCandidates.some((item) =>
+if (curatedCandidates.length < 1 || curatedCandidates.length > 1024 ||
+    new Set(curatedCandidates.map((item) => item.id)).size !== curatedCandidates.length ||
+    new Set(curatedCandidates.flatMap((item) => item.packages || [])).size !==
+      curatedCandidates.reduce((count, item) => count + (item.packages?.length || 0), 0) ||
+    curatedCandidates.some((item) =>
     !item || typeof item !== 'object' || !item.id || !Array.isArray(item.packages) ||
     item.packages.length === 0 || !policy.curatedGroups.includes(item.group) ||
     item.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(name))) ||
-    curatedById.get('adguardhome')?.packages.join(',') !== 'luci-app-adguardhome' ||
-    curatedById.get('mosdns')?.packages.join(',') !== 'luci-app-mosdns' ||
     curatedApplications.items.length !== curatedCandidates.length ||
     curatedApplications.items.some((item) => !item.titleZh || !item.usageZh)) {
   failures.push('curated LuCI application package contract');
@@ -333,6 +346,11 @@ if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
     sourceAllowsBranch(policy.sources[0], 'main')) failures.push('stable branch policy');
 if (automationPolicy.schema !== 1 || automationPolicy.probe?.collaboratorMaxParallel !== 3 ||
     automationPolicy.probe?.ownerDefaultParallel !== 0 || automationPolicy.probe?.maxMatrixJobs !== 256 ||
+    automationPolicy.probe?.planFetchConcurrency !== 4 ||
+    automationPolicy.probe?.reductionMaxAttempts?.['package-compile'] !== 8 ||
+    automationPolicy.probe?.reductionMaxAttempts?.['rootfs-integration'] !== 4 ||
+    automationPolicy.probe?.reductionMaxAttempts?.['firmware-integration'] !== 2 ||
+    automationPolicy.probe?.reductionMaxAttempts?.['boot-smoke'] !== 0 ||
     automationPolicy.probe?.normalizedEvidenceDays !== 60 || automationPolicy.probe?.fullLogDays !== 30 ||
     automationPolicy.translation?.defaultDataBranch !== 'catalog-data' ||
     automationPolicy.translation?.batchSize !== 500 || automationPolicy.translation?.batchCount !== 5 ||

@@ -58,9 +58,15 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 新增规则前先查上游源码和真实证据；确认一个范围后横向检查同 Source/Branch 机制。Source/Branch 新版本若已被 glob 覆盖，无需增加 JSON 项，但首次真实探测仍应记录证据。上游修复后及时删减，禁止 zombie rule。
 
-Catalog 的手动 **Package Compatibility Probe** 可输入 1–8 个 Catalog 应用 ID 或 package ID、Source/Branch glob、`compile` 或 `co-install`。控制器直接读取当前代码频道对应数据分支的 `index.json`、`applications.json.gz` 与匹配 Branch 的 `core` 分片，由 Catalog 选择合法 Target/Profile（优先 x86/64，否则首个可构建路径），再动态生成一个 Matrix；每项只编译所选软件包闭包，不构建完整固件，`co-install` 还执行 `package/install` 以暴露同装和文件归属问题。Matrix 最多 256 项；仓库所有者设置 `0` 可使用全部计划并发，其他有写权限的协作者强制最多 3，普通访客不能在本仓库手动运行。Run Summary 公开；规范化证据保留 60 天，完整日志保留 30 天，dry-run 默认开启。
+Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 有四个递进深度：`package-compile` 只编译软件包与依赖闭包；`rootfs-integration` 继续安装到 RootFS，以发现 APK/OPKG 文件归属和同装冲突；`firmware-integration` 在相同 Source/Branch/Target 下构建基础固件与加入软件包的固件作 A/B 对照；实验性的 `boot-smoke`（界面译为“启动自检”）只对 Catalog 允许的通用可启动目标验证启动标志，不加入插件专属运行判断。
 
-Source/Branch 组合完全来自 Catalog index。`ImmortalWrt`、`OpenWrt`、`lede` 的 `openwrt-*` 新分支会在下一次自动发现后自然进入全量探测，不在探针中维护版本清单。证据只用于人工审查，不自动改写 `compatibility.json`。
+请求可包含 1–8 个 Catalog 应用 ID 或 package ID，并选择全部、当前或指定 Source/Branch，以及自动目标、当前 Target/Profile 或全部代表目标。控制器只读取当前代码频道对应数据分支的 `index.json`、`applications.json.gz` 与匹配 Branch 的 `core` 分片，校验 SHA-256 后动态生成 Matrix。自动目标优先 x86/64，并可在同一 Job 内依次尝试 Catalog 合法后备目标；全部目标受 256 Job 上限约束。只有某软件包在全部合法环境中均由软件包原因失败，才能标记为“完全不兼容”；部分 Target 失败只是带覆盖率的证据，基础固件失败、下载失败、磁盘不足和超时归为基础设施或不确定结果。
+
+网页把 schema 1 请求编码为短 Base64URL 字符串，预填到公开 GitHub Issue 的隐藏块中；Workflow 在创建任何 Matrix Job 前重新校验 schema、权限、Catalog 合约、Source/Branch、Target/Profile 与软件包映射。仓库所有者可使用完整计划并发；有写权限的协作者强制最多 3；普通访客可查看界面和公开 Run，但不能启动 Matrix。`workflow_dispatch` 保留为管理员回退入口。规范化证据保留 60 天，完整日志保留 30 天；plan-only 明确表示没有执行编译，不能产生兼容性结论。
+
+多个软件包共同失败时，Runner 只在所有已计划目标均表现为软件包阶段失败后，按 `.github/automation-policy.json` 的分模式预算执行通用 delta 缩减；结果标为“有限缩减候选”，不是自动规则。依赖安装、精确克隆、feeds、构建与启动输出合并进完整探针日志；并行失败仍以 `-j1 V=s` 串行复核。
+
+Source/Branch 组合完全来自 Catalog index。`ImmortalWrt`、`OpenWrt`、`lede` 的 `openwrt-*` 新分支会在下一次自动发现后自然进入全量探测，不在探针中维护版本清单。探针结果按 Source/Branch/Target/Profile 和归一化错误指纹聚合；证据只用于人工审查，不自动改写 `compatibility.json`。schema 2 当前没有 Target/Profile 过滤字段，因此局部机型失败不得错误扩大成全 Source/Branch 规则。
 
 新增插件或规则前的硬顺序是：复用现有 Catalog 数据 → 横向审计同数据类型、执行路径和风险类别 → 先运行包级探针 → 再以真实证据维护通用规则。AutoBuild 不得写插件名或专用执行器。
 

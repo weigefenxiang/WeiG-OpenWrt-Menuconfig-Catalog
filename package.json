@@ -1,11 +1,13 @@
 {
   "name": "weig-openwrt-menuconfig-catalog",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "check": "node scripts/check.mjs",
     "discover": "node scripts/discover.mjs",
     "refresh:curated": "node scripts/refresh-curated-applications.mjs",
+    "refresh:applications": "node scripts/refresh-curated-applications.mjs",
     "refresh:sizes": "node scripts/refresh-curated-sizes.mjs",
     "import-i18n": "node scripts/import-curated-i18n.mjs",
     "translate": "node scripts/translate-catalog.mjs",

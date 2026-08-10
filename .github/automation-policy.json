@@ -4,10 +4,26 @@
     "collaboratorMaxParallel": 3,
     "ownerDefaultParallel": 0,
     "maxMatrixJobs": 256,
+    "planFetchConcurrency": 4,
     "maxPackages": 8,
     "normalizedEvidenceDays": 60,
     "fullLogDays": 30,
-    "timeoutMinutes": 180
+    "timeoutMinutes": 180,
+    "maxAutoTargetAttempts": 8,
+    "reductionMaxAttempts": {
+      "package-compile": 8,
+      "rootfs-integration": 4,
+      "firmware-integration": 2,
+      "boot-smoke": 0
+    },
+    "preferredTargetPatterns": ["x86/64", "*"],
+    "bootTargetPatterns": ["x86/64"],
+    "modeTimeoutMinutes": {
+      "package-compile": 180,
+      "rootfs-integration": 180,
+      "firmware-integration": 360,
+      "boot-smoke": 360
+    }
   },
   "translation": {
     "defaultDataBranch": "catalog-data",

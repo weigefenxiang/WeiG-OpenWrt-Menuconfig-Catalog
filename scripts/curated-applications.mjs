@@ -8,6 +8,7 @@ function readJson(file) {
 export function buildCuratedApplications(root) {
   const config = readJson(join(root, 'catalog.config.json'));
   const translations = readJson(join(root, 'translations', 'zh-CN.json'));
+  const probeUi = readJson(join(root, 'translations', 'probe-ui.json'));
   const sizes = readJson(join(root, 'curated-sizes.json'));
   const sizeMap = sizes.bytes || {};
   const items = (config.curatedApplications || []).map((row) => {
@@ -31,6 +32,7 @@ export function buildCuratedApplications(root) {
   return {
     schema: 1,
     groups: config.curatedGroups || [],
+    probeUi,
     sizeMetric: sizes.metric,
     sizeGeneratedAt: sizes.generatedAt,
     items,

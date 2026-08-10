@@ -7,7 +7,13 @@
       "branch": "main",
       "architecture": "aarch64_cortex-a53",
       "baseUrl": "https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53",
-      "feeds": ["base", "packages", "luci", "routing", "telephony"],
+      "feeds": [
+        "base",
+        "packages",
+        "luci",
+        "routing",
+        "telephony"
+      ],
       "format": "apk"
     },
     {
@@ -15,7 +21,13 @@
       "branch": "master",
       "architecture": "aarch64_cortex-a53",
       "baseUrl": "https://downloads.immortalwrt.org/snapshots/packages/aarch64_cortex-a53",
-      "feeds": ["base", "packages", "luci", "routing", "telephony"],
+      "feeds": [
+        "base",
+        "packages",
+        "luci",
+        "routing",
+        "telephony"
+      ],
       "format": "apk"
     }
   ],
@@ -32,7 +44,10 @@
       },
       "exclude": [],
       "diy": "immortalwrt",
-      "build": { "diy1": "diy-immortalwrt.sh", "diy2": "diy2-generic.sh" }
+      "build": {
+        "diy1": "diy-immortalwrt.sh",
+        "diy2": "diy2-generic.sh"
+      }
     },
     {
       "id": "OpenWrt",
@@ -46,7 +61,10 @@
       },
       "exclude": [],
       "diy": "openwrt",
-      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-openwrt.sh" }
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-openwrt.sh"
+      }
     },
     {
       "id": "lede",
@@ -60,7 +78,10 @@
       },
       "exclude": [],
       "diy": "lede",
-      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-lede.sh" }
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-lede.sh"
+      }
     },
     {
       "id": "hanwckf",
@@ -72,24 +93,10 @@
       "exclude": [],
       "diy": "legacy",
       "legacy": true,
-      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-generic.sh" }
-    }
-  ],
-  "curatedAuditSources": [
-    {
-      "id": "OpenWrt",
-      "repo": "openwrt/luci",
-      "ref": "master"
-    },
-    {
-      "id": "ImmortalWrt",
-      "repo": "immortalwrt/luci",
-      "ref": "master"
-    },
-    {
-      "id": "lede",
-      "repo": "coolsnowwolf/luci",
-      "ref": "openwrt-25.12"
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-generic.sh"
+      }
     }
   ],
   "curatedGroups": [
@@ -123,6 +130,13 @@
       "group": "网络管理"
     },
     {
+      "id": "accesscontrol",
+      "packages": [
+        "luci-app-accesscontrol"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "acl",
       "packages": [
         "luci-app-acl"
@@ -152,6 +166,13 @@
       "group": "广告过滤与DNS"
     },
     {
+      "id": "adbyby-plus",
+      "packages": [
+        "luci-app-adbyby-plus"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "adguardhome",
       "packages": [
         "luci-app-adguardhome"
@@ -166,6 +187,20 @@
       "group": "系统工具"
     },
     {
+      "id": "advancedsetting",
+      "packages": [
+        "luci-app-advancedsetting"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "ahcp",
+      "packages": [
+        "luci-app-ahcp"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "airoha-npu",
       "packages": [
         "luci-app-airoha-npu"
@@ -178,6 +213,27 @@
         "luci-app-airplay2"
       ],
       "group": "多媒体与外设"
+    },
+    {
+      "id": "airwhu",
+      "packages": [
+        "luci-app-airwhu"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "aliddns",
+      "packages": [
+        "luci-app-aliddns"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "alist",
+      "packages": [
+        "luci-app-alist"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "amule",
@@ -232,6 +288,13 @@
       "group": "管控与安全"
     },
     {
+      "id": "asterisk",
+      "packages": [
+        "luci-app-asterisk"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "attendedsysupgrade",
       "packages": [
         "luci-app-attendedsysupgrade"
@@ -254,6 +317,13 @@
       "group": "其他与高级"
     },
     {
+      "id": "baidupcs-web",
+      "packages": [
+        "luci-app-baidupcs-web"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "banip",
       "packages": [
         "luci-app-banip"
@@ -268,6 +338,41 @@
       "group": "管控与安全"
     },
     {
+      "id": "beardropper",
+      "packages": [
+        "luci-app-beardropper"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "bird1-ipv4",
+      "packages": [
+        "luci-app-bird1-ipv4"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "bird1-ipv6",
+      "packages": [
+        "luci-app-bird1-ipv6"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "bird4",
+      "packages": [
+        "luci-app-bird4"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "bird6",
+      "packages": [
+        "luci-app-bird6"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "bitsrunlogin-go",
       "packages": [
         "luci-app-bitsrunlogin-go"
@@ -275,9 +380,23 @@
       "group": "校园网认证"
     },
     {
+      "id": "bmx6",
+      "packages": [
+        "luci-app-bmx6"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "bmx7",
       "packages": [
         "luci-app-bmx7"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "brook-server",
+      "packages": [
+        "luci-app-brook-server"
       ],
       "group": "其他与高级"
     },
@@ -296,11 +415,25 @@
       "group": "系统工具"
     },
     {
+      "id": "cifs",
+      "packages": [
+        "luci-app-cifs"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "cifs-mount",
       "packages": [
         "luci-app-cifs-mount"
       ],
       "group": "存储与下载"
+    },
+    {
+      "id": "cjdns",
+      "packages": [
+        "luci-app-cjdns"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "clamav",
@@ -353,11 +486,25 @@
       "group": "管控与安全"
     },
     {
+      "id": "cshark",
+      "packages": [
+        "luci-app-cshark"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "csshnpd",
       "packages": [
         "luci-app-csshnpd"
       ],
       "group": "内网穿透与组网"
+    },
+    {
+      "id": "cupsd",
+      "packages": [
+        "luci-app-cupsd"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "dae",
@@ -404,12 +551,33 @@
       "hot": true
     },
     {
+      "id": "diag-core",
+      "packages": [
+        "luci-app-diag-core"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "diskman",
       "packages": [
         "luci-app-diskman"
       ],
       "group": "存储与下载",
       "hot": true
+    },
+    {
+      "id": "dnscrypt-proxy",
+      "packages": [
+        "luci-app-dnscrypt-proxy"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "dnsforwarder",
+      "packages": [
+        "luci-app-dnsforwarder"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "docker",
@@ -441,6 +609,20 @@
       "group": "其他与高级"
     },
     {
+      "id": "dynapoint",
+      "packages": [
+        "luci-app-dynapoint"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "e2guardian",
+      "packages": [
+        "luci-app-e2guardian"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "email",
       "packages": [
         "luci-app-email"
@@ -462,9 +644,23 @@
       "group": "网络管理"
     },
     {
+      "id": "eqos-mtk",
+      "packages": [
+        "luci-app-eqos-mtk"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "example",
       "packages": [
         "luci-app-example"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "fileassistant",
+      "packages": [
+        "luci-app-fileassistant"
       ],
       "group": "其他与高级"
     },
@@ -490,11 +686,46 @@
       "group": "存储与下载"
     },
     {
+      "id": "filetransfer",
+      "packages": [
+        "luci-app-filetransfer"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "firewall",
       "packages": [
         "luci-app-firewall"
       ],
       "group": "系统基础"
+    },
+    {
+      "id": "fogvdn",
+      "packages": [
+        "luci-app-fogvdn"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "freifunk-diagnostics",
+      "packages": [
+        "luci-app-freifunk-diagnostics"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "freifunk-policyrouting",
+      "packages": [
+        "luci-app-freifunk-policyrouting"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "freifunk-widgets",
+      "packages": [
+        "luci-app-freifunk-widgets"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "frpc",
@@ -526,11 +757,39 @@
       "group": "魔法与加速"
     },
     {
+      "id": "gowebdav",
+      "packages": [
+        "luci-app-gowebdav"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "guest-wifi",
+      "packages": [
+        "luci-app-guest-wifi"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "haproxy-tcp",
+      "packages": [
+        "luci-app-haproxy-tcp"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "hd-idle",
       "packages": [
         "luci-app-hd-idle"
       ],
       "group": "存储与下载"
+    },
+    {
+      "id": "hnet",
+      "packages": [
+        "luci-app-hnet"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "homeproxy",
@@ -548,11 +807,32 @@
       "group": "广告过滤与DNS"
     },
     {
+      "id": "https_dns_proxy",
+      "packages": [
+        "luci-app-https_dns_proxy"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "ipsec-vpnd",
       "packages": [
         "luci-app-ipsec-vpnd"
       ],
       "group": "魔法与加速"
+    },
+    {
+      "id": "ipsec-vpnserver-manyusers",
+      "packages": [
+        "luci-app-ipsec-vpnserver-manyusers"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "iptvhelper",
+      "packages": [
+        "luci-app-iptvhelper"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "irqbalance",
@@ -569,9 +849,30 @@
       "group": "系统工具"
     },
     {
+      "id": "k3usb",
+      "packages": [
+        "luci-app-k3usb"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "kcptun",
+      "packages": [
+        "luci-app-kcptun"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "keepalived",
       "packages": [
         "luci-app-keepalived"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "kodexplorer",
+      "packages": [
+        "luci-app-kodexplorer"
       ],
       "group": "其他与高级"
     },
@@ -626,6 +927,13 @@
       "group": "其他与高级"
     },
     {
+      "id": "ltqtapi",
+      "packages": [
+        "luci-app-ltqtapi"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "lucky",
       "packages": [
         "luci-app-lucky"
@@ -638,6 +946,20 @@
         "luci-app-lxc"
       ],
       "group": "系统工具"
+    },
+    {
+      "id": "mentohust",
+      "packages": [
+        "luci-app-mentohust"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "meshwizard",
+      "packages": [
+        "luci-app-meshwizard"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "microsocks",
@@ -653,6 +975,13 @@
       ],
       "group": "多媒体与外设",
       "hot": true
+    },
+    {
+      "id": "minieap",
+      "packages": [
+        "luci-app-minieap"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "mjpg-streamer",
@@ -690,6 +1019,27 @@
       "group": "网络管理"
     },
     {
+      "id": "mtk",
+      "packages": [
+        "luci-app-mtk"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "mtwifi",
+      "packages": [
+        "luci-app-mtwifi"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "mtwifi-cfg",
+      "packages": [
+        "luci-app-mtwifi-cfg"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "music-remote-center",
       "packages": [
         "luci-app-music-remote-center"
@@ -705,11 +1055,39 @@
       "hot": true
     },
     {
+      "id": "mwan3helper",
+      "packages": [
+        "luci-app-mwan3helper"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "mwol",
+      "packages": [
+        "luci-app-mwol"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "n2n",
       "packages": [
         "luci-app-n2n"
       ],
       "group": "内网穿透与组网"
+    },
+    {
+      "id": "n2n_v2",
+      "packages": [
+        "luci-app-n2n_v2"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "naiveproxy",
+      "packages": [
+        "luci-app-naiveproxy"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "natmap",
@@ -741,6 +1119,20 @@
       "group": "存储与下载"
     },
     {
+      "id": "nft-qos",
+      "packages": [
+        "luci-app-nft-qos"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "nginx-pingos",
+      "packages": [
+        "luci-app-nginx-pingos"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "ngrokc",
       "packages": [
         "luci-app-ngrokc"
@@ -763,11 +1155,25 @@
       "hot": true
     },
     {
+      "id": "noddos",
+      "packages": [
+        "luci-app-noddos"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "nps",
       "packages": [
         "luci-app-nps"
       ],
       "group": "内网穿透与组网"
+    },
+    {
+      "id": "ntpc",
+      "packages": [
+        "luci-app-ntpc"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "nut",
@@ -812,6 +1218,13 @@
       "group": "其他与高级"
     },
     {
+      "id": "olsrd2",
+      "packages": [
+        "luci-app-olsrd2"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "omcproxy",
       "packages": [
         "luci-app-omcproxy"
@@ -824,6 +1237,13 @@
         "luci-app-onekeyap"
       ],
       "group": "网络管理"
+    },
+    {
+      "id": "onliner",
+      "packages": [
+        "luci-app-onliner"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "openclash",
@@ -839,6 +1259,13 @@
         "luci-app-openlist"
       ],
       "group": "存储与下载"
+    },
+    {
+      "id": "openthread",
+      "packages": [
+        "luci-app-openthread"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "openvpn",
@@ -860,6 +1287,13 @@
         "luci-app-openwisp"
       ],
       "group": "网络管理"
+    },
+    {
+      "id": "opkg",
+      "packages": [
+        "luci-app-opkg"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "oscam",
@@ -903,6 +1337,13 @@
         "luci-app-pbr"
       ],
       "group": "网络管理"
+    },
+    {
+      "id": "polipo",
+      "packages": [
+        "luci-app-polipo"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "pppoe-relay",
@@ -955,6 +1396,13 @@
       "group": "网络管理"
     },
     {
+      "id": "qos-gargoyle",
+      "packages": [
+        "luci-app-qos-gargoyle"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "qos-legacy",
       "packages": [
         "luci-app-qos-legacy"
@@ -967,6 +1415,27 @@
         "luci-app-qosify"
       ],
       "group": "网络管理"
+    },
+    {
+      "id": "qosv4",
+      "packages": [
+        "luci-app-qosv4"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "radicale",
+      "packages": [
+        "luci-app-radicale"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "radicale2",
+      "packages": [
+        "luci-app-radicale2"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "radicale3",
@@ -995,6 +1464,13 @@
         "luci-app-repeater"
       ],
       "group": "网络管理"
+    },
+    {
+      "id": "rosy-file-server",
+      "packages": [
+        "luci-app-rosy-file-server"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "rp-pppoe-server",
@@ -1047,12 +1523,54 @@
       "group": "多媒体与外设"
     },
     {
+      "id": "serverchan",
+      "packages": [
+        "luci-app-serverchan"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "shadowsocks-libev",
+      "packages": [
+        "luci-app-shadowsocks-libev"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "shairplay",
+      "packages": [
+        "luci-app-shairplay"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "siitwizard",
+      "packages": [
+        "luci-app-siitwizard"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "simple-adblock",
+      "packages": [
+        "luci-app-simple-adblock"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "smartdns",
       "packages": [
         "luci-app-smartdns"
       ],
       "group": "广告过滤与DNS",
       "hot": true
+    },
+    {
+      "id": "smartinfo",
+      "packages": [
+        "luci-app-smartinfo"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "sms-tool-js",
@@ -1062,11 +1580,25 @@
       "group": "网络管理"
     },
     {
+      "id": "smstool",
+      "packages": [
+        "luci-app-smstool"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "snmpd",
       "packages": [
         "luci-app-snmpd"
       ],
       "group": "监控统计"
+    },
+    {
+      "id": "socat",
+      "packages": [
+        "luci-app-socat"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "softether",
@@ -1081,6 +1613,27 @@
         "luci-app-softethervpn"
       ],
       "group": "魔法与加速"
+    },
+    {
+      "id": "softethervpn5",
+      "packages": [
+        "luci-app-softethervpn5"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "speederv2",
+      "packages": [
+        "luci-app-speederv2"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "splash",
+      "packages": [
+        "luci-app-splash"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "spotifyd",
@@ -1110,6 +1663,41 @@
         "luci-app-sshtunnel"
       ],
       "group": "内网穿透与组网"
+    },
+    {
+      "id": "ssocks",
+      "packages": [
+        "luci-app-ssocks"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "ssr-libev-server",
+      "packages": [
+        "luci-app-ssr-libev-server"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "ssr-mudb-server",
+      "packages": [
+        "luci-app-ssr-mudb-server"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "ssr-plus",
+      "packages": [
+        "luci-app-ssr-plus"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "ssrserver-python",
+      "packages": [
+        "luci-app-ssrserver-python"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "statistics",
@@ -1154,6 +1742,13 @@
       "group": "内网穿透与组网"
     },
     {
+      "id": "timecontrol",
+      "packages": [
+        "luci-app-timecontrol"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "timewol",
       "packages": [
         "luci-app-timewol"
@@ -1190,6 +1785,13 @@
       "group": "网络管理"
     },
     {
+      "id": "trojan-server",
+      "packages": [
+        "luci-app-trojan-server"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "ttyd",
       "packages": [
         "luci-app-ttyd"
@@ -1206,11 +1808,25 @@
       "hot": true
     },
     {
+      "id": "turboacc-mtk",
+      "packages": [
+        "luci-app-turboacc-mtk"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "ua2f",
       "packages": [
         "luci-app-ua2f"
       ],
       "group": "魔法与加速"
+    },
+    {
+      "id": "udp2raw",
+      "packages": [
+        "luci-app-udp2raw"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "udpxy",
@@ -1227,11 +1843,25 @@
       "group": "系统工具"
     },
     {
+      "id": "unblockmusic",
+      "packages": [
+        "luci-app-unblockmusic"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "unblockneteasemusic",
       "packages": [
         "luci-app-unblockneteasemusic"
       ],
       "group": "多媒体与外设"
+    },
+    {
+      "id": "unblockneteasemusic-go",
+      "packages": [
+        "luci-app-unblockneteasemusic-go"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "unbound",
@@ -1256,6 +1886,13 @@
       "group": "多媒体与外设"
     },
     {
+      "id": "usb3disable",
+      "packages": [
+        "luci-app-usb3disable"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "usteer",
       "packages": [
         "luci-app-usteer"
@@ -1277,11 +1914,25 @@
       "group": "魔法与加速"
     },
     {
+      "id": "v2ray-server",
+      "packages": [
+        "luci-app-v2ray-server"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "v2raya",
       "packages": [
         "luci-app-v2raya"
       ],
       "group": "魔法与加速"
+    },
+    {
+      "id": "verysync",
+      "packages": [
+        "luci-app-verysync"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "vlmcsd",
@@ -1291,11 +1942,32 @@
       "group": "系统工具"
     },
     {
+      "id": "vnstat",
+      "packages": [
+        "luci-app-vnstat"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "vnstat2",
       "packages": [
         "luci-app-vnstat2"
       ],
       "group": "监控统计"
+    },
+    {
+      "id": "vpn-policy-routing",
+      "packages": [
+        "luci-app-vpn-policy-routing"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "vpnbypass",
+      "packages": [
+        "luci-app-vpnbypass"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "vsftpd",
@@ -1305,11 +1977,39 @@
       "group": "存储与下载"
     },
     {
+      "id": "vssr",
+      "packages": [
+        "luci-app-vssr"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "watchcat",
       "packages": [
         "luci-app-watchcat"
       ],
       "group": "定时与唤醒"
+    },
+    {
+      "id": "webadmin",
+      "packages": [
+        "luci-app-webadmin"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "webrestriction",
+      "packages": [
+        "luci-app-webrestriction"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "weburl",
+      "packages": [
+        "luci-app-weburl"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "wechatpush",
@@ -1334,12 +2034,26 @@
       "hot": true
     },
     {
+      "id": "wireguard",
+      "packages": [
+        "luci-app-wireguard"
+      ],
+      "group": "其他与高级"
+    },
+    {
       "id": "wol",
       "packages": [
         "luci-app-wol"
       ],
       "group": "定时与唤醒",
       "hot": true
+    },
+    {
+      "id": "wrtbwmon",
+      "packages": [
+        "luci-app-wrtbwmon"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "xfrpc",
@@ -1361,6 +2075,20 @@
         "luci-app-xlnetacc"
       ],
       "group": "魔法与加速"
+    },
+    {
+      "id": "xunlei",
+      "packages": [
+        "luci-app-xunlei"
+      ],
+      "group": "其他与高级"
+    },
+    {
+      "id": "yggdrasil",
+      "packages": [
+        "luci-app-yggdrasil"
+      ],
+      "group": "其他与高级"
     },
     {
       "id": "zerotier",

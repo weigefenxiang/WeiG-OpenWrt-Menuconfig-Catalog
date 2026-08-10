@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = join(ROOT, 'catalog.config.json');
@@ -48,33 +50,103 @@ function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
-async function githubTree(repo, ref) {
+async function fetchBuffer(url) {
   const headers = { 'User-Agent': 'WeiG-OpenWrt-Menuconfig-Catalog' };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  const url = `https://api.github.com/repos/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`;
-  const response = await fetch(url, { headers });
-  if (!response.ok) throw new Error(`${repo}@${ref}: HTTP ${response.status}`);
-  const body = await response.json();
-  if (body.truncated) throw new Error(`${repo}@${ref}: recursive tree was truncated`);
-  const names = (body.tree || []).map((item) => item.path)
-    .map((path) => path.match(/(?:^|\/)applications\/(luci-app-[A-Za-z0-9_.+@-]+)\/Makefile$/)?.[1])
-    .filter(Boolean);
-  return [...new Set(names)].sort();
+  let failure;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch(url, { headers });
+      if (response.ok) return Buffer.from(await response.arrayBuffer());
+      failure = new Error(`${url}: HTTP ${response.status}`);
+      if (response.status !== 429 && response.status < 500) break;
+    } catch (error) {
+      failure = error;
+    }
+    if (attempt < 3) await new Promise((resolveDelay) => setTimeout(resolveDelay, 300 * (2 ** attempt)));
+  }
+  throw new Error(`${url}: ${failure?.message || 'download failed'}`);
+}
+
+async function fetchCatalogIndex(repository, channel) {
+  return JSON.parse((await fetchBuffer(`https://raw.githubusercontent.com/${repository}/${channel}/index.json`)).toString('utf8'));
+}
+
+async function verifiedGzipJson(repository, dataRef, contract) {
+  if (!contract?.asset || !contract?.hash) throw new Error('Catalog menu asset contract is missing');
+  const compressed = await fetchBuffer(`https://raw.githubusercontent.com/${repository}/${dataRef}/${contract.asset}`);
+  const actual = createHash('sha256').update(compressed).digest('hex');
+  if (actual !== contract.hash) throw new Error(`${contract.asset}: compressed SHA-256 mismatch`);
+  return JSON.parse(gunzipSync(compressed).toString('utf8'));
+}
+
+async function menuPackages(repository, dataRef, contract, languageContract) {
+  const menu = await verifiedGzipJson(repository, dataRef, contract);
+  if (Number(menu.schema) !== 1 || menu.kind !== 'menu' || !Array.isArray(menu.options)) {
+    throw new Error(`${contract.asset}: Catalog menu schema 1 is required`);
+  }
+  const entries = new Map();
+  for (const option of menu.options) {
+    const packageName = String(option.symbol || '').match(/^PACKAGE_(luci-app-[a-z0-9][a-z0-9_.+@-]*)$/)?.[1];
+    if (!packageName) continue;
+    entries.set(packageName, {
+      package: packageName,
+      titleEn: String(option.promptEn || '').trim(), usageEn: String(option.usageEn || '').trim(),
+      titleZh: '', usageZh: '',
+    });
+  }
+  if (languageContract?.asset && languageContract?.hash) {
+    const language = await verifiedGzipJson(repository, dataRef, languageContract);
+    if (Number(language.schema) !== 1 || language.kind !== 'menu-language' || language.language !== 'zh-CN' ||
+        !Array.isArray(language.options)) throw new Error(`${languageContract.asset}: Catalog menu-language schema 1 is required`);
+    for (const [symbol, titleZh, usageZh] of language.options) {
+      const packageName = String(symbol || '').match(/^PACKAGE_(luci-app-[a-z0-9][a-z0-9_.+@-]*)$/)?.[1];
+      const entry = entries.get(packageName);
+      if (entry) { entry.titleZh = String(titleZh || '').trim(); entry.usageZh = String(usageZh || '').trim(); }
+    }
+  }
+  return [...entries.values()].sort((left, right) => left.package.localeCompare(right.package));
 }
 
 const config = readJson(CONFIG_FILE);
 const translations = readJson(TRANSLATION_FILE);
-const sources = config.curatedAuditSources || [
-  { id: 'OpenWrt', repo: 'openwrt/luci', ref: 'master' },
-  { id: 'ImmortalWrt', repo: 'immortalwrt/luci', ref: 'master' },
-  { id: 'lede', repo: 'coolsnowwolf/luci', ref: 'openwrt-25.12' },
-];
-const audited = [];
-for (const source of sources) {
-  const packages = await githubTree(source.repo, source.ref);
-  audited.push({ ...source, count: packages.length, packages });
+const channelAliases = { main: 'catalog-data', dev: 'catalog-dev', staging: 'catalog-staging', fix: 'catalog-fix' };
+const channelInput = String(args.get('channel') || 'catalog-data');
+const channel = channelAliases[channelInput] || channelInput;
+if (!['catalog-data', 'catalog-dev', 'catalog-staging', 'catalog-fix'].includes(channel)) {
+  throw new Error(`unsupported Catalog channel: ${channel}`);
 }
+const repository = String(args.get('repository') || process.env.GITHUB_REPOSITORY || 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog');
+const index = await fetchCatalogIndex(repository, channel);
+if (Number(index.schema) !== 2 || !Array.isArray(index.sources)) throw new Error('Catalog index schema 2 is required');
+const sourceFilter = String(args.get('source') || '*');
+const branchFilter = String(args.get('branch') || '*');
+const matches = (value, pattern) => pattern === '*' || value === pattern;
+const audited = [];
+for (const source of index.sources) {
+  if (!matches(String(source.id || ''), sourceFilter)) continue;
+  for (const branch of source.branches || []) {
+    if (branch.state === 'unavailable' || !matches(String(branch.branch || ''), branchFilter)) continue;
+    const entries = await menuPackages(repository, String(index.assetRef || channel),
+      branch.assets?.menu, branch.assets?.['menu:zh-CN']);
+    const packages = entries.map((row) => row.package);
+    audited.push({ id: source.id, branch: branch.branch, repo: source.repo, commit: branch.commit || '',
+      asset: branch.assets.menu.asset, count: packages.length, packages, entries });
+  }
+}
+if (!audited.length) throw new Error('selected Catalog scope contains no available Source/Branch menu assets');
 const union = [...new Set(audited.flatMap((source) => source.packages))].sort();
+const observedMetadata = new Map();
+for (const source of audited) for (const entry of source.entries) {
+  const current = observedMetadata.get(entry.package) || {};
+  observedMetadata.set(entry.package, {
+    package: entry.package,
+    titleEn: current.titleEn || entry.titleEn,
+    usageEn: current.usageEn || entry.usageEn,
+    titleZh: current.titleZh || entry.titleZh,
+    usageZh: current.usageZh || entry.usageZh,
+  });
+}
 const existing = new Map((config.curatedApplications || config.curatedCandidates || [])
   .map((row) => [row.id, row]));
 let legacy = { groups: [], plugins: [] };
@@ -101,10 +173,11 @@ for (const row of applications) {
   if (translations.entries[symbol]) continue;
   const legacyRow = legacyById.get(row.id);
   const added = NEW_METADATA[row.id] || [];
-  const titleZh = legacyRow?.name || added[0] || row.id;
-  const usageZh = legacyRow?.desc || added[2] || '';
-  const titleEn = added[3] || row.id;
-  const usageEn = added[4] || '';
+  const observed = observedMetadata.get(packageName) || {};
+  const titleZh = legacyRow?.name || added[0] || observed.titleZh || row.id;
+  const titleEn = added[3] || observed.titleEn || row.id;
+  const usageZh = legacyRow?.desc || added[2] || observed.usageZh || `为 OpenWrt 提供 ${titleZh} 网页管理功能`;
+  const usageEn = added[4] || observed.usageEn || `Web management interface for ${titleEn} on OpenWrt`;
   translations.entries[symbol] = {
     titleEn, titleZh, usageEn, usageZh,
     titleI18n: { 'zh-CN': titleZh },
@@ -116,10 +189,18 @@ for (const row of applications) {
 const report = {
   schema: 1,
   generatedAt: new Date().toISOString(),
-  sources: audited.map(({ packages, ...source }) => source),
+  channel,
+  repository,
+  sources: audited.map(({ packages, entries, ...source }) => source),
   union: union.length,
   added: applications.filter((row) => !existing.has(row.id)).map((row) => row.id),
   removed: [...existing.keys()].filter((id) => !applications.some((row) => row.id === id)).sort(),
+  metadataCoverage: {
+    missingTitleZh: applications.filter((row) => !translations.entries[`PACKAGE_${row.packages[0]}`]?.titleZh).map((row) => row.id),
+    missingUsageZh: applications.filter((row) => !translations.entries[`PACKAGE_${row.packages[0]}`]?.usageZh).map((row) => row.id),
+    missingTitleEn: applications.filter((row) => !translations.entries[`PACKAGE_${row.packages[0]}`]?.titleEn).map((row) => row.id),
+    missingUsageEn: applications.filter((row) => !translations.entries[`PACKAGE_${row.packages[0]}`]?.usageEn).map((row) => row.id),
+  },
   applications,
 };
 mkdirSync(join(ROOT, 'diagnostics'), { recursive: true });
@@ -127,7 +208,7 @@ writeFileSync(join(ROOT, 'diagnostics', 'curated-applications-refresh.json'),
   JSON.stringify(report, null, 2) + '\n');
 
 if (args.get('write')) {
-  config.curatedAuditSources = sources;
+  delete config.curatedAuditSources;
   config.curatedGroups = groups;
   config.curatedApplications = applications;
   delete config.curatedCandidates;
@@ -138,4 +219,5 @@ if (args.get('write')) {
 
 console.log(`Curated applications: sources=${audited.map((row) => `${row.id}:${row.count}`).join(', ')}` +
   ` union=${union.length} added=${report.added.length} removed=${report.removed.length}` +
+  ` missing-zh=${report.metadataCoverage.missingTitleZh.length}/${report.metadataCoverage.missingUsageZh.length}` +
   `${args.get('write') ? ' (written)' : ' (report only)'}`);

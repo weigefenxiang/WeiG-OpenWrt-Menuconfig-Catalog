@@ -1,86 +1,107 @@
-name: Package Compatibility Probe
-run-name: Package probe · ${{ inputs.mode }} · ${{ inputs.packages }}
+# SPDX-FileCopyrightText: 2026 weigefenxiang <weigefenxiang@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Package Compatibility Probe / 软件包兼容探针
+run-name: >-
+  ${{ github.event_name == 'issues' && format('Package probe issue #{0} / 软件包探针请求 #{0}', github.event.issue.number)
+      || format('Package probe · {0} · {1} / 软件包探针', inputs.mode, inputs.packages) }}
 
 on:
   workflow_dispatch:
     inputs:
+      request:
+        description: "Optional web request token; when set it overrides the fields below / 可选网页请求字符串，填写后覆盖以下字段"
+        required: false
+        default: ""
       packages:
-        description: "1-8 Catalog application or package IDs, comma separated"
+        description: "1-8 Catalog application or package IDs / 1–8 个 Catalog 应用或软件包 ID"
         required: true
-        default: "oscam"
       mode:
-        description: "compile checks compilation; co-install also stages all selected packages"
+        description: "Probe depth / 探测深度"
         required: true
         type: choice
-        options: [compile, co-install]
-        default: compile
+        options: [package-compile, rootfs-integration, firmware-integration, boot-smoke]
+        default: package-compile
       source:
-        description: "Catalog Source glob"
+        description: "Catalog Source glob / Catalog Source 通配"
         required: true
         default: "*"
       branch:
-        description: "Catalog Branch glob"
+        description: "Catalog Branch glob / Catalog Branch 通配"
         required: true
         default: "*"
+      target_policy:
+        description: "Auto chooses one environment and fallback candidates; all expands every representative environment / 自动选择一个环境及回退目标；全部展开所有代表环境"
+        required: true
+        type: choice
+        options: [auto, all]
+        default: auto
       max_parallel:
-        description: "Owner: 0 means all planned jobs; write collaborators are capped at 3"
+        description: "Owner: 0 means the full plan; write collaborators are capped at 3 / 所有者 0 表示完整计划；写协作者最多 3"
         required: true
         default: "0"
-      dry_run:
-        description: "Only validate and display the dynamic Matrix plan"
+      plan_only:
+        description: "Resolve and display the plan without compiling / 只解析并显示计划，不执行编译"
         required: true
         type: boolean
         default: true
+  issues:
+    types: [opened]
 
-permissions:
-  contents: read
-
-concurrency:
-  group: package-probe-${{ github.actor }}-${{ github.ref_name }}
-  cancel-in-progress: false
+permissions: {}
 
 jobs:
   plan:
     name: 00 · Resolve Catalog plan / 解析 Catalog 计划
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
       max_parallel: ${{ steps.plan.outputs.max_parallel }}
-      dry_run: ${{ steps.plan.outputs.dry_run }}
+      execute: ${{ steps.plan.outputs.execute }}
+      relevant: ${{ steps.plan.outputs.relevant }}
+      authorized: ${{ steps.plan.outputs.authorized }}
       plan_count: ${{ steps.plan.outputs.plan_count }}
       packages: ${{ steps.plan.outputs.packages }}
       data_branch: ${{ steps.plan.outputs.data_branch }}
       mode: ${{ steps.plan.outputs.mode }}
+      evidence_level: ${{ steps.plan.outputs.evidence_level }}
+      timeout_minutes: ${{ steps.plan.outputs.timeout_minutes }}
+      issue_number: ${{ steps.plan.outputs.issue_number }}
     steps:
       - uses: actions/checkout@v7
       - id: plan
-        name: Build bounded Matrix from index.json
+        name: Build a bounded Matrix from Catalog index / 从 Catalog index 生成受限矩阵
         env:
           GITHUB_TOKEN: ${{ github.token }}
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           CODE_REF: ${{ github.ref_name }}
+          PROBE_REQUEST: ${{ inputs.request }}
           PROBE_PACKAGES: ${{ inputs.packages }}
           PROBE_MODE: ${{ inputs.mode }}
           SOURCE_PATTERN: ${{ inputs.source }}
           BRANCH_PATTERN: ${{ inputs.branch }}
+          TARGET_POLICY: ${{ inputs.target_policy }}
           MAX_PARALLEL: ${{ inputs.max_parallel }}
-          DRY_RUN: ${{ inputs.dry_run }}
+          DRY_RUN: ${{ inputs.plan_only }}
         run: node scripts/package-probe-controller.mjs
-      - name: Upload normalized probe plan
+      - name: Upload normalized probe plan / 上传规范化探针计划
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: package-probe-plan-${{ github.run_id }}-${{ github.run_attempt }}
           path: probe-diagnostics/plan.json
           retention-days: 60
-          if-no-files-found: error
+          if-no-files-found: warn
 
   probe:
-    name: Probe · ${{ matrix.source }} · ${{ matrix.branch }}
+    name: Probe · ${{ matrix.source }} · ${{ matrix.branch }} · ${{ matrix.target }} / 探测
     needs: plan
-    if: needs.plan.outputs.dry_run != 'true'
+    if: needs.plan.outputs.relevant == 'true' && needs.plan.outputs.authorized == 'true' && needs.plan.outputs.execute == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout_minutes) }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       max-parallel: ${{ fromJSON(needs.plan.outputs.max_parallel) }}
@@ -93,72 +114,59 @@ jobs:
       PROBE_TARGET: ${{ matrix.target }}
       PROBE_PROFILE: ${{ matrix.profile }}
       PROBE_TARGET_CONFIG: ${{ matrix.targetConfig }}
+      PROBE_FALLBACK_TARGETS: ${{ matrix.fallbackTargets }}
+      PROBE_COVERAGE_TOTAL: ${{ matrix.coverageTotal }}
+      PROBE_COVERAGE_PLANNED: ${{ matrix.coveragePlanned }}
+      PROBE_REDUCTION_BUDGET: ${{ matrix.reductionBudget }}
       PROBE_PACKAGES: ${{ matrix.packages }}
       PROBE_MODE: ${{ needs.plan.outputs.mode }}
+      PROBE_EVIDENCE_LEVEL: ${{ needs.plan.outputs.evidence_level }}
       PROBE_CONFIG: work/upstream/.config
+      PROBE_WORKDIR: work/upstream
+      PROBE_LOG: ${{ github.workspace }}/probe.log
+      PROBE_RUNTIME: ${{ github.workspace }}/probe-runtime.json
+      PROBE_JOBS: 2
     steps:
       - uses: actions/checkout@v7
-      - name: Install build dependencies
+      - name: Install build dependencies / 安装构建依赖
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo -E apt-get -qq update
-          sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
-            gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
-      - name: Clone exact Catalog Source snapshot
-        run: |
-          bash scripts/clone-upstream.sh "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
-          if [[ -n "${{ matrix.upstreamCommit }}" && "$(git -C work/upstream rev-parse HEAD)" != "${{ matrix.upstreamCommit }}" ]]; then
-            git -C work/upstream fetch --depth 1 origin "${{ matrix.upstreamCommit }}"
-            git -C work/upstream checkout --detach "${{ matrix.upstreamCommit }}"
-          fi
-          if [[ -n "${{ matrix.upstreamCommit }}" ]]; then
-            test "$(git -C work/upstream rev-parse HEAD)" = "${{ matrix.upstreamCommit }}"
-          fi
-      - name: Install feeds
-        working-directory: work/upstream
-        run: ./scripts/feeds update -a && ./scripts/feeds install -a
-      - name: Compile selected packages without firmware images
-        id: build
-        continue-on-error: true
-        working-directory: work/upstream
-        shell: bash
+          set -o pipefail
+          {
+            sudo -E apt-get -qq update
+            sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+              gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
+          } 2>&1 | tee -a "$PROBE_LOG"
+          if [[ "$PROBE_MODE" == boot-smoke ]]; then sudo -E apt-get -qq install qemu-system-x86 2>&1 | tee -a "$PROBE_LOG"; fi
+      - name: Clone the exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
         run: |
           set -o pipefail
           {
-            printf '%s\n' "$PROBE_TARGET_CONFIG" > .config
-            IFS=',' read -ra packages <<< "$PROBE_PACKAGES"
-            package_state=m
-            if [[ "$PROBE_MODE" == co-install ]]; then package_state=y; fi
-            for package in "${packages[@]}"; do
-              printf 'CONFIG_PACKAGE_%s=%s\n' "$package" "$package_state" >> .config
-            done
-            make defconfig
-            for package in "${packages[@]}"; do
-              if [[ "$PROBE_MODE" == co-install ]]; then
-                grep -qx "CONFIG_PACKAGE_${package}=y" .config || {
-                  echo "ERROR: requested package states did not survive make defconfig: ${package}=y"
-                  exit 2
-                }
-              else
-                grep -Eq "^CONFIG_PACKAGE_${package}=[my]$" .config || {
-                  echo "ERROR: requested package states did not survive make defconfig: ${package}=m|y"
-                  exit 2
-                }
-              fi
-            done
-            make -j"$(nproc)" tools/install toolchain/install
-            for package in "${packages[@]}"; do
-              make -j"$(nproc)" "package/${package}/compile" V=s
-            done
-            if [[ "$PROBE_MODE" == co-install ]]; then make -j1 package/install V=s; fi
-          } 2>&1 | tee "$GITHUB_WORKSPACE/probe.log"
-      - name: Write normalized evidence and public Summary
+            bash scripts/clone-upstream.sh "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
+            if [[ -n "${{ matrix.upstreamCommit }}" && "$(git -C work/upstream rev-parse HEAD)" != "${{ matrix.upstreamCommit }}" ]]; then
+              git -C work/upstream fetch --depth 1 origin "${{ matrix.upstreamCommit }}"
+              git -C work/upstream checkout --detach "${{ matrix.upstreamCommit }}"
+            fi
+            if [[ -n "${{ matrix.upstreamCommit }}" ]]; then
+              test "$(git -C work/upstream rev-parse HEAD)" = "${{ matrix.upstreamCommit }}"
+            fi
+          } 2>&1 | tee -a "$PROBE_LOG"
+      - name: Install feeds / 安装 Feeds
+        working-directory: work/upstream
+        run: |
+          set -o pipefail
+          { ./scripts/feeds update -a && ./scripts/feeds install -a; } 2>&1 | tee -a "$PROBE_LOG"
+      - id: build
+        name: Run the selected probe depth / 执行所选探测深度
+        continue-on-error: true
+        run: node scripts/run-package-probe.mjs
+      - name: Write normalized evidence and public Summary / 生成规范化证据与公开摘要
         if: always()
         env:
           PROBE_CONCLUSION: ${{ steps.build.outcome }}
         run: node scripts/write-package-probe-evidence.mjs
-      - name: Upload normalized evidence
+      - name: Upload normalized evidence / 上传规范化证据
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -166,41 +174,84 @@ jobs:
           path: probe-evidence/
           retention-days: 60
           if-no-files-found: error
-      - name: Upload complete probe log
+      - name: Upload complete probe log / 上传完整探针日志
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: package-probe-log-${{ matrix.key }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: probe.log
+          path: |
+            probe.log
+            boot-smoke.log
           retention-days: 30
-          if-no-files-found: error
-      - name: Finalize probe result
+          if-no-files-found: warn
+      - name: Finalize probe result / 确认探针结果
         if: steps.build.outcome != 'success'
         run: exit 1
 
   summary:
     name: 99 · Probe result / 探针结果
     needs: [plan, probe]
-    if: always()
+    if: always() && (github.event_name != 'issues' || needs.plan.outputs.relevant == 'true')
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
     steps:
-      - name: Publish controller Summary
+      - uses: actions/checkout@v7
+      - name: Download normalized evidence / 下载规范化证据
+        if: needs.plan.outputs.execute == 'true'
+        continue-on-error: true
+        uses: actions/download-artifact@v7
+        with:
+          pattern: package-probe-evidence-*
+          path: collected-evidence
+      - name: Aggregate Source/Branch/Target results / 聚合源码分支目标结果
         env:
           PLAN_RESULT: ${{ needs.plan.result }}
           PROBE_RESULT: ${{ needs.probe.result }}
           PLAN_COUNT: ${{ needs.plan.outputs.plan_count }}
-          DRY_RUN: ${{ needs.plan.outputs.dry_run }}
           DATA_BRANCH: ${{ needs.plan.outputs.data_branch }}
+        run: node scripts/write-package-probe-evidence.mjs --aggregate collected-evidence
+      - name: Upload aggregated result / 上传聚合结果
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-probe-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: probe-diagnostics/
+          retention-days: 60
+          if-no-files-found: error
+      - name: Comment on and close the request Issue / 回复并关闭请求 Issue
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v8
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          PROBE_RESULT: ${{ needs.probe.result }}
+          AUTHORIZED: ${{ needs.plan.outputs.authorized }}
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.existsSync('probe-diagnostics/FINAL_SUMMARY.md')
+              ? fs.readFileSync('probe-diagnostics/FINAL_SUMMARY.md', 'utf8').slice(0, 5000)
+              : 'Probe request could not be resolved. / 无法解析探针请求。';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `${summary}\n\nRun / 运行: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'completed',
+            });
+      - name: Finalize controller result / 确认控制器结果
+        shell: bash
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          PROBE_RESULT: ${{ needs.probe.result }}
+          EXECUTE: ${{ needs.plan.outputs.execute }}
+          AUTHORIZED: ${{ needs.plan.outputs.authorized }}
         run: |
-          {
-            echo '## Package compatibility probe result'
-            echo
-            echo "- Catalog channel: \`$DATA_BRANCH\`"
-            echo "- Planned Source/Branch jobs: ${PLAN_COUNT:-0}"
-            echo "- Dry run: ${DRY_RUN:-unknown}"
-            echo "- Plan: \`$PLAN_RESULT\`"
-            echo "- Matrix: \`$PROBE_RESULT\`"
-            echo "- Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          } >> "$GITHUB_STEP_SUMMARY"
           [[ "$PLAN_RESULT" == success ]]
-          [[ "$DRY_RUN" == true || "$PROBE_RESULT" == success ]]
+          if [[ "$AUTHORIZED" == true && "$EXECUTE" == true ]]; then [[ "$PROBE_RESULT" == success ]]; fi

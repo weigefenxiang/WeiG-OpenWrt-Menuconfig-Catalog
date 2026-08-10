@@ -44,12 +44,14 @@ JavaScript 中写死分支、Target 或菜单项目。
 Refresh the curated application union manually after reviewing upstream application IDs and Chinese/English descriptions:
 
 ```bash
-npm run refresh:curated
+npm run refresh:applications -- --channel dev
+# Review diagnostics/curated-applications-refresh.json, then deliberately write:
+npm run refresh:applications -- --channel dev --write
 node scripts/collect-curated-size-samples.mjs size-samples
 npm run refresh:sizes -- --samples size-samples --write
 ```
 
-The curated list is deliberately manual; weekly Source/Branch discovery does not silently change UI IDs or translations. Official OPKG/APK index observations update `curated-sizes.json`, and the published `applications.json.gz` joins IDs, descriptions, and optional size bytes. The manual Package Compatibility Probe maps Catalog application IDs to packages and compiles selected closures in an index-driven Matrix without building firmware images.
+The refresh tool verifies every selected menu shard from the chosen Catalog data channel and merges application IDs across all available Source/Branch entries by default. It is report-only unless `--write` is explicit, so weekly Source/Branch discovery cannot silently change UI IDs or translations. `--source` and `--branch` accept an exact ID/name or `*`. Official OPKG/APK index observations update `curated-sizes.json`, and the published `applications.json.gz` joins IDs, descriptions, optional size bytes, and the translated in-page probe UI. The probe then maps application IDs to packages and offers package, RootFS, firmware A/B, and experimental boot validation in an index-driven Matrix.
 
 为 WeiG OpenWrt 在线定制器生成静态 menuconfig 目录。项目本身不编译固件。
 
@@ -176,3 +178,9 @@ During the migration window each branch publishes two independent contracts in `
 - `legacy`: the exact Schema 5 / Relations 2 single bundle used by AutoBuild Actions validation.
 
 The `legacy` object contains `asset`, compressed `hash`, compressed `bytes`, `catalogSchema`, and `relationsSchema`. Root-level `asset/hash/bytes` remain mirrored temporarily for older clients. New consumers must use `branch.legacy` as one atomic build contract and must not combine its file metadata with schemas from the split runtime model.
+
+## License / 许可证
+
+This project is licensed under [GNU GPLv3 or later](LICENSE). The [Chinese explanation](LICENSE.zh-CN.md) is informational only. Copyright and the public contact address are in [NOTICE](NOTICE).
+
+本项目以 [GNU GPLv3 或更高版本](LICENSE) 发布；[中文说明](LICENSE.zh-CN.md) 仅供参考。版权与公开联系方式见 [NOTICE](NOTICE)。
