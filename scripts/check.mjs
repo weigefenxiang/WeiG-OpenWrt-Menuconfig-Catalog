@@ -11,7 +11,7 @@ import { compactRelations, expandCompactRelations } from './compact-relations.mj
 import { buildCatalogSizeReport, formatCatalogSizeReport } from './catalog-size-report.mjs';
 import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
-import { buildCuratedApplications } from './curated-applications.mjs';
+import { activeCuratedGroups, buildCuratedApplications } from './curated-applications.mjs';
 import { aggregateCuratedSizes, parseApkDump, parseOpkgPackages } from './curated-sizes.mjs';
 import { matchPattern, sourceAllowsBranch } from './source-policy.mjs';
 
@@ -238,7 +238,14 @@ if (packageInfoOnly.length !== 1 ||
     resolvePackageOption({ id: 'tailscale-community', packages: ['luci-app-tailscale-community'] }, new Set(['tailscale-community'])) !== '') {
   failures.push('packageinfo-only is not selectable');
 }
-if (curatedCandidates.length < 1 || curatedCandidates.length > 1024 ||
+const activeGroups = activeCuratedGroups(policy.curatedGroups, curatedCandidates);
+const activeGroupFixture = activeCuratedGroups(['alpha', 'empty', 'alpha', 'beta'], [
+  { group: 'beta' }, { group: 'alpha' },
+]);
+if (activeGroupFixture.join(',') !== 'alpha,beta' ||
+    activeGroups.length !== policy.curatedGroups.length ||
+    curatedApplications.groups.join(',') !== activeGroups.join(',') ||
+    curatedCandidates.length < 1 || curatedCandidates.length > 1024 ||
     new Set(curatedCandidates.map((item) => item.id)).size !== curatedCandidates.length ||
     new Set(curatedCandidates.flatMap((item) => item.packages || [])).size !==
       curatedCandidates.reduce((count, item) => count + (item.packages?.length || 0), 0) ||

@@ -5,6 +5,16 @@ function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
+export function activeCuratedGroups(groups, items) {
+  const used = new Set((items || []).map((item) => item?.group).filter(Boolean));
+  const seen = new Set();
+  return (groups || []).filter((group) => {
+    if (!used.has(group) || seen.has(group)) return false;
+    seen.add(group);
+    return true;
+  });
+}
+
 export function buildCuratedApplications(root) {
   const config = readJson(join(root, 'catalog.config.json'));
   const translations = readJson(join(root, 'translations', 'zh-CN.json'));
@@ -31,7 +41,7 @@ export function buildCuratedApplications(root) {
   });
   return {
     schema: 1,
-    groups: config.curatedGroups || [],
+    groups: activeCuratedGroups(config.curatedGroups, items),
     probeUi,
     sizeMetric: sizes.metric,
     sizeGeneratedAt: sizes.generatedAt,

@@ -53,6 +53,10 @@ npm run refresh:sizes -- --samples size-samples --write
 
 The refresh tool verifies every selected menu shard from the chosen Catalog data channel and merges application IDs across all available Source/Branch entries by default. It is report-only unless `--write` is explicit, so weekly Source/Branch discovery cannot silently change UI IDs or translations. `--source` and `--branch` accept an exact ID/name or `*`. Official OPKG/APK index observations update `curated-sizes.json`, and the published `applications.json.gz` joins IDs, descriptions, optional size bytes, and the translated in-page probe UI. The probe then maps application IDs to packages and offers package, RootFS, firmware A/B, and experimental boot validation in an index-driven Matrix.
 
+`curatedGroups` is the ordered group authority. Published applications keep only groups used by at least one curated application; refresh prunes empty groups, and validation rejects empty or duplicate groups. Group changes belong in `catalog.config.json` and refresh metadata, never in AutoBuild package-name conditions.
+
+`curatedGroups` 是分组顺序的权威数据。公开应用只保留至少含一个精选应用的分组；刷新工具自动清理空分组，校验器拒绝空分组和重复分组。分组调整必须同步维护 `catalog.config.json` 与刷新元数据，禁止在 AutoBuild 按软件包名特判。
+
 为 WeiG OpenWrt 在线定制器生成静态 menuconfig 目录。项目本身不编译固件。
 
 目录内容来自 ImmortalWrt、OpenWrt、Lean LEDE 与

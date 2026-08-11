@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
+import { activeCuratedGroups } from './curated-applications.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = join(ROOT, 'catalog.config.json');
@@ -27,7 +28,7 @@ const NEW_METADATA = {
   dufs: ['DUFS 文件服务', '存储与下载', '提供轻量网页文件服务器', 'DUFS file server', 'Provide a lightweight web file server'],
   example: ['LuCI 示例', '其他与高级', 'LuCI 应用开发示例', 'LuCI example', 'Example application for LuCI development'],
   'filebrowser-go': ['File Browser Go', '存储与下载', '通过网页管理路由器文件', 'File Browser Go', 'Manage router files from a web browser'],
-  firewall: ['防火墙', '系统基础', '配置防火墙区域和访问规则', 'Firewall', 'Configure firewall zones and traffic rules'],
+  firewall: ['防火墙', '网络管理', '配置防火墙区域和访问规则', 'Firewall', 'Configure firewall zones and traffic rules'],
   k3screenctrl: ['K3 屏幕控制', '系统工具', '管理 K3 路由器屏幕显示', 'K3 screen control', 'Manage the display on K3 routers'],
   lucky: ['Lucky 网络工具', '网络管理', '管理端口转发、动态域名和证书', 'Lucky network tools', 'Manage forwarding, dynamic DNS, and certificates'],
   modemband: ['ModemBand', '网络管理', '查看并锁定移动网络频段', 'ModemBand', 'Inspect and lock mobile-network bands'],
@@ -152,7 +153,7 @@ const existing = new Map((config.curatedApplications || config.curatedCandidates
 let legacy = { groups: [], plugins: [] };
 if (args.get('legacy-meta')) legacy = readJson(resolve(String(args.get('legacy-meta'))));
 const legacyById = new Map((legacy.plugins || []).map((row) => [row.id, row]));
-const groups = config.curatedGroups || legacy.groups || [];
+const configuredGroups = config.curatedGroups || legacy.groups || [];
 const applications = union.map((packageName) => {
   const id = packageName.slice('luci-app-'.length);
   const old = existing.get(id) || {};
@@ -166,6 +167,7 @@ const applications = union.map((packageName) => {
     ...(old.hot || legacyRow.hot ? { hot: true } : {}),
   };
 });
+const groups = activeCuratedGroups(configuredGroups, applications);
 
 for (const row of applications) {
   const packageName = row.packages[0];
