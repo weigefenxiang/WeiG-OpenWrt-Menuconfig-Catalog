@@ -3,17 +3,13 @@
 name: Package Compatibility Probe / 软件包兼容探针
 run-name: >-
   ${{ inputs.issue_number != '' && format('Package probe issue #{0} / 软件包探针请求 #{0}', inputs.issue_number)
-      || format('Package probe · {0} · {1} / 软件包探针', inputs.mode, inputs.packages) }}
+      || format('Package probe · {0} / 软件包探针', inputs.mode) }}
 
 on:
   workflow_dispatch:
     inputs:
-      request:
-        description: "Optional raw JSON request for maintainers; when set it overrides the fields below / 维护者可选原始 JSON 请求，填写后覆盖以下字段"
-        required: false
-        default: ""
-      packages:
-        description: "1-8 Catalog application or package IDs / 1–8 个 Catalog 应用或软件包 ID"
+      package_config:
+        description: "Exact CONFIG_PACKAGE_*=m/y state for manual runs / 手动运行的精确 CONFIG_PACKAGE_*=m/y 状态"
         required: false
         default: ""
       mode:
@@ -49,8 +45,8 @@ on:
         description: "Gateway Issue number; leave empty for manual runs / 网关 Issue 编号；手动运行时留空"
         required: false
         default: ""
-      request_sha256:
-        description: "Gateway request SHA-256; leave empty for manual runs / 网关请求 SHA-256；手动运行时留空"
+      state_sha256:
+        description: "Gateway state SHA-256; leave empty for manual runs / 网关状态 SHA-256；手动运行时留空"
         required: false
         default: ""
       issue_created_at:
@@ -75,6 +71,7 @@ jobs:
       authorized: ${{ steps.plan.outputs.authorized }}
       plan_count: ${{ steps.plan.outputs.plan_count }}
       packages: ${{ steps.plan.outputs.packages }}
+      package_config: ${{ steps.plan.outputs.package_config }}
       data_branch: ${{ steps.plan.outputs.data_branch }}
       mode: ${{ steps.plan.outputs.mode }}
       evidence_level: ${{ steps.plan.outputs.evidence_level }}
@@ -88,8 +85,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           CODE_REF: ${{ github.ref_name }}
-          PROBE_REQUEST: ${{ inputs.request }}
-          PROBE_PACKAGES: ${{ inputs.packages }}
+          PROBE_PACKAGE_CONFIG: ${{ inputs.package_config }}
           PROBE_MODE: ${{ inputs.mode }}
           SOURCE_PATTERN: ${{ inputs.source }}
           BRANCH_PATTERN: ${{ inputs.branch }}
@@ -97,7 +93,7 @@ jobs:
           MAX_PARALLEL: ${{ inputs.max_parallel }}
           DRY_RUN: ${{ inputs.plan_only }}
           PROBE_ISSUE_NUMBER: ${{ inputs.issue_number }}
-          PROBE_REQUEST_SHA256: ${{ inputs.request_sha256 }}
+          PROBE_STATE_SHA256: ${{ inputs.state_sha256 }}
           PROBE_ISSUE_CREATED_AT: ${{ inputs.issue_created_at }}
         run: node scripts/package-probe-controller.mjs
       - name: Upload normalized probe plan / 上传规范化探针计划
@@ -133,7 +129,8 @@ jobs:
       PROBE_COVERAGE_TOTAL: ${{ matrix.coverageTotal }}
       PROBE_COVERAGE_PLANNED: ${{ matrix.coveragePlanned }}
       PROBE_REDUCTION_BUDGET: ${{ matrix.reductionBudget }}
-      PROBE_PACKAGES: ${{ matrix.packages }}
+      PROBE_PACKAGES: ${{ needs.plan.outputs.packages }}
+      PROBE_PACKAGE_CONFIG: ${{ needs.plan.outputs.package_config }}
       PROBE_MODE: ${{ needs.plan.outputs.mode }}
       PROBE_EVIDENCE_LEVEL: ${{ needs.plan.outputs.evidence_level }}
       PROBE_CONFIG: work/upstream/.config

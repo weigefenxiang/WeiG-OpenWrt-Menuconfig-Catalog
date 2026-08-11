@@ -13,7 +13,9 @@ const WORKDIR = resolve(process.env.PROBE_WORKDIR || join(ROOT, 'work', 'upstrea
 const LOG_FILE = resolve(process.env.PROBE_LOG || join(ROOT, 'probe.log'));
 const RUNTIME_FILE = resolve(process.env.PROBE_RUNTIME || join(ROOT, 'probe-runtime.json'));
 const MODE = String(process.env.PROBE_MODE || 'package-compile');
-const PACKAGES = String(process.env.PROBE_PACKAGES || '').split(',').map((row) => row.trim()).filter(Boolean);
+const PACKAGE_CONFIG = Buffer.from(String(process.env.PROBE_PACKAGE_CONFIG || ''), 'base64url').toString('utf8');
+const PACKAGE_STATES = new Map([...PACKAGE_CONFIG.matchAll(/^CONFIG_PACKAGE_([^=]+)=([my])$/gm)].map((row) => [row[1], row[2]]));
+const PACKAGES = [...PACKAGE_STATES.keys()];
 let activePackages = PACKAGES;
 const requestedJobs = Number(process.env.PROBE_JOBS || 0);
 const JOBS = Number.isSafeInteger(requestedJobs) && requestedJobs > 0
@@ -59,9 +61,13 @@ function candidateList() {
   return rows.filter((row) => row.target && row.config);
 }
 
-function writeConfig(candidate, packageState = '') {
+function writeConfig(candidate, selectedPackages = activePackages) {
   const lines = [candidate.config];
-  if (packageState) for (const packageName of activePackages) lines.push(`CONFIG_PACKAGE_${packageName}=${packageState}`);
+  for (const packageName of selectedPackages) {
+    const state = PACKAGE_STATES.get(packageName);
+    if (!state) throw new Error(`missing requested package state: ${packageName}`);
+    lines.push(`CONFIG_PACKAGE_${packageName}=${state}`);
+  }
   writeFileSync(join(WORKDIR, '.config'), `${lines.join('\n')}\n`);
 }
 
@@ -92,19 +98,18 @@ async function makeWithSerialRetry(args, label, attempt) {
   return serial;
 }
 
-async function prepareConfig(candidate, state) {
-  writeConfig(candidate, state);
+async function prepareConfig(candidate) {
+  writeConfig(candidate);
   const defconfig = await make(['defconfig'], false);
   const states = defconfig.ok ? requestedStates() : {};
-  const expected = state === 'm' ? new Set(['m', 'y']) : new Set(['y']);
-  const valid = defconfig.ok && Object.values(states).every((value) => expected.has(value));
+  const valid = defconfig.ok && activePackages.every((name) => states[name] === PACKAGE_STATES.get(name));
   if (!valid) log(`ERROR: requested package states did not survive make defconfig: ${JSON.stringify(states)}`);
   return { ok: valid, states };
 }
 
-async function packageCompile(candidate, state, attempt) {
+async function packageCompile(candidate, attempt) {
   const stages = {};
-  const config = await prepareConfig(candidate, state);
+  const config = await prepareConfig(candidate);
   stages.kconfig = config.ok ? 'success' : 'failure';
   attempt.packageStates = config.states;
   if (!config.ok) return { ok: false, stages };
@@ -123,7 +128,7 @@ async function packageCompile(candidate, state, attempt) {
 }
 
 async function rootfsIntegration(candidate, attempt) {
-  const compiled = await packageCompile(candidate, 'y', attempt);
+  const compiled = await packageCompile(candidate, attempt);
   if (!compiled.ok) return compiled;
   const installed = await makeWithSerialRetry(['package/install'], 'rootfs install', attempt);
   compiled.stages.rootfsInstall = installed.ok ? 'success' : 'failure';
@@ -133,14 +138,14 @@ async function rootfsIntegration(candidate, attempt) {
 
 async function firmwareIntegration(candidate, attempt, boot) {
   const stages = {};
-  writeConfig(candidate);
+  writeConfig(candidate, []);
   const baseConfig = await make(['defconfig'], false);
   stages.baselineKconfig = baseConfig.ok ? 'success' : 'failure';
   if (!baseConfig.ok) return { ok: false, stages };
   const baseline = await makeWithSerialRetry([], 'baseline firmware', attempt);
   stages.baselineFirmware = baseline.ok ? 'success' : 'failure';
   if (!baseline.ok) return { ok: false, stages };
-  const packageConfig = await prepareConfig(candidate, 'y');
+  const packageConfig = await prepareConfig(candidate);
   attempt.packageStates = packageConfig.states;
   stages.kconfig = packageConfig.ok ? 'success' : 'failure';
   if (!packageConfig.ok) return { ok: false, stages };
@@ -164,7 +169,7 @@ async function runCandidate(candidate, index) {
     if (!clean.ok) return { ...attempt, result: 'failure', stages: { environmentReset: 'failure' } };
   }
   let result;
-  if (MODE === 'package-compile') result = await packageCompile(candidate, 'm', attempt);
+  if (MODE === 'package-compile') result = await packageCompile(candidate, attempt);
   else if (MODE === 'rootfs-integration') result = await rootfsIntegration(candidate, attempt);
   else result = await firmwareIntegration(candidate, attempt, MODE === 'boot-smoke');
   return { ...attempt, result: result.ok ? 'success' : 'failure', stages: result.stages };

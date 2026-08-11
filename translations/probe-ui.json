@@ -1,41 +1,185 @@
 {
   "schema": 1,
-  "languages": ["en", "zh-CN", "zh-TW"],
+  "languages": [
+    "en",
+    "zh-CN",
+    "zh-TW"
+  ],
   "strings": {
-    "title": {"en": "Package Compatibility Probe", "zh-CN": "插件兼容探针", "zh-TW": "套件相容性探針"},
-    "intro": {"en": "Check package compilation, RootFS installation, firmware integration, and optional boot behavior across Catalog Source/Branch environments.", "zh-CN": "检查软件包在 Catalog 各源码分支中的编译、RootFS 安装、固件集成和可选启动行为。", "zh-TW": "檢查套件在 Catalog 各原始碼分支中的編譯、RootFS 安裝、韌體整合及可選啟動行為。"},
-    "howTo": {"en": "Choose 1–8 applications or package IDs, select the probe depth and scope, and preview the plan locally. Submit downloads probe-request.json and opens the Catalog Issue form; drag that file into the required upload field and submit the Issue.", "zh-CN": "选择 1–8 个应用或软件包 ID，设置探测深度和范围，并在本地预览计划。提交时会下载 probe-request.json 并打开 Catalog Issue 表单；把该文件拖入必填上传框，再提交 Issue。", "zh-TW": "選擇 1–8 個應用程式或套件 ID，設定探測深度和範圍，並在本機預覽計畫。提交時會下載 probe-request.json 並開啟 Catalog Issue 表單；把該檔案拖入必填上傳框，再提交 Issue。"},
-    "search": {"en": "Search applications or package IDs", "zh-CN": "搜索应用或软件包 ID", "zh-TW": "搜尋應用程式或套件 ID"},
-    "selected": {"en": "Selected", "zh-CN": "已选择", "zh-TW": "已選擇"},
-    "depth": {"en": "Probe depth", "zh-CN": "探测深度", "zh-TW": "探測深度"},
-    "scope": {"en": "Source/Branch scope", "zh-CN": "源码分支范围", "zh-TW": "原始碼分支範圍"},
-    "targets": {"en": "Target coverage", "zh-CN": "Target 覆盖", "zh-TW": "Target 覆蓋"},
-    "allSources": {"en": "All available Source/Branch entries", "zh-CN": "全部可用 Source/Branch", "zh-TW": "全部可用 Source/Branch"},
-    "currentSource": {"en": "Current Source/Branch", "zh-CN": "当前 Source/Branch", "zh-TW": "目前 Source/Branch"},
-    "customScope": {"en": "Custom selection", "zh-CN": "自定义选择", "zh-TW": "自訂選擇"},
-    "autoTarget": {"en": "Auto target", "zh-CN": "自动目标", "zh-TW": "自動目標"},
-    "currentTarget": {"en": "Current target", "zh-CN": "当前目标", "zh-TW": "目前目標"},
-    "allTargets": {"en": "All representative targets", "zh-CN": "全部代表目标", "zh-TW": "全部代表目標"},
-    "selectedTargets": {"en": "Selected targets", "zh-CN": "指定目标", "zh-TW": "指定目標"},
-    "packageCompile": {"en": "Package compile", "zh-CN": "软件包编译", "zh-TW": "套件編譯"},
-    "packageCompileHelp": {"en": "Build the selected package and dependency closure with the target toolchain.", "zh-CN": "使用目标工具链编译所选软件包及其依赖闭包。", "zh-TW": "使用目標工具鏈編譯所選套件及其相依閉包。"},
-    "rootfsIntegration": {"en": "RootFS integration", "zh-CN": "根文件系统集成", "zh-TW": "根檔案系統整合"},
-    "rootfsIntegrationHelp": {"en": "Install selected packages into RootFS to expose APK/OPKG ownership and co-install conflicts.", "zh-CN": "把所选软件包安装进 RootFS，用于发现 APK/OPKG 文件归属和共同安装冲突。", "zh-TW": "把所選套件安裝進 RootFS，用於發現 APK/OPKG 檔案歸屬及共同安裝衝突。"},
-    "firmwareIntegration": {"en": "Firmware integration", "zh-CN": "固件集成", "zh-TW": "韌體整合"},
-    "firmwareIntegrationHelp": {"en": "Build a baseline image and an image with the selected packages in the same Source/Branch/Target environment.", "zh-CN": "在相同 Source/Branch/Target 环境中分别构建基础固件和加入所选软件包的固件。", "zh-TW": "在相同 Source/Branch/Target 環境中分別建置基礎韌體及加入所選套件的韌體。"},
-    "bootSmoke": {"en": "Boot smoke", "zh-CN": "启动自检", "zh-TW": "啟動自檢"},
-    "bootSmokeHelp": {"en": "Experimental generic boot validation for Catalog-approved bootable targets; no package-specific runtime checks.", "zh-CN": "对 Catalog 认可的可启动目标执行实验性通用启动验证，不包含插件专属运行检查。", "zh-TW": "對 Catalog 認可的可啟動目標執行實驗性通用啟動驗證，不包含套件專屬執行檢查。"},
-    "preview": {"en": "Preview plan", "zh-CN": "预览计划", "zh-TW": "預覽計畫"},
-    "submit": {"en": "Submit probe", "zh-CN": "提交探针", "zh-TW": "提交探針"},
-    "downloadedRequest": {"en": "probe-request.json was downloaded. Drag it into the required upload field in the GitHub Issue.", "zh-CN": "probe-request.json 已下载。请把它拖入 GitHub Issue 的必填上传框。", "zh-TW": "probe-request.json 已下載。請把它拖入 GitHub Issue 的必填上傳框。"},
-    "uploadInstruction": {"en": "Upload exactly one unmodified probe-request.json. The attachment and Issue are public; never add secrets.", "zh-CN": "只上传一个未经修改的 probe-request.json。附件和 Issue 公开可见，请勿加入秘密信息。", "zh-TW": "只上傳一個未經修改的 probe-request.json。附件和 Issue 公開可見，請勿加入秘密資訊。"},
-    "cancelInstruction": {"en": "To cancel after submission, reply with exactly /cancel in the same Issue.", "zh-CN": "提交后如需取消，请在同一个 Issue 中准确回复 /cancel。", "zh-TW": "提交後如需取消，請在同一個 Issue 中準確回覆 /cancel。"},
-    "permission": {"en": "Repository owners may run the full plan; write collaborators are capped at three concurrent jobs; visitors cannot start the probe Matrix.", "zh-CN": "仓库所有者可以运行完整计划；有写权限的协作者最多并发 3；普通访客不能启动探针 Matrix。", "zh-TW": "儲存庫擁有者可以執行完整計畫；具寫入權限的協作者最多同時執行 3 個工作；一般訪客不能啟動探針 Matrix。"},
-    "retention": {"en": "Normalized evidence is retained for 60 days; complete probe logs are retained for 30 days.", "zh-CN": "规范化证据保留 60 天，完整探针日志保留 30 天。", "zh-TW": "正規化證據保留 60 天，完整探針日誌保留 30 天。"},
-    "planOnly": {"en": "Plan only; no compilation was executed, so no compatibility conclusion or build log is available.", "zh-CN": "仅生成计划；未执行编译，因此没有兼容性结论或构建日志。", "zh-TW": "僅產生計畫；未執行編譯，因此沒有相容性結論或建置日誌。"},
-    "issueTitle": {"en": "Package probe request", "zh-CN": "软件包探针请求", "zh-TW": "套件探針請求"},
-    "loading": {"en": "Loading Catalog probe data…", "zh-CN": "正在加载 Catalog 探针数据…", "zh-TW": "正在載入 Catalog 探針資料…"},
-    "empty": {"en": "No matching package was found.", "zh-CN": "没有找到匹配的软件包。", "zh-TW": "找不到相符的套件。"},
-    "invalid": {"en": "Select at least one package and one Source/Branch entry.", "zh-CN": "请至少选择一个软件包和一个 Source/Branch。", "zh-TW": "請至少選擇一個套件和一個 Source/Branch。"}
+    "title": {
+      "en": "Package Compatibility Probe",
+      "zh-CN": "插件兼容探针",
+      "zh-TW": "套件相容性探針"
+    },
+    "intro": {
+      "en": "Check package compilation, RootFS installation, firmware integration, and optional boot behavior across Catalog Source/Branch environments.",
+      "zh-CN": "检查软件包在 Catalog 各源码分支中的编译、RootFS 安装、固件集成和可选启动行为。",
+      "zh-TW": "檢查套件在 Catalog 各原始碼分支中的編譯、RootFS 安裝、韌體整合及可選啟動行為。"
+    },
+    "howTo": {
+      "en": "Probe and Advanced menuconfig share one resolved Kconfig state. Every enabled PACKAGE_* dependency is included; choose depth and scope, preview, then submit the generated state.",
+      "zh-CN": "Probe 与 Advanced menuconfig 共用同一份已解析 Kconfig 状态，所有启用的 PACKAGE_* 依赖都会包含在内；设置探测深度和范围、预览后直接提交生成状态。",
+      "zh-TW": "Probe 與 Advanced menuconfig 共用同一份已解析 Kconfig 狀態，所有啟用的 PACKAGE_* 相依套件都會包含在內；設定探測深度和範圍、預覽後直接提交產生狀態。"
+    },
+    "search": {
+      "en": "Search applications or package IDs",
+      "zh-CN": "搜索应用或软件包 ID",
+      "zh-TW": "搜尋應用程式或套件 ID"
+    },
+    "selected": {
+      "en": "Selected",
+      "zh-CN": "已选择",
+      "zh-TW": "已選擇"
+    },
+    "depth": {
+      "en": "Probe depth",
+      "zh-CN": "探测深度",
+      "zh-TW": "探測深度"
+    },
+    "scope": {
+      "en": "Source/Branch scope",
+      "zh-CN": "源码分支范围",
+      "zh-TW": "原始碼分支範圍"
+    },
+    "targets": {
+      "en": "Target coverage",
+      "zh-CN": "Target 覆盖",
+      "zh-TW": "Target 覆蓋"
+    },
+    "allSources": {
+      "en": "All available Source/Branch entries",
+      "zh-CN": "全部可用 Source/Branch",
+      "zh-TW": "全部可用 Source/Branch"
+    },
+    "currentSource": {
+      "en": "Current Source/Branch",
+      "zh-CN": "当前 Source/Branch",
+      "zh-TW": "目前 Source/Branch"
+    },
+    "customScope": {
+      "en": "Custom selection",
+      "zh-CN": "自定义选择",
+      "zh-TW": "自訂選擇"
+    },
+    "autoTarget": {
+      "en": "Auto target",
+      "zh-CN": "自动目标",
+      "zh-TW": "自動目標"
+    },
+    "currentTarget": {
+      "en": "Current target",
+      "zh-CN": "当前目标",
+      "zh-TW": "目前目標"
+    },
+    "allTargets": {
+      "en": "All representative targets",
+      "zh-CN": "全部代表目标",
+      "zh-TW": "全部代表目標"
+    },
+    "selectedTargets": {
+      "en": "Selected targets",
+      "zh-CN": "指定目标",
+      "zh-TW": "指定目標"
+    },
+    "packageCompile": {
+      "en": "Package compile",
+      "zh-CN": "软件包编译",
+      "zh-TW": "套件編譯"
+    },
+    "packageCompileHelp": {
+      "en": "Build the selected package and dependency closure with the target toolchain.",
+      "zh-CN": "使用目标工具链编译所选软件包及其依赖闭包。",
+      "zh-TW": "使用目標工具鏈編譯所選套件及其相依閉包。"
+    },
+    "rootfsIntegration": {
+      "en": "RootFS integration",
+      "zh-CN": "根文件系统集成",
+      "zh-TW": "根檔案系統整合"
+    },
+    "rootfsIntegrationHelp": {
+      "en": "Install selected packages into RootFS to expose APK/OPKG ownership and co-install conflicts.",
+      "zh-CN": "把所选软件包安装进 RootFS，用于发现 APK/OPKG 文件归属和共同安装冲突。",
+      "zh-TW": "把所選套件安裝進 RootFS，用於發現 APK/OPKG 檔案歸屬及共同安裝衝突。"
+    },
+    "firmwareIntegration": {
+      "en": "Firmware integration",
+      "zh-CN": "固件集成",
+      "zh-TW": "韌體整合"
+    },
+    "firmwareIntegrationHelp": {
+      "en": "Build a baseline image and an image with the selected packages in the same Source/Branch/Target environment.",
+      "zh-CN": "在相同 Source/Branch/Target 环境中分别构建基础固件和加入所选软件包的固件。",
+      "zh-TW": "在相同 Source/Branch/Target 環境中分別建置基礎韌體及加入所選套件的韌體。"
+    },
+    "bootSmoke": {
+      "en": "Boot smoke",
+      "zh-CN": "启动自检",
+      "zh-TW": "啟動自檢"
+    },
+    "bootSmokeHelp": {
+      "en": "Experimental generic boot validation for Catalog-approved bootable targets; no package-specific runtime checks.",
+      "zh-CN": "对 Catalog 认可的可启动目标执行实验性通用启动验证，不包含插件专属运行检查。",
+      "zh-TW": "對 Catalog 認可的可啟動目標執行實驗性通用啟動驗證，不包含套件專屬執行檢查。"
+    },
+    "preview": {
+      "en": "Preview plan",
+      "zh-CN": "预览计划",
+      "zh-TW": "預覽計畫"
+    },
+    "submit": {
+      "en": "Submit probe",
+      "zh-CN": "提交探针",
+      "zh-TW": "提交探針"
+    },
+    "cancelInstruction": {
+      "en": "To cancel after submission, reply with exactly /cancel in the same Issue.",
+      "zh-CN": "提交后如需取消，请在同一个 Issue 中准确回复 /cancel。",
+      "zh-TW": "提交後如需取消，請在同一個 Issue 中準確回覆 /cancel。"
+    },
+    "permission": {
+      "en": "Repository owners may run the full plan; write collaborators are capped at three concurrent jobs; visitors cannot start the probe Matrix.",
+      "zh-CN": "仓库所有者可以运行完整计划；有写权限的协作者最多并发 3；普通访客不能启动探针 Matrix。",
+      "zh-TW": "儲存庫擁有者可以執行完整計畫；具寫入權限的協作者最多同時執行 3 個工作；一般訪客不能啟動探針 Matrix。"
+    },
+    "retention": {
+      "en": "Normalized evidence is retained for 60 days; complete probe logs are retained for 30 days.",
+      "zh-CN": "规范化证据保留 60 天，完整探针日志保留 30 天。",
+      "zh-TW": "正規化證據保留 60 天，完整探針日誌保留 30 天。"
+    },
+    "planOnly": {
+      "en": "Plan only; no compilation was executed, so no compatibility conclusion or build log is available.",
+      "zh-CN": "仅生成计划；未执行编译，因此没有兼容性结论或构建日志。",
+      "zh-TW": "僅產生計畫；未執行編譯，因此沒有相容性結論或建置日誌。"
+    },
+    "issueTitle": {
+      "en": "Package probe request",
+      "zh-CN": "软件包探针请求",
+      "zh-TW": "套件探針請求"
+    },
+    "loading": {
+      "en": "Loading Catalog probe data…",
+      "zh-CN": "正在加载 Catalog 探针数据…",
+      "zh-TW": "正在載入 Catalog 探針資料…"
+    },
+    "empty": {
+      "en": "No matching package was found.",
+      "zh-CN": "没有找到匹配的软件包。",
+      "zh-TW": "找不到相符的套件。"
+    },
+    "invalid": {
+      "en": "The Advanced menuconfig state needs at least one enabled package and one Source/Branch entry.",
+      "zh-CN": "Advanced menuconfig 状态至少需要一个启用的软件包和一个 Source/Branch。",
+      "zh-TW": "Advanced menuconfig 狀態至少需要一個啟用的套件與一個 Source/Branch。"
+    },
+    "submittedState": {
+      "en": "The current Advanced menuconfig package state was carried into the GitHub Issue.",
+      "zh-CN": "当前 Advanced menuconfig 软件包状态已带入 GitHub Issue。",
+      "zh-TW": "目前 Advanced menuconfig 套件狀態已帶入 GitHub Issue。"
+    },
+    "stateInstruction": {
+      "en": "Probe transports the resolved PACKAGE_* state and probe controls; it maintains no second package selection and uploads no config file.",
+      "zh-CN": "Probe 只传递已解析的 PACKAGE_* 状态和探测参数，不维护第二套软件包选择，也不上传配置文件。",
+      "zh-TW": "Probe 只傳遞已解析的 PACKAGE_* 狀態與探測參數，不維護第二套套件選擇，也不上傳設定檔。"
+    }
   }
 }

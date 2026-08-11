@@ -4,13 +4,13 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { downloadProbeRequest } from './package-probe-request.mjs';
+import { parseProbeStateToken } from './package-probe-state.mjs';
 import { normalizeProbeRequest } from './package-probe-controller.mjs';
 
 const WRITE_PERMISSIONS = new Set(['admin', 'maintain', 'write']);
 const PROBE_TITLE_RE = /^\[probe\](?:\s|$)/i;
-const RUN_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_RUN_V1\s+run=(\d+)\s+sha=([a-f0-9]{64})\s*-->/gi;
-const INTAKE_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_INTAKE_V1\s+sha=([a-f0-9]{64})\s*-->/i;
+const RUN_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_RUN_V(?:1|2)\s+run=(\d+)\s+sha=([a-f0-9]{64})\s*-->/gi;
+const INTAKE_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_INTAKE_V(?:1|2)\s+sha=([a-f0-9]{64})\s*-->/i;
 const CANCEL_MARKER = '<!-- WEIG_PACKAGE_PROBE_CANCEL_V1 -->';
 
 export function probeIssueCommand(body) {
@@ -123,8 +123,8 @@ async function intake(env, event) {
   const { owner, repo } = repositoryParts(env);
   const api = apiClient(env);
   const requester = String(issue.user?.login || '');
-  const downloaded = await downloadProbeRequest(issue.body || '');
-  const request = normalizeProbeRequest(downloaded.raw);
+  const parsedState = parseProbeStateToken(issue.body || '');
+  const request = normalizeProbeRequest(parsedState.raw);
   const permission = await permissionFor(api, owner, repo, requester);
   const comments = await issueComments(api, owner, repo, issue.number);
   if (comments.some((row) => INTAKE_MARKER_RE.test(String(row.body || ''))) || probeRunMarkers(comments).length) {
@@ -148,7 +148,7 @@ async function intake(env, event) {
     '',
     'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。',
     '',
-    `<!-- WEIG_PACKAGE_PROBE_INTAKE_V1 sha=${downloaded.sha256} -->`,
+    `<!-- WEIG_PACKAGE_PROBE_INTAKE_V2 sha=${parsedState.sha256} -->`,
   ].join('\n'));
   const [currentIssue, beforeDispatch] = await Promise.all([
     api(`/repos/${owner}/${repo}/issues/${issue.number}`),
@@ -164,7 +164,7 @@ async function intake(env, event) {
       ref: request.channel,
       inputs: {
         issue_number: String(issue.number),
-        request_sha256: downloaded.sha256,
+        state_sha256: parsedState.sha256,
         issue_created_at: String(issue.created_at || ''),
       },
     },
@@ -178,7 +178,7 @@ async function intake(env, event) {
     '',
     'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。',
     '',
-    `<!-- WEIG_PACKAGE_PROBE_RUN_V1 run=${runId} sha=${downloaded.sha256} -->`,
+    `<!-- WEIG_PACKAGE_PROBE_RUN_V2 run=${runId} sha=${parsedState.sha256} -->`,
   ].join('\n'));
   const [latestIssue, afterDispatch] = await Promise.all([
     api(`/repos/${owner}/${repo}/issues/${issue.number}`),
@@ -245,7 +245,7 @@ export async function main(env = process.env) {
           '',
           `\`${String(error?.message || error).slice(0, 1000)}\``,
           '',
-          'Generate a fresh `probe-request.json`, open a new Package Probe Issue, and upload only that file. / 请重新生成 `probe-request.json`，新建软件包探针 Issue，并且只上传该文件。',
+          'Return to AutoBuild, reopen Package Probe, and submit the generated Advanced menuconfig state again. / 请返回 AutoBuild，重新打开插件兼容探针并再次提交由 Advanced menuconfig 生成的状态。',
         ].join('\n'));
         await closeIssue(api, owner, repo, event.issue.number);
       }

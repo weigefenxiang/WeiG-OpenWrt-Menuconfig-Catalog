@@ -7,14 +7,14 @@ import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { matchPattern } from './source-policy.mjs';
-import { downloadProbeRequest } from './package-probe-request.mjs';
+import { parseProbeStateToken } from './package-probe-state.mjs';
 import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
 const MODES = new Set(['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke']);
 const MODE_ALIASES = { compile: 'package-compile', 'co-install': 'rootfs-integration' };
-const REQUEST_KEYS = new Set(['schema', 'channel', 'mode', 'packages', 'scope', 'targetPolicy', 'maxParallel', 'execute']);
+const REQUEST_KEYS = new Set(['schema', 'channel', 'mode', 'packageConfig', 'scope', 'targetPolicy', 'maxParallel', 'execute']);
 const WRITE_PERMISSIONS = new Set(['admin', 'maintain', 'write']);
 
 const plainObject = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -32,33 +32,19 @@ export function normalizeProbeMode(value) {
   return mode;
 }
 
-export function normalizePackageIds(value, maximum = 8) {
-  const input = Array.isArray(value) ? value : String(value || '').split(/[\s,]+/);
-  const packages = stableUnique(input.map((row) => String(row || '').trim()).filter(Boolean));
-  if (!packages.length || packages.length > maximum || packages.some((name) => !PACKAGE_RE.test(name))) {
-    throw new Error(`packages must contain 1-${maximum} valid Catalog application or package IDs`);
+export function normalizePackageConfig(value, maximumBytes = 131072) {
+  const text = String(value || '').replace(/\r\n/g, '\n').trim();
+  if (!text || Buffer.byteLength(text, 'utf8') > maximumBytes) throw new Error('packageConfig is empty or too large');
+  const states = new Map();
+  for (const line of text.split('\n')) {
+    const match = line.match(/^CONFIG_PACKAGE_([A-Za-z0-9][A-Za-z0-9+_.@-]{0,95})=([my])$/);
+    if (!match) throw new Error(`invalid packageConfig line: ${line}`);
+    const previous = states.get(match[1]);
+    if (previous && previous !== match[2]) throw new Error(`conflicting package state: ${match[1]}`);
+    states.set(match[1], match[2]);
   }
-  return packages;
-}
-
-export function resolveProbePackages(requested, applications) {
-  const rows = Array.isArray(applications?.items) ? applications.items : [];
-  const byId = new Map(rows.map((item) => [String(item.id || ''), item]));
-  const resolved = [];
-  const mappings = [];
-  for (const id of requested) {
-    const application = byId.get(id);
-    const candidates = application
-      ? [...(Array.isArray(application.packages) ? application.packages : []), application.package]
-      : [id];
-    const packages = stableUnique(candidates.map((row) => String(row || '').trim()).filter(Boolean));
-    if (!packages.length || packages.some((name) => !PACKAGE_RE.test(name))) {
-      throw new Error(`Catalog application ${id} has no valid package mapping`);
-    }
-    resolved.push(...packages);
-    mappings.push({ id, packages, catalogApplication: Boolean(application) });
-  }
-  return { packages: stableUnique(resolved), mappings };
+  const packageConfig = [...states].map(([name, state]) => `CONFIG_PACKAGE_${name}=${state}`).join('\n') + '\n';
+  return { packageConfig, packages: [...states.keys()], states };
 }
 
 function targetConfig(target, profile) {
@@ -167,21 +153,18 @@ function normalizeTargetPolicy(value) {
   return { mode, selections };
 }
 
-export function normalizeProbeRequest(raw, maximum = 8) {
+export function normalizeProbeRequest(raw, maximumBytes = 131072) {
   if (!plainObject(raw)) throw new Error('probe request must be an object');
   rejectUnknownKeys(raw, REQUEST_KEYS, 'probe request');
-  if (Number(raw.schema) !== 1) throw new Error('probe request requires schema 1');
+  if (Number(raw.schema) !== 2) throw new Error('probe request requires schema 2');
   const channel = String(raw.channel || 'main');
   if (!runtimeDataBranchForChannel(channel)) throw new Error(`unsupported probe channel: ${channel}`);
+  const packageState = normalizePackageConfig(raw.packageConfig, maximumBytes);
   return {
-    schema: 1,
-    channel,
-    mode: normalizeProbeMode(raw.mode),
-    packages: normalizePackageIds(raw.packages, maximum),
-    scope: normalizeScope(raw.scope),
-    targetPolicy: normalizeTargetPolicy(raw.targetPolicy),
-    maxParallel: raw.maxParallel === undefined ? 0 : Number(raw.maxParallel),
-    execute: raw.execute !== false,
+    schema: 2, channel, mode: normalizeProbeMode(raw.mode),
+    packageConfig: packageState.packageConfig, packages: packageState.packages,
+    scope: normalizeScope(raw.scope), targetPolicy: normalizeTargetPolicy(raw.targetPolicy),
+    maxParallel: raw.maxParallel === undefined ? 0 : Number(raw.maxParallel), execute: raw.execute !== false,
   };
 }
 
@@ -195,27 +178,25 @@ function timeoutForMode(policy, mode) {
   return Math.max(1, Math.min(360, configured));
 }
 
-export function createProbePlan({ index, applications, env = {}, policy, request: rawRequest }) {
+export function createProbePlan({ index, env = {}, policy, request: rawRequest }) {
   if (Number(index?.schema) !== 2 || !Array.isArray(index?.sources)) throw new Error('Catalog index schema 2 is required');
   const probePolicy = policy?.probe || {};
-  const request = rawRequest ? normalizeProbeRequest(rawRequest, Number(probePolicy.maxPackages || 8)) : normalizeProbeRequest({
-    schema: 1,
-    channel: env.CODE_REF || 'main',
-    mode: env.PROBE_MODE || 'package-compile',
-    packages: env.PROBE_PACKAGES,
+  const maximumBytes = Number(probePolicy.maxPackageConfigBytes || 131072);
+  const request = rawRequest ? normalizeProbeRequest(rawRequest, maximumBytes) : normalizeProbeRequest({
+    schema: 2, channel: env.CODE_REF || 'main', mode: env.PROBE_MODE || 'package-compile',
+    packageConfig: env.PROBE_PACKAGE_CONFIG,
     scope: { mode: 'patterns', source: env.SOURCE_PATTERN || '*', branch: env.BRANCH_PATTERN || '*' },
     targetPolicy: { mode: env.TARGET_POLICY || 'auto' },
     maxParallel: env.MAX_PARALLEL === undefined || env.MAX_PARALLEL === '' ? 0 : Number(env.MAX_PARALLEL),
     execute: String(env.DRY_RUN || 'false') !== 'true',
-  }, Number(probePolicy.maxPackages || 8));
-  const resolved = resolveProbePackages(request.packages, applications);
+  }, maximumBytes);
   const include = index.sources.flatMap((source) => (source.branches || [])
     .filter((branch) => branch.state !== 'unavailable' && scopeMatches(request.scope, String(source.id || ''), String(branch.branch || '')))
     .map((branch) => ({
       key: safeKey(`${source.id}-${branch.branch}`), source: source.id, label: source.label || source.id,
       repo: source.repo, branch: branch.branch, upstreamCommit: branch.commit || '',
       coreAsset: branch.assets?.core?.asset || '', coreHash: branch.assets?.core?.hash || '',
-      packages: resolved.packages.join(','),
+      packages: request.packages.join(','),
     })));
   if (!include.length) throw new Error('probe scope matched no available Catalog Source/Branch');
   const owner = String(env.REPOSITORY_OWNER || '').toLowerCase();
@@ -234,8 +215,8 @@ export function createProbePlan({ index, applications, env = {}, policy, request
     authorization: env.PROBE_AUTHORIZATION || (isOwner ? 'admin' : 'write'),
     codeRef: request.channel, dataBranch: runtimeDataBranchForChannel(request.channel),
     mode: request.mode, evidenceLevel: MODES_LIST.indexOf(request.mode) + 1,
-    execute: request.execute, requested: request.packages, resolvedPackages: resolved.packages,
-    mappings: resolved.mappings, scope: request.scope, targetPolicy: request.targetPolicy,
+    execute: request.execute, requested: request.packages, resolvedPackages: request.packages,
+    packageConfig: request.packageConfig, mappings: [], scope: request.scope, targetPolicy: request.targetPolicy,
     requestedMaxParallel: request.maxParallel,
     maxParallel: Math.max(1, Math.min(include.length, isOwner ? requestedParallel : Math.min(collaboratorCap, requestedParallel))),
     timeoutMinutes: timeoutForMode(policy, request.mode), matrix: { include },
@@ -335,7 +316,7 @@ function writeOutputs(plan, extra = {}) {
   const rows = {
     matrix: JSON.stringify(plan.matrix), max_parallel: String(plan.maxParallel), execute: String(plan.execute),
     relevant: String(plan.relevant !== false), authorized: String(plan.authorized), plan_count: String(plan.matrix.include.length),
-    packages: plan.resolvedPackages.join(','), data_branch: plan.dataBranch, mode: plan.mode,
+    packages: plan.resolvedPackages.join(','), package_config: Buffer.from(plan.packageConfig || '').toString('base64url'), data_branch: plan.dataBranch, mode: plan.mode,
     evidence_level: String(plan.evidenceLevel), timeout_minutes: String(plan.timeoutMinutes),
     issue_number: String(extra.issueNumber || ''),
   };
@@ -375,23 +356,17 @@ async function actorPermission(repository, actor, owner, token) {
   return String((await response.json()).permission || 'read');
 }
 
-function manualRequest(env, maximum) {
-  if (env.PROBE_REQUEST) {
-    let raw;
-    try { raw = JSON.parse(env.PROBE_REQUEST); }
-    catch (error) { throw new Error(`manual probe request is not valid JSON: ${error.message}`); }
-    return normalizeProbeRequest(raw, maximum);
-  }
-  return normalizeProbeRequest({ schema: 1, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main',
-    mode: env.PROBE_MODE || 'package-compile', packages: env.PROBE_PACKAGES,
+function manualRequest(env, maximumBytes) {
+  return normalizeProbeRequest({ schema: 2, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main',
+    mode: env.PROBE_MODE || 'package-compile', packageConfig: env.PROBE_PACKAGE_CONFIG,
     scope: { mode: 'patterns', source: env.SOURCE_PATTERN || '*', branch: env.BRANCH_PATTERN || '*' },
     targetPolicy: { mode: env.TARGET_POLICY || 'auto' }, maxParallel: Number(env.MAX_PARALLEL || 0),
-    execute: String(env.DRY_RUN || 'false') !== 'true' }, maximum);
+    execute: String(env.DRY_RUN || 'false') !== 'true' }, maximumBytes);
 }
 
 export async function main(env = process.env) {
   const policy = JSON.parse(readFileSync(join(ROOT, '.github', 'automation-policy.json'), 'utf8'));
-  const maximum = Number(policy.probe?.maxPackages || 8);
+  const maximumBytes = Number(policy.probe?.maxPackageConfigBytes || 131072);
   const repository = env.GITHUB_REPOSITORY || '';
   const owner = env.REPOSITORY_OWNER || repository.split('/')[0] || '';
   let actor = env.GITHUB_ACTOR || '';
@@ -399,7 +374,7 @@ export async function main(env = process.env) {
   let request;
   let permission = owner && actor.toLowerCase() === owner.toLowerCase() ? 'admin' : 'write';
   if (issueNumber) {
-    if (!/^\d+$/.test(issueNumber) || !env.PROBE_REQUEST_SHA256 || !env.PROBE_ISSUE_CREATED_AT) {
+    if (!/^\d+$/.test(issueNumber) || !env.PROBE_STATE_SHA256 || !env.PROBE_ISSUE_CREATED_AT) {
       throw new Error('Issue probe dispatch identity is incomplete');
     }
     const issue = await fetchJson(`https://api.github.com/repos/${repository}/issues/${issueNumber}`, env.GITHUB_TOKEN || '');
@@ -409,17 +384,17 @@ export async function main(env = process.env) {
     if (String(issue.created_at || '') !== String(env.PROBE_ISSUE_CREATED_AT)) {
       throw new Error(`Issue #${issueNumber} creation identity changed`);
     }
-    const downloaded = await downloadProbeRequest(issue.body || '');
-    if (downloaded.sha256 !== String(env.PROBE_REQUEST_SHA256).toLowerCase()) {
-      throw new Error(`Issue #${issueNumber} probe-request.json changed after dispatch`);
+    const parsedState = parseProbeStateToken(issue.body || '');
+    if (parsedState.sha256 !== String(env.PROBE_STATE_SHA256).toLowerCase()) {
+      throw new Error(`Issue #${issueNumber} generated Probe state changed after dispatch`);
     }
-    request = normalizeProbeRequest(downloaded.raw, maximum);
+    request = normalizeProbeRequest(parsedState.raw, maximumBytes);
     if (String(env.GITHUB_REF_NAME || '') !== request.channel) {
       throw new Error(`probe worker ref ${env.GITHUB_REF_NAME} does not match request channel ${request.channel}`);
     }
     actor = String(issue.user?.login || '');
     permission = await actorPermission(repository, actor, owner, env.GITHUB_TOKEN || '');
-  } else request = manualRequest(env, maximum);
+  } else request = manualRequest(env, maximumBytes);
   const authorized = WRITE_PERMISSIONS.has(permission);
   const dataBranch = runtimeDataBranchForChannel(request.channel);
   if (!repository || !dataBranch) throw new Error(`unsupported probe channel: ${request.channel}`);
@@ -427,18 +402,13 @@ export async function main(env = process.env) {
   if (!authorized) {
     plan = { schema: 3, generatedAt: new Date().toISOString(), actor, owner: false, relevant: true, authorized: false,
       authorization: permission, codeRef: request.channel, dataBranch, mode: request.mode, evidenceLevel: 0,
-      execute: false, requested: request.packages, resolvedPackages: [], mappings: [], scope: request.scope,
+      execute: false, requested: request.packages, resolvedPackages: [], packageConfig: request.packageConfig, mappings: [], scope: request.scope,
       targetPolicy: request.targetPolicy, maxParallel: 1, timeoutMinutes: timeoutForMode(policy, request.mode),
       matrix: { include: [] } };
   } else {
     const base = `https://raw.githubusercontent.com/${repository}/${dataBranch}`;
     const index = await fetchJson(`${base}/index.json`, env.GITHUB_TOKEN || '');
-    const appContract = index.assets?.applications;
-    if (!appContract?.asset || !appContract?.hash) throw new Error('Catalog index lacks an applications asset contract');
-    const applications = await fetchVerifiedGzipJson(
-      `https://raw.githubusercontent.com/${repository}/${index.assetRef || dataBranch}/${appContract.asset}`,
-      appContract.hash, env.GITHUB_TOKEN || '');
-    const preliminary = createProbePlan({ index, applications, request, policy,
+    const preliminary = createProbePlan({ index, request, policy,
       env: { ...env, CODE_REF: request.channel, DATA_BRANCH: dataBranch, PROBE_AUTHORIZED: 'true', PROBE_AUTHORIZATION: permission } });
     plan = { ...(await attachProbeTargets(preliminary, { repository, dataRef: String(index.assetRef || dataBranch), token: env.GITHUB_TOKEN || '', policy })), relevant: true };
   }
