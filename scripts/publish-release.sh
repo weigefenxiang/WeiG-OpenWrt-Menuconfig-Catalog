@@ -2,6 +2,10 @@
 set -euo pipefail
 
 tag="menuconfig-catalog-complete"
+target_sha="${CATALOG_RELEASE_TARGET_SHA:-$GITHUB_SHA}"
+source_sha="${CATALOG_RELEASE_SOURCE_SHA:-}"
+notes="All Catalog assets were promoted from a verified immutable candidate in run $GITHUB_RUN_ID."
+[[ -z "$source_sha" ]] || notes="$notes Candidate: $source_sha."
 shopt -s nullglob
 assets=(dist/index.json dist/*.json.gz dist/*.translations.json)
 filtered=()
@@ -17,14 +21,14 @@ fi
 
 if gh release view "$tag" >/dev/null 2>&1; then
   gh release edit "$tag" \
-    --target "$GITHUB_SHA" \
+    --target "$target_sha" \
     --title "Complete Menuconfig Catalog" \
-    --notes "All discovered source branches completed successfully in run $GITHUB_RUN_ID."
+    --notes "$notes"
   gh release upload "$tag" "${assets[@]}" --clobber
 else
   gh release create "$tag" \
-    --target "$GITHUB_SHA" \
+    --target "$target_sha" \
     --title "Complete Menuconfig Catalog" \
-    --notes "All discovered source branches completed successfully in run $GITHUB_RUN_ID." \
+    --notes "$notes" \
     "${assets[@]}"
 fi

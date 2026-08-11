@@ -4,13 +4,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   createProbePlan,
-  dataBranchForCodeRef,
   normalizeProbeMode,
   normalizeProbeRequest,
   probeTargetConfig,
   probeTargetConfigs,
   resolveProbePackages,
 } from './package-probe-controller.mjs';
+import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import {
   downloadProbeRequest,
   parseProbeRequestBytes,
@@ -49,10 +49,10 @@ const index = {
   ] }],
 };
 
-assert.equal(dataBranchForCodeRef('main'), 'catalog-data');
-assert.equal(dataBranchForCodeRef('dev'), 'catalog-dev');
-assert.equal(dataBranchForCodeRef('staging'), 'catalog-staging');
-assert.equal(dataBranchForCodeRef('fix/probe'), 'catalog-fix');
+assert.equal(runtimeDataBranchForChannel('main'), 'catalog-data');
+assert.equal(runtimeDataBranchForChannel('dev'), 'catalog-dev');
+assert.equal(runtimeDataBranchForChannel('staging'), 'catalog-staging');
+assert.equal(runtimeDataBranchForChannel('fix/probe'), 'catalog-fix');
 assert.equal(normalizeProbeMode('compile'), 'package-compile');
 assert.equal(normalizeProbeMode('co-install'), 'rootfs-integration');
 assert.throws(() => normalizeProbeMode('plugin-special-case'), /unsupported probe mode/);

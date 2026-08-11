@@ -17,7 +17,7 @@ const translationFile = resolve('dist/translation-summary.json');
 const translation = existsSync(translationFile)
   ? JSON.parse(readFileSync(translationFile, 'utf8')) : {};
 const translationWarning = String(translation.apiError || '').replace(/[`|\r\n]+/g, ' ').trim();
-const dataBranch = process.env.CATALOG_DATA_BRANCH || 'catalog-data';
+const dataBranch = process.env.CATALOG_DATA_BRANCH || 'catalog-candidate';
 const publishedByArtifact = new Map((manifest.branches || [])
   .map((item) => [item.artifactName, item]));
 const stages = [

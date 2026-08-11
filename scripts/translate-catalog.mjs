@@ -103,7 +103,7 @@ if (enabled && provider === 'argos' && pending.length) {
   activeChild = null;
   if (cancelled) {
     rmSync(queue, { force: true }); rmSync(resultFile, { force: true }); temporaryFiles = [];
-    throw new Error('Translation cancelled before catalog-data publish');
+    throw new Error('Translation cancelled before Catalog data publish');
   }
   if (result.error || result.status !== 0 || !existsSync(resultFile)) apiError = result.error?.message || 'Argos translator failed';
   else { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut = Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }

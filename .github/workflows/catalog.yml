@@ -28,7 +28,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: menuconfig-catalog
+  group: catalog-build-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -37,10 +37,14 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       fast_asset: ${{ steps.mode.outputs.fast_asset }}
+      data_branch: ${{ steps.channel.outputs.data_branch }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
+      - id: channel
+        name: Resolve isolated data channel / 解析隔离数据通道
+        run: echo "data_branch=$(node scripts/catalog-channels.mjs build "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
       - id: mode
         name: Detect root-asset-only push
         env:
@@ -215,20 +219,19 @@ jobs:
     needs: mode
     if: needs.mode.outputs.fast_asset != 'none'
     runs-on: ubuntu-24.04
+    concurrency:
+      group: catalog-write-${{ needs.mode.outputs.data_branch }}
+      cancel-in-progress: false
     env:
-      CATALOG_DATA_BRANCH: ${{ startsWith(github.ref_name, 'fix/') && 'catalog-fix' || github.ref_name == 'dev' && 'catalog-dev' || github.ref_name == 'staging' && 'catalog-staging' || github.ref_name == 'main' && 'catalog-data' || '' }}
+      CATALOG_DATA_BRANCH: ${{ needs.mode.outputs.data_branch }}
       FAST_ASSET: ${{ needs.mode.outputs.fast_asset }}
     steps:
-      - name: Validate publish channel
+      - name: Validate non-production publish channel
         run: |
           case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-dev|catalog-staging|catalog-data) ;;
-            *) echo "unsupported Catalog code branch: $GITHUB_REF_NAME"; exit 1 ;;
+            catalog-fix|catalog-dev|catalog-staging|catalog-candidate) ;;
+            *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
           esac
-          if [[ "$GITHUB_REF_NAME" != main && "$CATALOG_DATA_BRANCH" == catalog-data ]]; then
-            echo "non-main code may not publish catalog-data"
-            exit 1
-          fi
       - uses: actions/checkout@v7
       - name: Fetch only the current root-asset contract
         run: |
@@ -258,7 +261,7 @@ jobs:
           fi
           git -C previous commit -m "data: refresh $FAST_ASSET asset"
           asset_commit="$(git -C previous rev-parse HEAD)"
-          node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit"
+          node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA"
           git -C previous add --sparse index.json
           if ! git -C previous diff --cached --quiet; then
             git -C previous commit -m "data: pin $FAST_ASSET snapshot"
@@ -267,11 +270,14 @@ jobs:
 
   publish:
     name: ${{ needs.discover.outputs.publish-order }} · Publish / 发布目录与 Release
-    needs: [discover, generate]
+    needs: [mode, discover, generate]
     if: always() && needs.discover.result == 'success'
     runs-on: ubuntu-24.04
+    concurrency:
+      group: catalog-write-${{ needs.mode.outputs.data_branch }}
+      cancel-in-progress: false
     env:
-      CATALOG_DATA_BRANCH: ${{ startsWith(github.ref_name, 'fix/') && 'catalog-fix' || github.ref_name == 'dev' && 'catalog-dev' || github.ref_name == 'staging' && 'catalog-staging' || github.ref_name == 'main' && 'catalog-data' || '' }}
+      CATALOG_DATA_BRANCH: ${{ needs.mode.outputs.data_branch }}
       CATALOG_ORDER: ${{ needs.discover.outputs.publish-order }}
       CATALOG_JOB_KEY: publish
       CATALOG_JOB_NAME: ${{ needs.discover.outputs.publish-order }} · Publish / 发布目录与 Release
@@ -280,16 +286,12 @@ jobs:
       CATALOG_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       CATALOG_ARTIFACT_NAME: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
     steps:
-      - name: Validate publish channel
+      - name: Validate non-production publish channel
         run: |
           case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-dev|catalog-staging|catalog-data) ;;
-            *) echo "unsupported Catalog code branch: $GITHUB_REF_NAME"; exit 1 ;;
+            catalog-fix|catalog-dev|catalog-staging|catalog-candidate) ;;
+            *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
           esac
-          if [[ "$GITHUB_REF_NAME" != main && "$CATALOG_DATA_BRANCH" == catalog-data ]]; then
-            echo "non-main code may not publish catalog-data"
-            exit 1
-          fi
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
@@ -332,7 +334,7 @@ jobs:
               git -C previous commit -m "data: refresh menuconfig catalog"
             fi
             asset_commit="$(git -C previous rev-parse HEAD)"
-            node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit"
+            node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA" "${{ steps.collect.outputs.complete }}"
             node scripts/sync-index-assets.mjs previous --check
             git -C previous add index.json
             if ! git -C previous diff --cached --quiet; then
@@ -341,13 +343,6 @@ jobs:
             git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"
             cp previous/index.json dist/index.json
           '
-      - name: Publish complete catalog Release
-        id: release
-        if: github.ref_name == 'main' && needs.generate.result == 'success' && steps.collect.outputs.complete == 'true' && steps.data.outcome == 'success'
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash scripts/run-stage.sh release bash scripts/publish-release.sh
       - name: Catalog health summary
         if: always()
         env:
@@ -357,7 +352,7 @@ jobs:
           TRANSLATE_OUTCOME: skipped
           INDEX_OUTCOME: ${{ steps.index.outcome }}
           DATA_OUTCOME: ${{ steps.data.outcome }}
-          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          RELEASE_OUTCOME: skipped
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -380,19 +375,13 @@ jobs:
       - name: Fail incomplete publish
         if: always()
         env:
-          RELEASE_REQUIRED: ${{ github.ref_name == 'main' }}
           MATRIX_RESULT: ${{ needs.generate.result }}
           COLLECT_COMPLETE: ${{ steps.collect.outputs.complete }}
           COLLECT_OUTCOME: ${{ steps.collect.outcome }}
           INDEX_OUTCOME: ${{ steps.index.outcome }}
           DATA_OUTCOME: ${{ steps.data.outcome }}
-          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          RELEASE_OUTCOME: skipped
         run: |
           test "$COLLECT_OUTCOME" = success
           test "$INDEX_OUTCOME" = success
           test "$DATA_OUTCOME" = success
-          test "$RELEASE_OUTCOME" != failure
-          if test "$RELEASE_REQUIRED" = true && test "$MATRIX_RESULT" = success; then
-            test "$COLLECT_COMPLETE" = true
-            test "$RELEASE_OUTCOME" = success
-          fi

@@ -1,23 +1,17 @@
 name: Translate Menuconfig Catalog
-run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ inputs.translate_batch_size || '500' }}×${{ inputs.translate_batch_count || '5' }} · ${{ inputs.data_channel || 'catalog-data' }} · run ${{ github.run_number }}
+run-name: Catalog translation · ${{ inputs.translate_language || 'auto' }} · ${{ inputs.translate_batch_size || '500' }}×${{ inputs.translate_batch_count || '5' }} · ${{ inputs.channel || 'candidate' }} · run ${{ github.run_number }}
 
 on:
   schedule:
     - cron: "37 20 * * *"
   workflow_dispatch:
     inputs:
-      code_channel:
-        description: Workflow code branch
+      channel:
+        description: "Catalog channel; candidate uses main code without touching production / Catalog 通道；candidate 使用 main 代码但不触碰生产"
         required: true
         type: choice
-        default: main
-        options: [main, dev, staging]
-      data_channel:
-        description: Catalog data branch
-        required: true
-        type: choice
-        default: catalog-data
-        options: [catalog-data, catalog-dev, catalog-staging, catalog-fix]
+        default: candidate
+        options: [candidate, dev, staging]
       translation_provider:
         description: Translation engine
         required: true
@@ -50,25 +44,45 @@ on:
         description: Azure source-character cap (Argos ignores this)
         required: true
         default: "400000"
+
 permissions:
   contents: write
 
-concurrency:
-  group: menuconfig-translation-${{ inputs.data_channel || 'catalog-data' }}
-  cancel-in-progress: false
-
 jobs:
-  translate:
-    name: 01 · Translate descriptions / 翻译说明
+  channel:
+    name: 00 · Resolve isolated channel / 解析隔离通道
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    outputs:
+      code_ref: ${{ steps.channel.outputs.code_ref }}
+      data_branch: ${{ steps.channel.outputs.data_branch }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.code_channel || github.event.repository.default_branch }}
+          persist-credentials: false
+      - id: channel
+        env:
+          TRANSLATION_CHANNEL: ${{ inputs.channel || 'candidate' }}
+        run: node scripts/catalog-channels.mjs translation "$TRANSLATION_CHANNEL" >> "$GITHUB_OUTPUT"
+
+  translate:
+    name: 01 · Translate descriptions / 翻译说明
+    needs: channel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    concurrency:
+      group: catalog-write-${{ needs.channel.outputs.data_branch }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.channel.outputs.code_ref }}
+          persist-credentials: false
+      - id: code
+        name: Pin translation code identity / 锁定翻译代码身份
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Fetch indexed translation assets only
         env:
-          CATALOG_DATA_BRANCH: ${{ inputs.data_channel || 'catalog-data' }}
+          CATALOG_DATA_BRANCH: ${{ needs.channel.outputs.data_branch }}
         run: |
           git clone --filter=blob:none --no-checkout --single-branch \
             --branch "$CATALOG_DATA_BRANCH" \
@@ -124,7 +138,7 @@ jobs:
           TRANSLATE_BATCH_COUNT: ${{ steps.plan.outputs.batch_count }}
           TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget || '400000' }}
           ARGOS_TIME_BUDGET_SECONDS: ${{ steps.plan.outputs.per_batch_time_budget_seconds }}
-          CATALOG_DATA_BRANCH: ${{ inputs.data_channel || 'catalog-data' }}
+          CATALOG_DATA_BRANCH: ${{ needs.channel.outputs.data_branch }}
         run: |
           set -euo pipefail
           rm -f "$RUNNER_TEMP/translation-run-started" dist/translation-summary.json
@@ -143,7 +157,7 @@ jobs:
             fi
             git -C dist commit -m "data: translate menuconfig descriptions batch ${batch}/${batch_count}"
             asset_commit="$(git -C dist rev-parse HEAD)"
-            node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit"
+            node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit" "${{ needs.channel.outputs.code_ref }}" "${{ steps.code.outputs.sha }}"
             node scripts/sync-translation-assets.mjs dist/index.json --check
             git -C dist add index.json
             git -C dist commit -m "data: pin translated catalog assets batch ${batch}/${batch_count}"
@@ -174,7 +188,7 @@ jobs:
               publish_batch
             fi
           done
-      - name: Publish translated catalog-data
+      - name: Publish translated Catalog snapshot
         if: always() && steps.translator.outputs.provider != 'off' && steps.plan.outputs.publish_mode == 'final'
         run: |
           if [[ ! -f "$RUNNER_TEMP/translation-run-started" || ! -f dist/translation-summary.json ]]; then
@@ -197,11 +211,11 @@ jobs:
           fi
           git -C dist commit -m "data: translate menuconfig descriptions"
           asset_commit="$(git -C dist rev-parse HEAD)"
-          node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit"
+          node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit" "${{ needs.channel.outputs.code_ref }}" "${{ steps.code.outputs.sha }}"
           node scripts/sync-translation-assets.mjs dist/index.json --check
           git -C dist add index.json
           git -C dist commit -m "data: pin translated catalog assets"
-          git -C dist push origin "HEAD:${{ inputs.data_channel || 'catalog-data' }}"
+          git -C dist push origin "HEAD:${{ needs.channel.outputs.data_branch }}"
       - name: Translation summary
         if: always() && steps.translator.outputs.provider != 'off'
         run: node scripts/write-translation-summary.mjs >> "$GITHUB_STEP_SUMMARY"

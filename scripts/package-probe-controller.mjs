@@ -8,10 +8,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { matchPattern } from './source-policy.mjs';
 import { downloadProbeRequest } from './package-probe-request.mjs';
+import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
-const CHANNELS = { main: 'catalog-data', dev: 'catalog-dev', staging: 'catalog-staging' };
 const MODES = new Set(['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke']);
 const MODE_ALIASES = { compile: 'package-compile', 'co-install': 'rootfs-integration' };
 const REQUEST_KEYS = new Set(['schema', 'channel', 'mode', 'packages', 'scope', 'targetPolicy', 'maxParallel', 'execute']);
@@ -24,11 +24,6 @@ const safeKey = (value) => String(value || '').replace(/[^A-Za-z0-9_.-]/g, '-').
 function rejectUnknownKeys(value, allowed, label) {
   const unknown = Object.keys(value || {}).filter((key) => !allowed.has(key));
   if (unknown.length) throw new Error(`${label} contains unknown keys: ${unknown.join(', ')}`);
-}
-
-export function dataBranchForCodeRef(codeRef) {
-  const ref = String(codeRef || '');
-  return ref.startsWith('fix/') ? 'catalog-fix' : CHANNELS[ref] || '';
 }
 
 export function normalizeProbeMode(value) {
@@ -177,7 +172,7 @@ export function normalizeProbeRequest(raw, maximum = 8) {
   rejectUnknownKeys(raw, REQUEST_KEYS, 'probe request');
   if (Number(raw.schema) !== 1) throw new Error('probe request requires schema 1');
   const channel = String(raw.channel || 'main');
-  if (!dataBranchForCodeRef(channel)) throw new Error(`unsupported probe channel: ${channel}`);
+  if (!runtimeDataBranchForChannel(channel)) throw new Error(`unsupported probe channel: ${channel}`);
   return {
     schema: 1,
     channel,
@@ -237,7 +232,7 @@ export function createProbePlan({ index, applications, env = {}, policy, request
     generatedAt: new Date().toISOString(),
     actor: env.GITHUB_ACTOR || '', owner: isOwner, authorized: env.PROBE_AUTHORIZED !== 'false',
     authorization: env.PROBE_AUTHORIZATION || (isOwner ? 'admin' : 'write'),
-    codeRef: request.channel, dataBranch: dataBranchForCodeRef(request.channel),
+    codeRef: request.channel, dataBranch: runtimeDataBranchForChannel(request.channel),
     mode: request.mode, evidenceLevel: MODES_LIST.indexOf(request.mode) + 1,
     execute: request.execute, requested: request.packages, resolvedPackages: resolved.packages,
     mappings: resolved.mappings, scope: request.scope, targetPolicy: request.targetPolicy,
@@ -426,7 +421,7 @@ export async function main(env = process.env) {
     permission = await actorPermission(repository, actor, owner, env.GITHUB_TOKEN || '');
   } else request = manualRequest(env, maximum);
   const authorized = WRITE_PERMISSIONS.has(permission);
-  const dataBranch = dataBranchForCodeRef(request.channel);
+  const dataBranch = runtimeDataBranchForChannel(request.channel);
   if (!repository || !dataBranch) throw new Error(`unsupported probe channel: ${request.channel}`);
   let plan;
   if (!authorized) {

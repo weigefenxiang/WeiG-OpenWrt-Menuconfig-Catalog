@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: curated-package-sizes-${{ github.ref_name }}
+  group: catalog-code-write-dev
   cancel-in-progress: false
 
 jobs:
@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: dev
       - name: Collect official APK package indexes
         run: node scripts/collect-curated-size-samples.mjs size-samples
       - name: Recalculate curated dependency closures
@@ -36,7 +38,7 @@ jobs:
             exit 0
           fi
           git commit -m "data: refresh curated package sizes"
-          git push origin "HEAD:$GITHUB_REF_NAME"
+          git push origin HEAD:dev
       - name: Upload size coverage diagnostics
         if: always()
         uses: actions/upload-artifact@v7

@@ -64,6 +64,8 @@ Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 有四个递
 
 网页把 schema 1 请求下载为公开、可审计的 `probe-request.json`，并打开专用 GitHub Issue 表单；用户只需把该 JSON 拖入必填上传框。默认分支上的轻量 Issue 网关校验唯一附件、UTF-8/JSON/schema、SHA-256、Issue 身份与提交者权限，再把执行 Workflow 派发到请求中的同名 `dev`、`staging` 或 `main` 代码通道；worker 会重新下载同一附件并核对哈希，任何字段被改动都会拒绝执行。Issue 网关使用事件触发，不轮询，也不会每 6 小时空跑；因此新增网关本身必须先安全晋级到默认分支，之后各数据/执行通道才能独立工作。
 
+代码 `main` 与正式数据 `catalog-data` 是两条独立生命周期：Builder 的 `main` 只写 `catalog-candidate`，而运行时/探针的 `main` 仍读取 `catalog-data`。`catalog-data` 只能由手动 Production Gate 写入；Gate 校验候选的 `main` 代码 SHA、完整性和所有索引资产合同后原样晋级，不在生产阶段重新构建。翻译定时任务只写候选，尺寸定时任务只提交 `dev`，因此普通 Push、schedule 和实验探针都不能旁路 Production Gate。
+
 仓库所有者可使用完整计划并发；有写权限的协作者强制最多 3；普通访客可查看界面和公开 Run，但不能启动 Matrix。请求者本人或具有 write/maintain/admin 权限的协作者可在同一 Issue 准确回复 `/cancel`：先普通取消，Run 仍活动时才强制取消；重复取消、排队期取消和派发竞态均按同一 Issue 身份幂等收口。`workflow_dispatch` 保留为管理员回退入口。规范化证据保留 60 天，完整日志保留 30 天；plan-only 明确表示没有执行编译，不能产生兼容性结论。取消、超时或基础设施问题保留为 `inconclusive`，汇总 Job 不会把它伪装成新的软件包失败。
 
 多个软件包共同失败时，Runner 只在所有已计划目标均表现为软件包阶段失败后，按 `.github/automation-policy.json` 的分模式预算执行通用 delta 缩减；结果标为“有限缩减候选”，不是自动规则。依赖安装、精确克隆、feeds、构建与启动输出合并进完整探针日志。真正耗时的 tools/toolchain、软件包、RootFS 和固件目标先按 Runner 可用 CPU 数加一并行执行，失败后才以 `-j1 V=s` 串行详细复核；`defconfig`、`clean`、`dirclean` 等配置或清理目标保持单线程。并行失败而串行成功只能记录为恢复，不能生成不兼容结论。

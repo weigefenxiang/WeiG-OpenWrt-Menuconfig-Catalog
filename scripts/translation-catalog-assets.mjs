@@ -94,6 +94,6 @@ export function writeIndexedLanguageAssets(entry, catalog, generatedAt) {
 
 export function readTranslationIndex(directory) {
   const file = join(directory, 'index.json');
-  if (!existsSync(file)) throw new Error('translation requires catalog-data index.json');
+  if (!existsSync(file)) throw new Error('translation requires a Catalog data index.json');
   return JSON.parse(readFileSync(file, 'utf8'));
 }

@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { activeCuratedGroups } from './curated-applications.mjs';
+import { buildDataBranchForCodeRef, PRODUCTION_DATA_BRANCH } from './catalog-channels.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILE = join(ROOT, 'catalog.config.json');
@@ -111,10 +112,10 @@ async function menuPackages(repository, dataRef, contract, languageContract) {
 
 const config = readJson(CONFIG_FILE);
 const translations = readJson(TRANSLATION_FILE);
-const channelAliases = { main: 'catalog-data', dev: 'catalog-dev', staging: 'catalog-staging', fix: 'catalog-fix' };
-const channelInput = String(args.get('channel') || 'catalog-data');
-const channel = channelAliases[channelInput] || channelInput;
-if (!['catalog-data', 'catalog-dev', 'catalog-staging', 'catalog-fix'].includes(channel)) {
+const channelInput = String(args.get('channel') || PRODUCTION_DATA_BRANCH);
+const alias = channelInput === 'fix' ? 'fix/manual' : channelInput;
+const channel = buildDataBranchForCodeRef(alias) || channelInput;
+if (![PRODUCTION_DATA_BRANCH, 'catalog-candidate', 'catalog-dev', 'catalog-staging', 'catalog-fix'].includes(channel)) {
   throw new Error(`unsupported Catalog channel: ${channel}`);
 }
 const repository = String(args.get('repository') || process.env.GITHUB_REPOSITORY || 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog');

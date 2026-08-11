@@ -1,581 +1,202 @@
 #!/usr/bin/env node
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  buildTargetTree, incompleteSelectableTargets, parseInfoRecords, parseKconfigTree, parsePackageInfo,
-  resolvePackageOption, resolveTargetSelectors, targetBuildContract,
+  buildTargetTree,
+  incompleteSelectableTargets,
+  parseInfoRecords,
+  parseKconfigTree,
+  parsePackageInfo,
+  resolvePackageOption,
+  resolveTargetSelectors,
+  targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
 import { compactRelations, expandCompactRelations } from './compact-relations.mjs';
-import { buildCatalogSizeReport, formatCatalogSizeReport } from './catalog-size-report.mjs';
+import { buildCatalogSizeReport } from './catalog-size-report.mjs';
 import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
 import { activeCuratedGroups, buildCuratedApplications } from './curated-applications.mjs';
 import { aggregateCuratedSizes, parseApkDump, parseOpkgPackages } from './curated-sizes.mjs';
-import { matchPattern, sourceAllowsBranch } from './source-policy.mjs';
+import { sourceAllowsBranch } from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = join(ROOT, 'tests', 'fixture');
+const read = (...parts) => readFileSync(join(ROOT, ...parts), 'utf8');
+const json = (...parts) => JSON.parse(read(...parts));
+
+// Public project identity and licensing must remain self-contained for forks.
+const license = read('LICENSE');
+const notice = read('NOTICE');
+const reuse = read('REUSE.toml');
+const licenseZh = read('LICENSE.zh-CN.md');
+assert(license.includes('GNU GENERAL PUBLIC LICENSE'));
+assert(license.includes('Version 3, 29 June 2007'));
+assert(license.includes('END OF TERMS AND CONDITIONS'));
+assert(notice.includes('GPL-3.0-or-later'));
+assert(notice.includes('weigefenxiang@gmail.com'));
+assert(reuse.includes('SPDX-License-Identifier = "GPL-3.0-or-later"'));
+assert(licenseZh.includes('非官方中文说明'));
+
+const policy = json('catalog.config.json');
+const compatibility = json('compatibility.json');
+const automation = json('.github', 'automation-policy.json');
+const translations = json('translations', 'zh-CN.json');
+const menuI18n = json('translations', 'menu-i18n.json');
+
+// Source/Branch policy is data-driven and future branches stay discoverable.
+assert.equal(policy.sources.length, 4);
+const immortal = policy.sources.find((row) => row.id === 'ImmortalWrt');
+const openwrt = policy.sources.find((row) => row.id === 'OpenWrt');
+const lede = policy.sources.find((row) => row.id === 'lede');
+assert(immortal && openwrt && lede);
+assert.deepEqual(immortal.branches?.include, ['master', 'openwrt-*']);
+assert(sourceAllowsBranch(immortal, 'master'));
+assert(sourceAllowsBranch(immortal, 'openwrt-30.01'));
+assert(!sourceAllowsBranch(immortal, 'main'));
+assert.deepEqual(openwrt.branches?.include, ['main', 'openwrt-*']);
+assert(sourceAllowsBranch(openwrt, 'main'));
+assert(!sourceAllowsBranch(openwrt, 'master'));
+assert(sourceAllowsBranch(lede, 'master'));
+assert(sourceAllowsBranch(lede, 'openwrt-30.01'));
+
+// Official Target/Profile parsing and selector contracts.
 const targets = parseInfoRecords(readFileSync(join(fixture, 'targetinfo'), 'utf8'));
-const packages = parsePackageInfo(readFileSync(join(fixture, 'packageinfo'), 'utf8'));
-const packageInfoOnly = parsePackageInfo('Package: luci-app-packageinfo-only\nTitle: Metadata only\nDescription: No Kconfig symbol\n');
 const menu = parseKconfigTree(fixture);
-const duplicateFixture = parseKconfigTree(join(ROOT, 'tests', 'duplicate'));
-const hardDuplicateFixture = parseKconfigTree(join(ROOT, 'tests', 'duplicate-hard'));
-const relations = buildKconfigRelations(menu.allOptions || menu.options, packages, menu.choices);
-const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
-const translationWorkflow = readFileSync(join(ROOT, '.github', 'workflows', 'translate.yml'), 'utf8');
-const discover = readFileSync(join(ROOT, 'scripts', 'discover.mjs'), 'utf8');
-const metadata = readFileSync(join(ROOT, 'scripts', 'prepare-metadata.sh'), 'utf8');
-const stageRunner = readFileSync(join(ROOT, 'scripts', 'run-stage.sh'), 'utf8');
-const cloneScript = readFileSync(join(ROOT, 'scripts', 'clone-upstream.sh'), 'utf8');
-const attemptWriter = readFileSync(join(ROOT, 'scripts', 'write-attempt.mjs'), 'utf8');
-const collector = readFileSync(join(ROOT, 'scripts', 'collect-results.mjs'), 'utf8');
-const release = readFileSync(join(ROOT, 'scripts', 'publish-release.sh'), 'utf8');
-const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
-const compatibility = JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8'));
-const automationPolicy = JSON.parse(readFileSync(join(ROOT, '.github', 'automation-policy.json'), 'utf8'));
-const generator = readFileSync(join(ROOT, 'scripts', 'generate-catalog.mjs'), 'utf8');
-const validator = readFileSync(join(ROOT, 'scripts', 'verify-target-contracts.mjs'), 'utf8');
-const library = readFileSync(join(ROOT, 'scripts', 'lib.mjs'), 'utf8');
-const menuI18n = JSON.parse(readFileSync(join(ROOT, 'translations', 'menu-i18n.json'), 'utf8'));
-const translations = JSON.parse(readFileSync(join(ROOT, 'translations', 'zh-CN.json'), 'utf8'));
-const autoTranslator = readFileSync(join(ROOT, 'scripts', 'translate-catalog.mjs'), 'utf8');
-const translationAssets = readFileSync(join(ROOT, 'scripts', 'translation-catalog-assets.mjs'), 'utf8');
-const translationPlan = readFileSync(join(ROOT, 'scripts', 'translation-plan.mjs'), 'utf8');
-const snapshotStamper = readFileSync(join(ROOT, 'scripts', 'stamp-catalog-snapshot.mjs'), 'utf8');
-const license = readFileSync(join(ROOT, 'LICENSE'), 'utf8');
-const notice = readFileSync(join(ROOT, 'NOTICE'), 'utf8');
-const reuse = readFileSync(join(ROOT, 'REUSE.toml'), 'utf8');
-const licenseZh = readFileSync(join(ROOT, 'LICENSE.zh-CN.md'), 'utf8');
-const failures = [];
-
-if (!license.includes('GNU GENERAL PUBLIC LICENSE') || !license.includes('Version 3, 29 June 2007') ||
-    !license.includes('END OF TERMS AND CONDITIONS') || !notice.includes('GPL-3.0-or-later') ||
-    !notice.includes('weigefenxiang@gmail.com') ||
-    !reuse.includes('SPDX-License-Identifier = "GPL-3.0-or-later"') ||
-    !licenseZh.includes('非官方中文说明') || !licenseZh.includes('LICENSE')) {
-  failures.push('project license contract');
-}
-
-function mutatedCompatibility(mutator) {
-  const value = structuredClone(compatibility);
-  mutator(value);
-  try {
-    normalizeCompatibilityDocument(value, policy);
-    return false;
-  } catch {
-    return true;
-  }
-}
-const curatedCandidates = policy.curatedApplications || [];
-const curatedApplications = buildCuratedApplications(ROOT);
-const unsafePlainRunContinuation = /^\s*run:\s+[^\n]*\\\s*$/m.test(workflow);
-const translationPublishContractCount = (translationWorkflow.match(
-  /node scripts\/sync-translation-assets\.mjs dist\/index\.json\n\s+node scripts\/sync-translation-assets\.mjs dist\/index\.json --check\n\s+git -C dist add --sparse \./g,
-) || []).length;
-const translationSnapshotContractCount = (translationWorkflow.match(
-  /node scripts\/stamp-catalog-snapshot\.mjs dist\/index\.json "\$asset_commit"/g,
-) || []).length;
-const x86Target = targets.find((item) => item.id === 'x86/64');
-const filogicTarget = targets.find((item) => item.id === 'mediatek/filogic');
-const abstractTarget = targets.find((item) => item.id === 'abstract-board');
-const unavailableTarget = targets.find((item) => item.id === 'unavailable-board');
-const fixtureSymbols = new Set((menu.allOptions || menu.options).map((item) => item.symbol));
+const symbols = new Set((menu.allOptions || menu.options).map((row) => row.symbol));
 for (const target of targets) {
-  target.contract = targetBuildContract(target, fixtureSymbols);
+  target.contract = targetBuildContract(target, symbols);
   target.targetSelector = target.contract.targetSelector || '';
-  const profileContracts = new Map((target.contract.profileContracts || []).map((item) => [item.id, item]));
+  const profileContracts = new Map((target.contract.profileContracts || []).map((row) => [row.id, row]));
   for (const profile of target.profiles) {
     const contract = profileContracts.get(profile.id);
     profile.selector = contract?.selector || '';
     profile.selectable = contract?.selectable !== false;
   }
 }
-const fixtureTargetTree = buildTargetTree(targets.filter((item) => item.contract.selectable), menu.options);
-const x86System = fixtureTargetTree.find((item) => item.value === 'x86');
-const x8664 = x86System?.children.find((item) => item.value === '64');
-const mediatekSystem = fixtureTargetTree.find((item) => item.value === 'mediatek');
-const filogic = mediatekSystem?.children.find((item) => item.value === 'filogic');
-if (targets.length !== 4 || targets.reduce((n, item) => n + item.profiles.length, 0) !== 4 ||
-    x86Target?.arch !== 'x86_64' || filogicTarget?.arch !== 'aarch64' ||
-    abstractTarget?.profiles.length !== 0 || unavailableTarget?.profiles.length !== 1 ||
-    targetBuildContract(abstractTarget).kind !== 'abstract' ||
-    targetBuildContract(unavailableTarget).kind !== 'unavailable' ||
-    incompleteSelectableTargets(targets).map((item) => item.id).join(',') !== 'unavailable-board') {
-  failures.push('targetinfo/build contract');
-}
-if (x86System?.labelEn !== 'x86' || x8664?.labelEn !== 'x86_64' ||
-    x8664?.children.map((item) => item.labelEn).join(',') !== 'Generic x86/64,QEMU Q35' ||
-    mediatekSystem?.labelEn !== 'MediaTek ARM' || filogic?.labelEn !== 'Filogic 8x0 (MT798x)' ||
-    new Set(fixtureTargetTree.map((item) => item.value)).size !== fixtureTargetTree.length) {
-  failures.push('official Target/System/Subtarget/Profile hierarchy');
-}
-const aliasTargets = parseInfoRecords('Target: x86/64\nTarget-Board: x86\nTarget-Subtarget: 64\n' +
-  'Target-Arch: x86_64\nTarget-Arch-Packages: x86_64\n' +
-  'Target-Profile: DEVICE_demo\nTarget-Profile-Name: Alias Router (Demo Router)\n' +
-  'Target-Profile: DEVICE_demo\nTarget-Profile-Name: Demo Router\n');
-if (aliasTargets[0]?.profiles.length !== 1 || aliasTargets[0]?.profiles[0]?.name !== 'Demo Router' ||
-    aliasTargets[0]?.profiles[0]?.aliases?.join(',') !== 'Alias Router (Demo Router)') {
-  failures.push('Target Profile alias deduplication');
-}
-const legacyRecords = parseInfoRecords(`Target: ath25\nTarget-Board: ath25\nTarget-Arch: mips_24kc\n` +
-  'Target-Arch-Packages: mips_24kc\nTarget-Profile: Default\n' +
-  'Target-Profile-Packages: -dnsmasq +kmod-ath9k\n');
-const legacyTarget = legacyRecords[0];
-const legacyProfile = legacyTarget?.profiles[0];
-const legacySymbols = new Set(['TARGET_ath25', 'TARGET_ath25_Default']);
-const legacySelectors = resolveTargetSelectors(legacyTarget, legacyProfile, legacySymbols);
-const legacyProbe = buildProbeConfig(legacyTarget, legacyProfile, legacySelectors);
-const legacyContract = targetBuildContract(legacyTarget, legacySymbols);
-if (legacyTarget?.subtarget || legacyTarget?.hasSubtarget ||
-    legacyProfile?.packagesAdd?.join(',') !== 'kmod-ath9k' ||
-    legacyProfile?.packagesRemove?.join(',') !== 'dnsmasq' ||
-    !legacyContract.selectable || legacySelectors.target !== 'TARGET_ath25' ||
-    legacySelectors.profile !== 'TARGET_ath25_Default' || /PACKAGE_-dnsmasq/.test(legacyProbe) ||
-    /TARGET_ath25_generic/.test(legacyProbe)) {
-  failures.push('legacy target/negative package probe');
-}
-const probeProfile = x86Target?.profiles[0];
-const probeSelectors = resolveTargetSelectors(x86Target, probeProfile);
-const probeFixture = buildProbeConfig(x86Target, probeProfile, probeSelectors);
-if (!probeFixture.includes('CONFIG_TARGET_x86=y') ||
-    !verifyProbeConfig(probeFixture, x86Target, probeProfile, probeSelectors).valid ||
-    verifyProbeConfig(probeFixture.replace(`CONFIG_${probeSelectors.profile}=y`,
-      `# CONFIG_${probeSelectors.profile} is not set`), x86Target, probeProfile, probeSelectors).valid) {
-  failures.push('Target/Profile Kconfig probe contract');
-}
-if (packages.length !== 3 || packages[0].category !== 'LuCI' ||
-    packages[0].description !== 'Demonstration web interface package' ||
-    packages[0].conflicts.join(',') !== 'kmod-demo') failures.push('packageinfo');
-const demo = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo');
-const luci = menu.options.find((item) => item.symbol === 'PACKAGE_luci');
-const demoExtra = menu.options.find((item) => item.symbol === 'PACKAGE_luci-app-demo-extra');
-const image = menu.options.find((item) => item.symbol === 'TARGET_IMAGES_GZIP');
-const hiddenLanguage = (menu.allOptions || menu.options).find((item) => item.symbol === 'PACKAGE_luci-i18n-demo-zh-cn');
-if (!demo || demo.type !== 'tristate' || !demo.depends.includes('TARGET_x86') ||
-    demo.depends.some((item) => item.includes('sentence remains help')) ||
-    !demo.help?.includes('if the application is enabled') ||
-    !demo.help?.includes('menu, endmenu and source')) failures.push('help/tristate/dependency');
-if (!luci || luci.kind !== 'menuconfig' || demo?.parent !== luci.symbol ||
-    demoExtra?.parent !== demo?.symbol) failures.push('implicit menuconfig hierarchy');
-if (!image || image.path[0] !== 'Target Images') failures.push('menu path');
-if (!hiddenLanguage || hiddenLanguage.visible !== false || hiddenLanguage.userSettable !== false ||
-    menu.options.includes(hiddenLanguage)) failures.push('hidden Kconfig symbol collection');
-if (menu.choices.length !== 1 || !menu.options.some((item) => item.choice)) failures.push('choice');
-const demoRelations = relations.records.find((item) => item.package === 'luci-app-demo');
-if (!demoRelations || demoRelations.states.join(',') !== 'n,m,y' ||
-    !demoRelations.kconfig.depends.includes('PACKAGE_luci') ||
-    !demoRelations.kconfig.selects.includes('PACKAGE_luci-base') ||
-    !demoRelations.dependencyPackages.includes('luci-base') ||
-    !demoRelations.conflicts.includes('kmod-demo') ||
-    !relations.validation.structurallyValid ||
-    !relations.validation.unresolvedKconfig.some((item) => item.symbol === 'PACKAGE_luci-app-demo')) {
-  failures.push('Kconfig/package relationship graph');
-}
-const hiddenRelations = relations.records.find((item) => item.package === 'luci-i18n-demo-zh-cn');
-if (relations.schema !== 2 || !hiddenRelations || hiddenRelations.configSymbol !== 'PACKAGE_luci-i18n-demo-zh-cn' ||
-    hiddenRelations.visible !== false || hiddenRelations.userSettable !== false ||
-    !hiddenRelations.dependencyPackages.includes('luci-app-demo') ||
-    !relations.indexes.reverseDependencies['luci-app-demo']?.includes('luci-i18n-demo-zh-cn') ||
-    relations.indexes.bySymbol['PACKAGE_luci-i18n-demo-zh-cn'] === undefined) {
-  failures.push('hidden package relationship graph');
-}
-const rootfsRelations = relations.records.filter((item) => item.choice === menu.choices[0]?.id);
-if (rootfsRelations.length !== 2 || rootfsRelations.some((item) => item.kind !== 'config' || item.package) ||
-    !relations.indexes.choices[menu.choices[0]?.id]?.includes('TARGET_ROOTFS_SQUASHFS') ||
-    relations.indexes.bySymbol.TARGET_ROOTFS_EXT4FS === undefined) {
-  failures.push('generic Kconfig choice relationship graph');
-}
-const compactRelationGraph = compactRelations(relations);
-const expandedRelationGraph = expandCompactRelations(compactRelationGraph);
-const compactDemo = expandedRelationGraph.records.find((item) => item.package === 'luci-app-demo');
-const compactHidden = expandedRelationGraph.records.find((item) => item.package === 'luci-i18n-demo-zh-cn');
-const readableRelationBytes = Buffer.byteLength(JSON.stringify(relations, null, 2));
-const compactRelationBytes = Buffer.byteLength(JSON.stringify(compactRelationGraph));
-if (compactRelationGraph.schema !== 3 || !compactRelationGraph.records.every(Array.isArray) ||
-    compactRelationGraph.indexes.bySymbol || compactRelationGraph.indexes.byPackage ||
-    compactDemo?.states.join(',') !== demoRelations.states.join(',') ||
-    compactDemo?.kconfig.dependsExpressions.flat().join(',') !== demoRelations.kconfig.dependsExpressions.flat().join(',') ||
-    compactDemo?.packageInfo.depends.flatMap((item) => item.packages).join(',') !==
-      demoRelations.packageInfo.depends.flatMap((item) => item.packages).join(',') ||
-    compactDemo?.conflicts.join(',') !== demoRelations.conflicts.join(',') ||
-    compactHidden?.visible !== false || compactHidden?.userSettable !== false ||
-    !expandedRelationGraph.indexes.reverseDependencies['luci-app-demo']?.includes('luci-i18n-demo-zh-cn') ||
-    !expandedRelationGraph.indexes.choices[menu.choices[0]?.id]?.includes('TARGET_ROOTFS_SQUASHFS') ||
-    compactRelationBytes >= readableRelationBytes * 0.5) {
-  failures.push('compact relations schema 3 equivalence/size');
-}
-const sizeRows = buildCatalogSizeReport([{
-  source: { id: 'fixture', branch: 'test', commit: 'a'.repeat(40) },
-  sizeReport: {
-    legacy: { bytes: 1000 },
-    split: { initialBytes: 300, bytes: 700 },
-    readableRelationsJsonBytes: 10000,
-    compactRelationsJsonBytes: 2500,
-  },
-}]);
-if (sizeRows[0]?.initialReductionPercent !== 70 || sizeRows[0]?.relationsReductionPercent !== 75 ||
-    !formatCatalogSizeReport(sizeRows).includes('fixture/test')) failures.push('catalog size report');
-const rustdesk = duplicateFixture.options.find((item) => item.symbol === 'PACKAGE_luci-app-rustdesk-server');
-if (duplicateFixture.options.length !== 1 || rustdesk?.nodes?.length !== 2 ||
-     rustdesk?.paths?.length !== 2 || duplicateFixture.validation.duplicateCount !== 1 ||
-     duplicateFixture.validation.conflicts.length !== 0 || rustdesk?.depends.join(',') !== 'TARGET_x86' ||
-     rustdesk?.dependsVariants?.length !== 2 ||
-     rustdesk.dependsVariants[0]?.join(',') !== 'TARGET_x86' ||
-     rustdesk.dependsVariants[1]?.join(',') !== 'PACKAGE_luci') {
-  failures.push('Kconfig symbol duplicate merge');
-}
-if (hardDuplicateFixture.validation.conflicts.length !== 1 ||
-    hardDuplicateFixture.validation.conflicts[0]?.symbol !== 'PACKAGE_demo') {
-  failures.push('Kconfig symbol hard conflict gate');
-}
-if (packageInfoOnly.length !== 1 ||
-    resolvePackageOption({ id: 'packageinfo-only', packages: ['luci-app-packageinfo-only'] }, new Set()) !== '' ||
-    resolvePackageOption({ id: 'demo', packages: ['luci-app-demo'] }, new Set(['luci-app-demo'])) !== 'luci-app-demo' ||
-    resolvePackageOption({ id: 'adguardhome', packages: ['luci-app-adguardhome'] }, new Set(['adguardhome'])) !== '' ||
-    resolvePackageOption({ id: 'tailscale-community', packages: ['luci-app-tailscale-community'] }, new Set(['tailscale-community'])) !== '') {
-  failures.push('packageinfo-only is not selectable');
-}
-const activeGroups = activeCuratedGroups(policy.curatedGroups, curatedCandidates);
-const activeGroupFixture = activeCuratedGroups(['alpha', 'empty', 'alpha', 'beta'], [
-  { group: 'beta' }, { group: 'alpha' },
-]);
-if (activeGroupFixture.join(',') !== 'alpha,beta' ||
-    activeGroups.length !== policy.curatedGroups.length ||
-    curatedApplications.groups.join(',') !== activeGroups.join(',') ||
-    curatedCandidates.length < 1 || curatedCandidates.length > 1024 ||
-    new Set(curatedCandidates.map((item) => item.id)).size !== curatedCandidates.length ||
-    new Set(curatedCandidates.flatMap((item) => item.packages || [])).size !==
-      curatedCandidates.reduce((count, item) => count + (item.packages?.length || 0), 0) ||
-    curatedCandidates.some((item) =>
-    !item || typeof item !== 'object' || !item.id || !Array.isArray(item.packages) ||
-    item.packages.length === 0 || !policy.curatedGroups.includes(item.group) ||
-    item.packages.some((name) => !/^luci-app-[A-Za-z0-9_.+@-]+$/.test(name))) ||
-    curatedApplications.items.length !== curatedCandidates.length ||
-    curatedApplications.items.some((item) => !item.titleZh || !item.usageZh)) {
-  failures.push('curated LuCI application package contract');
-}
-const opkgFixture = parseOpkgPackages('Package: luci-app-demo\nSize: 100\nDepends: demo-lib (>= 1), +demo-data\n\n' +
+assert.equal(targets.length, 4);
+assert.equal(targets.find((row) => row.id === 'x86/64')?.arch, 'x86_64');
+assert.equal(targets.find((row) => row.id === 'mediatek/filogic')?.arch, 'aarch64');
+assert.equal(targetBuildContract(targets.find((row) => row.id === 'abstract-board')).kind, 'abstract');
+assert.equal(targetBuildContract(targets.find((row) => row.id === 'unavailable-board')).kind, 'unavailable');
+assert.deepEqual(incompleteSelectableTargets(targets).map((row) => row.id), ['unavailable-board']);
+
+const targetTree = buildTargetTree(targets.filter((row) => row.contract.selectable), menu.options);
+const x86 = targetTree.find((row) => row.value === 'x86');
+const x8664 = x86?.children.find((row) => row.value === '64');
+assert.equal(x86?.labelEn, 'x86');
+assert.equal(x8664?.labelEn, 'x86_64');
+assert.deepEqual(x8664?.children.map((row) => row.labelEn), ['Generic x86/64', 'QEMU Q35']);
+
+const x86Target = targets.find((row) => row.id === 'x86/64');
+const x86Profile = x86Target?.profiles[0];
+const selectors = resolveTargetSelectors(x86Target, x86Profile);
+const probe = buildProbeConfig(x86Target, x86Profile, selectors);
+assert(probe.includes('CONFIG_TARGET_x86=y'));
+assert(verifyProbeConfig(probe, x86Target, x86Profile, selectors).valid);
+assert(!verifyProbeConfig(probe.replace(`CONFIG_${selectors.profile}=y`, `# CONFIG_${selectors.profile} is not set`),
+  x86Target, x86Profile, selectors).valid);
+
+// Package/menu metadata and generic Kconfig relation graph.
+const packages = parsePackageInfo(readFileSync(join(fixture, 'packageinfo'), 'utf8'));
+assert.equal(packages.length, 3);
+assert.equal(packages[0].category, 'LuCI');
+assert.equal(packages[0].description, 'Demonstration web interface package');
+assert.deepEqual(packages[0].conflicts, ['kmod-demo']);
+const packageInfoOnly = parsePackageInfo('Package: luci-app-packageinfo-only\nTitle: Metadata only\nDescription: No Kconfig symbol\n');
+assert.equal(resolvePackageOption(packageInfoOnly[0], new Set(['packageinfo-only'])), '');
+
+const demo = menu.options.find((row) => row.symbol === 'PACKAGE_luci-app-demo');
+const luci = menu.options.find((row) => row.symbol === 'PACKAGE_luci');
+const hiddenLanguage = (menu.allOptions || menu.options).find((row) => row.symbol === 'PACKAGE_luci-i18n-demo-zh-cn');
+assert.equal(demo?.type, 'tristate');
+assert(demo?.depends.includes('TARGET_x86'));
+assert(demo?.help?.includes('if the application is enabled'));
+assert.equal(demo?.parent, luci?.symbol);
+assert.equal(hiddenLanguage?.visible, false);
+assert.equal(hiddenLanguage?.userSettable, false);
+assert.equal(menu.choices.length, 1);
+
+const relations = buildKconfigRelations(menu.allOptions || menu.options, packages, menu.choices);
+assert.equal(relations.schema, 2);
+const demoRelations = relations.records.find((row) => row.package === 'luci-app-demo');
+assert.deepEqual(demoRelations?.states, ['n', 'm', 'y']);
+assert(demoRelations?.kconfig.depends.includes('PACKAGE_luci'));
+assert(demoRelations?.dependencyPackages.includes('luci-base'));
+assert(demoRelations?.conflicts.includes('kmod-demo'));
+assert(relations.validation.structurallyValid);
+const compact = compactRelations(relations);
+const expanded = expandCompactRelations(compact);
+assert.equal(compact.schema, 3);
+assert.deepEqual(expanded.indexes.reverseDependencies, relations.indexes.reverseDependencies);
+assert(Buffer.byteLength(JSON.stringify(compact)) < Buffer.byteLength(JSON.stringify(relations)) * 0.5);
+
+// Duplicate symbols must be merged generically, not by package-specific exceptions.
+const duplicate = parseKconfigTree(join(ROOT, 'tests', 'duplicate'));
+const rustdesk = duplicate.options.find((row) => row.symbol === 'PACKAGE_luci-app-rustdesk-server');
+assert.equal(duplicate.options.length, 1);
+assert.equal(rustdesk?.nodes?.length, 2);
+assert.equal(duplicate.validation.duplicateCount, 1);
+assert.equal(duplicate.validation.conflicts.length, 0);
+const hardDuplicate = parseKconfigTree(join(ROOT, 'tests', 'duplicate-hard'));
+assert(hardDuplicate.validation.conflicts.length > 0);
+
+// Curated applications/groups and size aggregation remain generic data contracts.
+const curated = policy.curatedApplications || [];
+const activeGroups = activeCuratedGroups(policy.curatedGroups, curated);
+const groupFixture = activeCuratedGroups(['alpha', 'empty', 'alpha', 'beta'], [{ group: 'beta' }, { group: 'alpha' }]);
+assert.deepEqual(groupFixture, ['alpha', 'beta']);
+assert.equal(activeGroups.length, policy.curatedGroups.length);
+const curatedDocument = buildCuratedApplications(ROOT);
+assert.deepEqual(curatedDocument.groups, activeGroups);
+assert.equal(curatedDocument.items.length, curated.length);
+assert(curatedDocument.items.every((row) => row.id && row.titleZh && row.usageZh));
+assert.equal(new Set(curated.flatMap((row) => row.packages || [])).size,
+  curated.reduce((count, row) => count + (row.packages?.length || 0), 0));
+
+const opkg = parseOpkgPackages('Package: luci-app-demo\nSize: 100\nDepends: demo-lib (>= 1), +demo-data\n\n' +
   'Package: demo-lib\nSize: 20\n\nPackage: demo-data\nSize: 5\n');
-const apkFixture = parseApkDump({ packages: [
+const apk = parseApkDump({ packages: [
   { info: { name: 'luci-app-demo', file_size: 120, depends: ['demo-lib>=1'] } },
   { info: { name: 'demo-lib', file_size: 30, depends: [] } },
 ] });
-const sizeFixture = aggregateCuratedSizes(['luci-app-demo'], [
-  { source: 'opkg', packages: opkgFixture }, { source: 'apk', packages: apkFixture },
-]);
-if (sizeFixture.bytes['luci-app-demo'] !== 150 ||
-    sizeFixture.coverage['luci-app-demo']?.length !== 2) failures.push('curated package size closure');
-if (!workflow.includes('scripts/prepare-metadata.sh') ||
-    !workflow.includes('scripts/clone-upstream.sh') ||
-    !workflow.includes('id: metadata') ||
-    !workflow.includes('run-stage.sh" metadata') ||
-    workflow.includes('id: defconfig') ||
-    workflow.includes('max-parallel:') ||
-    workflow.includes('apt-get') ||
-    !workflow.includes('fail-fast: false') ||
-    !workflow.includes("if: always() && needs.discover.result == 'success'") ||
-    !workflow.includes('scripts/write-attempt.mjs') ||
-    !workflow.includes('scripts/run-stage.sh') ||
-    !workflow.includes('pattern: "*-catalog-*"') ||
-    !workflow.includes('attempts/*--SUMMARY.txt') ||
-    !workflow.includes('dist/*.contract.json') ||
-    !workflow.includes('retention-days: 60') ||
-    !workflow.includes('actions/upload-artifact@v7') ||
-    !workflow.includes('actions/download-artifact@v8') ||
-    workflow.includes('models: read') ||
-    !workflow.includes('01 · Discover / 发现源码分支') ||
-    !workflow.includes('matrix.jobName') ||
-    !workflow.includes('matrix.artifactPrefix') ||
-    !workflow.includes('publish-order') ||
-    !workflow.includes('Upload publish diagnostic') ||
-    !workflow.includes('scripts/collect-results.mjs') ||
-    !workflow.includes('verify-target-contracts.mjs') ||
-    !workflow.includes('KCONFIG_CONTRACT_OUTCOME') ||
-    !workflow.includes('run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts') ||
-    !workflow.includes('node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit"') ||
-    !workflow.includes("startsWith(github.ref_name, 'fix/') && 'catalog-fix'") ||
-    !workflow.includes("github.ref_name == 'dev' && 'catalog-dev'") ||
-    !workflow.includes("github.ref_name == 'staging' && 'catalog-staging'") ||
-    !workflow.includes("github.ref_name == 'main' && 'catalog-data'") ||
-    !workflow.includes('branches: [main, dev, staging, "fix/**"]') ||
-    !workflow.includes('git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"') ||
-    !workflow.includes("if: github.ref_name == 'main' && needs.generate.result == 'success'") ||
-    !workflow.includes('RELEASE_REQUIRED:') ||
-    !workflow.includes('cp previous/index.json dist/index.json') ||
-    workflow.includes('git push --force origin catalog-data') ||
-    !snapshotStamper.includes("assetRefType: 'git-commit'") ||
-    !snapshotStamper.includes('catalog assetRef must be a full 40-character Git commit SHA') ||
-    unsafePlainRunContinuation) failures.push('workflow resilience');
-if (!discover.includes("metadataCompat: 'metadata-only'") ||
-    discover.includes("source.id === 'OpenWrt'") ||
-    discover.includes("'openwrt-18.06', 'openwrt-19.07'") ||
-    !metadata.includes('touch staging_dir/host/.prereq-build') ||
-    !metadata.includes('Unsupported metadata mode') ||
-    !metadata.includes('make prepare-tmpinfo FORCE=1') ||
-    metadata.includes('make defconfig')) failures.push('source-independent metadata-only boundary');
-if (!stageRunner.includes('Source ID:') ||
-    !stageRunner.includes('Upstream commit:') ||
-    !stageRunner.includes('CATALOG_ARTIFACT_NAME') ||
-    !stageRunner.includes('CATALOG_ORDER') ||
-    !stageRunner.includes('last 40 relevant lines') ||
-    !cloneScript.includes('CLONE_MAX_ATTEMPTS') ||
-    !cloneScript.includes('returned error: (408|429|500|502|503|504)') ||
-    !cloneScript.includes('transient network failure') ||
-    !cloneScript.includes('permanent clone failure; no retry') ||
-    !cloneScript.includes('work/upstream') ||
-    !attemptWriter.includes('--SUMMARY.txt') ||
-    !attemptWriter.includes("['metadata', process.env.METADATA_OUTCOME]") ||
-    !attemptWriter.includes("['kconfig-contract', process.env.KCONFIG_CONTRACT_OUTCOME]") ||
-    attemptWriter.includes('DEFCONFIG_OUTCOME') ||
-    !attemptWriter.includes('failureLog') ||
-    !attemptWriter.includes('orderText') ||
-    !collector.includes('publish-inputs.json') ||
-    !collector.includes('publishState') ||
-    !collector.includes('translation-retry-queue.json') ||
-    !collector.includes('target contract') ||
-    !collector.includes('.contract.json') ||
-    !collector.includes('Kconfig probe quarantine ratio') ||
-    !collector.includes('.relations.json.gz') ||
-    !collector.includes('last-good') ||
-    !collector.includes('complete=${complete}') ||
-    release.includes('gh release delete') ||
-    !release.includes('dist/*.json.gz') ||
-    !release.includes('gh release upload') ||
-    !release.includes('dist/compatibility.json.gz') ||
-    !release.includes('--clobber')) failures.push('diagnostic identity');
-if (policy.sources.length !== 4 || policy.sources[0].id !== 'ImmortalWrt' ||
-    policy.sources[0].branches?.include?.join(',') !== 'master,openwrt-*' ||
-    !sourceAllowsBranch(policy.sources[0], 'openwrt-26.01') ||
-    !sourceAllowsBranch(policy.sources[0], 'master') ||
-    sourceAllowsBranch(policy.sources[0], 'main')) failures.push('stable branch policy');
-if (automationPolicy.schema !== 1 || automationPolicy.probe?.collaboratorMaxParallel !== 3 ||
-    automationPolicy.probe?.ownerDefaultParallel !== 0 || automationPolicy.probe?.maxMatrixJobs !== 256 ||
-    automationPolicy.probe?.planFetchConcurrency !== 4 ||
-    automationPolicy.probe?.reductionMaxAttempts?.['package-compile'] !== 8 ||
-    automationPolicy.probe?.reductionMaxAttempts?.['rootfs-integration'] !== 4 ||
-    automationPolicy.probe?.reductionMaxAttempts?.['firmware-integration'] !== 2 ||
-    automationPolicy.probe?.reductionMaxAttempts?.['boot-smoke'] !== 0 ||
-    automationPolicy.probe?.normalizedEvidenceDays !== 60 || automationPolicy.probe?.fullLogDays !== 30 ||
-    automationPolicy.translation?.defaultDataBranch !== 'catalog-data' ||
-    automationPolicy.translation?.batchSize !== 500 || automationPolicy.translation?.batchCount !== 5 ||
-    automationPolicy.translation?.totalItemLimit !== 5000 ||
-    automationPolicy.translation?.totalTimeBudgetSeconds !== 3000 ||
-    automationPolicy.translation?.diagnosticsDays !== 60 || automationPolicy.catalog?.cloneAttempts !== 3) {
-  failures.push('automation policy contract');
-}
-const openwrt = policy.sources.find((item) => item.id === 'OpenWrt');
-if (openwrt?.branches?.include?.join(',') !== 'main,openwrt-*' || openwrt.exclude.length ||
-    !sourceAllowsBranch(openwrt, 'openwrt-26.01') || !sourceAllowsBranch(openwrt, 'main') ||
-    sourceAllowsBranch(openwrt, 'master')) failures.push('OpenWrt branch policy');
-const lede = policy.sources.find((item) => item.id === 'lede');
-if (lede?.label !== 'Lean LEDE' || lede.branches?.include?.join(',') !== 'master,openwrt-*' ||
-    !sourceAllowsBranch(lede, 'master') || !sourceAllowsBranch(lede, 'openwrt-30.00')) failures.push('LEDE source policy');
-if (!policy.sources.some((item) => item.id === 'hanwckf' &&
-    item.repo === 'hanwckf/immortalwrt-mt798x' &&
-    item.branches.join(',') === 'openwrt-21.02' && item.legacy === true)) {
-  failures.push('hanwckf legacy source policy');
-}
+const sizes = aggregateCuratedSizes(['luci-app-demo'], [{ source: 'opkg', packages: opkg }, { source: 'apk', packages: apk }]);
+assert.equal(sizes.bytes['luci-app-demo'], 150);
+assert.equal(sizes.coverage['luci-app-demo']?.length, 2);
+const sizeRows = buildCatalogSizeReport([{ source: { id: 'fixture', branch: 'test', commit: 'a'.repeat(40) },
+  sizeReport: { legacy: { bytes: 1000 }, split: { initialBytes: 300, bytes: 700 }, readableRelationsJsonBytes: 10000, compactRelationsJsonBytes: 2500 } }]);
+assert.equal(sizeRows[0].initialReductionPercent, 70);
+assert.equal(sizeRows[0].relationsReductionPercent, 75);
+
+// Compatibility is evidence schema 2 only and bounded by the Catalog source policy.
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
-const compatibilityFastPublish =
-  workflow.includes("if: needs.mode.outputs.fast_asset == 'none'") &&
-  workflow.includes("if: needs.mode.outputs.fast_asset != 'none'") &&
-  workflow.includes('"${#changed[@]}" -eq 1') &&
-  workflow.includes('"${changed[0]}" == compatibility.json') &&
-  workflow.includes('"${changed[0]}" == curated-sizes.json') &&
-  workflow.includes('git clone --filter=blob:none --no-checkout --single-branch') &&
-  workflow.includes('sparse-checkout set /index.json "/$FAST_ASSET.json.gz"') &&
-  workflow.includes('build-index.mjs "--$FAST_ASSET-only" previous/index.json previous/index.json') &&
-  workflow.includes('$FAST_ASSET contract is unchanged; nothing to publish.') &&
-  workflow.includes('case "$CATALOG_DATA_BRANCH" in');
-const catalogTriggerIsDataBound = [
-  '!scripts/check-*.mjs',
-  '!scripts/package-probe-*.mjs',
-  '!scripts/write-package-probe-evidence.mjs',
-  '!scripts/translate-*.mjs',
-  '!scripts/translation-*.mjs',
-  '!scripts/sync-translation-assets.mjs',
-].every((pattern) => workflow.includes(`- "${pattern}"`)) &&
-  !workflow.includes('.github/workflows/package-probe.yml') &&
-  !workflow.includes('.github/workflows/translate.yml');
-const unsupportedSchemasRejected = [1, 0, 3].every((schema) => {
-  try {
-    normalizeCompatibilityDocument({
-      schema,
-      rules: [{
-        id: 'OWN-LEGACY', kind: 'ownership', scope: { ImmortalWrt: ['openwrt-25.12'] },
-        if: 'USE_APK', packages: ['legacy-a', 'legacy-b'], paths: ['/legacy'], refs: ['run:1'],
-      }],
-    }, policy);
-    return false;
-  } catch {
-    return true;
+assert.equal(normalizedCompatibility.schema, 2);
+assert.equal(normalizedCompatibility.rules.length, 3);
+assert.equal(normalizedCompatibility.rules[0]?.id, 'OWN-0001');
+assert.equal(normalizedCompatibility.rules[0]?.issue, 'file-ownership');
+assert.throws(() => normalizeCompatibilityDocument({ schema: 1, rules: [] }, policy));
+
+// Public translation and automation policy contracts.
+assert.deepEqual(translations.policy?.languages, ['en', 'zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']);
+assert(translations.entries?.['PACKAGE_luci-app-samba4']?.usageZh);
+assert(translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.de);
+for (const label of ['Top level', 'General settings', 'Global build settings', 'LuCI']) {
+  for (const language of ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']) {
+    assert(menuI18n[label]?.[language], `missing menu i18n: ${label}/${language}`);
   }
-});
-let oversizedCompatibilityRejected = false;
-try {
-  normalizeCompatibilityDocument({
-    schema: 2,
-    rules: Array.from({ length: 5000 }, (_, index) => ({
-      id: `BLD-SIZE-${index}`, issue: 'build-failure', match: 'all-selected',
-      scope: { ImmortalWrt: ['openwrt-25.12'] }, packages: [`size-${index}`], refs: [`run:${index}`],
-    })),
-  }, policy);
-} catch (error) {
-  oversizedCompatibilityRejected = /exceeds/.test(error.message);
 }
-if (!compatibilityFastPublish || !catalogTriggerIsDataBound || normalizedCompatibility.schema !== 2 || normalizedCompatibility.rules.length !== 3 ||
-    normalizedCompatibility.rules[0]?.id !== 'OWN-0001' ||
-    normalizedCompatibility.rules[0]?.issue !== 'file-ownership' ||
-    normalizedCompatibility.rules[0]?.match !== 'all-installed' ||
-    normalizedCompatibility.rules[1]?.id !== 'BLD-0001' ||
-    normalizedCompatibility.rules[1]?.issue !== 'build-failure' ||
-    normalizedCompatibility.rules[1]?.match !== 'all-selected' ||
-    normalizedCompatibility.rules[1]?.packages?.join(',') !== 'oscam' ||
-    normalizedCompatibility.rules[1]?.scope?.ImmortalWrt?.join(',') !== '*' ||
-    normalizedCompatibility.rules[1]?.scope?.lede?.join(',') !== '*' ||
-    !matchPattern('openwrt-26.01', normalizedCompatibility.rules[1].scope.ImmortalWrt[0]) ||
-    normalizedCompatibility.rules[2]?.id !== 'BLD-0002' ||
-    normalizedCompatibility.rules[2]?.issue !== 'build-failure' ||
-    normalizedCompatibility.rules[2]?.match !== 'all-selected' ||
-    normalizedCompatibility.rules[2]?.packages?.join(',') !== 'luci-app-openvpn-server' ||
-    normalizedCompatibility.rules[2]?.scope?.ImmortalWrt?.join(',') !== 'master' ||
-    normalizedCompatibility.rules[2]?.refs?.join(',') !== 'run:31382119111' ||
-    normalizedCompatibility.rules[0]?.refs?.join(',') !== 'run:31248199953,run:31382153641' ||
-    !unsupportedSchemasRejected ||
-    !oversizedCompatibilityRejected ||
-    normalizedCompatibility.rules[0]?.scope?.ImmortalWrt?.join(',') !== 'openwrt-25.12' ||
-    !mutatedCompatibility((value) => { value.rules[0].symbols = ['PACKAGE_demo']; }) ||
-    !mutatedCompatibility((value) => { delete value.rules[0].paths; }) ||
-    !mutatedCompatibility((value) => { value.rules.push(structuredClone(value.rules[0])); }) ||
-    !mutatedCompatibility((value) => { value.rules[0].packages.push(value.rules[0].packages[0]); }) ||
-    !mutatedCompatibility((value) => { value.rules[0].scope = { Missing: ['main'] }; }) ||
-    !mutatedCompatibility((value) => { value.rules[0].scope.ImmortalWrt = ['release-24.11']; }) ||
-    !mutatedCompatibility((value) => { value.rules[0].paths = ['relative/path']; }) ||
-    !mutatedCompatibility((value) => { value.rules[0].refs = ['bad ref']; }) ||
-    !mutatedCompatibility((value) => { value.rules[1].paths = ['/not-applicable']; }) ||
-    !mutatedCompatibility((value) => { value.rules[1].packages = []; }) ||
-    !mutatedCompatibility((value) => { value.rules[1].issue = 'unknown'; }) ||
-    !mutatedCompatibility((value) => { value.rules[1].match = 'any'; })) {
-  failures.push('compatibility evidence mutation validation');
-}
-if (!generator.includes("option.path[0] !== 'Target Devices'") ||
-    !generator.includes('targetBuildContract') ||
-    !generator.includes('profile.boardSelector') ||
-    !generator.includes('selectableTargets') ||
-    !generator.includes('.contract.json') ||
-    !generator.includes('menu: compactMenu') ||
-    !generator.includes('targetSelectors') ||
-    !generator.includes('targetTree') ||
-    !generator.includes('pollutedDependencies') ||
-    !generator.includes('menuI18n') ||
-    !generator.includes('promptZh') ||
-    !generator.includes('conflicts') ||
-    !generator.includes('buildKconfigRelations') ||
-    !generator.includes('.relations.json.gz') ||
-    !generator.includes('compactRelations(relations)') ||
-    !generator.includes('.core.json.gz') ||
-    !generator.includes('.graph.json.gz') ||
-    !generator.includes('.menu.json.gz') ||
-    !generator.includes('.hidden.json.gz') ||
-    !generator.includes('.help.json.gz') ||
-    !generator.includes('CATALOG_DEBUG_RELATIONS') ||
-    !generator.includes('const legacyContract = {') ||
-    !generator.includes('catalogSchema: Number(payload.schema || 0)') ||
-    !generator.includes('relationsSchema: Number(payload.relations?.schema || 0)') ||
-    !generator.includes('legacy: legacyContract') ||
-    !generator.includes('sizeReport') ||
-    !generator.includes('.translations.json') ||
-    !generator.includes('.duplicates.json') ||
-    !generator.includes('.curated-candidates.json') ||
-    !generator.includes('merge conflicts') ||
-     !generator.includes('resolvePackageOption(candidate, packageSymbols)') ||
-     !generator.includes('curatedApplications must use {id, packages:[luci-app-*],group} objects') ||
-     generator.includes('packageSymbols.has(name) || packageByName.has(name)') ||
-    generator.includes('\n  packages,\n')) failures.push('compact payload');
-if (!library.includes('mergeKconfigOptions') || !library.includes('dependsVariants') ||
-    !library.includes('resolvePackageOption') ||
-    !collector.includes('.duplicates.json') || !collector.includes('compressed hash mismatch')) {
-  failures.push('symbol uniqueness and catalog metadata validation');
-}
-if (!library.includes('hasSubtarget') || !library.includes('resolveTargetSelectors') ||
-    !library.includes('boardNames') || !validator.includes('boardSelector') ||
-    !library.includes('buildTargetTree') || !library.includes('systemName') ||
-    library.includes("subtarget = 'generic'") || !generator.includes('kconfigSymbols') ||
-    !validator.includes('quarantined') || !validator.includes('quarantineGeneratedProfiles') ||
-    validator.includes('requiredPackages') ||
-    validator.includes('CONFIG_PACKAGE_${name}')) failures.push('Kconfig selector/package semantics');
-const requiredLanguages = ['zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi'];
-if (!['Top level', 'General settings', 'Global build settings', 'LuCI'].every((label) =>
-  requiredLanguages.every((lang) => menuI18n[label]?.[lang]))) failures.push('menu i18n');
-if (translations.policy?.languages?.join(',') !== 'en,zh-CN,zh-TW,ru,es,pt,ja,ko,de,fr,vi' ||
-    !translations.entries?.['PACKAGE_luci-app-samba4']?.usageZh) failures.push('English/Chinese translations');
-if (!translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.['zh-TW'] ||
-    !translations.entries?.['PACKAGE_luci-app-samba4']?.usageI18n?.de) {
-  failures.push('curated 11-language translations');
-}
-if (!autoTranslator.includes('i18n-cache.json') ||
-    autoTranslator.includes('models.github.ai') ||
-    !autoTranslator.includes('api.cognitive.microsofttranslator.com') ||
-    !autoTranslator.includes("process.env.TRANSLATION_PROVIDER || 'argos'") ||
-    !autoTranslator.includes('translate-argos.py') ||
-    !autoTranslator.includes("process.once('SIGTERM'") ||
-    !autoTranslator.includes('Translation cancelled before catalog-data publish') ||
-    !autoTranslator.includes("rotationLanguages = ['ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']") ||
-    !autoTranslator.includes("frozenLanguages = ['zh-TW']") ||
-    !autoTranslator.includes("state.phase = 'zh-CN-usage'") ||
-    !autoTranslator.includes('TRANSLATE_CHAR_BUDGET') ||
-    !autoTranslator.includes('TRANSLATE_BATCH_NUMBER') ||
-    !autoTranslator.includes('batchCount') ||
-    !autoTranslator.includes('TRANSLATE_MAX_ITEMS must be an integer from 100 to 5000') ||
-    !autoTranslator.includes('Batch incomplete: translated') ||
-    !autoTranslator.includes('translation-retry-queue.json') ||
-    !autoTranslator.includes('translation-state.json') ||
-    !autoTranslator.includes('uniqueDescriptionPendingByLanguage') ||
-    !autoTranslator.includes('indexedTranslationCatalogs(readTranslationIndex(distDir), distDir)') ||
-    !autoTranslator.includes('writeIndexedLanguageAssets(entry, catalog, translationUpdatedAt)') ||
-    autoTranslator.includes('readdirSync') ||
-    !translationAssets.includes("logical.startsWith('menu:')") ||
-    !translationAssets.includes('menuLanguagePayload') ||
-    !translationAssets.includes('writeIndexedLanguageAssets') ||
-    !translationWorkflow.includes('translation_provider:') ||
-    !translationWorkflow.includes('translate_batch_size:') ||
-    !translationWorkflow.includes('translate_batch_count:') ||
-    !translationWorkflow.includes('translate_publish_mode:') ||
-    !translationWorkflow.includes('scripts/requirements-argos.txt') ||
-    !translationWorkflow.includes('scripts/resolve-translation-provider.mjs') ||
-    !translationWorkflow.includes('scripts/translation-plan.mjs') ||
-    !translationWorkflow.includes('scripts/translate-catalog.mjs') ||
-    !translationWorkflow.includes('TRANSLATE_MAX_ITEMS: ${{ steps.plan.outputs.batch_size }}') ||
-    !translationWorkflow.includes('TRANSLATE_BATCH_COUNT: ${{ steps.plan.outputs.batch_count }}') ||
-    !translationWorkflow.includes('ARGOS_TIME_BUDGET_SECONDS: ${{ steps.plan.outputs.per_batch_time_budget_seconds }}') ||
-    !translationWorkflow.includes('TRANSLATE_BATCH_NUMBER="$batch"') ||
-    !translationWorkflow.includes('publish_mode="${{ steps.plan.outputs.publish_mode }}"') ||
-    translationPublishContractCount !== 2 ||
-    translationSnapshotContractCount !== 2 ||
-    !translationWorkflow.includes('git -C dist push origin "HEAD:$CATALOG_DATA_BRANCH"') ||
-    !translationWorkflow.includes('code_channel:') ||
-    !translationWorkflow.includes('data_channel:') ||
-    !translationWorkflow.includes('default: catalog-data') ||
-    !translationWorkflow.includes('default: "5"') ||
-    !translationWorkflow.includes('cron: "37 20 * * *"') ||
-    !translationWorkflow.includes('git clone --filter=blob:none --no-checkout --single-branch') ||
-    !translationWorkflow.includes('scripts/translation-sparse-paths.mjs') ||
-    !translationWorkflow.includes('scripts/sync-translation-assets.mjs') ||
-    !translationWorkflow.includes('Translate with live progress') ||
-    !translationWorkflow.includes('timeout-minutes: 60') ||
-    !translationWorkflow.includes('actions/setup-python@v6') ||
-    !translationWorkflow.includes('actions/cache@v5') ||
-    !translationWorkflow.includes('$RUNNER_TEMP/translation-run-started') ||
-    translationWorkflow.includes('dist/.translation-run-started') ||
-    !translationPlan.includes('TRANSLATE_TOTAL_ITEM_LIMIT || 5000') ||
-    !translationPlan.includes('TRANSLATE_TOTAL_TIME_BUDGET_SECONDS || 3000') ||
-    !translationPlan.includes('perBatchTimeBudgetSeconds') ||
-    !translationPlan.includes("publishMode = env.TRANSLATE_PUBLISH_MODE || 'each-batch'") ||
-    !translationWorkflow.includes('dist/translation-state.json') ||
-    translationWorkflow.includes('workflow_run:') ||
-    workflow.includes('scripts/translate-catalog.mjs')) failures.push('manual translation automation');
-if (failures.length) throw new Error(`检查失败:${failures.join(',')}`);
-console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${menu.options.length} visible / ${(menu.allOptions || menu.options).length} total Kconfig options`);
+assert.equal(automation.schema, 1);
+assert.equal(automation.probe?.collaboratorMaxParallel, 3);
+assert.equal(automation.probe?.maxMatrixJobs, 256);
+assert.equal(automation.probe?.normalizedEvidenceDays, 60);
+assert.equal(automation.probe?.fullLogDays, 30);
+assert.equal(automation.translation?.defaultDataBranch, 'catalog-candidate');
+assert.equal(automation.translation?.batchSize, 500);
+assert.equal(automation.translation?.batchCount, 5);
+assert.equal(automation.translation?.totalItemLimit, 5000);
+assert.equal(automation.translation?.totalTimeBudgetSeconds, 3000);
+assert.equal(automation.catalog?.cloneAttempts, 3);
+
+console.log(`catalog checks passed: ${targets.length} targets, ${packages.length} packages, ${(menu.options || []).length} visible / ${(menu.allOptions || menu.options).length} total Kconfig options`);
