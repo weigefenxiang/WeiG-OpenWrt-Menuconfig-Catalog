@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 weigefenxiang <weigefenxiang@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Package Probe Request / 软件包探针请求
+run-name: "Package probe request / 软件包探针请求 · #${{ github.event.issue.number }}"
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  group: package-probe-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  request:
+    name: Validate, dispatch, or cancel / 校验、派发或取消
+    if: >-
+      github.event.issue.pull_request == null &&
+      startsWith(github.event.issue.title, '[probe]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Process the Issue request / 处理 Issue 请求
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/package-probe-issue.mjs

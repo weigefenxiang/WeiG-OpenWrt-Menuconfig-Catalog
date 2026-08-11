@@ -62,7 +62,9 @@ Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 有四个递
 
 请求可包含 1–8 个 Catalog 应用 ID 或 package ID，并选择全部、当前或指定 Source/Branch，以及自动目标、当前 Target/Profile 或全部代表目标。控制器只读取当前代码频道对应数据分支的 `index.json`、`applications.json.gz` 与匹配 Branch 的 `core` 分片，校验 SHA-256 后动态生成 Matrix。自动目标优先 x86/64，并可在同一 Job 内依次尝试 Catalog 合法后备目标；全部目标受 256 Job 上限约束。只有某软件包在全部合法环境中均由软件包原因失败，才能标记为“完全不兼容”；部分 Target 失败只是带覆盖率的证据，基础固件失败、下载失败、磁盘不足和超时归为基础设施或不确定结果。
 
-网页把 schema 1 请求编码为短 Base64URL 字符串，预填到公开 GitHub Issue 的隐藏块中；Workflow 在创建任何 Matrix Job 前重新校验 schema、权限、Catalog 合约、Source/Branch、Target/Profile 与软件包映射。仓库所有者可使用完整计划并发；有写权限的协作者强制最多 3；普通访客可查看界面和公开 Run，但不能启动 Matrix。`workflow_dispatch` 保留为管理员回退入口。规范化证据保留 60 天，完整日志保留 30 天；plan-only 明确表示没有执行编译，不能产生兼容性结论。
+网页把 schema 1 请求下载为公开、可审计的 `probe-request.json`，并打开专用 GitHub Issue 表单；用户只需把该 JSON 拖入必填上传框。默认分支上的轻量 Issue 网关校验唯一附件、UTF-8/JSON/schema、SHA-256、Issue 身份与提交者权限，再把执行 Workflow 派发到请求中的同名 `dev`、`staging` 或 `main` 代码通道；worker 会重新下载同一附件并核对哈希，任何字段被改动都会拒绝执行。Issue 网关使用事件触发，不轮询，也不会每 6 小时空跑；因此新增网关本身必须先安全晋级到默认分支，之后各数据/执行通道才能独立工作。
+
+仓库所有者可使用完整计划并发；有写权限的协作者强制最多 3；普通访客可查看界面和公开 Run，但不能启动 Matrix。请求者本人或具有 write/maintain/admin 权限的协作者可在同一 Issue 准确回复 `/cancel`：先普通取消，Run 仍活动时才强制取消；重复取消、排队期取消和派发竞态均按同一 Issue 身份幂等收口。`workflow_dispatch` 保留为管理员回退入口。规范化证据保留 60 天，完整日志保留 30 天；plan-only 明确表示没有执行编译，不能产生兼容性结论。取消、超时或基础设施问题保留为 `inconclusive`，汇总 Job 不会把它伪装成新的软件包失败。
 
 多个软件包共同失败时，Runner 只在所有已计划目标均表现为软件包阶段失败后，按 `.github/automation-policy.json` 的分模式预算执行通用 delta 缩减；结果标为“有限缩减候选”，不是自动规则。依赖安装、精确克隆、feeds、构建与启动输出合并进完整探针日志。真正耗时的 tools/toolchain、软件包、RootFS 和固件目标先按 Runner 可用 CPU 数加一并行执行，失败后才以 `-j1 V=s` 串行详细复核；`defconfig`、`clean`、`dirclean` 等配置或清理目标保持单线程。并行失败而串行成功只能记录为恢复，不能生成不兼容结论。
 

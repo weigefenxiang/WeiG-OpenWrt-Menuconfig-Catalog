@@ -2,19 +2,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 name: Package Compatibility Probe / 软件包兼容探针
 run-name: >-
-  ${{ github.event_name == 'issues' && format('Package probe issue #{0} / 软件包探针请求 #{0}', github.event.issue.number)
+  ${{ inputs.issue_number != '' && format('Package probe issue #{0} / 软件包探针请求 #{0}', inputs.issue_number)
       || format('Package probe · {0} · {1} / 软件包探针', inputs.mode, inputs.packages) }}
 
 on:
   workflow_dispatch:
     inputs:
       request:
-        description: "Optional web request token; when set it overrides the fields below / 可选网页请求字符串，填写后覆盖以下字段"
+        description: "Optional raw JSON request for maintainers; when set it overrides the fields below / 维护者可选原始 JSON 请求，填写后覆盖以下字段"
         required: false
         default: ""
       packages:
         description: "1-8 Catalog application or package IDs / 1–8 个 Catalog 应用或软件包 ID"
-        required: true
+        required: false
+        default: ""
       mode:
         description: "Probe depth / 探测深度"
         required: true
@@ -44,8 +45,18 @@ on:
         required: true
         type: boolean
         default: true
-  issues:
-    types: [opened]
+      issue_number:
+        description: "Gateway Issue number; leave empty for manual runs / 网关 Issue 编号；手动运行时留空"
+        required: false
+        default: ""
+      request_sha256:
+        description: "Gateway request SHA-256; leave empty for manual runs / 网关请求 SHA-256；手动运行时留空"
+        required: false
+        default: ""
+      issue_created_at:
+        description: "Gateway Issue creation identity; leave empty for manual runs / 网关 Issue 创建标识；手动运行时留空"
+        required: false
+        default: ""
 
 permissions: {}
 
@@ -55,6 +66,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      issues: read
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
       max_parallel: ${{ steps.plan.outputs.max_parallel }}
@@ -84,6 +96,9 @@ jobs:
           TARGET_POLICY: ${{ inputs.target_policy }}
           MAX_PARALLEL: ${{ inputs.max_parallel }}
           DRY_RUN: ${{ inputs.plan_only }}
+          PROBE_ISSUE_NUMBER: ${{ inputs.issue_number }}
+          PROBE_REQUEST_SHA256: ${{ inputs.request_sha256 }}
+          PROBE_ISSUE_CREATED_AT: ${{ inputs.issue_created_at }}
         run: node scripts/package-probe-controller.mjs
       - name: Upload normalized probe plan / 上传规范化探针计划
         if: always()
@@ -190,7 +205,7 @@ jobs:
   summary:
     name: 99 · Probe result / 探针结果
     needs: [plan, probe]
-    if: always() && (github.event_name != 'issues' || needs.plan.outputs.relevant == 'true')
+    if: always()
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -218,10 +233,11 @@ jobs:
           path: probe-diagnostics/
           retention-days: 60
           if-no-files-found: error
-      - name: Comment on and close the request Issue / 回复并关闭请求 Issue
-        if: github.event_name == 'issues'
+      - name: Comment on the request Issue; close conclusive results / 回复请求 Issue；结论明确时关闭
+        if: always() && inputs.issue_number != ''
         uses: actions/github-script@v8
         env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
           PLAN_RESULT: ${{ needs.plan.result }}
           PROBE_RESULT: ${{ needs.probe.result }}
           AUTHORIZED: ${{ needs.plan.outputs.authorized }}
@@ -231,19 +247,27 @@ jobs:
             const summary = fs.existsSync('probe-diagnostics/FINAL_SUMMARY.md')
               ? fs.readFileSync('probe-diagnostics/FINAL_SUMMARY.md', 'utf8').slice(0, 5000)
               : 'Probe request could not be resolved. / 无法解析探针请求。';
+            const results = fs.existsSync('probe-diagnostics/results.json')
+              ? JSON.parse(fs.readFileSync('probe-diagnostics/results.json', 'utf8'))
+              : { scopes: [] };
+            const conclusive = results.scopes.length > 0 &&
+              results.scopes.every((row) => row.conclusion !== 'inconclusive');
+            const issueNumber = Number(process.env.ISSUE_NUMBER);
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: issueNumber,
               body: `${summary}\n\nRun / 运行: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
-            await github.rest.issues.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              state: 'closed',
-              state_reason: 'completed',
-            });
+            if (conclusive) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }
       - name: Finalize controller result / 确认控制器结果
         shell: bash
         env:
@@ -253,4 +277,6 @@ jobs:
           AUTHORIZED: ${{ needs.plan.outputs.authorized }}
         run: |
           [[ "$PLAN_RESULT" == success ]]
-          if [[ "$AUTHORIZED" == true && "$EXECUTE" == true ]]; then [[ "$PROBE_RESULT" == success ]]; fi
+          if [[ "$AUTHORIZED" == true && "$EXECUTE" == true && "$PROBE_RESULT" != success ]]; then
+            echo "::warning::Probe Matrix result is $PROBE_RESULT; the normalized evidence remains authoritative. / 探针 Matrix 结果为 $PROBE_RESULT；以规范化证据为准。"
+          fi

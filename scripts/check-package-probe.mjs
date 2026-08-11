@@ -5,15 +5,25 @@ import { resolve } from 'node:path';
 import {
   createProbePlan,
   dataBranchForCodeRef,
-  decodeProbeRequest,
-  encodeProbeRequest,
   normalizeProbeMode,
   normalizeProbeRequest,
-  probeRequestFromIssueBody,
   probeTargetConfig,
   probeTargetConfigs,
   resolveProbePackages,
 } from './package-probe-controller.mjs';
+import {
+  downloadProbeRequest,
+  parseProbeRequestBytes,
+  probeRequestAttachment,
+  PROBE_REQUEST_MAX_BYTES,
+} from './package-probe-request.mjs';
+import {
+  isProbeIssue,
+  probeCancellationAuthorized,
+  probeCancellationRequested,
+  probeIssueCommand,
+  probeRunMarkers,
+} from './package-probe-issue.mjs';
 import { aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
   requestedPackageStates } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
@@ -22,6 +32,8 @@ const ROOT = resolve(import.meta.dirname, '..');
 const policy = JSON.parse(readFileSync(resolve(ROOT, '.github', 'automation-policy.json'), 'utf8'));
 const config = JSON.parse(readFileSync(resolve(ROOT, 'catalog.config.json'), 'utf8'));
 const workflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe.yml'), 'utf8');
+const gatewayWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe-request.yml'), 'utf8');
+const issueForm = readFileSync(resolve(ROOT, '.github', 'ISSUE_TEMPLATE', 'package-probe.yml'), 'utf8');
 const catalogWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const controller = readFileSync(resolve(ROOT, 'scripts', 'package-probe-controller.mjs'), 'utf8');
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
@@ -50,14 +62,42 @@ assert.deepEqual(resolveProbePackages(['oscam', 'raw-package'], applications).pa
 const request = normalizeProbeRequest({ schema: 1, channel: 'dev', mode: 'firmware-integration',
   packages: ['oscam'], scope: { mode: 'pairs', pairs: [['ImmortalWrt', 'master']] },
   targetPolicy: { mode: 'auto' }, maxParallel: 0, execute: true });
-const requestToken = encodeProbeRequest(request);
-assert(requestToken.startsWith('WEIG_PACKAGE_PROBE_V1:'));
-assert.deepEqual(decodeProbeRequest(requestToken), request);
-assert.deepEqual(probeRequestFromIssueBody(`text\n<!-- WEIG_PACKAGE_PROBE_REQUEST_V1\n${requestToken}\n-->`), request);
 assert.throws(() => normalizeProbeRequest({ ...request, unknown: true }), /unknown keys/);
-assert.throws(() => decodeProbeRequest('WEIG_PACKAGE_PROBE_V1:broken'), /invalid/);
 assert.equal(normalizeProbeRequest({ ...request, channel: 'fix/source-compatibility' }).channel,
   'fix/source-compatibility');
+
+const requestBytes = Buffer.from(JSON.stringify(request) + '\n');
+const attachmentBody = '[probe-request.json](https://github.com/user-attachments/files/123/probe-request.json)';
+assert.equal(probeRequestAttachment(attachmentBody).name, 'probe-request.json');
+assert.throws(() => probeRequestAttachment('no attachment'), /exactly one/);
+assert.throws(() => probeRequestAttachment(`${attachmentBody}\n${attachmentBody.replace('/123/', '/456/')}`), /exactly one/);
+assert.throws(() => probeRequestAttachment('[request.txt](https://github.com/user-attachments/files/123/request.txt)'), /JSON/);
+assert.deepEqual(parseProbeRequestBytes(requestBytes).raw, request);
+assert.throws(() => parseProbeRequestBytes(Buffer.from([0xC3, 0x28])), /UTF-8/);
+assert.throws(() => parseProbeRequestBytes(Buffer.concat([Buffer.from([0xEF, 0xBB, 0xBF]), requestBytes])), /BOM/);
+assert.throws(() => parseProbeRequestBytes(Buffer.from('{"schema":1}\0')), /NUL/);
+assert.throws(() => parseProbeRequestBytes(Buffer.alloc(PROBE_REQUEST_MAX_BYTES + 1, 0x20)), /size/);
+assert.throws(() => parseProbeRequestBytes(Buffer.from('{broken')), /invalid JSON/);
+const downloadedRequest = await downloadProbeRequest(attachmentBody, { fetcher: async () => ({
+  ok: true, status: 200, headers: new Headers({ 'content-length': String(requestBytes.length) }),
+  arrayBuffer: async () => requestBytes,
+}) });
+assert.deepEqual(downloadedRequest.raw, request);
+assert.match(downloadedRequest.sha256, /^[a-f0-9]{64}$/);
+
+assert(isProbeIssue({ title: '[probe] package', user: { login: 'author' } }));
+assert(!isProbeIssue({ title: '[build] package' }));
+assert(!isProbeIssue({ title: '[probe] pull', pull_request: {} }));
+assert.equal(probeIssueCommand(' /CANCEL\n'), 'cancel');
+assert.equal(probeIssueCommand('/cancel now'), '');
+assert(probeCancellationAuthorized({ requester: 'Author', commenter: 'author', permission: 'read' }));
+for (const permission of ['write', 'maintain', 'admin']) {
+  assert(probeCancellationAuthorized({ requester: 'author', commenter: 'helper', permission }));
+}
+assert(!probeCancellationAuthorized({ requester: 'author', commenter: 'reader', permission: 'read' }));
+const runMarker = `<!-- WEIG_PACKAGE_PROBE_RUN_V1 run=123 sha=${'a'.repeat(64)} -->`;
+assert.deepEqual(probeRunMarkers([{ body: runMarker }, { body: runMarker }]), [{ runId: 123, sha256: 'a'.repeat(64) }]);
+assert(probeCancellationRequested([{ body: '<!-- WEIG_PACKAGE_PROBE_CANCEL_V1 -->' }]));
 
 const selectableTarget = (id, selector, profile = '') => ({ id, targetSelector: selector,
   contract: { selectable: true, boardSelector: selector.split('_').slice(0, 2).join('_') },
@@ -167,8 +207,16 @@ for (const version of ['openwrt-27.01', 'openwrt-28.12', 'openwrt-29.10', 'openw
   assert(sourceAllowsBranch(lede, version), `lede future branch was not discovered: ${version}`);
 }
 
-assert(workflow.includes('issues:') && controller.includes('WEIG_PACKAGE_PROBE_REQUEST_V1'));
+assert(!workflow.includes('\n  issues:\n') && !controller.includes('WEIG_PACKAGE_PROBE_REQUEST_V1'));
+assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') &&
+  gatewayWorkflow.includes('node scripts/package-probe-issue.mjs'));
+assert(gatewayWorkflow.includes('actions: write') && gatewayWorkflow.includes('issues: write') &&
+  gatewayWorkflow.includes('runs-on: ubuntu-24.04'));
+assert(issueForm.includes('type: upload') && issueForm.includes('probe-request.json') && issueForm.includes('`/cancel`'));
 assert(workflow.includes('permissions: {}') && workflow.includes('issues: write'));
+assert(workflow.includes('PROBE_ISSUE_NUMBER: ${{ inputs.issue_number }}') &&
+  workflow.includes('PROBE_REQUEST_SHA256: ${{ inputs.request_sha256 }}') &&
+  workflow.includes("inputs.issue_number != ''"));
 assert(workflow.includes('matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}'));
 assert(workflow.includes('max-parallel: ${{ fromJSON(needs.plan.outputs.max_parallel) }}'));
 assert(workflow.includes('node scripts/run-package-probe.mjs') && runner.includes('package/install'));
@@ -193,6 +241,8 @@ assert(runner.includes("if (!existsSync(LOG_FILE)) writeFileSync(LOG_FILE, '')")
   (workflow.match(/tee -a "\$PROBE_LOG"/g) || []).length >= 4,
   'complete probe log does not preserve dependency, clone, feeds, build, and boot stages');
 assert(workflow.includes('write-package-probe-evidence.mjs --aggregate'));
+assert(!workflow.includes('[[ "$PROBE_RESULT" == success ]]') &&
+  workflow.includes('the normalized evidence remains authoritative'));
 assert(workflow.includes('Package Compatibility Probe / 软件包兼容探针'));
 assert(!workflow.includes('package-probe-child.yml') && !workflow.includes('/dispatches'));
 assert(workflow.includes('retention-days: 60') && workflow.includes('retention-days: 30'));
@@ -211,7 +261,8 @@ for (const key of [
   'allSources', 'currentSource', 'customScope', 'autoTarget', 'currentTarget', 'allTargets',
   'packageCompile', 'packageCompileHelp', 'rootfsIntegration', 'rootfsIntegrationHelp',
   'firmwareIntegration', 'firmwareIntegrationHelp', 'bootSmoke', 'bootSmokeHelp',
-  'preview', 'submit', 'copy', 'copiedLargeRequest', 'permission', 'retention', 'planOnly', 'issueTitle', 'issueRequestNotice', 'loading', 'empty', 'invalid',
+  'preview', 'submit', 'downloadedRequest', 'uploadInstruction', 'cancelInstruction',
+  'permission', 'retention', 'planOnly', 'issueTitle', 'loading', 'empty', 'invalid',
 ]) {
   assert(probeUi.strings[key]?.en && probeUi.strings[key]?.['zh-CN'], `missing probe UI translation: ${key}`);
 }

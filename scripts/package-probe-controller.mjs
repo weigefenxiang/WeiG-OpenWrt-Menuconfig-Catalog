@@ -7,6 +7,7 @@ import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { matchPattern } from './source-policy.mjs';
+import { downloadProbeRequest } from './package-probe-request.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
@@ -187,26 +188,6 @@ export function normalizeProbeRequest(raw, maximum = 8) {
     maxParallel: raw.maxParallel === undefined ? 0 : Number(raw.maxParallel),
     execute: raw.execute !== false,
   };
-}
-
-export function encodeProbeRequest(raw, maximum = 8) {
-  const request = normalizeProbeRequest(raw, maximum);
-  return `WEIG_PACKAGE_PROBE_V1:${Buffer.from(JSON.stringify(request)).toString('base64url')}`;
-}
-
-export function decodeProbeRequest(token, maximum = 8) {
-  const match = String(token || '').trim().match(/^WEIG_PACKAGE_PROBE_V1:([A-Za-z0-9_-]{16,12000})$/);
-  if (!match) throw new Error('probe request token is invalid');
-  let raw;
-  try { raw = JSON.parse(Buffer.from(match[1], 'base64url').toString('utf8')); }
-  catch { throw new Error('probe request token is not valid JSON'); }
-  return normalizeProbeRequest(raw, maximum);
-}
-
-export function probeRequestFromIssueBody(body, maximum = 8) {
-  const match = String(body || '').match(/<!--\s*WEIG_PACKAGE_PROBE_REQUEST_V1\s*\n([A-Za-z0-9:_-]+)\s*\n-->/);
-  if (!match) throw new Error('Issue does not contain a package probe request');
-  return decodeProbeRequest(match[1], maximum);
 }
 
 function scopeMatches(scope, source, branch) {
@@ -400,7 +381,12 @@ async function actorPermission(repository, actor, owner, token) {
 }
 
 function manualRequest(env, maximum) {
-  if (env.PROBE_REQUEST) return decodeProbeRequest(env.PROBE_REQUEST, maximum);
+  if (env.PROBE_REQUEST) {
+    let raw;
+    try { raw = JSON.parse(env.PROBE_REQUEST); }
+    catch (error) { throw new Error(`manual probe request is not valid JSON: ${error.message}`); }
+    return normalizeProbeRequest(raw, maximum);
+  }
   return normalizeProbeRequest({ schema: 1, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main',
     mode: env.PROBE_MODE || 'package-compile', packages: env.PROBE_PACKAGES,
     scope: { mode: 'patterns', source: env.SOURCE_PATTERN || '*', branch: env.BRANCH_PATTERN || '*' },
@@ -413,26 +399,30 @@ export async function main(env = process.env) {
   const maximum = Number(policy.probe?.maxPackages || 8);
   const repository = env.GITHUB_REPOSITORY || '';
   const owner = env.REPOSITORY_OWNER || repository.split('/')[0] || '';
-  const actor = env.GITHUB_ACTOR || '';
-  const issueEvent = env.GITHUB_EVENT_NAME === 'issues';
-  let issueNumber = '';
+  let actor = env.GITHUB_ACTOR || '';
+  const issueNumber = String(env.PROBE_ISSUE_NUMBER || '');
   let request;
   let permission = owner && actor.toLowerCase() === owner.toLowerCase() ? 'admin' : 'write';
-  if (issueEvent) {
-    const event = JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
-    issueNumber = event.issue?.number || '';
-    const issueBody = String(event.issue?.body || '');
-    if (!issueBody.includes('WEIG_PACKAGE_PROBE_REQUEST_V1')) {
-      const irrelevant = { schema: 3, generatedAt: new Date().toISOString(), actor, owner: false, relevant: false,
-        authorized: false, authorization: 'not-a-probe-request', codeRef: 'main', dataBranch: 'catalog-data',
-        mode: 'package-compile', evidenceLevel: 0, execute: false, requested: [], resolvedPackages: [], mappings: [],
-        scope: { mode: 'patterns', source: '*', branch: '*' }, targetPolicy: { mode: 'auto' }, maxParallel: 1,
-        timeoutMinutes: timeoutForMode(policy, 'package-compile'), matrix: { include: [] } };
-      writeOutputs(irrelevant, { issueNumber });
-      console.log('Issue is not a package probe request / Issue 不是软件包探针请求');
-      return irrelevant;
+  if (issueNumber) {
+    if (!/^\d+$/.test(issueNumber) || !env.PROBE_REQUEST_SHA256 || !env.PROBE_ISSUE_CREATED_AT) {
+      throw new Error('Issue probe dispatch identity is incomplete');
     }
-    request = probeRequestFromIssueBody(issueBody, maximum);
+    const issue = await fetchJson(`https://api.github.com/repos/${repository}/issues/${issueNumber}`, env.GITHUB_TOKEN || '');
+    if (issue.pull_request || !/^\[probe\](?:\s|$)/i.test(String(issue.title || ''))) {
+      throw new Error(`Issue #${issueNumber} is not a package probe request`);
+    }
+    if (String(issue.created_at || '') !== String(env.PROBE_ISSUE_CREATED_AT)) {
+      throw new Error(`Issue #${issueNumber} creation identity changed`);
+    }
+    const downloaded = await downloadProbeRequest(issue.body || '');
+    if (downloaded.sha256 !== String(env.PROBE_REQUEST_SHA256).toLowerCase()) {
+      throw new Error(`Issue #${issueNumber} probe-request.json changed after dispatch`);
+    }
+    request = normalizeProbeRequest(downloaded.raw, maximum);
+    if (String(env.GITHUB_REF_NAME || '') !== request.channel) {
+      throw new Error(`probe worker ref ${env.GITHUB_REF_NAME} does not match request channel ${request.channel}`);
+    }
+    actor = String(issue.user?.login || '');
     permission = await actorPermission(repository, actor, owner, env.GITHUB_TOKEN || '');
   } else request = manualRequest(env, maximum);
   const authorized = WRITE_PERMISSIONS.has(permission);
