@@ -22,6 +22,7 @@ const ROOT = resolve(import.meta.dirname, '..');
 const policy = JSON.parse(readFileSync(resolve(ROOT, '.github', 'automation-policy.json'), 'utf8'));
 const config = JSON.parse(readFileSync(resolve(ROOT, 'catalog.config.json'), 'utf8'));
 const workflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe.yml'), 'utf8');
+const catalogWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const controller = readFileSync(resolve(ROOT, 'scripts', 'package-probe-controller.mjs'), 'utf8');
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
@@ -178,6 +179,10 @@ assert(workflow.includes('timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeo
 assert(!workflow.includes('PROBE_JOBS: 2') && runner.includes("from 'node:os'") &&
   runner.includes('availableParallelism() + 1'),
   'probe Make concurrency must adapt to the runner CPU quota');
+assert(catalogWorkflow.includes('!scripts/run-package-probe.mjs') &&
+  catalogWorkflow.includes('!scripts/package-probe-*.mjs') &&
+  catalogWorkflow.includes('!scripts/write-package-probe-evidence.mjs'),
+  'probe-only implementation changes must not rebuild the complete Catalog matrix');
 assert((runner.match(/makeWithSerialRetry\(/g) || []).length >= 6 &&
   runner.includes("await make(['defconfig'], false)") && runner.includes("await make(['dirclean'], false)") &&
   runner.includes("await make(['clean'], false)"),

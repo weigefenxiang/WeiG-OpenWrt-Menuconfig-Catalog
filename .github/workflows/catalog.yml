@@ -11,6 +11,7 @@ on:
       - "scripts/**"
       - "!scripts/check-*.mjs"
       - "!scripts/package-probe-*.mjs"
+      - "!scripts/run-package-probe.mjs"
       - "!scripts/write-package-probe-evidence.mjs"
       - "!scripts/translate-*.mjs"
       - "!scripts/translation-*.mjs"
