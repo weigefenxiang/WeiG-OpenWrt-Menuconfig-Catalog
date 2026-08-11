@@ -215,7 +215,7 @@ function scopeMatches(scope, source, branch) {
 }
 
 function timeoutForMode(policy, mode) {
-  const configured = Number(policy?.probe?.modeTimeoutMinutes?.[mode] || policy?.probe?.timeoutMinutes || 180);
+  const configured = Number(policy?.probe?.modeTimeoutMinutes?.[mode] || policy?.probe?.timeoutMinutes || 360);
   return Math.max(1, Math.min(360, configured));
 }
 

@@ -64,7 +64,9 @@ Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 有四个递
 
 网页把 schema 1 请求编码为短 Base64URL 字符串，预填到公开 GitHub Issue 的隐藏块中；Workflow 在创建任何 Matrix Job 前重新校验 schema、权限、Catalog 合约、Source/Branch、Target/Profile 与软件包映射。仓库所有者可使用完整计划并发；有写权限的协作者强制最多 3；普通访客可查看界面和公开 Run，但不能启动 Matrix。`workflow_dispatch` 保留为管理员回退入口。规范化证据保留 60 天，完整日志保留 30 天；plan-only 明确表示没有执行编译，不能产生兼容性结论。
 
-多个软件包共同失败时，Runner 只在所有已计划目标均表现为软件包阶段失败后，按 `.github/automation-policy.json` 的分模式预算执行通用 delta 缩减；结果标为“有限缩减候选”，不是自动规则。依赖安装、精确克隆、feeds、构建与启动输出合并进完整探针日志；并行失败仍以 `-j1 V=s` 串行复核。
+多个软件包共同失败时，Runner 只在所有已计划目标均表现为软件包阶段失败后，按 `.github/automation-policy.json` 的分模式预算执行通用 delta 缩减；结果标为“有限缩减候选”，不是自动规则。依赖安装、精确克隆、feeds、构建与启动输出合并进完整探针日志。真正耗时的 tools/toolchain、软件包、RootFS 和固件目标先按 Runner 可用 CPU 数加一并行执行，失败后才以 `-j1 V=s` 串行详细复核；`defconfig`、`clean`、`dirclean` 等配置或清理目标保持单线程。并行失败而串行成功只能记录为恢复，不能生成不兼容结论。
+
+GitHub Hosted Runner 不能真正无限运行。四种探测深度均使用平台允许的最大 360 分钟 Job 时限，并由 `.github/automation-policy.json` 统一声明；达到平台硬上限或出现超时只能得出 `inconclusive`，不得当作软件包失败证据。
 
 Source/Branch 组合完全来自 Catalog index。`ImmortalWrt`、`OpenWrt`、`lede` 的 `openwrt-*` 新分支会在下一次自动发现后自然进入全量探测，不在探针中维护版本清单。探针结果按 Source/Branch/Target/Profile 和归一化错误指纹聚合；证据只用于人工审查，不自动改写 `compatibility.json`。schema 2 当前没有 Target/Profile 过滤字段，因此局部机型失败不得错误扩大成全 Source/Branch 规则。
 

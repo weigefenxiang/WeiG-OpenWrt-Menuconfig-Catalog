@@ -125,7 +125,6 @@ jobs:
       PROBE_WORKDIR: work/upstream
       PROBE_LOG: ${{ github.workspace }}/probe.log
       PROBE_RUNTIME: ${{ github.workspace }}/probe-runtime.json
-      PROBE_JOBS: 2
     steps:
       - uses: actions/checkout@v7
       - name: Install build dependencies / 安装构建依赖

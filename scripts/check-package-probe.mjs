@@ -14,7 +14,8 @@ import {
   probeTargetConfigs,
   resolveProbePackages,
 } from './package-probe-controller.mjs';
-import { aggregateScopeConclusions, createEvidence, parseProbeLog, requestedPackageStates } from './write-package-probe-evidence.mjs';
+import { aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
+  requestedPackageStates } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -88,6 +89,7 @@ assert.equal(ownerPlan.matrix.include.length, 3);
 assert.equal(ownerPlan.maxParallel, 3);
 assert.equal(ownerPlan.mode, 'package-compile');
 assert.equal(ownerPlan.evidenceLevel, 1);
+assert.equal(ownerPlan.timeoutMinutes, 360);
 assert.deepEqual(ownerPlan.resolvedPackages, ['luci-app-oscam']);
 assert(!ownerPlan.matrix.include.some((row) => row.branch === 'broken'));
 
@@ -128,6 +130,20 @@ assert.deepEqual(requestedPackageStates('CONFIG_PACKAGE_alpha=m\nCONFIG_PACKAGE_
 const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'fully-incompatible', attempts: [] },
   env: { PROBE_PACKAGES: 'alpha', PROBE_CONCLUSION: 'failure' } });
 assert.equal(infrastructure.conclusion, 'infrastructure-failure');
+const timedOut = createEvidence({ log: 'Process terminated after timeout',
+  runtime: { conclusion: 'fully-incompatible', attempts: [{ result: 'failure', stages: { packageCompile: 'failure' } }] },
+  env: { PROBE_PACKAGES: 'alpha', PROBE_CONCLUSION: 'failure' } });
+assert.equal(timedOut.conclusion, 'inconclusive');
+const environmentFailure = createEvidence({ log: 'make: build environment failed',
+  runtime: { conclusion: 'fully-incompatible', attempts: [{ result: 'failure', stages: { environment: 'failure' } }] },
+  env: { PROBE_PACKAGES: 'alpha', PROBE_CONCLUSION: 'failure' } });
+assert.equal(environmentFailure.conclusion, 'inconclusive');
+const recovered = createEvidence({ log: '', runtime: { conclusion: 'sampled-compatible',
+  attempts: [{ result: 'success', stages: { packageCompile: 'success' },
+    serialRetries: [{ label: 'package:alpha', result: 'recovered' }] }] },
+  env: { PROBE_PACKAGES: 'alpha', PROBE_CONCLUSION: 'success' } });
+assert(evidenceSummaryLines(recovered).some((line) =>
+  line.includes('Serial recovery / 串行复核恢复') && line.includes('package:alpha')));
 const coverageRow = (target, result, issue = { type: 'package-build-failure' }) => ({
   source: 'Source', branch: 'branch', target, mode: 'package-compile', packages: ['package'],
   coverage: { requested: 2, attempted: 1 }, attempts: [{ target, result, stages: { packageCompile: result } }],
@@ -155,6 +171,17 @@ assert(workflow.includes('permissions: {}') && workflow.includes('issues: write'
 assert(workflow.includes('matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}'));
 assert(workflow.includes('max-parallel: ${{ fromJSON(needs.plan.outputs.max_parallel) }}'));
 assert(workflow.includes('node scripts/run-package-probe.mjs') && runner.includes('package/install'));
+assert(workflow.includes('timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout_minutes) }}') &&
+  policy.probe.timeoutMinutes === 360 &&
+  Object.values(policy.probe.modeTimeoutMinutes).every((minutes) => minutes === 360),
+  'every probe depth must use the maximum GitHub-hosted job duration');
+assert(!workflow.includes('PROBE_JOBS: 2') && runner.includes("from 'node:os'") &&
+  runner.includes('availableParallelism() + 1'),
+  'probe Make concurrency must adapt to the runner CPU quota');
+assert((runner.match(/makeWithSerialRetry\(/g) || []).length >= 6 &&
+  runner.includes("await make(['defconfig'], false)") && runner.includes("await make(['dirclean'], false)") &&
+  runner.includes("await make(['clean'], false)"),
+  'expensive builds must retry serially while Kconfig and cleanup remain serial');
 assert(workflow.includes('python3 python3-setuptools') && !workflow.includes('python3-distutils'),
   'probe runner must use the Ubuntu 24.04 Python build dependency contract');
 assert(runner.includes("if (!existsSync(LOG_FILE)) writeFileSync(LOG_FILE, '')") &&

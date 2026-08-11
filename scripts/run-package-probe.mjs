@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { availableParallelism } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,7 +15,10 @@ const RUNTIME_FILE = resolve(process.env.PROBE_RUNTIME || join(ROOT, 'probe-runt
 const MODE = String(process.env.PROBE_MODE || 'package-compile');
 const PACKAGES = String(process.env.PROBE_PACKAGES || '').split(',').map((row) => row.trim()).filter(Boolean);
 let activePackages = PACKAGES;
-const JOBS = Math.max(1, Number(process.env.PROBE_JOBS || process.env.RUNNER_CPU_COUNT || 2));
+const requestedJobs = Number(process.env.PROBE_JOBS || 0);
+const JOBS = Number.isSafeInteger(requestedJobs) && requestedJobs > 0
+  ? requestedJobs
+  : Math.max(1, availableParallelism() + 1);
 
 if (!['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke'].includes(MODE)) {
   throw new Error(`unsupported probe mode: ${MODE}`);
@@ -29,6 +33,8 @@ function log(line = '') {
   process.stdout.write(text);
   appendFileSync(LOG_FILE, text);
 }
+
+log(`Make concurrency / Make 并发: -j${JOBS}`);
 
 async function command(file, args, options = {}) {
   log(`\n$ ${file} ${args.join(' ')}`);
@@ -72,6 +78,20 @@ async function make(args, parallel = true) {
   return command('make', parallel ? [`-j${JOBS}`, ...args] : ['-j1', ...args]);
 }
 
+function verboseMakeArgs(args) {
+  return args.some((arg) => /^V=/.test(arg)) ? args : [...args, 'V=s'];
+}
+
+async function makeWithSerialRetry(args, label, attempt) {
+  const primary = await make(args);
+  if (primary.ok) return primary;
+  log(`Retry serial verbose / 串行详细复核: ${label}`);
+  const serial = await make(verboseMakeArgs(args), false);
+  attempt.serialRetries.push({ label, primaryCode: primary.code, serialCode: serial.code,
+    result: serial.ok ? 'recovered' : 'failure' });
+  return serial;
+}
+
 async function prepareConfig(candidate, state) {
   writeConfig(candidate, state);
   const defconfig = await make(['defconfig'], false);
@@ -88,15 +108,11 @@ async function packageCompile(candidate, state, attempt) {
   stages.kconfig = config.ok ? 'success' : 'failure';
   attempt.packageStates = config.states;
   if (!config.ok) return { ok: false, stages };
-  const environment = await make(['tools/install', 'toolchain/install']);
+  const environment = await makeWithSerialRetry(['tools/install', 'toolchain/install'], 'build environment', attempt);
   stages.environment = environment.ok ? 'success' : 'failure';
   if (!environment.ok) return { ok: false, stages };
   for (const packageName of activePackages) {
-    let result = await make([`package/${packageName}/compile`, 'V=s']);
-    if (!result.ok) {
-      log(`Retry serial verbose / 串行详细复核: ${packageName}`);
-      result = await make([`package/${packageName}/compile`, 'V=s'], false);
-    }
+    const result = await makeWithSerialRetry([`package/${packageName}/compile`], `package:${packageName}`, attempt);
     if (!result.ok) {
       log(`ERROR: package compile failed: ${packageName}`);
       stages.packageCompile = 'failure'; return { ok: false, stages };
@@ -109,7 +125,7 @@ async function packageCompile(candidate, state, attempt) {
 async function rootfsIntegration(candidate, attempt) {
   const compiled = await packageCompile(candidate, 'y', attempt);
   if (!compiled.ok) return compiled;
-  const installed = await make(['package/install', 'V=s'], false);
+  const installed = await makeWithSerialRetry(['package/install'], 'rootfs install', attempt);
   compiled.stages.rootfsInstall = installed.ok ? 'success' : 'failure';
   if (!installed.ok) log('ERROR: RootFS integration failed after package compilation');
   return { ok: installed.ok, stages: compiled.stages };
@@ -121,18 +137,14 @@ async function firmwareIntegration(candidate, attempt, boot) {
   const baseConfig = await make(['defconfig'], false);
   stages.baselineKconfig = baseConfig.ok ? 'success' : 'failure';
   if (!baseConfig.ok) return { ok: false, stages };
-  const baseline = await make(['V=s']);
+  const baseline = await makeWithSerialRetry([], 'baseline firmware', attempt);
   stages.baselineFirmware = baseline.ok ? 'success' : 'failure';
   if (!baseline.ok) return { ok: false, stages };
   const packageConfig = await prepareConfig(candidate, 'y');
   attempt.packageStates = packageConfig.states;
   stages.kconfig = packageConfig.ok ? 'success' : 'failure';
   if (!packageConfig.ok) return { ok: false, stages };
-  let firmware = await make(['V=s']);
-  if (!firmware.ok) {
-    log('Retry serial verbose / 串行详细复核: firmware');
-    firmware = await make(['V=s'], false);
-  }
+  const firmware = await makeWithSerialRetry([], 'package firmware', attempt);
   stages.packageFirmware = firmware.ok ? 'success' : 'failure';
   if (!firmware.ok) { log('ERROR: package-enabled firmware failed after baseline success'); return { ok: false, stages }; }
   if (boot) {
@@ -144,7 +156,8 @@ async function firmwareIntegration(candidate, attempt, boot) {
 }
 
 async function runCandidate(candidate, index) {
-  const attempt = { target: candidate.target, profile: candidate.profile || '', stages: {}, packageStates: {} };
+  const attempt = { target: candidate.target, profile: candidate.profile || '', stages: {}, packageStates: {},
+    serialRetries: [] };
   if (index > 0) {
     log(`Target fallback / 目标回退: ${candidate.target}/${candidate.profile || '-'}`);
     const clean = await make(['dirclean'], false);
@@ -191,7 +204,7 @@ async function reduceFailureSet(candidate, maximum) {
     const attempt = await runCandidate(candidate, 0);
     const packageFailure = packageFailureAttempt(attempt);
     attempts.push({ packages: subset, result: packageFailure ? 'package-failure' : attempt.result, stages: attempt.stages,
-      packageStates: attempt.packageStates });
+      packageStates: attempt.packageStates, serialRetries: attempt.serialRetries });
     return packageFailure;
   };
   while (current.length > 1 && attempts.length < maximum) {

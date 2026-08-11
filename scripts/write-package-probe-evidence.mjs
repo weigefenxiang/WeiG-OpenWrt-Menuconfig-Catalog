@@ -68,10 +68,13 @@ function evidenceFingerprint(issues, errors) {
 
 function inferConclusion(runtime, issues, fallback) {
   if (runtime?.conclusion) {
-    if (issues.some((row) => row.type === 'infrastructure-failure' || row.type === 'timeout' || row.type === 'package-download-failure')) {
+    if (issues.some((row) => row.type === 'timeout')) return 'inconclusive';
+    if (issues.some((row) => row.type === 'infrastructure-failure' || row.type === 'package-download-failure')) {
       return 'infrastructure-failure';
     }
-    if (runtime.conclusion === 'fully-incompatible' && runtime.attempts?.some((row) => row.stages?.baselineFirmware === 'failure')) {
+    if (runtime.conclusion === 'fully-incompatible' && runtime.attempts?.some((row) =>
+      ['environment', 'environmentReset', 'baselineKconfig', 'baselineFirmware']
+        .some((stage) => row.stages?.[stage] === 'failure'))) {
       return 'inconclusive';
     }
     return runtime.conclusion;
@@ -106,6 +109,8 @@ function issueText(issue) {
 }
 
 export function evidenceSummaryLines(evidence) {
+  const serialRecoveries = (evidence.attempts || []).flatMap((attempt) =>
+    (attempt.serialRetries || []).filter((retry) => retry.result === 'recovered').map((retry) => retry.label));
   const issueRows = evidence.issues.length
     ? evidence.issues.map((row) => `- \`${row.type}\`: ${issueText(row)}`)
     : ['- No normalized issue detected / 未检测到规范化问题'];
@@ -119,6 +124,9 @@ export function evidenceSummaryLines(evidence) {
     `- Packages / 软件包: ${evidence.packages.map((row) => `\`${row}\``).join(', ')}`,
     `- Final states / 最终状态: ${Object.entries(evidence.packageStates).map(([name, state]) => `\`${name}=${state}\``).join(', ')}`,
     `- Conclusion / 结论: **${evidence.conclusion}**`,
+    ...(serialRecoveries.length
+      ? [`- Serial recovery / 串行复核恢复: ${[...new Set(serialRecoveries)].map((row) => `\`${row}\``).join(', ')}`]
+      : []),
     `- Fingerprint / 错误指纹: \`${evidence.fingerprint.slice(0, 16)}\``,
     ...(evidence.reduction?.candidateMinimalFailureSet?.length
       ? [`- Bounded reduction candidate / 有限缩减候选: ${evidence.reduction.candidateMinimalFailureSet.map((row) => `\`${row}\``).join(', ')} (${evidence.reduction.attempts.length}/${evidence.reduction.budget})`]
