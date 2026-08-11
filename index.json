@@ -1,11 +1,11 @@
 {
   "schema": 2,
-  "generatedAt": "2026-08-10T23:57:44.420Z",
+  "generatedAt": "2026-08-11T02:53:59.776Z",
   "commit": "",
   "completeReleaseTag": "menuconfig-catalog-complete",
   "health": {
-    "fresh": 17,
-    "stale": 0,
+    "fresh": 0,
+    "stale": 17,
     "unavailable": 0
   },
   "assets": {
@@ -193,21 +193,21 @@
             "readableRelationsJsonBytes": 46564714,
             "compactRelationsJsonBytes": 3141722
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:49.628Z",
           "asset": "hanwckf--openwrt-21.02.json.gz",
           "hash": "cbd97b788556ee6db9b2165864d02a833dbc76707d5919f17c7168d29b2ae272",
           "bytes": 3064303,
-          "lastAttemptAt": "2026-08-10T23:53:41.651Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.515Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "ba554197ed7e252fd3c1ee023621e1d1d009d323",
           "compatibilityMode": "metadata-only",
-          "artifactName": "18-catalog-hanwckf-openwrt-21.02-427d2b36-run-31443894955-attempt-1",
+          "artifactName": "18-catalog-hanwckf-openwrt-21.02-427d2b36-run-31453625337-attempt-1",
           "order": 18,
           "orderText": "18",
           "jobName": "18 · hanwckf mt798x · openwrt-21.02 · hanwckf/immortalwrt-mt798x",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "18-hanwckf-openwrt-21.02-427d2b36--kconfig-contract.log",
+          "errorStage": "kconfig-contract"
         }
       ],
       "build": {
@@ -381,21 +381,21 @@
             "readableRelationsJsonBytes": 49885737,
             "compactRelationsJsonBytes": 4504094
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:53:11.950Z",
           "asset": "immortalwrt--master.json.gz",
           "hash": "7756066f0cdd763fe138d21610b1b30f023a749cd6b39e08b8f0c689aabcc694",
           "bytes": 3616907,
-          "lastAttemptAt": "2026-08-10T23:56:53.638Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:33.525Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "95070374755065de36a4d5644fe1807ce98421d9",
           "compatibilityMode": "metadata-only",
-          "artifactName": "02-catalog-immortalwrt-master-f3fb5c46-run-31443894955-attempt-1",
+          "artifactName": "02-catalog-immortalwrt-master-f3fb5c46-run-31453625337-attempt-1",
           "order": 2,
           "orderText": "02",
           "jobName": "02 · ImmortalWrt · master · immortalwrt/immortalwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "02-immortalwrt-master-f3fb5c46--metadata.log",
+          "errorStage": "metadata"
         },
         {
           "id": "25.12",
@@ -557,21 +557,21 @@
             "readableRelationsJsonBytes": 48695704,
             "compactRelationsJsonBytes": 4373408
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:52.248Z",
           "asset": "immortalwrt--openwrt-25.12.json.gz",
           "hash": "3420e126ce4577492a91271ef0caee808293ac9421c28c9bc636d19f302f0d84",
           "bytes": 3523202,
-          "lastAttemptAt": "2026-08-10T23:55:20.638Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:42.739Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "3dacd2fb6a48c5963b1026c6a343ec7e67cbf810",
           "compatibilityMode": "metadata-only",
-          "artifactName": "03-catalog-immortalwrt-openwrt-25.12-95a09208-run-31443894955-attempt-1",
+          "artifactName": "03-catalog-immortalwrt-openwrt-25.12-95a09208-run-31453625337-attempt-1",
           "order": 3,
           "orderText": "03",
           "jobName": "03 · ImmortalWrt · openwrt-25.12 · immortalwrt/immortalwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "03-immortalwrt-openwrt-25.12-95a09208--kconfig-contract.log",
+          "errorStage": "kconfig-contract"
         },
         {
           "id": "24.10",
@@ -733,21 +733,21 @@
             "readableRelationsJsonBytes": 43835521,
             "compactRelationsJsonBytes": 3390015
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:54.709Z",
           "asset": "immortalwrt--openwrt-24.10.json.gz",
           "hash": "1c4c70f72032960c4951bb2da95c0aa4779ebbdeb7cb1e5266c2b2d3d7f575cc",
           "bytes": 3171895,
-          "lastAttemptAt": "2026-08-10T23:54:26.455Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:31.262Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "bade505f70d5a38cba12324835106cf6325beb36",
           "compatibilityMode": "metadata-only",
-          "artifactName": "04-catalog-immortalwrt-openwrt-24.10-90c483f6-run-31443894955-attempt-1",
+          "artifactName": "04-catalog-immortalwrt-openwrt-24.10-90c483f6-run-31453625337-attempt-1",
           "order": 4,
           "orderText": "04",
           "jobName": "04 · ImmortalWrt · openwrt-24.10 · immortalwrt/immortalwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "04-immortalwrt-openwrt-24.10-90c483f6--extract.log",
+          "errorStage": "extract"
         },
         {
           "id": "23.05",
@@ -909,21 +909,21 @@
             "readableRelationsJsonBytes": 40637335,
             "compactRelationsJsonBytes": 3137275
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:53:05.114Z",
           "asset": "immortalwrt--openwrt-23.05.json.gz",
           "hash": "268f24092af8bf073506960e6e4542912ff46e11813ddd016b4e9f1ed50b5442",
           "bytes": 3091783,
-          "lastAttemptAt": "2026-08-10T23:54:27.975Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:42.855Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "0f110722021a93e60e7442ceded7eaea67ff921b",
           "compatibilityMode": "metadata-only",
-          "artifactName": "05-catalog-immortalwrt-openwrt-23.05-037b9545-run-31443894955-attempt-1",
+          "artifactName": "05-catalog-immortalwrt-openwrt-23.05-037b9545-run-31453625337-attempt-1",
           "order": 5,
           "orderText": "05",
           "jobName": "05 · ImmortalWrt · openwrt-23.05 · immortalwrt/immortalwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "05-immortalwrt-openwrt-23.05-037b9545--kconfig-contract.log",
+          "errorStage": "kconfig-contract"
         },
         {
           "id": "21.02",
@@ -1085,21 +1085,21 @@
             "readableRelationsJsonBytes": 45979723,
             "compactRelationsJsonBytes": 3103050
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:44.328Z",
           "asset": "immortalwrt--openwrt-21.02.json.gz",
           "hash": "729ecefbe2781a00b7bb50845fcdafe80075e042dc5acdc7e7c8865ab3d86ff5",
           "bytes": 3025767,
-          "lastAttemptAt": "2026-08-10T23:53:36.245Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:42.893Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "fc9fe90e5a804d7af5449260f2e5b7ae6d414266",
           "compatibilityMode": "metadata-only",
-          "artifactName": "06-catalog-immortalwrt-openwrt-21.02-ee116469-run-31443894955-attempt-1",
+          "artifactName": "06-catalog-immortalwrt-openwrt-21.02-ee116469-run-31453625337-attempt-1",
           "order": 6,
           "orderText": "06",
           "jobName": "06 · ImmortalWrt · openwrt-21.02 · immortalwrt/immortalwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "06-immortalwrt-openwrt-21.02-ee116469--kconfig-contract.log",
+          "errorStage": "kconfig-contract"
         },
         {
           "id": "18.06-k5.4",
@@ -1261,21 +1261,21 @@
             "readableRelationsJsonBytes": 39349480,
             "compactRelationsJsonBytes": 2765594
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:33.674Z",
           "asset": "immortalwrt--openwrt-18.06-k5.4.json.gz",
           "hash": "c3c1cddc07f1b24fd638398243b3ad3ee8fc599cb50aa46c618e9e3c11449968",
           "bytes": 2842334,
-          "lastAttemptAt": "2026-08-10T23:53:31.017Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:42.939Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "8b50c1df2150be9c2883fca59d0a142b811e7d5d",
           "compatibilityMode": "metadata-only",
-          "artifactName": "07-catalog-immortalwrt-openwrt-18.06-k5.4-a02af131-run-31443894955-attempt-1",
+          "artifactName": "07-catalog-immortalwrt-openwrt-18.06-k5.4-a02af131-run-31453625337-attempt-1",
           "order": 7,
           "orderText": "07",
           "jobName": "07 · ImmortalWrt · openwrt-18.06-k5.4 · immortalwrt/immortalwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "07-immortalwrt-openwrt-18.06-k5.4-a02af131--kconfig-contract.log",
+          "errorStage": "kconfig-contract"
         },
         {
           "id": "18.06",
@@ -1437,21 +1437,21 @@
             "readableRelationsJsonBytes": 38451484,
             "compactRelationsJsonBytes": 2689138
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:19.199Z",
           "asset": "immortalwrt--openwrt-18.06.json.gz",
           "hash": "b79f0c71b93cc4b50f20f8961f22ea4acc177ad43fc4a6b9bac8ac903e3d9893",
           "bytes": 2786594,
-          "lastAttemptAt": "2026-08-10T23:53:03.382Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:42.976Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "f7bc84bd30a038b0fd251ce59b6619e5eae94848",
           "compatibilityMode": "metadata-only",
-          "artifactName": "08-catalog-immortalwrt-openwrt-18.06-10ce0373-run-31443894955-attempt-1",
+          "artifactName": "08-catalog-immortalwrt-openwrt-18.06-10ce0373-run-31453625337-attempt-1",
           "order": 8,
           "orderText": "08",
           "jobName": "08 · ImmortalWrt · openwrt-18.06 · immortalwrt/immortalwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "08-immortalwrt-openwrt-18.06-10ce0373--kconfig-contract.log",
+          "errorStage": "kconfig-contract"
         }
       ],
       "build": {
@@ -1625,21 +1625,21 @@
             "readableRelationsJsonBytes": 44716174,
             "compactRelationsJsonBytes": 3461148
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:47.359Z",
           "asset": "lede--master.json.gz",
           "hash": "9d80941f8dfa28fa249b584f0712d40f1cc1dc5830971de3e8daf1ce37bf1b4a",
           "bytes": 3201733,
-          "lastAttemptAt": "2026-08-10T23:56:41.422Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.464Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "e8bce27462ab259ff61f33cf1d17b925f8e82f3d",
           "compatibilityMode": "metadata-only",
-          "artifactName": "17-catalog-lede-master-93fcfce0-run-31443894955-attempt-1",
+          "artifactName": "17-catalog-lede-master-93fcfce0-run-31453625337-attempt-1",
           "order": 17,
           "orderText": "17",
           "jobName": "17 · Lean LEDE · master · coolsnowwolf/lede",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "17-lede-master-93fcfce0--kconfig-contract.log",
+          "errorStage": "kconfig-contract"
         }
       ],
       "build": {
@@ -1813,21 +1813,21 @@
             "readableRelationsJsonBytes": 47909945,
             "compactRelationsJsonBytes": 4314076
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:53:54.148Z",
           "asset": "openwrt--main.json.gz",
           "hash": "6f04260b559eea80725041afec65e5dd6032837fe0b09da53f06a910fcd7f861",
           "bytes": 3424471,
-          "lastAttemptAt": "2026-08-10T23:57:25.932Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.266Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "486b4a4b3ede480635a185234fc624c969426f13",
           "compatibilityMode": "metadata-only",
-          "artifactName": "09-catalog-openwrt-main-932b6366-run-31443894955-attempt-1",
+          "artifactName": "09-catalog-openwrt-main-932b6366-run-31453625337-attempt-1",
           "order": 9,
           "orderText": "09",
           "jobName": "09 · OpenWrt · main · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "09-openwrt-main-932b6366--feeds.log",
+          "errorStage": "feeds"
         },
         {
           "id": "25.12",
@@ -1989,21 +1989,21 @@
             "readableRelationsJsonBytes": 46606436,
             "compactRelationsJsonBytes": 4160663
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:53:56.732Z",
           "asset": "openwrt--openwrt-25.12.json.gz",
           "hash": "c6433ced7c0214680f0976bc410582190a7794d7fedfd90ebd9869d2c78f801e",
           "bytes": 3323721,
-          "lastAttemptAt": "2026-08-10T23:56:36.739Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.140Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "d78c0fd16dbbb1099583e6995f5438d7c695960d",
           "compatibilityMode": "metadata-only",
-          "artifactName": "10-catalog-openwrt-openwrt-25.12-f4dc5ed2-run-31443894955-attempt-1",
+          "artifactName": "10-catalog-openwrt-openwrt-25.12-f4dc5ed2-run-31453625337-attempt-1",
           "order": 10,
           "orderText": "10",
           "jobName": "10 · OpenWrt · openwrt-25.12 · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "10-openwrt-openwrt-25.12-f4dc5ed2--feeds.log",
+          "errorStage": "feeds"
         },
         {
           "id": "24.10",
@@ -2165,21 +2165,21 @@
             "readableRelationsJsonBytes": 41741431,
             "compactRelationsJsonBytes": 3209184
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:53:28.462Z",
           "asset": "openwrt--openwrt-24.10.json.gz",
           "hash": "715f657664c6ad0a0291f042e6b7801e530301668ddd4ad64797f6dc41e49231",
           "bytes": 2982360,
-          "lastAttemptAt": "2026-08-10T23:54:52.935Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.292Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "cd699811a8c02c63d2755bd6d76cf9db229cf0c8",
           "compatibilityMode": "metadata-only",
-          "artifactName": "11-catalog-openwrt-openwrt-24.10-11bb019d-run-31443894955-attempt-1",
+          "artifactName": "11-catalog-openwrt-openwrt-24.10-11bb019d-run-31453625337-attempt-1",
           "order": 11,
           "orderText": "11",
           "jobName": "11 · OpenWrt · openwrt-24.10 · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "11-openwrt-openwrt-24.10-11bb019d--feeds.log",
+          "errorStage": "feeds"
         },
         {
           "id": "23.05",
@@ -2341,21 +2341,21 @@
             "readableRelationsJsonBytes": 38152088,
             "compactRelationsJsonBytes": 2923421
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:53:02.065Z",
           "asset": "openwrt--openwrt-23.05.json.gz",
           "hash": "e8afa80d70f9ed215753d39c4a297b8cfe4baf4f0261d19c685434f4352c321d",
           "bytes": 2870554,
-          "lastAttemptAt": "2026-08-10T23:54:07.731Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.330Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "33063b4ccf00d39393796499b23df55187b192dc",
           "compatibilityMode": "metadata-only",
-          "artifactName": "12-catalog-openwrt-openwrt-23.05-b37f490e-run-31443894955-attempt-1",
+          "artifactName": "12-catalog-openwrt-openwrt-23.05-b37f490e-run-31453625337-attempt-1",
           "order": 12,
           "orderText": "12",
           "jobName": "12 · OpenWrt · openwrt-23.05 · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "12-openwrt-openwrt-23.05-b37f490e--feeds.log",
+          "errorStage": "feeds"
         },
         {
           "id": "22.03",
@@ -2517,21 +2517,21 @@
             "readableRelationsJsonBytes": 44170881,
             "compactRelationsJsonBytes": 2962089
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:53:54.797Z",
           "asset": "openwrt--openwrt-22.03.json.gz",
           "hash": "553488e778432770950e57e93f3f7b556cb601fef78f9c21594abfa18655c401",
           "bytes": 2875354,
-          "lastAttemptAt": "2026-08-10T23:54:38.909Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.289Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "4e1d1b7df0ce6fa96d7462dc883917682f428046",
           "compatibilityMode": "metadata-only",
-          "artifactName": "13-catalog-openwrt-openwrt-22.03-38e91385-run-31443894955-attempt-1",
+          "artifactName": "13-catalog-openwrt-openwrt-22.03-38e91385-run-31453625337-attempt-1",
           "order": 13,
           "orderText": "13",
           "jobName": "13 · OpenWrt · openwrt-22.03 · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "13-openwrt-openwrt-22.03-38e91385--feeds.log",
+          "errorStage": "feeds"
         },
         {
           "id": "21.02",
@@ -2693,21 +2693,21 @@
             "readableRelationsJsonBytes": 43187513,
             "compactRelationsJsonBytes": 2880735
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:54:00.446Z",
           "asset": "openwrt--openwrt-21.02.json.gz",
           "hash": "8fb4b9c1dce8dd9fb4bd43551a365d6fda4e52ff9df0ec1646436b3584c56168",
           "bytes": 2784150,
-          "lastAttemptAt": "2026-08-10T23:54:40.831Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.301Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "78e4cffcd882389cb8f0bf818303f85f8d1e9c8e",
           "compatibilityMode": "metadata-only",
-          "artifactName": "14-catalog-openwrt-openwrt-21.02-01332792-run-31443894955-attempt-1",
+          "artifactName": "14-catalog-openwrt-openwrt-21.02-01332792-run-31453625337-attempt-1",
           "order": 14,
           "orderText": "14",
           "jobName": "14 · OpenWrt · openwrt-21.02 · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "14-openwrt-openwrt-21.02-01332792--feeds.log",
+          "errorStage": "feeds"
         },
         {
           "id": "19.07",
@@ -2869,21 +2869,21 @@
             "readableRelationsJsonBytes": 44486273,
             "compactRelationsJsonBytes": 2824970
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:38.101Z",
           "asset": "openwrt--openwrt-19.07.json.gz",
           "hash": "ff76646a55212f402bc19e75e446e3030efdec816e4ec173ab35939350245ae3",
           "bytes": 2683766,
-          "lastAttemptAt": "2026-08-10T23:53:23.278Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.344Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "1da2e82c1182a3fd681da5760be96821213afadd",
           "compatibilityMode": "metadata-only",
-          "artifactName": "15-catalog-openwrt-openwrt-19.07-6c52a4ef-run-31443894955-attempt-1",
+          "artifactName": "15-catalog-openwrt-openwrt-19.07-6c52a4ef-run-31453625337-attempt-1",
           "order": 15,
           "orderText": "15",
           "jobName": "15 · OpenWrt · openwrt-19.07 · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "15-openwrt-openwrt-19.07-6c52a4ef--feeds.log",
+          "errorStage": "feeds"
         },
         {
           "id": "18.06",
@@ -3045,21 +3045,21 @@
             "readableRelationsJsonBytes": 31900618,
             "compactRelationsJsonBytes": 2037319
           },
-          "state": "fresh",
+          "state": "stale",
           "lastSuccessAt": "2026-08-10T23:52:27.184Z",
           "asset": "openwrt--openwrt-18.06.json.gz",
           "hash": "80a8403f0830721b4329a99ec5b4c05e3a557ffd6370bd4dad91a2cb99514e6f",
           "bytes": 2125100,
-          "lastAttemptAt": "2026-08-10T23:52:55.246Z",
-          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31443894955",
+          "lastAttemptAt": "2026-08-11T02:53:43.396Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31453625337",
           "lastAttemptCommit": "9f2a40c72fdb0b9b077bf5b4b01aa17eac4bfb45",
           "compatibilityMode": "metadata-only",
-          "artifactName": "16-catalog-openwrt-openwrt-18.06-21258ca9-run-31443894955-attempt-1",
+          "artifactName": "16-catalog-openwrt-openwrt-18.06-21258ca9-run-31453625337-attempt-1",
           "order": 16,
           "orderText": "16",
           "jobName": "16 · OpenWrt · openwrt-18.06 · openwrt/openwrt",
-          "failureLog": "",
-          "errorStage": ""
+          "failureLog": "16-openwrt-openwrt-18.06-21258ca9--feeds.log",
+          "errorStage": "feeds"
         }
       ],
       "build": {
@@ -3068,8 +3068,6 @@
       }
     }
   ],
-  "assetRef": "fad9fc419891c102ceedf0d996b273c67655ec53",
-  "assetRefType": "git-commit",
-  "hash": "773855a06c847c6dda5ba3817cc411762484a357311614fea89e2c78ed23fe26",
-  "bytes": 91543
+  "hash": "e8cee1b869a5765fefbd6c023c103ca20c62f57239dd26d806041551a8f9f3f0",
+  "bytes": 92465
 }
