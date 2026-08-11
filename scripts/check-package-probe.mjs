@@ -155,6 +155,8 @@ assert(workflow.includes('permissions: {}') && workflow.includes('issues: write'
 assert(workflow.includes('matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}'));
 assert(workflow.includes('max-parallel: ${{ fromJSON(needs.plan.outputs.max_parallel) }}'));
 assert(workflow.includes('node scripts/run-package-probe.mjs') && runner.includes('package/install'));
+assert(workflow.includes('python3 python3-setuptools') && !workflow.includes('python3-distutils'),
+  'probe runner must use the Ubuntu 24.04 Python build dependency contract');
 assert(runner.includes("if (!existsSync(LOG_FILE)) writeFileSync(LOG_FILE, '')") &&
   (workflow.match(/tee -a "\$PROBE_LOG"/g) || []).length >= 4,
   'complete probe log does not preserve dependency, clone, feeds, build, and boot stages');
