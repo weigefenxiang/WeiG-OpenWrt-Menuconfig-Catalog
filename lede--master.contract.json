@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "lede",
+    "label": "Lean LEDE",
+    "repo": "coolsnowwolf/lede",
+    "branch": "master",
+    "commit": "8882f211bb19277d37685456f622caed95e102bd",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-12T23:41:57.528Z",
+  "summary": {
+    "targets": 143,
+    "selectableTargets": 98,
+    "unavailableTargets": 5,
+    "abstractTargets": 40
+  },
+  "unavailable": [
+    {
+      "target": "bcm63xx",
+      "board": "bcm63xx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "bmips",
+      "board": "bmips",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "imx",
+      "board": "imx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "realtek",
+      "board": "realtek",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "sunxi",
+      "board": "sunxi",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    }
+  ],
+  "kconfigProbe": {
+    "schema": 1,
+    "mode": "target-chain-and-representative-profile",
+    "generatedAt": "2026-08-12T23:42:02.995Z",
+    "targets": 98,
+    "passed": 98,
+    "passedScope": "target chain plus one representative profile; all siblings remain hidden on failure",
+    "quarantined": []
+  }
+}

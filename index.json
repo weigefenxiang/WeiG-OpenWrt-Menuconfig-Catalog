@@ -1,0 +1,3073 @@
+{
+  "schema": 2,
+  "generatedAt": "2026-08-12T23:46:30.493Z",
+  "commit": "",
+  "completeReleaseTag": "menuconfig-catalog-complete",
+  "health": {
+    "fresh": 17,
+    "stale": 0,
+    "unavailable": 0
+  },
+  "assets": {
+    "compatibility": {
+      "asset": "compatibility.json.gz",
+      "hash": "3bd5a9ad219dd32a2f2872983f49688541f698a08df7a02859ebf992dc158bac",
+      "bytes": 332,
+      "schema": 2,
+      "rules": 3,
+      "jsonBytes": 674
+    },
+    "applications": {
+      "asset": "applications.json.gz",
+      "hash": "2ad193b668bc51bcd3e521c9ab337970e83a5a3647bd7d7de3f9522493de93d8",
+      "bytes": 80401,
+      "schema": 1,
+      "items": 279,
+      "jsonBytes": 254191
+    }
+  },
+  "sources": [
+    {
+      "id": "hanwckf",
+      "label": "hanwckf mt798x",
+      "repo": "hanwckf/immortalwrt-mt798x",
+      "legacy": true,
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-generic.sh"
+      },
+      "branches": [
+        {
+          "id": "21.02",
+          "version": "21.02",
+          "branch": "openwrt-21.02",
+          "counts": {
+            "targets": 99,
+            "selectableTargets": 67,
+            "unavailableTargets": 3,
+            "abstractTargets": 29,
+            "profiles": 1654,
+            "menuOptions": 9228,
+            "hiddenMenuOptions": 4402,
+            "packages": 10713,
+            "translatedZhCN": 220,
+            "missingZhCN": 9008
+          },
+          "commit": "ba554197ed7e252fd3c1ee023621e1d1d009d323",
+          "legacy": {
+            "asset": "hanwckf--openwrt-21.02.json.gz",
+            "hash": "53b3a242baad2be8e17d3483345879fb017caa1a9e35301e2bf6d87c0859bfa7",
+            "bytes": 3063738,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "hanwckf--openwrt-21.02.core.json.gz",
+              "hash": "c8eaee891795e3c6cddab0288110b6654bde32c1e5b212aec96df6f3b5b8e5f0",
+              "bytes": 107448,
+              "sha256": "18b5637e39ba436f24b77a4b60f07be4c3495f8c207e37dddeca0ff0ad6e7c9e",
+              "jsonBytes": 1436064
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "hanwckf--openwrt-21.02.graph.json.gz",
+              "hash": "ea768a54e4478e8a135c14f80179937f4aa437141883a189d61b3df8bdf4b08d",
+              "bytes": 640945,
+              "sha256": "4ced6c93c5eecc60a1a6d9b3e97c8712e373be8496ac64e1dc97e38629d9a195",
+              "jsonBytes": 3143505
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "hanwckf--openwrt-21.02.menu.json.gz",
+              "hash": "501de403a702bf45ee2cdc55f5190007912ccc8c7a47e381b7d97ab45c152e7e",
+              "bytes": 380794,
+              "sha256": "5920a0484f374a400edc8ebe9196c4abcc0c89ce14d96b1bd1fee018b0fae302",
+              "jsonBytes": 3131367
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "hanwckf--openwrt-21.02.hidden.json.gz",
+              "hash": "d5bc5d0382bb24f37ddc4e67d7608400f8fa42e0df11558c01178a3c24082a1d",
+              "bytes": 59447,
+              "sha256": "8fdebd98dec1499d7f7100aa75643d652cc972e50c290b7113b375e564650f44",
+              "jsonBytes": 928608
+            },
+            "help": {
+              "logical": "help",
+              "asset": "hanwckf--openwrt-21.02.help.json.gz",
+              "hash": "e17a57e58a8a5997fd9a0ddb785aa74b57f762574930ff268f67ac0daacda71d",
+              "bytes": 287956,
+              "sha256": "8b812324af9b8de5456c94b718ee6a38381be9cbcfe25768dc6f7e3324a87b23",
+              "jsonBytes": 1350531
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "hanwckf--openwrt-21.02.menu.zh-cn.json.gz",
+              "hash": "d4ffe0816dcef5cfc89775cefffe74123c14aa5dbcafe6d2f7815d6f9bc2e2c1",
+              "bytes": 7823,
+              "sha256": "ffdc87fe67515547f33712fa212eb72f5848270012240701d9e6441b71341ce0",
+              "jsonBytes": 19936
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "hanwckf--openwrt-21.02.menu.zh-tw.json.gz",
+              "hash": "360814626119cc332e0e4cd9e48c2d34ee11564d636d569a607ebd52204b1028",
+              "bytes": 7165,
+              "sha256": "81fd7130ab32e2a1968ec4738d9318d7f9e67df0eff00392b5136e699d3ea8e8",
+              "jsonBytes": 17858
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "hanwckf--openwrt-21.02.menu.ru.json.gz",
+              "hash": "734df74a391ce41e662b3ccac57406e530812372c38889a3162158154d68bbfc",
+              "bytes": 7596,
+              "sha256": "ec4c4416e778a687e055ff095f350600b385b5bf83decad748d21ab7a850faee",
+              "jsonBytes": 25845
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "hanwckf--openwrt-21.02.menu.es.json.gz",
+              "hash": "268f6b81dcdde6ed01fb2018cb570938d4f9d9e75e4d71a9ee400528cad44f07",
+              "bytes": 6734,
+              "sha256": "9f838dbc5b51f40992866a9e2600b85882e494b3fb7e05fa1885d4d231dfd2e1",
+              "jsonBytes": 20075
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "hanwckf--openwrt-21.02.menu.pt.json.gz",
+              "hash": "b692e67c3ac6a70d1b6b27751bc8971f7c5d7ff7cc442bdf903a2282919f67ec",
+              "bytes": 6589,
+              "sha256": "7a7bf7f566478ce4d5d84959593098cb551b4ee5e344879ece4a02e78820dbe4",
+              "jsonBytes": 19265
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "hanwckf--openwrt-21.02.menu.ja.json.gz",
+              "hash": "1b8a75a9a1526d81ce431709f5442d989e6cc84b76853581d04fdcad22fc73da",
+              "bytes": 7921,
+              "sha256": "aefec1f3e5a7796d3cb0bd7d092954f4d280b0eef4cba88ecec06e4c02b4d15f",
+              "jsonBytes": 23499
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "hanwckf--openwrt-21.02.menu.ko.json.gz",
+              "hash": "56755c822c0cb0ed11ae63835b5fe2bdd8f91e2d662004496b85716640a0647d",
+              "bytes": 7184,
+              "sha256": "72f0a1f52031abac76fff4bd642dd99b21881bf886b53561aa248de66f475c2f",
+              "jsonBytes": 20539
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "hanwckf--openwrt-21.02.menu.de.json.gz",
+              "hash": "cdda4c400ad6a3368f273dc30c590b6b8971d17f6d6c25fb0578f0ae537ff2f1",
+              "bytes": 6822,
+              "sha256": "8dc928edc8aa4c09bcc8dc937c174e8896c209102a3187e8969a88e2359d850b",
+              "jsonBytes": 19775
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "hanwckf--openwrt-21.02.menu.fr.json.gz",
+              "hash": "881be1f596e1cf4632508c9efa3978d9d285aea9cf24965944e50e7a0f260e85",
+              "bytes": 6951,
+              "sha256": "7d02feaf4b119f88a1faa812b9c4040af80b778af74141b76fa5b6c42f6756ed",
+              "jsonBytes": 20864
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "hanwckf--openwrt-21.02.menu.vi.json.gz",
+              "hash": "f17437b9812ea82b8b279e46697d33a70c96c57a22302e90a1b2bba79fa544d2",
+              "bytes": 6843,
+              "sha256": "04fff5290ec59f45320558daf250aed38bd7eace9bb541d8b9df334d7f93417b",
+              "jsonBytes": 20764
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3063738,
+              "jsonBytes": 50170787
+            },
+            "split": {
+              "bytes": 1548218,
+              "initialBytes": 748393,
+              "graphJsonBytes": 3143505
+            },
+            "readableRelationsJsonBytes": 46564714,
+            "compactRelationsJsonBytes": 3143246
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:55.691Z",
+          "asset": "hanwckf--openwrt-21.02.json.gz",
+          "hash": "53b3a242baad2be8e17d3483345879fb017caa1a9e35301e2bf6d87c0859bfa7",
+          "bytes": 3063738,
+          "lastAttemptAt": "2026-08-12T23:42:51.493Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "ba554197ed7e252fd3c1ee023621e1d1d009d323",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "18-catalog-hanwckf-openwrt-21.02-427d2b36-run-31651715183-attempt-1",
+          "order": 18,
+          "orderText": "18",
+          "jobName": "18 · hanwckf mt798x · openwrt-21.02 · hanwckf/immortalwrt-mt798x",
+          "failureLog": "",
+          "errorStage": ""
+        }
+      ]
+    },
+    {
+      "id": "ImmortalWrt",
+      "label": "ImmortalWrt",
+      "repo": "immortalwrt/immortalwrt",
+      "legacy": false,
+      "build": {
+        "diy1": "diy-immortalwrt.sh",
+        "diy2": "diy2-generic.sh"
+      },
+      "branches": [
+        {
+          "id": "master",
+          "version": "master",
+          "branch": "master",
+          "counts": {
+            "targets": 152,
+            "selectableTargets": 108,
+            "unavailableTargets": 6,
+            "abstractTargets": 38,
+            "profiles": 2473,
+            "menuOptions": 10453,
+            "hiddenMenuOptions": 6037,
+            "packages": 13019,
+            "translatedZhCN": 185,
+            "missingZhCN": 10268
+          },
+          "commit": "bf1f49d07a93125882e50c4f33ca6b6a38c024dc",
+          "legacy": {
+            "asset": "immortalwrt--master.json.gz",
+            "hash": "0014da85fe48b7f859ef008fac844d115ab743c0bad1607fd57ce99ef0832acd",
+            "bytes": 3600290,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "immortalwrt--master.core.json.gz",
+              "hash": "8e29d9c0046a0c448a4ce03948be890970b9ca783cf8f747ae5f4941368d9433",
+              "bytes": 171258,
+              "sha256": "e709fc1a6afc9d880836917dd759f11cf297512eba028e72ef840ddd283952e8",
+              "jsonBytes": 2202456
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "immortalwrt--master.graph.json.gz",
+              "hash": "b6dc458cbd2d34c7e03e6e0058c61ac18f43dc061cc5458e286b55577218d623",
+              "bytes": 908690,
+              "sha256": "98e543d6ea2fff0009275071270ada8939be6b06bac4c58da629705a2e914e17",
+              "jsonBytes": 4493094
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "immortalwrt--master.menu.json.gz",
+              "hash": "b7bbd88bc4ef361ff23fd96bc577c38a25cd354f6f0a27e727e545e931239c55",
+              "bytes": 452424,
+              "sha256": "93f6e22b7effa9eeb81c7ccb201b2a339f7eb7f6a0af2639c116028b84975cfb",
+              "jsonBytes": 3583612
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "immortalwrt--master.hidden.json.gz",
+              "hash": "718e648571377a97898103040442628fbde429c002860171a0fbfc6e6521af3d",
+              "bytes": 84194,
+              "sha256": "5376d17628e0c244e2dbd26b17d2d34864e1a051972a3a0b5f3ec1c7c0ede18f",
+              "jsonBytes": 1274441
+            },
+            "help": {
+              "logical": "help",
+              "asset": "immortalwrt--master.help.json.gz",
+              "hash": "85dad4f7141950b8bf204fd0087462251e8ba084cd35976aacde975b153ea21f",
+              "bytes": 334535,
+              "sha256": "61c86d47b1c2fe0cceecb1cc8ac7f54e6128bfe3fc0932937585c18cbcccc5d7",
+              "jsonBytes": 1559513
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "immortalwrt--master.menu.zh-cn.json.gz",
+              "hash": "e7257afa7bdf041c653b1420ac945195a89e08a12cd7d15d074835ca4f03cb36",
+              "bytes": 6928,
+              "sha256": "24b45a92d3f4080a61493fa9ced81422b120ca20f07a3e11d5faaf657ac690c9",
+              "jsonBytes": 17106
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "immortalwrt--master.menu.zh-tw.json.gz",
+              "hash": "ec365b420d23ad26739f46595f832e36e5b01b8f217f8749bd9a0bab2f209998",
+              "bytes": 5556,
+              "sha256": "014e9d7e5e5e1798f3643168a161aa50508b56579ef9fb270382f84d48fb3dc7",
+              "jsonBytes": 13057
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "immortalwrt--master.menu.ru.json.gz",
+              "hash": "1e60e141f2774509a6ef23d5bb66bae1e66664734b4a583ab5b7ecde086199c5",
+              "bytes": 5949,
+              "sha256": "76fead9f3e486a09200adee0718315f66f01f802aaa9487a74178f0565f735b3",
+              "jsonBytes": 18829
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "immortalwrt--master.menu.es.json.gz",
+              "hash": "48a5d909070ada3e7c31b4cdf0558b6608220a9f92472d02ca6280c09baba5a8",
+              "bytes": 5262,
+              "sha256": "be9b6c641b986f09f9b8354f74a72da6e1da45bc38c6c27cc23393d2073d65d1",
+              "jsonBytes": 14633
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "immortalwrt--master.menu.pt.json.gz",
+              "hash": "1c9f3229b9f3d7e8100936dd1f5d2982b2b83047563e4744f95d78a84f53722e",
+              "bytes": 5104,
+              "sha256": "c5b7076d1087936686877c5ab80f0a1ef824c94cf3e9ebf7eb98023f4543e5ae",
+              "jsonBytes": 14050
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "immortalwrt--master.menu.ja.json.gz",
+              "hash": "3bb3397898236dfa196ed90a3f4ced7474a8d1d5bbfdb1b86ade2c82eb88b9b8",
+              "bytes": 6235,
+              "sha256": "e22ca802e764c089f284ac95792153c24254ecf5a43a8b4743b2c57f92cae253",
+              "jsonBytes": 17258
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "immortalwrt--master.menu.ko.json.gz",
+              "hash": "0ed31ee372805619accda72f936d43283e6a2e906d45b5497d3258af21d22f67",
+              "bytes": 5603,
+              "sha256": "2bc3083f8b24919e2951da2490e8d57d1c9d1efdadb89355ca7d580e483a21a9",
+              "jsonBytes": 14904
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "immortalwrt--master.menu.de.json.gz",
+              "hash": "148da1a2024094d439d3992091bd867619876c48a942aceecf24c0704c1ffadf",
+              "bytes": 5271,
+              "sha256": "7f167307a7b06e7ef60accb6f11c30bcace37ee2240b4969187de7bf18c92f0d",
+              "jsonBytes": 14396
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "immortalwrt--master.menu.fr.json.gz",
+              "hash": "c2d736993ef03e406f23294c8019c6ecf28a046aa5334670fdd1223849be1b15",
+              "bytes": 5381,
+              "sha256": "bb5e85cbed83fe78b9d2343148ccc8be2a46f8f1666a7bb439abc56038edd61f",
+              "jsonBytes": 15147
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "immortalwrt--master.menu.vi.json.gz",
+              "hash": "df193e928efc23a4b2cdc1a9fa94b016ff493dca68ec6c96d8c796baf0514ed0",
+              "bytes": 5354,
+              "sha256": "ab70cc92c5149fb38df7a8a78a659d3dc04a62b522378b53dba64a8dc8b89c13",
+              "jsonBytes": 15089
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3600290,
+              "jsonBytes": 54489193
+            },
+            "split": {
+              "bytes": 2007744,
+              "initialBytes": 1079948,
+              "graphJsonBytes": 4493094
+            },
+            "readableRelationsJsonBytes": 49753635,
+            "compactRelationsJsonBytes": 4492843
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:15.570Z",
+          "asset": "immortalwrt--master.json.gz",
+          "hash": "0014da85fe48b7f859ef008fac844d115ab743c0bad1607fd57ce99ef0832acd",
+          "bytes": 3600290,
+          "lastAttemptAt": "2026-08-12T23:45:56.918Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "bf1f49d07a93125882e50c4f33ca6b6a38c024dc",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "02-catalog-immortalwrt-master-f3fb5c46-run-31651715183-attempt-1",
+          "order": 2,
+          "orderText": "02",
+          "jobName": "02 · ImmortalWrt · master · immortalwrt/immortalwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "25.12",
+          "version": "25.12",
+          "branch": "openwrt-25.12",
+          "counts": {
+            "targets": 150,
+            "selectableTargets": 102,
+            "unavailableTargets": 6,
+            "abstractTargets": 42,
+            "profiles": 2343,
+            "menuOptions": 10313,
+            "hiddenMenuOptions": 5942,
+            "packages": 12857,
+            "translatedZhCN": 185,
+            "missingZhCN": 10128
+          },
+          "commit": "ce4e104df06d8dd397d34d053e7d857f5f2f42cd",
+          "legacy": {
+            "asset": "immortalwrt--openwrt-25.12.json.gz",
+            "hash": "6c2e686bf44b8313bba62829d6ca3e47b46816090df5fac5f08f2f4c41ff82aa",
+            "bytes": 3523284,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "immortalwrt--openwrt-25.12.core.json.gz",
+              "hash": "d1c8026177b9e47ae6d837b21be2c519f9b068cdad0299162e2b2bf595964b84",
+              "bytes": 162041,
+              "sha256": "28460ab280015c431da556bf6fe9f2c0948b83e92a0837773d806ecc97a04bf3",
+              "jsonBytes": 2082710
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "immortalwrt--openwrt-25.12.graph.json.gz",
+              "hash": "638c926076f64d992daae66489fa233bdf5bcbaee55a58b81f3c95afd0f6afa4",
+              "bytes": 888971,
+              "sha256": "c57043990edfb9ac8d9898fdec81c6f3f2dd979c8298929742fd7e700e9b3878",
+              "jsonBytes": 4373735
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "immortalwrt--openwrt-25.12.menu.json.gz",
+              "hash": "357e7bce2224e544a9d7511f04ba3ad2cd66f056a91ded62cdf60190c1bdccff",
+              "bytes": 443911,
+              "sha256": "4eec9de6eea21b46953c9f834d909c82021ebb6ae9be1741be027b07127ba516",
+              "jsonBytes": 3531161
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "immortalwrt--openwrt-25.12.hidden.json.gz",
+              "hash": "e4c64a6a0af89c4ac5e3493e26f5b97ff32c05b31df98e14f0abd277981e0831",
+              "bytes": 82612,
+              "sha256": "7fc4c7e42a24ef25d067abf52a9b5ba19c0d52a5f849bfd776aa7f0d0ac060c9",
+              "jsonBytes": 1254187
+            },
+            "help": {
+              "logical": "help",
+              "asset": "immortalwrt--openwrt-25.12.help.json.gz",
+              "hash": "6c85e5b263948c2800f059b8d6c44323e42a67f3bb54fec4e7d522d2cb61e597",
+              "bytes": 327377,
+              "sha256": "cb4e1047af129a4b176516c39a8bb9f3c81c92ada58b9b49a824667aff08bffb",
+              "jsonBytes": 1530702
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "immortalwrt--openwrt-25.12.menu.zh-cn.json.gz",
+              "hash": "6c6a01b5079e4db2ae99843b8ccefc670b4f1253eff3b9e6b431c5f988e2f13a",
+              "bytes": 6906,
+              "sha256": "ec191622f69d12561cf4097fa111bac2b77307ff7a18554a4b3c09d32d90966c",
+              "jsonBytes": 17112
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "immortalwrt--openwrt-25.12.menu.zh-tw.json.gz",
+              "hash": "438bb83ed95137ca3e248c8aeb0cbbcf26a749c576812798e81ee90e71692be2",
+              "bytes": 5613,
+              "sha256": "1f492f38e76086e93f0d95a0a2cfc6101d96f4df5ee52aac569e1c550d328b80",
+              "jsonBytes": 13227
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "immortalwrt--openwrt-25.12.menu.ru.json.gz",
+              "hash": "310ad647d0765b058dbe623f72b25d55ea9e36518d597d0d2083f21efb9431d7",
+              "bytes": 6004,
+              "sha256": "031c35797b7e4f4b05c0ff7a3cc8f2923999273f618302eaeed55f015337395d",
+              "jsonBytes": 19058
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "immortalwrt--openwrt-25.12.menu.es.json.gz",
+              "hash": "2cb354d1a03e854fff229f91bbfe18be31639d78499dda6762b76ee4fe274577",
+              "bytes": 5315,
+              "sha256": "a379cc6dc97002045eaad9ea9854600b8cc6c2c4eb787afa9c1b91f28893f126",
+              "jsonBytes": 14827
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "immortalwrt--openwrt-25.12.menu.pt.json.gz",
+              "hash": "02166ed6d6f2148124ce6553c3cdb891d23f16e07935389c746044059d408f35",
+              "bytes": 5155,
+              "sha256": "20528f57783ee5ab0965fe732c62c36a7a76d938be89e6a41d05bce34e9118a1",
+              "jsonBytes": 14219
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "immortalwrt--openwrt-25.12.menu.ja.json.gz",
+              "hash": "e657b3e8d520e9b92b1f88d8817d4485f2c5cbab114dd43fc064d9be5358ec2d",
+              "bytes": 6290,
+              "sha256": "a41f8b25e05737c490d645846bb8c93484cc70e7ebae1a2e1525437ed204ee6a",
+              "jsonBytes": 17461
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "immortalwrt--openwrt-25.12.menu.ko.json.gz",
+              "hash": "b9af84eddf74838249edea99ddedb97b82bf5604a6818ebfa9d5854210e70c02",
+              "bytes": 5666,
+              "sha256": "44406ecf8e51656c2b676a3bd1ba5d62cc794e463d634ede8c48875032da2778",
+              "jsonBytes": 15119
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "immortalwrt--openwrt-25.12.menu.de.json.gz",
+              "hash": "81237a6fb71d63554e0ebd6db7e7a4090587c1930cfaa2c5533a01a9d16eeb34",
+              "bytes": 5315,
+              "sha256": "34d17b32a72944e3a08d9eb3d410c58a58eb38a3001c8887715a0c7364a1b97a",
+              "jsonBytes": 14569
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "immortalwrt--openwrt-25.12.menu.fr.json.gz",
+              "hash": "a3c34bd00b2f9cbb758393e1ba3851bd6d5005ed40496ebc0d7ff8641766bc80",
+              "bytes": 5447,
+              "sha256": "0ed8d01da4cd3223187f0e32f85c75541ba4f4af3e843f44bc2b18cc889c0b7b",
+              "jsonBytes": 15335
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "immortalwrt--openwrt-25.12.menu.vi.json.gz",
+              "hash": "0854a3fdbfa8f9dd7eb87526fbd975c2ed6e65d117d8d6b8b2fae2d748707c0d",
+              "bytes": 5410,
+              "sha256": "34f53f5fa2eb849403825f64bcdcc1671cefd18e27a549418531af702a12bb22",
+              "jsonBytes": 15284
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3523284,
+              "jsonBytes": 53121170
+            },
+            "split": {
+              "bytes": 1962033,
+              "initialBytes": 1051012,
+              "graphJsonBytes": 4373735
+            },
+            "readableRelationsJsonBytes": 48696663,
+            "compactRelationsJsonBytes": 4373477
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:10.883Z",
+          "asset": "immortalwrt--openwrt-25.12.json.gz",
+          "hash": "6c2e686bf44b8313bba62829d6ca3e47b46816090df5fac5f08f2f4c41ff82aa",
+          "bytes": 3523284,
+          "lastAttemptAt": "2026-08-12T23:45:14.192Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "ce4e104df06d8dd397d34d053e7d857f5f2f42cd",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "03-catalog-immortalwrt-openwrt-25.12-95a09208-run-31651715183-attempt-1",
+          "order": 3,
+          "orderText": "03",
+          "jobName": "03 · ImmortalWrt · openwrt-25.12 · immortalwrt/immortalwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "24.10",
+          "version": "24.10",
+          "branch": "openwrt-24.10",
+          "counts": {
+            "targets": 141,
+            "selectableTargets": 95,
+            "unavailableTargets": 6,
+            "abstractTargets": 40,
+            "profiles": 2123,
+            "menuOptions": 10011,
+            "hiddenMenuOptions": 5534,
+            "packages": 12343,
+            "translatedZhCN": 190,
+            "missingZhCN": 9821
+          },
+          "commit": "fa66185054014e529e412477777fe73ab69a7c05",
+          "legacy": {
+            "asset": "immortalwrt--openwrt-24.10.json.gz",
+            "hash": "c373f5b678f56582517050de52153d287d72e931b5f547c05d94c0ed60eeddfe",
+            "bytes": 3171891,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "immortalwrt--openwrt-24.10.core.json.gz",
+              "hash": "531cc1eeff75261610ae79902760b4718ad8b4c32a540b0451930ffa44039507",
+              "bytes": 145858,
+              "sha256": "217bad5843eb245e582d5fe8769a8076041ab3c1e4087b63a392f3814e551d42",
+              "jsonBytes": 1874170
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "immortalwrt--openwrt-24.10.graph.json.gz",
+              "hash": "e1a7bfe94ad19921b72f2c658c44ffdf3bc9fb1ee0c1ae8a83802ccdc901e1b7",
+              "bytes": 668068,
+              "sha256": "f14a3bd602a68707ec65490f805fedbd3c66f62a8ed198adc172992cf0c9d70e",
+              "jsonBytes": 3390273
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "immortalwrt--openwrt-24.10.menu.json.gz",
+              "hash": "a089cd0894be5845c2765817335142268197ff960ec956fcfaa7c6ce4fbdd247",
+              "bytes": 426477,
+              "sha256": "05668f5f29e0adcefcfcbe49290dd4f43653676944b5cd6fb0a934014ab16d21",
+              "jsonBytes": 3414698
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "immortalwrt--openwrt-24.10.hidden.json.gz",
+              "hash": "ef4cd4d210ec26f85abbfd5187c33993c406fe87223af739eb296723c5e1d277",
+              "bytes": 76623,
+              "sha256": "231a5c2261af8edc347fe088ee4eeb51b6c68f18218f4727cb1090c12386ccd0",
+              "jsonBytes": 1172595
+            },
+            "help": {
+              "logical": "help",
+              "asset": "immortalwrt--openwrt-24.10.help.json.gz",
+              "hash": "40551630e86069cc8b2d587fc6828e6874c49c6a8ea3a24e8233752defe65bf9",
+              "bytes": 315981,
+              "sha256": "a0a6276558e11ed64e07ddc9205246a3b88cb856ced49ec1430cfdbc086dae35",
+              "jsonBytes": 1472420
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "immortalwrt--openwrt-24.10.menu.zh-cn.json.gz",
+              "hash": "6502432feb277099596c608e45c4a4b7db7fda73153cf8971f166bd2418aabc2",
+              "bytes": 7059,
+              "sha256": "dad017eafee2adacbfb8deea3971dbf4bb28184600a3506baaead0dcee9ca1b6",
+              "jsonBytes": 17396
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "immortalwrt--openwrt-24.10.menu.zh-tw.json.gz",
+              "hash": "fdb9c9cdd0ef106838d9de8209847c55f052832c74a3c47e9162f2caef598655",
+              "bytes": 5892,
+              "sha256": "5d4f795ba68ecc749bd9ffc7d95ba26aafc16c2b625f9c93ea1f71d946b0c186",
+              "jsonBytes": 13971
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "immortalwrt--openwrt-24.10.menu.ru.json.gz",
+              "hash": "7daa38998319dfb7f5e4fb7a0e0e1a1445d6faa404f4e9d9f9da4cedfb57cc63",
+              "bytes": 6273,
+              "sha256": "f74f702871120ff95e6539c270533f9dcc3d0ecee66ffb391b088bd59548171e",
+              "jsonBytes": 20095
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "immortalwrt--openwrt-24.10.menu.es.json.gz",
+              "hash": "fffd6920492521c28aae54e6a1d696b97765ba1f551bb23cc6f5aa1181a2c3b2",
+              "bytes": 5565,
+              "sha256": "2104e4dbe1bbb7bc0f3b1fe19f462a9b614d2e80ce63d28ab7bb6bbc652643c9",
+              "jsonBytes": 15638
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "immortalwrt--openwrt-24.10.menu.pt.json.gz",
+              "hash": "e9071887796718631c6e2ee50f612d71de325a7e5fb327cd20c5bef58e7003d4",
+              "bytes": 5406,
+              "sha256": "97422a8d9e2e6dfce401f336f9424eebb60aab0fabd5f466c3d8618b80abc72d",
+              "jsonBytes": 15008
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "immortalwrt--openwrt-24.10.menu.ja.json.gz",
+              "hash": "5a1e2088c87950d68215603fca96c77e8bc93332455c8a4e98768f8c0a0764c6",
+              "bytes": 6581,
+              "sha256": "447260e3f9ecef20c0686d31fc8e4182f4340862aceda939ce5795f99a192bcf",
+              "jsonBytes": 18467
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "immortalwrt--openwrt-24.10.menu.ko.json.gz",
+              "hash": "2fd2a8a318e12082facbe57d2f1ce59b32796086803223232d0fc5f3b5de71fc",
+              "bytes": 5947,
+              "sha256": "e1dee69aeb812f53255559a0bebfe70ff92e464e05880eb850f2a2e67a923bcd",
+              "jsonBytes": 16037
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "immortalwrt--openwrt-24.10.menu.de.json.gz",
+              "hash": "2fca244c71d132756154b3474545963505c9b5a536531795eff2acf11b46d249",
+              "bytes": 5576,
+              "sha256": "a3478549fcff6ad056e41400a4288665c5027a00b1d2810518e002854706230b",
+              "jsonBytes": 15352
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "immortalwrt--openwrt-24.10.menu.fr.json.gz",
+              "hash": "fe4df4103739b96c6ddc5e5dfe1ade687a9d6f7056988673f8c89e6707f57e03",
+              "bytes": 5709,
+              "sha256": "53ffadcac65b29554e370d75043d39937b18f55844de4da705466505a7315d23",
+              "jsonBytes": 16238
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "immortalwrt--openwrt-24.10.menu.vi.json.gz",
+              "hash": "86e9c5fb9e9000401c9111e626a9aed6261730e1e149f55f7b0601c0342e6a94",
+              "bytes": 5675,
+              "sha256": "ed91e871bcb57465511c988f5497c1de5755256b958e54d9512c477483715463",
+              "jsonBytes": 16164
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3171891,
+              "jsonBytes": 48583199
+            },
+            "split": {
+              "bytes": 1692690,
+              "initialBytes": 813926,
+              "graphJsonBytes": 3390273
+            },
+            "readableRelationsJsonBytes": 43835521,
+            "compactRelationsJsonBytes": 3390015
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:25.068Z",
+          "asset": "immortalwrt--openwrt-24.10.json.gz",
+          "hash": "c373f5b678f56582517050de52153d287d72e931b5f547c05d94c0ed60eeddfe",
+          "bytes": 3171891,
+          "lastAttemptAt": "2026-08-12T23:43:58.766Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "fa66185054014e529e412477777fe73ab69a7c05",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "04-catalog-immortalwrt-openwrt-24.10-90c483f6-run-31651715183-attempt-1",
+          "order": 4,
+          "orderText": "04",
+          "jobName": "04 · ImmortalWrt · openwrt-24.10 · immortalwrt/immortalwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "23.05",
+          "version": "23.05",
+          "branch": "openwrt-23.05",
+          "counts": {
+            "targets": 132,
+            "selectableTargets": 88,
+            "unavailableTargets": 8,
+            "abstractTargets": 36,
+            "profiles": 2081,
+            "menuOptions": 9603,
+            "hiddenMenuOptions": 4872,
+            "packages": 11481,
+            "translatedZhCN": 206,
+            "missingZhCN": 9397
+          },
+          "commit": "0f110722021a93e60e7442ceded7eaea67ff921b",
+          "legacy": {
+            "asset": "immortalwrt--openwrt-23.05.json.gz",
+            "hash": "84782faecafeee6e51d84bb0584b3692be8800b159a0f6aa043d91ce7868a43e",
+            "bytes": 3092239,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "immortalwrt--openwrt-23.05.core.json.gz",
+              "hash": "1129f5af91da4f7045e1fd3c27a40276763ef8b50032b730532522b38b294f76",
+              "bytes": 138922,
+              "sha256": "6de50b648543f73cf61ee5fc76d0de251a3c45cb4e1922d721036439d77fa32d",
+              "jsonBytes": 1826647
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "immortalwrt--openwrt-23.05.graph.json.gz",
+              "hash": "eb87231c0167f0566a14402e5e351bc10d62afe3fadc478e0018590e7bddeb28",
+              "bytes": 627252,
+              "sha256": "360e632c045ff1aaae4cef419883f5d7995999ce97ee3d99eb686d28658a5a5e",
+              "jsonBytes": 3138284
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "immortalwrt--openwrt-23.05.menu.json.gz",
+              "hash": "1067bd1521d473cff154c7687cf5998a6d54f33bef3df8f5444ba8d5d88db048",
+              "bytes": 405363,
+              "sha256": "f9b84c89bc382f08130d685eb8677db196ad5c1b2cc875bc7ff18c1e1a8606f0",
+              "jsonBytes": 3272450
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "immortalwrt--openwrt-23.05.hidden.json.gz",
+              "hash": "cc5bc33406a58817ba5577de9fdcd5318fa3385f92b58e16cbd5177a4c020ea1",
+              "bytes": 66315,
+              "sha256": "e307237277ee6918badd34192f6af531e2b9eca01e9004bfcba24e6cf4c8ff74",
+              "jsonBytes": 1029135
+            },
+            "help": {
+              "logical": "help",
+              "asset": "immortalwrt--openwrt-23.05.help.json.gz",
+              "hash": "106a20b2b88852d6b01575cdd3b0267d710672f515ae32fa4128f7eed1412323",
+              "bytes": 305852,
+              "sha256": "7b2a8f4a50a7a4a42b595a9db1e744368aedeb86caab557de2de5902c366c3e4",
+              "jsonBytes": 1422572
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "immortalwrt--openwrt-23.05.menu.zh-cn.json.gz",
+              "hash": "5d7b1d55ee37aee3909311d19771aff9dd0c77b4b191a921b2d4db003d52961f",
+              "bytes": 7458,
+              "sha256": "2ec89129ed49314c8dcc45d7eb6aa110e1250b06ba543f15184a92cf456b4d3e",
+              "jsonBytes": 18537
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "immortalwrt--openwrt-23.05.menu.zh-tw.json.gz",
+              "hash": "f8b97b8fae3556e9e4ec30a6ee12e3a7f9bbf79192744c2c7088c1000999795f",
+              "bytes": 6548,
+              "sha256": "2d0c4fd6118aad7c6180bc72d0c6e87d3da979b742398808c556baf5919ac0e1",
+              "jsonBytes": 15994
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "immortalwrt--openwrt-23.05.menu.ru.json.gz",
+              "hash": "5d3007cc4d405a0e738413fd319e4e02b8855dcb7c1764ce1e20791488ffbe3a",
+              "bytes": 6988,
+              "sha256": "b75b7e1e80ebe947a74bf37fea04afa9c096e332ab769e877eeb8a2a20171861",
+              "jsonBytes": 23080
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "immortalwrt--openwrt-23.05.menu.es.json.gz",
+              "hash": "36dc25d1188d6b3623feb1d95ce8f0b49ab472628481ae48ec1c60ad42d38c06",
+              "bytes": 6197,
+              "sha256": "7b98b5fc6945a2223d39e4a3699289f8a7404c62ff7158c6655acf074189ac86",
+              "jsonBytes": 17966
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "immortalwrt--openwrt-23.05.menu.pt.json.gz",
+              "hash": "3b6b94a7bf64faea0af4206c8133b9f898897a834b1f9923075ed2ee52846e3f",
+              "bytes": 6043,
+              "sha256": "36756e403052c2a8748027c07757ba02f914e491ec4d4a41a64c6324444eb06a",
+              "jsonBytes": 17269
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "immortalwrt--openwrt-23.05.menu.ja.json.gz",
+              "hash": "daf59ba5e12c3382a5a9c641af591ac05007086d6d2aa69a4d193af34147c17c",
+              "bytes": 7316,
+              "sha256": "230f7dd7a658cd216bdcf82863d196539e52b919b153fac23abe94a1b6de60d4",
+              "jsonBytes": 21163
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "immortalwrt--openwrt-23.05.menu.ko.json.gz",
+              "hash": "d7580b8c5db5d0e1843e9f7bebfb2190c5c48b7c0b1c58e5545bccd7f7ab6713",
+              "bytes": 6616,
+              "sha256": "1d62203921fd46131690c403709d34464751814f84fae54c3a9bcf5c8855fe83",
+              "jsonBytes": 18408
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "immortalwrt--openwrt-23.05.menu.de.json.gz",
+              "hash": "6b91654d56020543faf277ab7fc5262808d0fdb5bff40d202e55d621d223041a",
+              "bytes": 6218,
+              "sha256": "2cc8e5ae5c2303846eafeb075855799119a827ce2500ac8f2c52c15e1832018b",
+              "jsonBytes": 17611
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "immortalwrt--openwrt-23.05.menu.fr.json.gz",
+              "hash": "ab6b65e30d74ff47bf462bb0aca03b01d4bca54b8abf4f77d3bf5c21cd2ddb5e",
+              "bytes": 6367,
+              "sha256": "ccd97501f187f034449c31b31719e4bd91224d2a0263b2fc556f9f903ebc5af9",
+              "jsonBytes": 18640
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "immortalwrt--openwrt-23.05.menu.vi.json.gz",
+              "hash": "771504892874c50feb4009c96a749a8d41dba9c86a742d7e00bf57804274aea7",
+              "bytes": 6314,
+              "sha256": "0810aae9fbe4ed766adb7efc732e66efcd56c344995afa6bb74bcff8d832b583",
+              "jsonBytes": 18523
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3092239,
+              "jsonBytes": 46973350
+            },
+            "split": {
+              "bytes": 1609769,
+              "initialBytes": 766174,
+              "graphJsonBytes": 3138284
+            },
+            "readableRelationsJsonBytes": 40637335,
+            "compactRelationsJsonBytes": 3138026
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:58.903Z",
+          "asset": "immortalwrt--openwrt-23.05.json.gz",
+          "hash": "84782faecafeee6e51d84bb0584b3692be8800b159a0f6aa043d91ce7868a43e",
+          "bytes": 3092239,
+          "lastAttemptAt": "2026-08-12T23:43:19.043Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "0f110722021a93e60e7442ceded7eaea67ff921b",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "05-catalog-immortalwrt-openwrt-23.05-037b9545-run-31651715183-attempt-1",
+          "order": 5,
+          "orderText": "05",
+          "jobName": "05 · ImmortalWrt · openwrt-23.05 · immortalwrt/immortalwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "21.02",
+          "version": "21.02",
+          "branch": "openwrt-21.02",
+          "counts": {
+            "targets": 100,
+            "selectableTargets": 68,
+            "unavailableTargets": 3,
+            "abstractTargets": 29,
+            "profiles": 1574,
+            "menuOptions": 8986,
+            "hiddenMenuOptions": 4325,
+            "packages": 10688,
+            "translatedZhCN": 216,
+            "missingZhCN": 8770
+          },
+          "commit": "fc9fe90e5a804d7af5449260f2e5b7ae6d414266",
+          "legacy": {
+            "asset": "immortalwrt--openwrt-21.02.json.gz",
+            "hash": "183b03c4f8edf479beecc01c08d7b9fc413459b699bd64f881599e9ec54d22d7",
+            "bytes": 3026801,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "immortalwrt--openwrt-21.02.core.json.gz",
+              "hash": "ca1e70c581274de983b972b06ac82b33da4cadd183aa3eefebb031662338605b",
+              "bytes": 103351,
+              "sha256": "84426f1ad5960066260707b21a8eb7f58c78bb412a72c9149d403cd333a2e516",
+              "jsonBytes": 1364301
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "immortalwrt--openwrt-21.02.graph.json.gz",
+              "hash": "2578a62e08540088a179abb1edf41ced23a71bb052e5dfe71f36dd2d8a7d5460",
+              "bytes": 635194,
+              "sha256": "d00b6f9135e3930f11541e297d55a22bae5700de4cdd6ce1385b390c68a0001b",
+              "jsonBytes": 3107405
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "immortalwrt--openwrt-21.02.menu.json.gz",
+              "hash": "0c787d8a55cffaf62d6f013b85db57ab43259709b12a5c4f5354b3b25d534d36",
+              "bytes": 374570,
+              "sha256": "b2f2c508c6dcc2015e6be0a08b8429a75f0f1a5ca9f71fe2a4650273c79232a1",
+              "jsonBytes": 3066347
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "immortalwrt--openwrt-21.02.hidden.json.gz",
+              "hash": "dc95f21d36889c7a7a15d50ebfe6b0e1ca7fb6a4a46948a46bd6c39938e55983",
+              "bytes": 58776,
+              "sha256": "f7242df6f014f01978f10ebc61a891a368c58204ceb69a2164c56de5a9192bd2",
+              "jsonBytes": 915385
+            },
+            "help": {
+              "logical": "help",
+              "asset": "immortalwrt--openwrt-21.02.help.json.gz",
+              "hash": "7e42092a872697d42860af7faba5d176eb014a669d6b00b1ea91100879169cd4",
+              "bytes": 287235,
+              "sha256": "2b7d2739a0cdac15a6321e1967b99fce40287ab4a462c7d50cc511987f5d2b71",
+              "jsonBytes": 1347566
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "immortalwrt--openwrt-21.02.menu.zh-cn.json.gz",
+              "hash": "e6c4afd0a638db59d1cc9d984820ce03a9140bbfcf696328b997ba4ddc0431d5",
+              "bytes": 7750,
+              "sha256": "62eb168604e1677a8710cfa5a323c6766edd36c9f4a17a1aa0774bc4398ff9ba",
+              "jsonBytes": 19526
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "immortalwrt--openwrt-21.02.menu.zh-tw.json.gz",
+              "hash": "aca22b1ea9385523c32fcef11b4b44c37d383ba1370ca805ed106eb1a7f432e2",
+              "bytes": 7162,
+              "sha256": "4985e35daa802b51338d34ba3e64d66af99b2dc7cc4a849e275f73814d24e6f4",
+              "jsonBytes": 17857
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "immortalwrt--openwrt-21.02.menu.ru.json.gz",
+              "hash": "de018e31f1ac7da4ab3594c256b45cdf86c575719bd9bddba65969086c16adce",
+              "bytes": 7591,
+              "sha256": "4ee938eccad500e546e19dc81a13b35923c0835bc9b67f827e913c7fc2ae828b",
+              "jsonBytes": 25844
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "immortalwrt--openwrt-21.02.menu.es.json.gz",
+              "hash": "60e6ee9baacb1f7ada7fc0e01c90b7c6f97d9103615ab361a13f537de92981b7",
+              "bytes": 6729,
+              "sha256": "fc14f5f3fbb270929f39a5616a14df7ff299ca8dcf6eb03740e49d14ac2b5e05",
+              "jsonBytes": 20074
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "immortalwrt--openwrt-21.02.menu.pt.json.gz",
+              "hash": "3aa72e11d75fce9daf9f87b07e2c2a4d5ff6bc192560eeb1b7996f5283860477",
+              "bytes": 6585,
+              "sha256": "04f2b65564a7b7668bb71bc33fb443aa88b4fbf21044714eab6263cd7e3e5ad9",
+              "jsonBytes": 19264
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "immortalwrt--openwrt-21.02.menu.ja.json.gz",
+              "hash": "e7eb82ff3283b4fdf5595efa0d4b3b01b9335f53f32e12c58889e3ea009fc380",
+              "bytes": 7919,
+              "sha256": "e9f4f120d8685d283c5f6f609c2b8fd3a3957dbaeb6438baac97dfebe3c5d0d0",
+              "jsonBytes": 23498
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "immortalwrt--openwrt-21.02.menu.ko.json.gz",
+              "hash": "c880f69475f63b2e569bd12b04307597a2c3d1e912d45280d9526af9f8807fe1",
+              "bytes": 7179,
+              "sha256": "d4cedcf99f76d9a937a33c6abba75ae65bec29a71fe59b378ba1ee2e82a5b894",
+              "jsonBytes": 20538
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "immortalwrt--openwrt-21.02.menu.de.json.gz",
+              "hash": "0d02a9b18a89bfd3445c9fd2d76cafa106aea4a1644a4d845eccaab170ae7649",
+              "bytes": 6817,
+              "sha256": "e9b6175470f8ff0c6c049d7469a7493484ebe466361db2325dc4fa8d51ba76f1",
+              "jsonBytes": 19774
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "immortalwrt--openwrt-21.02.menu.fr.json.gz",
+              "hash": "8df8ffd9c91de1076ac365e20486be5980d421cf18dec80a7d260c16d812bb21",
+              "bytes": 6948,
+              "sha256": "c448aa45a345ab0803872484cec919ac8048e333cffb908bed3dd580d9ff71a6",
+              "jsonBytes": 20863
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "immortalwrt--openwrt-21.02.menu.vi.json.gz",
+              "hash": "8e3f13937579293e76e8772a6cb9ae7830b73bc87911ee86fb82e8915230e443",
+              "bytes": 6838,
+              "sha256": "0dd69ac90e06490024a61735fcf5b08eeebe258be053c1f5186f1c5b2463d64c",
+              "jsonBytes": 20763
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3026801,
+              "jsonBytes": 49370235
+            },
+            "split": {
+              "bytes": 1530644,
+              "initialBytes": 738545,
+              "graphJsonBytes": 3107405
+            },
+            "readableRelationsJsonBytes": 45979723,
+            "compactRelationsJsonBytes": 3107147
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:49.644Z",
+          "asset": "immortalwrt--openwrt-21.02.json.gz",
+          "hash": "183b03c4f8edf479beecc01c08d7b9fc413459b699bd64f881599e9ec54d22d7",
+          "bytes": 3026801,
+          "lastAttemptAt": "2026-08-12T23:42:45.173Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "fc9fe90e5a804d7af5449260f2e5b7ae6d414266",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "06-catalog-immortalwrt-openwrt-21.02-ee116469-run-31651715183-attempt-1",
+          "order": 6,
+          "orderText": "06",
+          "jobName": "06 · ImmortalWrt · openwrt-21.02 · immortalwrt/immortalwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "18.06-k5.4",
+          "version": "18.06-k5.4",
+          "branch": "openwrt-18.06-k5.4",
+          "counts": {
+            "targets": 106,
+            "selectableTargets": 72,
+            "unavailableTargets": 5,
+            "abstractTargets": 29,
+            "profiles": 1693,
+            "menuOptions": 8990,
+            "hiddenMenuOptions": 2692,
+            "packages": 8710,
+            "translatedZhCN": 198,
+            "missingZhCN": 8792
+          },
+          "commit": "8b50c1df2150be9c2883fca59d0a142b811e7d5d",
+          "legacy": {
+            "asset": "immortalwrt--openwrt-18.06-k5.4.json.gz",
+            "hash": "923f94374d0a32a8a149592a57edda8a584a878716926aeb59ed73bbd7455921",
+            "bytes": 2842231,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.core.json.gz",
+              "hash": "722379dc3cb3dedc4dcaadff96f134ee61113d8f230b51264369a92e979019bd",
+              "bytes": 111558,
+              "sha256": "c93e23fbcd589e870c460d8ecaae90f8750eca07618161f774f597113dd7da88",
+              "jsonBytes": 1468993
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.graph.json.gz",
+              "hash": "e8fbd1f81d8abc8a10a10aaa065ae3b9d938de939ad68df894b24eb27dc3fe9c",
+              "bytes": 575043,
+              "sha256": "bd282b3bddba1f3baba9eaf905e502b7f69f50381d3558fc97fadc61b51096c1",
+              "jsonBytes": 2766581
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.json.gz",
+              "hash": "4b132211a2df74eb5ba244b08c7e17be40dba55f75e6a585e815713064056362",
+              "bytes": 371583,
+              "sha256": "8cb82ab689afaa8b56c21dbf0abcbd3f75aaec1c754ad77df18ad2f593c5c37a",
+              "jsonBytes": 3046617
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.hidden.json.gz",
+              "hash": "bf66918f2f48800c23b7ced8bf7461569a6ddf07557b0befe657c440aa0b82fc",
+              "bytes": 39680,
+              "sha256": "ec6cfb8d2f55087f595d2d43b05074c5f587b14fef5dc9bab184e2921af178c8",
+              "jsonBytes": 536036
+            },
+            "help": {
+              "logical": "help",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.help.json.gz",
+              "hash": "55712537fa6a7f37cf8ae6e8f8cabe16f578a2b55ca7dae8d3b0529bcbd61892",
+              "bytes": 278271,
+              "sha256": "df49a992a47707377ee1a289fa9e802158c7d1ba31cf9cb5d4ac9460430c3acd",
+              "jsonBytes": 1303553
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.zh-cn.json.gz",
+              "hash": "843ef5e4923cf2cc00571de6c87709e4295dc65b02ccbff6d6adbd3949529ab4",
+              "bytes": 7239,
+              "sha256": "a7edb0f5ef9e65f1f32f4ce6474934c405ec4c071dd4cb0d3de3e48da7bf9c48",
+              "jsonBytes": 18130
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.zh-tw.json.gz",
+              "hash": "aa06dfcd110442d97b8166e85f15dd642fe1516308378e436a2cc1ebd283ea44",
+              "bytes": 6699,
+              "sha256": "d144549118b070eb39ae3a889a52688a6c01ddc65d72cb75c2996fdb50a0a1c1",
+              "jsonBytes": 16418
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.ru.json.gz",
+              "hash": "478b9f04c83d7460cd0d08245ee0bd27bfa72fe20bd416ac257272970ff22cb6",
+              "bytes": 7110,
+              "sha256": "f1a61feb73a487f73b186d8a9c43350af50870224c7004846380791c7525d572",
+              "jsonBytes": 23799
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.es.json.gz",
+              "hash": "d14972fb2f019d9e64519cf4acd0e9c503ee6a3aa99c3597efcc2f012e3b584d",
+              "bytes": 6284,
+              "sha256": "f90090a9650724b6121f0f6adcbe7c80ec68a80fea11a32048f3c66a6c44e707",
+              "jsonBytes": 18494
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.pt.json.gz",
+              "hash": "91601698060cc91cad2f3773d4bc4e1330e2427e28648ed89fee8ab763c89f05",
+              "bytes": 6131,
+              "sha256": "73e6e9fca9e569f8784338a56b7aabc1d6a00c7882ce4695003b9415f627233e",
+              "jsonBytes": 17746
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.ja.json.gz",
+              "hash": "d18e5afa2acf6c1f616e405f062a46d4522b988c82ede3a3b704741b816b129c",
+              "bytes": 7449,
+              "sha256": "67331fe64043208546c978e9a778120b9ca27c65227f7dbb5131595685363b7a",
+              "jsonBytes": 21543
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.ko.json.gz",
+              "hash": "a1e11b5ee6f94c38c33376bc6ea2d6b04a84da2d3b6b31302981324d37239594",
+              "bytes": 6776,
+              "sha256": "fbd5383c770d2409eb7df3540db24cb77e64445dff1fbaea839008b9f80a7c81",
+              "jsonBytes": 18853
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.de.json.gz",
+              "hash": "ca2985b87077c0ffb4cd54eab20c32dc4f7af5621ef5338e80b8cad55ec485f0",
+              "bytes": 6370,
+              "sha256": "ccd9787c0671af2bdbe720e034e1cdddc20bb88d432a201be3bf93ef98e15152",
+              "jsonBytes": 18186
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.fr.json.gz",
+              "hash": "cf17a274e3406f1afef7101a391554ba7540a56edfc515e030b28fc6f140e356",
+              "bytes": 6508,
+              "sha256": "36d758bf2b4f3a5d2e1e1f0ee9e001704782117c8c137832ce07a8a10af806a4",
+              "jsonBytes": 19272
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "immortalwrt--openwrt-18.06-k5.4.menu.vi.json.gz",
+              "hash": "7bcdcf46b0c2306fad3067febd18b1ea4329290b27890921f249ce2f7848dcf2",
+              "bytes": 6394,
+              "sha256": "3519effb9f256ac08e22e77e770a0ff461d61828625abcf3632957e61f78f3b4",
+              "jsonBytes": 19117
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2842231,
+              "jsonBytes": 45229445
+            },
+            "split": {
+              "bytes": 1443095,
+              "initialBytes": 686601,
+              "graphJsonBytes": 2766581
+            },
+            "readableRelationsJsonBytes": 39349480,
+            "compactRelationsJsonBytes": 2766318
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:45.257Z",
+          "asset": "immortalwrt--openwrt-18.06-k5.4.json.gz",
+          "hash": "923f94374d0a32a8a149592a57edda8a584a878716926aeb59ed73bbd7455921",
+          "bytes": 2842231,
+          "lastAttemptAt": "2026-08-12T23:42:39.975Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "8b50c1df2150be9c2883fca59d0a142b811e7d5d",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "07-catalog-immortalwrt-openwrt-18.06-k5.4-a02af131-run-31651715183-attempt-1",
+          "order": 7,
+          "orderText": "07",
+          "jobName": "07 · ImmortalWrt · openwrt-18.06-k5.4 · immortalwrt/immortalwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "18.06",
+          "version": "18.06",
+          "branch": "openwrt-18.06",
+          "counts": {
+            "targets": 105,
+            "selectableTargets": 70,
+            "unavailableTargets": 4,
+            "abstractTargets": 31,
+            "profiles": 1666,
+            "menuOptions": 8847,
+            "hiddenMenuOptions": 2573,
+            "packages": 8582,
+            "translatedZhCN": 201,
+            "missingZhCN": 8646
+          },
+          "commit": "f7bc84bd30a038b0fd251ce59b6619e5eae94848",
+          "legacy": {
+            "asset": "immortalwrt--openwrt-18.06.json.gz",
+            "hash": "24c09cea614b99f64107156e0907c89aebf3afeda35fe777647bffe7f5349fe3",
+            "bytes": 2790914,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "immortalwrt--openwrt-18.06.core.json.gz",
+              "hash": "d475b675618c822cbd62e51ede507ebf4cedc054e291f85d00e748dac29c0c5a",
+              "bytes": 105005,
+              "sha256": "4708ded84ceca568fc4da7d36ca13149b98debcacdf32822d15b5fd051f5f259",
+              "jsonBytes": 1399245
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "immortalwrt--openwrt-18.06.graph.json.gz",
+              "hash": "f173b6de393ba208bdb62a091dbf9ab634af05518b536de0ae412c4d1d19739b",
+              "bytes": 562148,
+              "sha256": "f0b366a1b094ef31b0873c120cd9264be2394da2b5dcfd520f0a6b48547268ed",
+              "jsonBytes": 2686734
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "immortalwrt--openwrt-18.06.menu.json.gz",
+              "hash": "953874249411893af1b310766ed16dd92215c251e804314563a4057413365282",
+              "bytes": 366240,
+              "sha256": "0df262494f8fab01d1fbe67262a92ddd7d82d99637452ffe8c0a4e9dffa0de1b",
+              "jsonBytes": 2997824
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "immortalwrt--openwrt-18.06.hidden.json.gz",
+              "hash": "2cfe2d8b947310665a7c087d98ae703ba858887f34e619adaa5ca981e37b48ff",
+              "bytes": 37905,
+              "sha256": "8b58fc9e126fdfaa2ff5265df7e12e2cdca72685f53881490be547766fda1a73",
+              "jsonBytes": 513961
+            },
+            "help": {
+              "logical": "help",
+              "asset": "immortalwrt--openwrt-18.06.help.json.gz",
+              "hash": "2ae075cbe475a7664e28c225439a5fb1554b69f78c7b48c55e6fbe2da5010c48",
+              "bytes": 275187,
+              "sha256": "3327c13e36ea6d98343dcf07b72455b334bb8428b0af50449b43c5c8154a7c98",
+              "jsonBytes": 1288479
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "immortalwrt--openwrt-18.06.menu.zh-cn.json.gz",
+              "hash": "a39a82b82d31417304e1f3d8c09b61290417a973ab9f4ce92676303d101deef9",
+              "bytes": 7282,
+              "sha256": "0d62797161929ca1974a502938c7e46b90b578182b58a6bead64a9992809bd9f",
+              "jsonBytes": 18387
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "immortalwrt--openwrt-18.06.menu.zh-tw.json.gz",
+              "hash": "45b1c5d9a823ef34746904ee96f022d6f863d6f9261066fdfa046bb44b5c3569",
+              "bytes": 6700,
+              "sha256": "f94d82f1422e364c07f2c3426542eb645dfcb7b915e29302aa38451d4ef1f2a5",
+              "jsonBytes": 16492
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "immortalwrt--openwrt-18.06.menu.ru.json.gz",
+              "hash": "c7d46984edea970fb5c504731b5100a28a4c3921cdc73479c0b8b6bc72bcbd91",
+              "bytes": 7095,
+              "sha256": "890bf1323a96b0d99c232d742a551f9e339945f93dd3765fec6c13ef46b38463",
+              "jsonBytes": 23818
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "immortalwrt--openwrt-18.06.menu.es.json.gz",
+              "hash": "796cedae26de59753fbc47f2206fd667fb5dc578fee1996d6a5a0c5b7247c3ad",
+              "bytes": 6290,
+              "sha256": "7e904a57c9e6b82dcbccef09ce746e21acd3207be848302014cd86240016dc8d",
+              "jsonBytes": 18579
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "immortalwrt--openwrt-18.06.menu.pt.json.gz",
+              "hash": "5e35570871e61093bb33b333fdf96277ef407ef908202b3a86520d91743c2bb8",
+              "bytes": 6137,
+              "sha256": "00b49111c6b36230dd06bafa43505a48a79178a56eaa8708dce7307fa043e943",
+              "jsonBytes": 17824
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "immortalwrt--openwrt-18.06.menu.ja.json.gz",
+              "hash": "bace9a448516c1a7e55da951f95ae5fc447d3390879d2256b26bb3f6d58b2c11",
+              "bytes": 7451,
+              "sha256": "03e252497b7341c14c5c9d80f5930de62c68bc0cf8a4ce361d6b4acedb37f730",
+              "jsonBytes": 21648
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "immortalwrt--openwrt-18.06.menu.ko.json.gz",
+              "hash": "4b0c46e59b897297928df6083e8cdf7f7076a96afcb8294eb209e32a5f3deb66",
+              "bytes": 6772,
+              "sha256": "09cae8777724df7e09b5b9b3f6de317cc1c87adb3fa57f4178aca0fef7b7c480",
+              "jsonBytes": 18967
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "immortalwrt--openwrt-18.06.menu.de.json.gz",
+              "hash": "3f96b08e0da9be19f33d35b90675de2f60f11255e6f081174c9b3908d26e43c6",
+              "bytes": 6376,
+              "sha256": "3c1032bffbeb0b135fdf5d98a62922a95b705501eba1e88b5dde1165ea371243",
+              "jsonBytes": 18253
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "immortalwrt--openwrt-18.06.menu.fr.json.gz",
+              "hash": "575c82ee9f74059d912240f67094ea77ab75a8380dbf411e5a8320b2d0935627",
+              "bytes": 6502,
+              "sha256": "b2836f18cf23a7ba4ab68198250a4e1c5c962daa0f08a215bfc3277c7b8ace3b",
+              "jsonBytes": 19338
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "immortalwrt--openwrt-18.06.menu.vi.json.gz",
+              "hash": "941b949139b0343f70c447d51de0dca62c03cbbf9e91282a80548dc5d5c12fd6",
+              "bytes": 6395,
+              "sha256": "a502e44628be939420fbefabccd61ae25d51e8587e5d409bad8f355810e4fab6",
+              "jsonBytes": 19166
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2790914,
+              "jsonBytes": 44175101
+            },
+            "split": {
+              "bytes": 1413485,
+              "initialBytes": 667153,
+              "graphJsonBytes": 2686734
+            },
+            "readableRelationsJsonBytes": 38451484,
+            "compactRelationsJsonBytes": 2686476
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:36.546Z",
+          "asset": "immortalwrt--openwrt-18.06.json.gz",
+          "hash": "24c09cea614b99f64107156e0907c89aebf3afeda35fe777647bffe7f5349fe3",
+          "bytes": 2790914,
+          "lastAttemptAt": "2026-08-12T23:42:26.378Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "f7bc84bd30a038b0fd251ce59b6619e5eae94848",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "08-catalog-immortalwrt-openwrt-18.06-10ce0373-run-31651715183-attempt-1",
+          "order": 8,
+          "orderText": "08",
+          "jobName": "08 · ImmortalWrt · openwrt-18.06 · immortalwrt/immortalwrt",
+          "failureLog": "",
+          "errorStage": ""
+        }
+      ]
+    },
+    {
+      "id": "lede",
+      "label": "Lean LEDE",
+      "repo": "coolsnowwolf/lede",
+      "legacy": false,
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-lede.sh"
+      },
+      "branches": [
+        {
+          "id": "master",
+          "version": "master",
+          "branch": "master",
+          "counts": {
+            "targets": 143,
+            "selectableTargets": 98,
+            "unavailableTargets": 5,
+            "abstractTargets": 40,
+            "profiles": 1964,
+            "menuOptions": 9974,
+            "hiddenMenuOptions": 5526,
+            "packages": 12041,
+            "translatedZhCN": 195,
+            "missingZhCN": 9779
+          },
+          "commit": "8882f211bb19277d37685456f622caed95e102bd",
+          "legacy": {
+            "asset": "lede--master.json.gz",
+            "hash": "f70c1c0f4b334dce8e84f48220af36fc0b64de7dfbe28dbb40f28227bb3fd9dd",
+            "bytes": 3201597,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "lede--master.core.json.gz",
+              "hash": "e6a4f52d0478ac7647e27650918aa00714a32e32b72fcaeb78dfc8d21351295c",
+              "bytes": 131897,
+              "sha256": "0053b8bff7d801826a3f3c5bba393fb515911215133f13d0fc8031c2c7b0fae0",
+              "jsonBytes": 1725276
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "lede--master.graph.json.gz",
+              "hash": "603d0abb4ce018564bbf2e3c928e267c4793d0c00a30ae4f75a85f52494b958a",
+              "bytes": 671114,
+              "sha256": "90735ea40cab34223735b417f8a12e8bac361e5ae385970e18fca7c9731299f2",
+              "jsonBytes": 3460606
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "lede--master.menu.json.gz",
+              "hash": "f6649024afaf962380f74ad383465e4159e17240b837cd9b3a9f0a1cbf8885b3",
+              "bytes": 408698,
+              "sha256": "a646b21bbc2ea9ca72d5cbfbd950a07789d49b73d12a82e39c42c0ff48bdbd1a",
+              "jsonBytes": 3384930
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "lede--master.hidden.json.gz",
+              "hash": "397ced2e11ba05dd2a4107a1d6ad3d6443141fa0e34acb03c098615673e19f69",
+              "bytes": 75637,
+              "sha256": "786ea7cb6670cc020525a631008b1ae4e2259f2ec651690a4f3359256f6d4c30",
+              "jsonBytes": 1158154
+            },
+            "help": {
+              "logical": "help",
+              "asset": "lede--master.help.json.gz",
+              "hash": "bfd2905912b7b3f095ee1a93c82ec22da514668e0cd28c0863adef1cbd7c2d6f",
+              "bytes": 298500,
+              "sha256": "23727c9f505ac8c8122a250259b472d451c9bf7c03e84f75152a3341ea88b4a6",
+              "jsonBytes": 1424622
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "lede--master.menu.zh-cn.json.gz",
+              "hash": "64a591c8c4a776cbb9547ac3c5033828706ab4bae16c5e4ceb351f5475a47033",
+              "bytes": 7138,
+              "sha256": "590e1570ad51e5dbc99f32ea7b118f92aa719cd94fe2a3bf30f3cf4e7900adf5",
+              "jsonBytes": 17880
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "lede--master.menu.zh-tw.json.gz",
+              "hash": "f129834d5adc834882e1b52c8a9dc211b6ddea862b601f801231e0da63ef2db9",
+              "bytes": 5810,
+              "sha256": "2c8ae8a728529ac1a8ca76f4c73ddb91b5288e71b075f438aa9fed7fe80537f0",
+              "jsonBytes": 13786
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "lede--master.menu.ru.json.gz",
+              "hash": "5bd03d8568fefba919d24d4c51eeecaec569d654580df0372feb9f4e9a6d5101",
+              "bytes": 6179,
+              "sha256": "5e5c02e0210523ec34b669e80269fe1404594975aad7c7f9e49d2965b0ec8a98",
+              "jsonBytes": 19802
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "lede--master.menu.es.json.gz",
+              "hash": "13d650050a44846cb97a716ec136fd7e6e26d9b9e5da6557fd76e5a298344751",
+              "bytes": 5488,
+              "sha256": "ef8a5417bde6157954a4d5c52d163e32f3f60003f9273de25ff5739e905045e1",
+              "jsonBytes": 15424
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "lede--master.menu.pt.json.gz",
+              "hash": "78b83bfbc4b573f50ce9136296a5c26d805de9fc73e0d43e9e5af7101d11e190",
+              "bytes": 5308,
+              "sha256": "3f4a19430d0a474af839d53bcfbe3fa60f7ef1768098ecf72f8412ccd8e90b98",
+              "jsonBytes": 14780
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "lede--master.menu.ja.json.gz",
+              "hash": "0d56976e52548495d915d275260de21c50d8771de86db6192484b7818f27c72e",
+              "bytes": 6483,
+              "sha256": "4d7278fa8d2357a08874622046f1617a103cf4248a0d14411681710da5b29e3c",
+              "jsonBytes": 18187
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "lede--master.menu.ko.json.gz",
+              "hash": "4d0b1dcb51a648dbf4987c599fed2a4b04fdf3e120e568b798362398aca4a7ff",
+              "bytes": 5858,
+              "sha256": "135d66e0881aa6596f35f2bf4f020ca2fa128d2893d4c5c9ddca4dbd6433f9ae",
+              "jsonBytes": 15795
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "lede--master.menu.de.json.gz",
+              "hash": "5493f51d7a4abcf6deee1a7a6196148cfcbc5750fcb03e2f4c13235172c27453",
+              "bytes": 5493,
+              "sha256": "cf4f82f4969689bf16cf1820f3b346994dea911a04ffbbeb3da58b2b348ea1f4",
+              "jsonBytes": 15149
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "lede--master.menu.fr.json.gz",
+              "hash": "171807c6452eacdede1f5623df0f11c8dd8c492c5860549df899fa68163850f0",
+              "bytes": 5626,
+              "sha256": "e343f1a1d4f6d0c4cc3900fbff90a705797c43fe3b27a6d93918395e28f00b78",
+              "jsonBytes": 15967
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "lede--master.menu.vi.json.gz",
+              "hash": "2201b3a6d6939d30775693e52443cd4a15288995bcb02da744af7a6aea25fa5d",
+              "bytes": 5576,
+              "sha256": "546eb140c0085a9b28e97bf3378a6345057613e7174d4b428f0369744c966fe5",
+              "jsonBytes": 15888
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3201597,
+              "jsonBytes": 51267257
+            },
+            "split": {
+              "bytes": 1644805,
+              "initialBytes": 803011,
+              "graphJsonBytes": 3460606
+            },
+            "readableRelationsJsonBytes": 44716174,
+            "compactRelationsJsonBytes": 3460370
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:57.970Z",
+          "asset": "lede--master.json.gz",
+          "hash": "f70c1c0f4b334dce8e84f48220af36fc0b64de7dfbe28dbb40f28227bb3fd9dd",
+          "bytes": 3201597,
+          "lastAttemptAt": "2026-08-12T23:46:17.331Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "8882f211bb19277d37685456f622caed95e102bd",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "17-catalog-lede-master-93fcfce0-run-31651715183-attempt-1",
+          "order": 17,
+          "orderText": "17",
+          "jobName": "17 · Lean LEDE · master · coolsnowwolf/lede",
+          "failureLog": "",
+          "errorStage": ""
+        }
+      ]
+    },
+    {
+      "id": "OpenWrt",
+      "label": "OpenWrt",
+      "repo": "openwrt/openwrt",
+      "legacy": false,
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-openwrt.sh"
+      },
+      "branches": [
+        {
+          "id": "main",
+          "version": "main",
+          "branch": "main",
+          "counts": {
+            "targets": 152,
+            "selectableTargets": 108,
+            "unavailableTargets": 6,
+            "abstractTargets": 38,
+            "profiles": 2438,
+            "menuOptions": 9953,
+            "hiddenMenuOptions": 5892,
+            "packages": 12531,
+            "translatedZhCN": 122,
+            "missingZhCN": 9831
+          },
+          "commit": "53a0d54766e90b0263f268949979f730d42bec04",
+          "legacy": {
+            "asset": "openwrt--main.json.gz",
+            "hash": "980af2710ef44f573f38fe92ece64c05aa586c4dde82d772a09595986b524558",
+            "bytes": 3409429,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--main.core.json.gz",
+              "hash": "15e2e09a54776592a3738e593289572b6db527bb611ba5d5ccb207927e566517",
+              "bytes": 168381,
+              "sha256": "e869789c628b37cf3f190f760b979ec8eded05f6abda6daeace61334709587b5",
+              "jsonBytes": 2168251
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--main.graph.json.gz",
+              "hash": "fe0f9a9312f6704b0073c17e4760b7b7c5e23bf02d2572bd88b50c84c7aadc04",
+              "bytes": 867775,
+              "sha256": "e3fd97ebb95c1ca92f7d03ad79fe270285eba164a854c7bd2d0f914baa0a56f0",
+              "jsonBytes": 4303427
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--main.menu.json.gz",
+              "hash": "4acb412274911a47d479c5b15759a90cb7392b2abe830feef343845d0dbcdef2",
+              "bytes": 426541,
+              "sha256": "036cce47617a8fc1712689f8097374484a56d28bc670f5e0f7105c7644034ca8",
+              "jsonBytes": 3414524
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--main.hidden.json.gz",
+              "hash": "358042c8dc95001021c5dfc18745d6fc99ee23214093ef0d8b9a7636e6ee8586",
+              "bytes": 82116,
+              "sha256": "ae7517dc71c94bcb26d677d0c5cb68330c7c96d9131a505805d892c4663edccd",
+              "jsonBytes": 1245493
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--main.help.json.gz",
+              "hash": "1432c32b4fb8b5547bc486a2ef661b65981273a454585c9c253641d2341347a5",
+              "bytes": 307604,
+              "sha256": "71c1d3920de897eab1db4219f2f478e91bb5f8d888a89be10081cc747252f3f9",
+              "jsonBytes": 1468112
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--main.menu.zh-cn.json.gz",
+              "hash": "ee02e20a82a2c56452bd194bd2e5497f44a79574b4722fd258a858df65bda03c",
+              "bytes": 5091,
+              "sha256": "0be417a9bf4119f78069fc194c6552fd1e3ed21c94392a3785c1957cd6bb5b77",
+              "jsonBytes": 11873
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--main.menu.zh-tw.json.gz",
+              "hash": "21de8846b3e55ee7c6dd62c4c6dfde0a660a62d6fdd15e194496fa0356831e03",
+              "bytes": 4088,
+              "sha256": "f428dc88dddd18e3f47bdc4079a20c377284347c9f6eb1c9d6d739709bf4a835",
+              "jsonBytes": 8906
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--main.menu.ru.json.gz",
+              "hash": "3c96c93e0a81c29e5b7e56ca390d09ada27635a7ef3ec0e5b0d66bd42c2e0639",
+              "bytes": 4385,
+              "sha256": "5c788d78751d4c1b4d37b1956db551608ec1d8b0fcc3aad97b514572a894396a",
+              "jsonBytes": 12814
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--main.menu.es.json.gz",
+              "hash": "80c1a18f79499a4482d570423b9d88270a96b4697bf5abe35122d59c6ab16f88",
+              "bytes": 3822,
+              "sha256": "82cef465fded66c86d8f9f77f192434a6b1dea0af3d4711b5a53c74f16c785f5",
+              "jsonBytes": 9906
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--main.menu.pt.json.gz",
+              "hash": "27aa3420c45e726df6a888301e7c82b2949967fbbfbf2fbc12d5e4df972d25e0",
+              "bytes": 3710,
+              "sha256": "aa07122c1d4e9e6b4b1f5e5d6742c13133e0a48fb65fcf0f41c1cffd6078f1c3",
+              "jsonBytes": 9559
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--main.menu.ja.json.gz",
+              "hash": "56b09cd080ec70449c3f869705646b57606f07354150ddd1d13da6bd53ac9733",
+              "bytes": 4603,
+              "sha256": "a42d182afd175621d95b8cd0372a8c26cce99119f23d4c7d8bab1443d06ca245",
+              "jsonBytes": 11747
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--main.menu.ko.json.gz",
+              "hash": "6c52f29afa6c143d8d46b2bcbea818666acb84848e0c4b28603f8860ff978801",
+              "bytes": 4149,
+              "sha256": "2783c1e84c83bb9b7427a9344156e23878a99a9a5d12ffc885986a03f704ef64",
+              "jsonBytes": 10061
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--main.menu.de.json.gz",
+              "hash": "0a51e1287bb285312a9338acec3887df54707c4d11bf18111cff5dc173119798",
+              "bytes": 3817,
+              "sha256": "5f95af491d21983b8b724f8dc3a049a0951890c861e2d379323d0dfb32ed2d37",
+              "jsonBytes": 9757
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--main.menu.fr.json.gz",
+              "hash": "09da449d2889db079bc6983bdcd53fa58ca3154905c2c2c0d29f80b7a8219433",
+              "bytes": 3899,
+              "sha256": "91f790ee48a3c268eb762ee4ec37e040592eae56832b5e75651338095576c877",
+              "jsonBytes": 10235
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--main.menu.vi.json.gz",
+              "hash": "2c69e2b8433e6204787caf3279eae66b1033636071f289dea3ea8b0fc309b94d",
+              "bytes": 3940,
+              "sha256": "10bc61fdf41f37a5e2b0e9af321e4775826a9cb3ae42a65fd41e45e9fe71ce56",
+              "jsonBytes": 10217
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3409429,
+              "jsonBytes": 52236778
+            },
+            "split": {
+              "bytes": 1893921,
+              "initialBytes": 1036156,
+              "graphJsonBytes": 4303427
+            },
+            "readableRelationsJsonBytes": 47785476,
+            "compactRelationsJsonBytes": 4303194
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:31.973Z",
+          "asset": "openwrt--main.json.gz",
+          "hash": "980af2710ef44f573f38fe92ece64c05aa586c4dde82d772a09595986b524558",
+          "bytes": 3409429,
+          "lastAttemptAt": "2026-08-12T23:45:43.394Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "53a0d54766e90b0263f268949979f730d42bec04",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "09-catalog-openwrt-main-932b6366-run-31651715183-attempt-1",
+          "order": 9,
+          "orderText": "09",
+          "jobName": "09 · OpenWrt · main · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "25.12",
+          "version": "25.12",
+          "branch": "openwrt-25.12",
+          "counts": {
+            "targets": 150,
+            "selectableTargets": 102,
+            "unavailableTargets": 6,
+            "abstractTargets": 42,
+            "profiles": 2307,
+            "menuOptions": 9796,
+            "hiddenMenuOptions": 5775,
+            "packages": 12351,
+            "translatedZhCN": 122,
+            "missingZhCN": 9674
+          },
+          "commit": "d78c0fd16dbbb1099583e6995f5438d7c695960d",
+          "legacy": {
+            "asset": "openwrt--openwrt-25.12.json.gz",
+            "hash": "a3d66e620f3b8ed2565c6592c20fa86a7774cbd28bc555cdeb21dd7735c030ff",
+            "bytes": 3324281,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--openwrt-25.12.core.json.gz",
+              "hash": "add153d49fcb0e3123226e4fee642edc226e0520699579e606bf636670e68518",
+              "bytes": 159027,
+              "sha256": "1f72cb11da28456a7d3eebb452343e04097e411a266990e2a4036d859a1b9987",
+              "jsonBytes": 2047467
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--openwrt-25.12.graph.json.gz",
+              "hash": "010cb0bb30b0d70c3cee87024bb553e5afa64096872c6e5c005f6db66a2406ee",
+              "bytes": 845005,
+              "sha256": "f6eea0dfad24c8c048803e752c46cfe7db530ca3748e68fa84ae707f2a41bd30",
+              "jsonBytes": 4161278
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--openwrt-25.12.menu.json.gz",
+              "hash": "15af6216e985729f3d42908c5a3236527ff4f7414040deb0b1b506e40ee6c017",
+              "bytes": 417156,
+              "sha256": "db83dce418e84bda1c8c625f3bea4448c149b74ba7bcdee8f8171323cab5eb5c",
+              "jsonBytes": 3354966
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--openwrt-25.12.hidden.json.gz",
+              "hash": "80e3a2f946512f95d0d4145ec506fe265d5897a6c52a1e9be2fe67c23ffbb079",
+              "bytes": 80344,
+              "sha256": "916c72a3dd11fd64405f513a45d5eef8aac6975dddf7d758077005d5470611d5",
+              "jsonBytes": 1221584
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--openwrt-25.12.help.json.gz",
+              "hash": "d123d23e0ccab3339380b1809c7c1b7ec868d24ed7603e4d45ef92fc95e37ebf",
+              "bytes": 298852,
+              "sha256": "ce4a9d219025275290b1d3ca3d3d05000d004b17b688931e1f3277a9977e0357",
+              "jsonBytes": 1433216
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--openwrt-25.12.menu.zh-cn.json.gz",
+              "hash": "964259853b98044b8915e9bc9ab1440e4673e2cb7a7d25f7547ac5ce8577a183",
+              "bytes": 5081,
+              "sha256": "7ff8db69ddcd4cacded214c51653397e360e0d1c54b40fc73033670a12be99b5",
+              "jsonBytes": 11881
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--openwrt-25.12.menu.zh-tw.json.gz",
+              "hash": "d3e7614a245b9ab3aaff21da7bd552837956ce9fe4623ab6dfbfa98722ded6a2",
+              "bytes": 4153,
+              "sha256": "a7ef0dcd068f4cc4f35283842aee21af598f4edd28eff3b1092f77108344ba45",
+              "jsonBytes": 9078
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--openwrt-25.12.menu.ru.json.gz",
+              "hash": "b6f01b94a2200061d59312d97bcba2948a5e953ea77620173312bd9345721175",
+              "bytes": 4440,
+              "sha256": "86d245fa545f24c8875d44cf3a5dff0352168a6bcde08bb54f65cf32fce0af93",
+              "jsonBytes": 13045
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--openwrt-25.12.menu.es.json.gz",
+              "hash": "d55d673f30440ed50116b3324fe5f6fe1230f524322b9a44267b89cc1b255c89",
+              "bytes": 3884,
+              "sha256": "aaebea64b73568b7491b85381a565488e52a0f91369a14373bb9ef1c566c67ae",
+              "jsonBytes": 10102
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--openwrt-25.12.menu.pt.json.gz",
+              "hash": "6cc837f5b068aaefd3d22638724116d37b29f7a02ca2ec74b798f7d12fa1c410",
+              "bytes": 3772,
+              "sha256": "78fed764ba14a611a9ace4e5ed3b48bc1d453bd2f40ba962ee3f2fa79f80fedf",
+              "jsonBytes": 9730
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--openwrt-25.12.menu.ja.json.gz",
+              "hash": "aa4b6fd9562f0167ff84e3c4fc4a9f2a00bbc109340b305ddeb8f826decda9d2",
+              "bytes": 4668,
+              "sha256": "73e113554ec430ecba8160f6bc5c0b9275724d6b2c5a21bcccb21623cf4efba7",
+              "jsonBytes": 11952
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--openwrt-25.12.menu.ko.json.gz",
+              "hash": "565fdab5fc2e1a8f72411ee220928ea23b75d77fbffec763a1f3f628d90c59d0",
+              "bytes": 4230,
+              "sha256": "fcc1e608cc940c9ab37570c587d15a1de354fdbfe91666519fd8b046420da4af",
+              "jsonBytes": 10278
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--openwrt-25.12.menu.de.json.gz",
+              "hash": "2b4e588c571cfe732dc27baa03dc8069b1ada017b8399214114adcd034b87235",
+              "bytes": 3868,
+              "sha256": "568f62ef8f6556ce22a007baf2f17d6f6ebe12df6628b84345597d506c1a9f07",
+              "jsonBytes": 9932
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--openwrt-25.12.menu.fr.json.gz",
+              "hash": "ecfc5252e601326c21ed9b083e287afea2e1da904c566344e4b7261bc5898cda",
+              "bytes": 3969,
+              "sha256": "fde3ce6fa1914d409758f9b61c1ea487068bbed954890972c9f84229c3240101",
+              "jsonBytes": 10425
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--openwrt-25.12.menu.vi.json.gz",
+              "hash": "59edfb064a2e3f848b0c3c88db698dbf452d5c36b1776066b260075e39cec72b",
+              "bytes": 3998,
+              "sha256": "1bac778187e78bce057681fb4047e016a19d7ba6510cab681f701a009b54da77",
+              "jsonBytes": 10414
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 3324281,
+              "jsonBytes": 50748825
+            },
+            "split": {
+              "bytes": 1842447,
+              "initialBytes": 1004032,
+              "graphJsonBytes": 4161278
+            },
+            "readableRelationsJsonBytes": 46610565,
+            "compactRelationsJsonBytes": 4161036
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:54.958Z",
+          "asset": "openwrt--openwrt-25.12.json.gz",
+          "hash": "a3d66e620f3b8ed2565c6592c20fa86a7774cbd28bc555cdeb21dd7735c030ff",
+          "bytes": 3324281,
+          "lastAttemptAt": "2026-08-12T23:45:36.785Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "d78c0fd16dbbb1099583e6995f5438d7c695960d",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "10-catalog-openwrt-openwrt-25.12-f4dc5ed2-run-31651715183-attempt-1",
+          "order": 10,
+          "orderText": "10",
+          "jobName": "10 · OpenWrt · openwrt-25.12 · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "24.10",
+          "version": "24.10",
+          "branch": "openwrt-24.10",
+          "counts": {
+            "targets": 141,
+            "selectableTargets": 95,
+            "unavailableTargets": 6,
+            "abstractTargets": 40,
+            "profiles": 2079,
+            "menuOptions": 9503,
+            "hiddenMenuOptions": 5331,
+            "packages": 11820,
+            "translatedZhCN": 125,
+            "missingZhCN": 9378
+          },
+          "commit": "a1ea57bd050c172fdc2b851824ebd9782aafb055",
+          "legacy": {
+            "asset": "openwrt--openwrt-24.10.json.gz",
+            "hash": "ab71e4c05cc9b1d6ba78664318cf2a2cfe2d9ab3fddb6163bdd02fa718d86474",
+            "bytes": 2982709,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--openwrt-24.10.core.json.gz",
+              "hash": "9df3b493aeaf8241699522662c0c87ae8962def2b8550b263fbfb4bbcd2803a8",
+              "bytes": 142224,
+              "sha256": "9bfd5c4396e7afff97c6294a2c167345f2a73833c9ebc3a2e731e70195202bcc",
+              "jsonBytes": 1832545
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--openwrt-24.10.graph.json.gz",
+              "hash": "22ad497002cf735f6d91ea585f530cd1dad9533c843bc512e6e98785693ba7fb",
+              "bytes": 625385,
+              "sha256": "2ad81977bd3e4e7b6928e2a26c1594b785c40bdc9860c684a05e703b37eb3f63",
+              "jsonBytes": 3209748
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--openwrt-24.10.menu.json.gz",
+              "hash": "68797b73f280aab3cf8ad6be356858e708f80011a17bcfb409f027c8fbe72eaf",
+              "bytes": 400581,
+              "sha256": "9ff4ae692a93f1e6d37f9759ec063b452ebfc3b8322baa6ee0f47ef53198de26",
+              "jsonBytes": 3241071
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--openwrt-24.10.hidden.json.gz",
+              "hash": "6242a44d14412baf4526fadc41a9a59e3db6a7c0d552d135a68733cfd3a214c4",
+              "bytes": 73126,
+              "sha256": "eacf04f614cca48ad301b6c9a28b9729c3eecca5a7e03b77f2836fb0eb579e31",
+              "jsonBytes": 1131627
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--openwrt-24.10.help.json.gz",
+              "hash": "e19424122da08bbdffe225ae9df08c12eeba08c4ced7fed01a643331f90c1559",
+              "bytes": 288505,
+              "sha256": "64d32914f724e99a22ff52b10873820c04702fbaa3f1b1941ddf1c3b716ae54d",
+              "jsonBytes": 1375274
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--openwrt-24.10.menu.zh-cn.json.gz",
+              "hash": "0bf466986d3b5d1ee78ab05a2fd8c7ef31144a9582c7877b68e56113c7dd8543",
+              "bytes": 5169,
+              "sha256": "1713a99e14fe326d6e44604b5f41f71a654038b5de085a657eb432ed46e11c7e",
+              "jsonBytes": 11965
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--openwrt-24.10.menu.zh-tw.json.gz",
+              "hash": "bb29c4a53ad420b36d367ef3d4c85d325a301623f8e8245396be489de2c19d2a",
+              "bytes": 4409,
+              "sha256": "c58ce3c4418641c2d09e16f9368079061f25e54e376c32216fc263999e5378ae",
+              "jsonBytes": 9730
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--openwrt-24.10.menu.ru.json.gz",
+              "hash": "9af8aa9e8b97e1882dfdfa71f594cffcadad49d4060b1c733e1e4a1a5f0fc2cf",
+              "bytes": 4691,
+              "sha256": "63b09b2c721268ebba3e8f8c740127c70b59cd4a1ebb1fa531ae04e6e831bb7b",
+              "jsonBytes": 13951
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--openwrt-24.10.menu.es.json.gz",
+              "hash": "c627047d5ef08db04be8160a5b995ed4e66b5efd12cfb0062a1a6835527588b0",
+              "bytes": 4113,
+              "sha256": "1ee14fcda79d260a02db506a017d1021ac084304cfdfdc2a7b8652a33c7012a0",
+              "jsonBytes": 10824
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--openwrt-24.10.menu.pt.json.gz",
+              "hash": "9b6f6aadc7fea550d492d3e09d1e88f8fae8d1fffb2d3ad6dc8b3b4028753703",
+              "bytes": 3993,
+              "sha256": "b2bb886b6544d290c3275621db1c92275650fa50c160cff6c3afba92216662e9",
+              "jsonBytes": 10424
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--openwrt-24.10.menu.ja.json.gz",
+              "hash": "5fd4e14d6b6f42d0b032933935151adee745e65a81f5cca44b49669e50a6c744",
+              "bytes": 4926,
+              "sha256": "16b909305431fc6a1cb43a3056a96e05d2649e1cb8bd3c7ff55ddcab510f891e",
+              "jsonBytes": 12838
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--openwrt-24.10.menu.ko.json.gz",
+              "hash": "d463ed6316795a93a4bacf8c78b09879671f8cd37a501bb1f7c586fe4ee9c3f3",
+              "bytes": 4479,
+              "sha256": "c0d3d68cadc5cc154b0bcf9c4dc9ffbe7c93974f79650dccf2a7286a445e8142",
+              "jsonBytes": 11093
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--openwrt-24.10.menu.de.json.gz",
+              "hash": "8985c16dc2372d56505f36c955316f5f4fdcbb5b9dd4e67a61e111ae1469d086",
+              "bytes": 4101,
+              "sha256": "0709e48a26f1dd3dd099c547063c1c4e909246c26abcd34bd1ae85373e04982a",
+              "jsonBytes": 10623
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--openwrt-24.10.menu.fr.json.gz",
+              "hash": "170eb16cea7a23e047cb63271dee15bc386ec95ae7ab607e077c4c132d52ef8d",
+              "bytes": 4210,
+              "sha256": "9e2cd369b8c6b6eefd90e21fe5128a1592caab8d682a248b3701c275795fbd2c",
+              "jsonBytes": 11209
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--openwrt-24.10.menu.vi.json.gz",
+              "hash": "363dc2aef50ebfc053fd6dd4e445fac644e594db276b834149ce687c15c2bd3b",
+              "bytes": 4241,
+              "sha256": "6737c25205c679b88f92dcb2563fa2c7c87080203ac131c2b40e91e27954ff50",
+              "jsonBytes": 11199
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2982709,
+              "jsonBytes": 46216629
+            },
+            "split": {
+              "bytes": 1574153,
+              "initialBytes": 767609,
+              "graphJsonBytes": 3209748
+            },
+            "readableRelationsJsonBytes": 41745411,
+            "compactRelationsJsonBytes": 3209506
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:52.244Z",
+          "asset": "openwrt--openwrt-24.10.json.gz",
+          "hash": "ab71e4c05cc9b1d6ba78664318cf2a2cfe2d9ab3fddb6163bdd02fa718d86474",
+          "bytes": 2982709,
+          "lastAttemptAt": "2026-08-12T23:44:13.301Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "a1ea57bd050c172fdc2b851824ebd9782aafb055",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "11-catalog-openwrt-openwrt-24.10-11bb019d-run-31651715183-attempt-1",
+          "order": 11,
+          "orderText": "11",
+          "jobName": "11 · OpenWrt · openwrt-24.10 · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "23.05",
+          "version": "23.05",
+          "branch": "openwrt-23.05",
+          "counts": {
+            "targets": 132,
+            "selectableTargets": 88,
+            "unavailableTargets": 8,
+            "abstractTargets": 36,
+            "profiles": 2020,
+            "menuOptions": 9049,
+            "hiddenMenuOptions": 4571,
+            "packages": 10835,
+            "translatedZhCN": 126,
+            "missingZhCN": 8923
+          },
+          "commit": "33063b4ccf00d39393796499b23df55187b192dc",
+          "legacy": {
+            "asset": "openwrt--openwrt-23.05.json.gz",
+            "hash": "f4492e04955ebca85957e4cf760b0591aa541a69760b519c703f80a7d8f7910a",
+            "bytes": 2869539,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--openwrt-23.05.core.json.gz",
+              "hash": "0eae73f354f93069cca16f81715d2589e4707a245de6c65b6be9e4cbbc432821",
+              "bytes": 134090,
+              "sha256": "792b0971b25d719ac860332d2563fa32b1e1bb1c61b8fd5dfda7f52cb3fe4e7b",
+              "jsonBytes": 1768885
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--openwrt-23.05.graph.json.gz",
+              "hash": "d0e0a69da6f8c096ead4d5cf6fe414a058836aea183521dbeb547bd693160a63",
+              "bytes": 585198,
+              "sha256": "a378bec7d31232b5d9444d45f81465bdb7fd456d6a4bf8a8b695d86ea3ddd6ce",
+              "jsonBytes": 2923570
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--openwrt-23.05.menu.json.gz",
+              "hash": "623cfeea0a5bb50b33764cf4588b76e47289a516b9387a242715e3f96d8a3fea",
+              "bytes": 378026,
+              "sha256": "891ff3307b0a953957529d2c5a7aaf882e2ecd1387e5512a834e04a51ccc12ef",
+              "jsonBytes": 3084453
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--openwrt-23.05.hidden.json.gz",
+              "hash": "f402acf0e78bb26ce928d4b199002d7b2c3a8293687ec1515c0ac61140961a75",
+              "bytes": 61970,
+              "sha256": "25a26461805e148b3ecb692923059b0bf26e2f0e8ba5bdbd4dee79c3ea0f035d",
+              "jsonBytes": 967568
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--openwrt-23.05.help.json.gz",
+              "hash": "b18fe47051fbcd6669870966b8733c04e364bffa6cd74e22d0a327f3c79daef2",
+              "bytes": 274036,
+              "sha256": "49ae904a3a2780afe9abcd4d1a105d840ab0fa0fb63fd99019cf32204bfef3e0",
+              "jsonBytes": 1312227
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--openwrt-23.05.menu.zh-cn.json.gz",
+              "hash": "cfcb7dbf931de63e225b4811713c0e388fde3fbe2ad3ef5d9c6395136541c315",
+              "bytes": 5127,
+              "sha256": "e544a0f8f1713b9f87f8d606542f9be4c1203ffc8c148a336bcf873988d660f1",
+              "jsonBytes": 11836
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--openwrt-23.05.menu.zh-tw.json.gz",
+              "hash": "10827b287266c612832e653932be8f8fe208bb97fa27395c5a57ee332c48cb14",
+              "bytes": 4638,
+              "sha256": "9523206d4adb3be53efbeac03ae33e9d22402cd31f4affdc0a666425e19f5ffe",
+              "jsonBytes": 10559
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--openwrt-23.05.menu.ru.json.gz",
+              "hash": "8d5fcaaaef4361ccda8be862ff9d245ea3a8302c1d48fd2b2a18419668eb47e6",
+              "bytes": 4954,
+              "sha256": "b5d9f3668e2137ed7d315c2f17830e68e74ff31b85bb2e5d63072d4954c08f19",
+              "jsonBytes": 15127
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--openwrt-23.05.menu.es.json.gz",
+              "hash": "48715b40a4f66fa4b4b266d2f1bc4cbaaf1673ef5981b6645974ac5a03ab6a78",
+              "bytes": 4347,
+              "sha256": "e640c4507203bbc61efea4e94a39711715ac46b55e23d59a4b307d08abbe4e67",
+              "jsonBytes": 11754
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--openwrt-23.05.menu.pt.json.gz",
+              "hash": "be12e268359f12f0dbdd4399c9834e6df5d50a3e8492165eef0166f45bfddfd2",
+              "bytes": 4233,
+              "sha256": "a01e7d440876e8c2475621582310ffe4ebb61bd30500f11f767ae0daa6e27c0c",
+              "jsonBytes": 11329
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--openwrt-23.05.menu.ja.json.gz",
+              "hash": "04764efef08b71a2189752db3900ea4a91b95a509b6c8097f8bfea0a64762306",
+              "bytes": 5185,
+              "sha256": "eec3f777c14eecb34f5f02d7adec19ae14896abe5435aeb1b96ae3880617206f",
+              "jsonBytes": 13953
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--openwrt-23.05.menu.ko.json.gz",
+              "hash": "fe7cab4070f9cfb361ca553b0e3842efae39cfb629dfd95fb182b20ccef3b2fa",
+              "bytes": 4732,
+              "sha256": "8e933a9c46b9a8ebf878bc195622f4b6ec9c1342720baedbb5f80493fb7ba5fd",
+              "jsonBytes": 12069
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--openwrt-23.05.menu.de.json.gz",
+              "hash": "629d8a9a7fab04c851380866b55b05d12ad2dfe4ede773493e1d18695d9b7287",
+              "bytes": 4345,
+              "sha256": "601e47ac453d1356147769342fa9a0d8d8f20b2bc251979902ff49e2d2f6cd49",
+              "jsonBytes": 11538
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--openwrt-23.05.menu.fr.json.gz",
+              "hash": "ff71fbd9f4c08e88e2de4aa2ae65ae6961d9b009d1c16e4e94d2bf3a5a966e0f",
+              "bytes": 4451,
+              "sha256": "b0f14a43ddb2c9607baf9ec0e5da887219eeaf9527e9aaa5480caf7b7e322333",
+              "jsonBytes": 12176
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--openwrt-23.05.menu.vi.json.gz",
+              "hash": "8c20ba8b7a3fd0c447d4ae6524cbadbbcbfe62cd2b87b1c2e050c808728a217a",
+              "bytes": 4451,
+              "sha256": "ef5890bb3f69b99d2dcba5e9522160609e1256f4aaea6cc2b57b8d5ea1c1f23d",
+              "jsonBytes": 12110
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2869539,
+              "jsonBytes": 44168392
+            },
+            "split": {
+              "bytes": 1479783,
+              "initialBytes": 719288,
+              "graphJsonBytes": 2923570
+            },
+            "readableRelationsJsonBytes": 38152088,
+            "compactRelationsJsonBytes": 2923328
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:37.859Z",
+          "asset": "openwrt--openwrt-23.05.json.gz",
+          "hash": "f4492e04955ebca85957e4cf760b0591aa541a69760b519c703f80a7d8f7910a",
+          "bytes": 2869539,
+          "lastAttemptAt": "2026-08-12T23:43:38.845Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "33063b4ccf00d39393796499b23df55187b192dc",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "12-catalog-openwrt-openwrt-23.05-b37f490e-run-31651715183-attempt-1",
+          "order": 12,
+          "orderText": "12",
+          "jobName": "12 · OpenWrt · openwrt-23.05 · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "22.03",
+          "version": "22.03",
+          "branch": "openwrt-22.03",
+          "counts": {
+            "targets": 110,
+            "selectableTargets": 76,
+            "unavailableTargets": 5,
+            "abstractTargets": 29,
+            "profiles": 1751,
+            "menuOptions": 8605,
+            "hiddenMenuOptions": 4277,
+            "packages": 10387,
+            "translatedZhCN": 123,
+            "missingZhCN": 8482
+          },
+          "commit": "4e1d1b7df0ce6fa96d7462dc883917682f428046",
+          "legacy": {
+            "asset": "openwrt--openwrt-22.03.json.gz",
+            "hash": "0391af3d83d3bb3a660771c321c31ed528d6c11ee3b51f961ded651e7002f1ac",
+            "bytes": 2870755,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--openwrt-22.03.core.json.gz",
+              "hash": "42940af3b49f918fc36acd07846e1456fcc6b6f3b319444006f53303ac180d62",
+              "bytes": 115231,
+              "sha256": "a26c3c99008f4be8ae1471ed44ef818720d20a51e0c26478a6b179b537e657ab",
+              "jsonBytes": 1517749
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--openwrt-22.03.graph.json.gz",
+              "hash": "175e530cb54d92edc77c755a6490e50a244260196b9ba50c912ed8ea1ffcd19e",
+              "bytes": 605134,
+              "sha256": "91c1ded14c2f19d96c1eafa504ab939faddcb5c61efdf4716342f1b4233f0b4b",
+              "jsonBytes": 2962414
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--openwrt-22.03.menu.json.gz",
+              "hash": "106747a57e85fa1813d77757f12b9d11405fe93e1535a494ea2621703d879153",
+              "bytes": 360057,
+              "sha256": "bfc3669a8ae401046865687c0a3146b618243319ead46bb50cfb96c8a38d583e",
+              "jsonBytes": 2938043
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--openwrt-22.03.hidden.json.gz",
+              "hash": "03ba36c255f2c66e89cd65dde8dfb35a184ca53a8f475b7e8877872a6579af8b",
+              "bytes": 58793,
+              "sha256": "092c3099402f29ea642d1fa5e36d5e91801477de45bef62dfb7121c3e7586fae",
+              "jsonBytes": 913435
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--openwrt-22.03.help.json.gz",
+              "hash": "39327072f2a2eece5c7bb6e7d6ecb83c39af564b96124ca4dda86f6bf09ffb33",
+              "bytes": 261831,
+              "sha256": "15989a2c2cc395c25ff0668662644c326801eeee8d9fb83e3350b87f0b760df4",
+              "jsonBytes": 1256983
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--openwrt-22.03.menu.zh-cn.json.gz",
+              "hash": "38ddef412943f41488924156192fbe32f6736246f3f00c4d64a39b775de02fdc",
+              "bytes": 5010,
+              "sha256": "a57ef4e8a0574fb96150526129c2129ca396c0607db461cfa411760de22237c4",
+              "jsonBytes": 11578
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--openwrt-22.03.menu.zh-tw.json.gz",
+              "hash": "36c4d0af2d86c049a928de756388ad950c255a3eee5cd0540326fb55c28a76ac",
+              "bytes": 4515,
+              "sha256": "2ef94eba0421367902c18b4c8fddd033b56f89c74e4f3a4f4dd486224372cbcf",
+              "jsonBytes": 10298
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--openwrt-22.03.menu.ru.json.gz",
+              "hash": "e43af6468386b749062ca8f6a3b41448a6ec02e486f6b322b86d956c4d5f3b09",
+              "bytes": 4857,
+              "sha256": "2e09e6d8efc6b283d920d6783ee768c2bd1d8c37f3e7aec0ebc44bb73860cb68",
+              "jsonBytes": 14851
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--openwrt-22.03.menu.es.json.gz",
+              "hash": "7ef69a5c9e740001a10c1bb063e08665c483b22da9a66b3b73a540a501b515fa",
+              "bytes": 4243,
+              "sha256": "2955fae7dcae9db68d2983a8467ad771c24bd3782fd9b15007658e7ddaa3022a",
+              "jsonBytes": 11457
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--openwrt-22.03.menu.pt.json.gz",
+              "hash": "e5c31c703f25bb9203ad5bab009d0018d4c0231130f7c384252c302bba4ce1e4",
+              "bytes": 4133,
+              "sha256": "1a969611a04003b80ae0a0196293609203d473f9bae5bf2defca869244c43755",
+              "jsonBytes": 11056
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--openwrt-22.03.menu.ja.json.gz",
+              "hash": "b2e86e9c1b03f896f8ceb99d2470b83c327419a898b357d214b9e6006cfe6d81",
+              "bytes": 5044,
+              "sha256": "6747be822a4b331b1af8b3d51d2219d69d0f3b319ee1378c54461a00fff71c65",
+              "jsonBytes": 13606
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--openwrt-22.03.menu.ko.json.gz",
+              "hash": "4d0848ed4bac6c2e738e93b678cf34e841a0cd414542f05c0645804e207ab418",
+              "bytes": 4619,
+              "sha256": "341ef7796c2c0277123c199db633a9472b54aada892c457c5db6651a8a129a8d",
+              "jsonBytes": 11787
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--openwrt-22.03.menu.de.json.gz",
+              "hash": "244db04536bc247bb3a7dabb80e0e7ca44774444bbe4dd9453a300fc3abc4b73",
+              "bytes": 4242,
+              "sha256": "667f73986241c365e96406b4ac573927c33f4bae6bc65d6e8127a8b7f3ab1889",
+              "jsonBytes": 11277
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--openwrt-22.03.menu.fr.json.gz",
+              "hash": "1f28907e7d77435a4e8a594cb5a06a9cfb963a4fc6024aa08f13e412c19de30e",
+              "bytes": 4324,
+              "sha256": "a42004508734b17fc95a73db36968cea232f50979606b010c681bc13727cebe1",
+              "jsonBytes": 11856
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--openwrt-22.03.menu.vi.json.gz",
+              "hash": "f95d18f2a33afb3f8f924fbca9353131166880962e2ce07a009578bb330086f7",
+              "bytes": 4357,
+              "sha256": "f42900faf72b2b0d3c9e812248945a50da6f7b95699deb1f433439a72bfa8a75",
+              "jsonBytes": 11844
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2870755,
+              "jsonBytes": 47199546
+            },
+            "split": {
+              "bytes": 1446390,
+              "initialBytes": 720365,
+              "graphJsonBytes": 2962414
+            },
+            "readableRelationsJsonBytes": 44170881,
+            "compactRelationsJsonBytes": 2962172
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:42:59.303Z",
+          "asset": "openwrt--openwrt-22.03.json.gz",
+          "hash": "0391af3d83d3bb3a660771c321c31ed528d6c11ee3b51f961ded651e7002f1ac",
+          "bytes": 2870755,
+          "lastAttemptAt": "2026-08-12T23:43:53.361Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "4e1d1b7df0ce6fa96d7462dc883917682f428046",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "13-catalog-openwrt-openwrt-22.03-38e91385-run-31651715183-attempt-1",
+          "order": 13,
+          "orderText": "13",
+          "jobName": "13 · OpenWrt · openwrt-22.03 · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "21.02",
+          "version": "21.02",
+          "branch": "openwrt-21.02",
+          "counts": {
+            "targets": 100,
+            "selectableTargets": 68,
+            "unavailableTargets": 3,
+            "abstractTargets": 29,
+            "profiles": 1545,
+            "menuOptions": 8401,
+            "hiddenMenuOptions": 4118,
+            "packages": 10109,
+            "translatedZhCN": 114,
+            "missingZhCN": 8287
+          },
+          "commit": "78e4cffcd882389cb8f0bf818303f85f8d1e9c8e",
+          "legacy": {
+            "asset": "openwrt--openwrt-21.02.json.gz",
+            "hash": "bfc877b7d578c4ca75927efe4c153e6829c815f0547086f78afa35a3a0055bab",
+            "bytes": 2788507,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--openwrt-21.02.core.json.gz",
+              "hash": "7572e89e589aa26c923b7907885ec9aacbfdcc31d5b534210ea151cd31ed7583",
+              "bytes": 101312,
+              "sha256": "7930ea96c8eafb1e3aed6c1f8c3422733ec764dd145e530734018734af24427a",
+              "jsonBytes": 1340087
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--openwrt-21.02.graph.json.gz",
+              "hash": "43813b3a07af3edb83ea1d7f00f9028bb6b5abc9321c1b4205f3378e8a4fd4f2",
+              "bytes": 586146,
+              "sha256": "1908feacde02d94b7f9fab1815f213efa0046da78b42207efd9b5ac3b2e5aeb9",
+              "jsonBytes": 2881071
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--openwrt-21.02.menu.json.gz",
+              "hash": "881209d4b27b24a98983bcfcdd058369a424e299022cc12de1e497cf9309b9a4",
+              "bytes": 347756,
+              "sha256": "9231428205062d59c4093fa8ff3ec7abc16e1db8ebd046dc8892cfb98d001404",
+              "jsonBytes": 2872065
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--openwrt-21.02.hidden.json.gz",
+              "hash": "4f0eb2bde07e7da136625cee367391d668e9df42a340b2b05a8e4f9387450209",
+              "bytes": 56052,
+              "sha256": "f724ad05c1d0b2c4004af4cbc8558c66adaf0a9caab968e8803c6b10a05c7a70",
+              "jsonBytes": 872594
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--openwrt-21.02.help.json.gz",
+              "hash": "610711e2be241dc19b85e237a8445eb62de0e22bf83ea5cd213c763d65ae3063",
+              "bytes": 251569,
+              "sha256": "d37c42c933e16a591eb5697f12c555c83ff940abf11174017296a4c20dd6b66f",
+              "jsonBytes": 1223603
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--openwrt-21.02.menu.zh-cn.json.gz",
+              "hash": "1b5b25a3ef49a7885a65b9994bae11e581319dc39034e95e74efc55d7c12be7b",
+              "bytes": 4772,
+              "sha256": "3bc1a3198d58f5c1b4afb9e0ec2fe720b62ac3355e9c97c5e66cc842a701eeb0",
+              "jsonBytes": 10857
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--openwrt-21.02.menu.zh-tw.json.gz",
+              "hash": "92fd19a4efab8a7071813ebddf45487802de2c03d2d4ffda718f69f51e4e7fa6",
+              "bytes": 4278,
+              "sha256": "546f2c6cef7d45cd476efe7f7f811c837c1ee7ab7c82a59aa7021ca9399fa720",
+              "jsonBytes": 9652
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--openwrt-21.02.menu.ru.json.gz",
+              "hash": "df81c91db3c183202e0b104b5d0fd9cb2530e7b2f9f70e97afe6f670f438d7a5",
+              "bytes": 4606,
+              "sha256": "984d6c4656db7923e5480607d10c07dd518647731772ca3d93e3ee4e8eee512d",
+              "jsonBytes": 13848
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--openwrt-21.02.menu.es.json.gz",
+              "hash": "8ec408106f9e4be95ec129de507732650b125ec5037527452466a055dcfe177d",
+              "bytes": 4000,
+              "sha256": "029921896659570ff042ad7b7f601d31be8166f9b8941f7e7934ce07dfd5459e",
+              "jsonBytes": 10740
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--openwrt-21.02.menu.pt.json.gz",
+              "hash": "ef3107f7524dc67a124f83389646409ca39db1c403d57c109ddfa1bef52d3161",
+              "bytes": 3885,
+              "sha256": "481bf304a9e820adda66c36e8933d78ea591ab097aa2709fb310f401ff822b12",
+              "jsonBytes": 10343
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--openwrt-21.02.menu.ja.json.gz",
+              "hash": "5a208076989c4cbd8e194f07409691342008b4cd79a44a80256bff98be290da6",
+              "bytes": 4779,
+              "sha256": "d16384cfdff0dc76b52d3574c69d3dfb7b463f381a8f727949f1afd73735f387",
+              "jsonBytes": 12722
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--openwrt-21.02.menu.ko.json.gz",
+              "hash": "9e56d08eb78f8a7c9d7765d548816774b7008502bd3afea1f6dd2879207387b4",
+              "bytes": 4362,
+              "sha256": "81b6e010b2aba2ed25da34f6616ed02521561e2cad51bff3664dd621f3caa446",
+              "jsonBytes": 11040
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--openwrt-21.02.menu.de.json.gz",
+              "hash": "87d2598f166c7ac11c55770515ea5bf92090d1b629d935dc5832ad493745829a",
+              "bytes": 4017,
+              "sha256": "e93f367bcbf4139968659a31f87031a7668de6f3ddebbf11a98d33773ae44e58",
+              "jsonBytes": 10544
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--openwrt-21.02.menu.fr.json.gz",
+              "hash": "09355704e15f5eb2e2e090752ba52a22ba2d4e96a83634c589f4448b7370f7f5",
+              "bytes": 4069,
+              "sha256": "eff83db84b0c7db74bb32e8bc400038b1ec55d73ec1fb6d55eece95709cff957",
+              "jsonBytes": 11113
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--openwrt-21.02.menu.vi.json.gz",
+              "hash": "fa26b6148202c502b748b1e06cf7a8b997b0df78b42010d64a4069e6a667bf9f",
+              "bytes": 4117,
+              "sha256": "b3d6915a08bc9ed7e9b0e3e24e97c7434bb0c8af647b4dc3fa45884ddaffc772",
+              "jsonBytes": 11077
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2788507,
+              "jsonBytes": 46285457
+            },
+            "split": {
+              "bytes": 1385720,
+              "initialBytes": 687458,
+              "graphJsonBytes": 2881071
+            },
+            "readableRelationsJsonBytes": 43187513,
+            "compactRelationsJsonBytes": 2880829
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:43:01.580Z",
+          "asset": "openwrt--openwrt-21.02.json.gz",
+          "hash": "bfc877b7d578c4ca75927efe4c153e6829c815f0547086f78afa35a3a0055bab",
+          "bytes": 2788507,
+          "lastAttemptAt": "2026-08-12T23:43:42.972Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "78e4cffcd882389cb8f0bf818303f85f8d1e9c8e",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "14-catalog-openwrt-openwrt-21.02-01332792-run-31651715183-attempt-1",
+          "order": 14,
+          "orderText": "14",
+          "jobName": "14 · OpenWrt · openwrt-21.02 · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "19.07",
+          "version": "19.07",
+          "branch": "openwrt-19.07",
+          "counts": {
+            "targets": 98,
+            "selectableTargets": 65,
+            "unavailableTargets": 4,
+            "abstractTargets": 29,
+            "profiles": 1498,
+            "menuOptions": 8064,
+            "hiddenMenuOptions": 3486,
+            "packages": 9332,
+            "translatedZhCN": 102,
+            "missingZhCN": 7962
+          },
+          "commit": "1da2e82c1182a3fd681da5760be96821213afadd",
+          "legacy": {
+            "asset": "openwrt--openwrt-19.07.json.gz",
+            "hash": "92f09ab235908306d1b2099465eb172dddaf688d1af139a5bcb9145fbbbca775",
+            "bytes": 2686171,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--openwrt-19.07.core.json.gz",
+              "hash": "a5a17a1b43a118b644652a35d7eb0bf32d1649a6fcfa1b1373aef0675be42aed",
+              "bytes": 92303,
+              "sha256": "6c46ef89f701a6e3a1f3c461ad95e20d7cb9c9b1cefafbadaf3cfb78164dd375",
+              "jsonBytes": 1244852
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--openwrt-19.07.graph.json.gz",
+              "hash": "7d9f3d7a8a292a91c5f7fe62a3c8c3155eb2e97cfbd9be815d44075792630dd6",
+              "bytes": 542522,
+              "sha256": "0ae2ce8dbe7b4ffe5a7fa07232a26150182d584d5e2305cd553d13f8b665a09c",
+              "jsonBytes": 2822762
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--openwrt-19.07.menu.json.gz",
+              "hash": "9e79409092cae5f98773eec77a3f1da2a7c4ecad028c53888ec4e75b494aee80",
+              "bytes": 318159,
+              "sha256": "5d56e5b045274a3950b342b521a5b7e406cabce9c6578f296e9515381c017b71",
+              "jsonBytes": 2793607
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--openwrt-19.07.hidden.json.gz",
+              "hash": "e6041458b21b96646024ab9b9ebace046b6a6b9dfc31f1f7beeb9d3751e08210",
+              "bytes": 47034,
+              "sha256": "49569ead3d4c8a3efdd193e151423376c4a4f218eb0749fde05af7cb6a6c2bf5",
+              "jsonBytes": 732007
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--openwrt-19.07.help.json.gz",
+              "hash": "429cdcf975b61a6818f7eb974cd7c29fe695c63685db6a7bf32a28b5dd6f99d8",
+              "bytes": 224344,
+              "sha256": "6763b6fce9a5c5116a07430f6247cfc57b82af86d129ac9d4d9ee89231f52728",
+              "jsonBytes": 1198755
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--openwrt-19.07.menu.zh-cn.json.gz",
+              "hash": "0bd309e4deb4e841e61ecd4310c9f63c9ba929734d8c2b9ae2dc96e925f25044",
+              "bytes": 4344,
+              "sha256": "09c438f56ac526220d07cddb34fb2624aa2d8ab643aa6988f52c1411785f009f",
+              "jsonBytes": 9985
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--openwrt-19.07.menu.zh-tw.json.gz",
+              "hash": "923fb5e84ffe531008f0316d99cccae34c4c01aa5bc1c336a1b7501b8bedd0c6",
+              "bytes": 3763,
+              "sha256": "3fd929bbe2b048da40432d998d3ec5bb5cc11082d8718be970aae04188839155",
+              "jsonBytes": 8198
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--openwrt-19.07.menu.ru.json.gz",
+              "hash": "0c30226dd83354655d493f3d2a4524ccb612f793377958d9fda326f27f78ece9",
+              "bytes": 4032,
+              "sha256": "200f46404bf7a895a2a8af90e9ebbeed0a748bbce474709ca169f56e8c9556bd",
+              "jsonBytes": 11656
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--openwrt-19.07.menu.es.json.gz",
+              "hash": "fd079a147f7c9cd8b3a33b22786d408be91bee2df7804823135570780dfbd896",
+              "bytes": 3497,
+              "sha256": "77b1824e622cf770a1f6e4a352fb7d0c3bcac68b9d31d80746fab6c9753a7dd6",
+              "jsonBytes": 9115
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--openwrt-19.07.menu.pt.json.gz",
+              "hash": "d6d21c2995cb58b34b508b5e4a80b2f5c52eb09f2e72db1893b458d3f107cb38",
+              "bytes": 3398,
+              "sha256": "c2d535503740ff1f89306fb951647e792c54d6a9adf0bb0b3ba83302c32c9621",
+              "jsonBytes": 8775
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--openwrt-19.07.menu.ja.json.gz",
+              "hash": "8d53af6d59733ab0fbf7f6e7f86062246d6c5b75bcc535d8c56c14f4ee934b98",
+              "bytes": 4235,
+              "sha256": "0b2c974f5630cd5f1d6f963f70be155b1515d4544b4144479999521076cb700e",
+              "jsonBytes": 10830
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--openwrt-19.07.menu.ko.json.gz",
+              "hash": "1f39f64f857ac5b08627bbff28654baed78b3656ded1a5bf97ab0abcfd85544e",
+              "bytes": 3861,
+              "sha256": "7991e75454777924abf03a731715765d187acfc47bc8755dd9e4c5ef6e7b6434",
+              "jsonBytes": 9373
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--openwrt-19.07.menu.de.json.gz",
+              "hash": "07390d18e74b9058094127756294801371f36beba6b4851b23513bfb663e3110",
+              "bytes": 3518,
+              "sha256": "480a00d409aa4fd2f5f3f8f05af2ea126d6b2e7894df4914dc9b639812d934d4",
+              "jsonBytes": 8932
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--openwrt-19.07.menu.fr.json.gz",
+              "hash": "b18c1bb6ed75d0b02d7acc94f36d3bfc929b6530bc6023b05b870fbefc901d59",
+              "bytes": 3572,
+              "sha256": "85819a7eb3d7d214a403144db9aeb50fbc430d57fe10dc9e60306e7afb1b7288",
+              "jsonBytes": 9413
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--openwrt-19.07.menu.vi.json.gz",
+              "hash": "45040ac69deb3810ab74e58b40dc0b2c5046d7f93898722b04fa788b7b882cb7",
+              "bytes": 3611,
+              "sha256": "d331a8fdcb14098d7c38350533761e9983e127fe50c3572a92f388ebdcd8dedc",
+              "jsonBytes": 9353
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2686171,
+              "jsonBytes": 47442418
+            },
+            "split": {
+              "bytes": 1262193,
+              "initialBytes": 634825,
+              "graphJsonBytes": 2822762
+            },
+            "readableRelationsJsonBytes": 44486273,
+            "compactRelationsJsonBytes": 2822520
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:39.316Z",
+          "asset": "openwrt--openwrt-19.07.json.gz",
+          "hash": "92f09ab235908306d1b2099465eb172dddaf688d1af139a5bcb9145fbbbca775",
+          "bytes": 2686171,
+          "lastAttemptAt": "2026-08-12T23:42:24.041Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "1da2e82c1182a3fd681da5760be96821213afadd",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "15-catalog-openwrt-openwrt-19.07-6c52a4ef-run-31651715183-attempt-1",
+          "order": 15,
+          "orderText": "15",
+          "jobName": "15 · OpenWrt · openwrt-19.07 · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        },
+        {
+          "id": "18.06",
+          "version": "18.06",
+          "branch": "openwrt-18.06",
+          "counts": {
+            "targets": 98,
+            "selectableTargets": 64,
+            "unavailableTargets": 3,
+            "abstractTargets": 31,
+            "profiles": 1237,
+            "menuOptions": 6873,
+            "hiddenMenuOptions": 2007,
+            "packages": 6797,
+            "translatedZhCN": 90,
+            "missingZhCN": 6783
+          },
+          "commit": "9f2a40c72fdb0b9b077bf5b4b01aa17eac4bfb45",
+          "legacy": {
+            "asset": "openwrt--openwrt-18.06.json.gz",
+            "hash": "91213a011a570ca9702738acf2521d148aca5bd50019db0b458132a68aebd95b",
+            "bytes": 2132352,
+            "catalogSchema": 5,
+            "relationsSchema": 2
+          },
+          "assets": {
+            "core": {
+              "logical": "core",
+              "asset": "openwrt--openwrt-18.06.core.json.gz",
+              "hash": "3d25c77873776232330c05b5f49ec69b2f253a13eb832ebb51214b057034d02a",
+              "bytes": 76668,
+              "sha256": "5d657337808210541d779993a9aa2964d30f9de97045173ac1525d8c5c57be02",
+              "jsonBytes": 1025106
+            },
+            "graph": {
+              "logical": "graph",
+              "asset": "openwrt--openwrt-18.06.graph.json.gz",
+              "hash": "2325aa4711d18337b8f73d27810438337b3815855c4156252d405559c97df4ab",
+              "bytes": 399385,
+              "sha256": "9a369c08871062afd2870a68d7512b733db9a6567bf1174f4543c2395878cd04",
+              "jsonBytes": 2039023
+            },
+            "menu": {
+              "logical": "menu",
+              "asset": "openwrt--openwrt-18.06.menu.json.gz",
+              "hash": "f07592423b2fa4997c9a85063deff0cfa40b3cc5954c7b412e10de130c64568b",
+              "bytes": 280824,
+              "sha256": "a169498df5d6616f95aacf397d4df4732962c8388c17181e943e5a6de0781545",
+              "jsonBytes": 2300602
+            },
+            "hidden": {
+              "logical": "hidden",
+              "asset": "openwrt--openwrt-18.06.hidden.json.gz",
+              "hash": "24239311d4aae75b64424c8927d39ebc8c331cfc7ac779ca39d7d7aa2851f99a",
+              "bytes": 28066,
+              "sha256": "a11c3a4a9e62b982c2c9ef9c99c4c9a9627ac644073ce20a707722f5a74532f1",
+              "jsonBytes": 392323
+            },
+            "help": {
+              "logical": "help",
+              "asset": "openwrt--openwrt-18.06.help.json.gz",
+              "hash": "0077fabc3f5ef57b714bab4c7c0756688a5a58dac45e8f579086451933511fe2",
+              "bytes": 196552,
+              "sha256": "3390f7204b8beecf6539f865b4fe5aba6a4ff3f22f1c90d7d9c92849af9f14bb",
+              "jsonBytes": 920852
+            },
+            "menu:zh-CN": {
+              "logical": "menu:zh-CN",
+              "asset": "openwrt--openwrt-18.06.menu.zh-cn.json.gz",
+              "hash": "0fb0c8b2a8baa3f99c12ff25a75326a1ea2f1cc14e8681b9d195b1cc4d19a2d7",
+              "bytes": 3984,
+              "sha256": "02462083c5e7426d5d89781222889be5e53094e9e356616adbd39887c0f806ba",
+              "jsonBytes": 9005
+            },
+            "menu:zh-TW": {
+              "logical": "menu:zh-TW",
+              "asset": "openwrt--openwrt-18.06.menu.zh-tw.json.gz",
+              "hash": "dc9c1b7b22f745e48248048f5f18b068b19a0064da77b22731e67f071a5fbcbb",
+              "bytes": 3367,
+              "sha256": "ceb320b297a2a6c85c99e8006c2340e8803ff4ba31e802afa2b64c511d6c488c",
+              "jsonBytes": 7053
+            },
+            "menu:ru": {
+              "logical": "menu:ru",
+              "asset": "openwrt--openwrt-18.06.menu.ru.json.gz",
+              "hash": "6983f6edb4496305a3bf1614c86660f9af4673c1a41442b78389d9b288428a32",
+              "bytes": 3581,
+              "sha256": "e6fa3a87eb88af529b4a2ddf50b2e4448a485334ff77deccadb5ba57e2d60039",
+              "jsonBytes": 9952
+            },
+            "menu:es": {
+              "logical": "menu:es",
+              "asset": "openwrt--openwrt-18.06.menu.es.json.gz",
+              "hash": "e34384097202807de84d78ada0dd6a170196166591398e997189e5a7a7f46776",
+              "bytes": 3105,
+              "sha256": "45cafaa39e0c05187ce147a397584627c154decc14aa24e0cea0b33457adca3b",
+              "jsonBytes": 7857
+            },
+            "menu:pt": {
+              "logical": "menu:pt",
+              "asset": "openwrt--openwrt-18.06.menu.pt.json.gz",
+              "hash": "d229a8ec6d35380d82b264464d7714d504ea5a7b348718ba4f19fa4a067bf909",
+              "bytes": 3029,
+              "sha256": "5094724174482f32ebb092af3b08438f6cdab859fbd4a25d32100b03304ef3c0",
+              "jsonBytes": 7559
+            },
+            "menu:ja": {
+              "logical": "menu:ja",
+              "asset": "openwrt--openwrt-18.06.menu.ja.json.gz",
+              "hash": "a758704e6818a09391466ca9a1b32d6ca00720d4fa8b31452b9f83dffd63a2f1",
+              "bytes": 3777,
+              "sha256": "f035a3694c4ea339a464ccf970cfd740a84c9f94b8779d3b080a4f19170c06d3",
+              "jsonBytes": 9312
+            },
+            "menu:ko": {
+              "logical": "menu:ko",
+              "asset": "openwrt--openwrt-18.06.menu.ko.json.gz",
+              "hash": "6a463b0834b3ec7decca78012b5adeaa04e7646e84a1a83cf561f676145c524e",
+              "bytes": 3458,
+              "sha256": "4a31bb48ceead5bb9dbc6be24a2897b704aa032e84f46cbac911ce07f353c7be",
+              "jsonBytes": 8084
+            },
+            "menu:de": {
+              "logical": "menu:de",
+              "asset": "openwrt--openwrt-18.06.menu.de.json.gz",
+              "hash": "324040e5f64aa0847199de9f3fa115b49bcea592f9a91a5a86b159dd428dfbe5",
+              "bytes": 3141,
+              "sha256": "aab6c6ed898b1f0030cdb709eedeaee716f92dec48fc05f76546c5692456d5ce",
+              "jsonBytes": 7708
+            },
+            "menu:fr": {
+              "logical": "menu:fr",
+              "asset": "openwrt--openwrt-18.06.menu.fr.json.gz",
+              "hash": "56a471a589126746ed19e6302d48ff56a240b7b28a0192ef9f0b98ea3fce4d61",
+              "bytes": 3166,
+              "sha256": "c905f85a8dd7f02169a40ffc8ef7a71548d1bff9922750ab139a1308b789326d",
+              "jsonBytes": 8096
+            },
+            "menu:vi": {
+              "logical": "menu:vi",
+              "asset": "openwrt--openwrt-18.06.menu.vi.json.gz",
+              "hash": "2f2eefa677b0bb48d4961d1b3765e69a2baabfea5b237b731ff60a1122964a53",
+              "bytes": 3203,
+              "sha256": "157deea106b15d5affa80bddc9e9573d493ce74305a26f223628266b8ecac5aa",
+              "jsonBytes": 8035
+            }
+          },
+          "schema": 6,
+          "sizeReport": {
+            "legacy": {
+              "bytes": 2132352,
+              "jsonBytes": 35310083
+            },
+            "split": {
+              "bytes": 1015306,
+              "initialBytes": 476053,
+              "graphJsonBytes": 2039023
+            },
+            "readableRelationsJsonBytes": 31900618,
+            "compactRelationsJsonBytes": 2038781
+          },
+          "state": "fresh",
+          "lastSuccessAt": "2026-08-12T23:41:34.050Z",
+          "asset": "openwrt--openwrt-18.06.json.gz",
+          "hash": "91213a011a570ca9702738acf2521d148aca5bd50019db0b458132a68aebd95b",
+          "bytes": 2132352,
+          "lastAttemptAt": "2026-08-12T23:42:05.405Z",
+          "runUrl": "https://github.com/weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog/actions/runs/31651715183",
+          "lastAttemptCommit": "9f2a40c72fdb0b9b077bf5b4b01aa17eac4bfb45",
+          "compatibilityMode": "metadata-only",
+          "artifactName": "16-catalog-openwrt-openwrt-18.06-21258ca9-run-31651715183-attempt-1",
+          "order": 16,
+          "orderText": "16",
+          "jobName": "16 · OpenWrt · openwrt-18.06 · openwrt/openwrt",
+          "failureLog": "",
+          "errorStage": ""
+        }
+      ]
+    }
+  ],
+  "hash": "4b83767d620cca851a14a6ffd502e4a3d4838a9bbc1df2e873a5b0bf01e332c5",
+  "bytes": 91461
+}
