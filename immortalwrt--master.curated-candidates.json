@@ -5,10 +5,10 @@
     "label": "ImmortalWrt",
     "repo": "immortalwrt/immortalwrt",
     "branch": "master",
-    "commit": "95070374755065de36a4d5644fe1807ce98421d9",
+    "commit": "eaff2b0b7a3efcc6866eb15096a7a518b0989991",
     "legacy": false
   },
-  "generatedAt": "2026-08-10T11:59:53.362Z",
+  "generatedAt": "2026-08-12T00:34:14.742Z",
   "curated": [
     {
       "id": "3cat",
@@ -951,24 +951,24 @@
       "packages": [
         "luci-app-qos"
       ],
-      "package": "luci-app-qos",
-      "available": true
+      "package": "",
+      "available": false
     },
     {
       "id": "qos-legacy",
       "packages": [
         "luci-app-qos-legacy"
       ],
-      "package": "",
-      "available": false
+      "package": "luci-app-qos-legacy",
+      "available": true
     },
     {
       "id": "qosify",
       "packages": [
         "luci-app-qosify"
       ],
-      "package": "",
-      "available": false
+      "package": "luci-app-qosify",
+      "available": true
     },
     {
       "id": "radicale3",
@@ -1530,7 +1530,8 @@
     "luci-app-privoxy",
     "luci-app-ps3netsrv",
     "luci-app-qbittorrent",
-    "luci-app-qos",
+    "luci-app-qos-legacy",
+    "luci-app-qosify",
     "luci-app-radicale3",
     "luci-app-ramfree",
     "luci-app-rclone",
@@ -1592,16 +1593,15 @@
     "onekeyap",
     "openvpn",
     "qiyougamebooster",
-    "qos-legacy",
-    "qosify",
+    "qos",
     "repeater",
     "samba",
     "turboacc",
     "uugamebooster"
   ],
   "applications": {
-    "count": 165,
-    "unique": 165,
+    "count": 166,
+    "unique": 166,
     "names": [
       "luci-app-3cat",
       "luci-app-3ginfo-lite",
@@ -1715,7 +1715,8 @@
       "luci-app-privoxy",
       "luci-app-ps3netsrv",
       "luci-app-qbittorrent",
-      "luci-app-qos",
+      "luci-app-qos-legacy",
+      "luci-app-qosify",
       "luci-app-radicale3",
       "luci-app-ramfree",
       "luci-app-rclone",
