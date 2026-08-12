@@ -244,7 +244,7 @@ async function cancel(env, event) {
   if (!probeCancellationRequested(comments)) {
     await comment(api, owner, repo, issue.number, [
       `@${commenter}`, '', 'Cancellation requested / 已请求取消', '',
-      'Stopping every queued or running Matrix job linked to this Issue. / 正在农止与本 Issue 关联的全部排队或运行中 Matrix Job。', '',
+      'Stopping every queued or running Matrix job linked to this Issue. / 正在停止与本 Issue 关联的全部排队或运行中 Matrix Job。', '',
       CANCEL_MARKER,
     ].join('\n'));
     comments = await issueComments(api, owner, repo, issue.number);
