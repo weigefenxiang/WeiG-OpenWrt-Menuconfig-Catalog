@@ -4,7 +4,7 @@
     "id": "ImmortalWrt",
     "branch": "master"
   },
-  "generatedAt": "2026-08-11T03:08:15.716Z",
+  "generatedAt": "2026-08-12T09:08:34.418Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,8 +18,8 @@
     "fr",
     "vi"
   ],
-  "options": 10514,
-  "translatedZhCN": 184,
+  "options": 10453,
+  "translatedZhCN": 185,
   "missingZhCN": [
     {
       "symbol": "TARGET_uml",
@@ -5267,41 +5267,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_u-boot-an7581_gemtek_w1700k",
-      "promptEn": "U-Boot for Gemtek W1700K (UBI)",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7581_nokia_valyrian",
-      "promptEn": "U-Boot for Nokia Valyrian",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7581_nokia_xg-040g-md",
-      "promptEn": "U-Boot for Nokia XG-040G-MD",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7581_rfb",
-      "promptEn": "U-Boot for AN7581 Reference Board",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-an7583_rfb",
-      "promptEn": "U-Boot for AN7583 Reference Board",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
       "symbol": "PACKAGE_u-boot-apalis_imx6",
       "promptEn": "U-Boot for Toradex Apalis",
       "path": [
@@ -5591,13 +5556,6 @@
     {
       "symbol": "PACKAGE_u-boot-easy80920_sfspl",
       "promptEn": "U-Boot for Lantiq EASY80920 (SPI SPL)",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_u-boot-en7523_rfb",
-      "promptEn": "U-Boot for EN7523 Reference Board",
       "path": [
         "Boot Loaders"
       ]
@@ -11071,14 +11029,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-i2c-an7581",
-      "promptEn": "Airoha I2C Controller",
-      "path": [
-        "Kernel modules",
-        "I2C support"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-i2c-bcm-iproc",
       "promptEn": "Broadcom iProc I2C controller",
       "path": [
@@ -14921,62 +14871,6 @@
     {
       "symbol": "PACKAGE_kmod-atmtcp",
       "promptEn": "ATM over TCP",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-batman-adv",
-      "promptEn": "B.A.T.M.A.N. Adv",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "BATMAN_ADV_BATMAN_V",
-      "promptEn": "B.A.T.M.A.N. V protocol",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "BATMAN_ADV_BLA",
-      "promptEn": "Bridge Loop Avoidance",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "BATMAN_ADV_DAT",
-      "promptEn": "Distributed ARP Table",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "BATMAN_ADV_MCAST",
-      "promptEn": "Multicast optimisation",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "BATMAN_ADV_DEBUG",
-      "promptEn": "B.A.T.M.A.N. debugging",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "BATMAN_ADV_TRACING",
-      "promptEn": "B.A.T.M.A.N. tracing support",
       "path": [
         "Kernel modules",
         "Network Support"
@@ -43095,14 +42989,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_luci-mod-rpc",
-      "promptEn": "LuCI RPC - JSON-RPC API",
-      "path": [
-        "LuCI",
-        "2. Modules"
-      ]
-    },
-    {
       "symbol": "PACKAGE_luci-mod-status",
       "promptEn": "LuCI Status Pages",
       "path": [
@@ -43726,14 +43612,6 @@
     {
       "symbol": "PACKAGE_luci-lib-nixio_openssl",
       "promptEn": "OpenSSL",
-      "path": [
-        "LuCI",
-        "7. Libraries"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_luci-lib-px5g",
-      "promptEn": "RSA/X.509 Key Generator (required for LuCId SSL support)",
       "path": [
         "LuCI",
         "7. Libraries"
@@ -45195,22 +45073,6 @@
     {
       "symbol": "COOVACHILLI_OPENSSL",
       "promptEn": "OpenSSL",
-      "path": [
-        "Network",
-        "Captive Portals"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_nodogsplash",
-      "promptEn": "Open public network gateway daemon",
-      "path": [
-        "Network",
-        "Captive Portals"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_opennds",
-      "promptEn": "open Network Demarcation Service",
       "path": [
         "Network",
         "Captive Portals"
@@ -49559,14 +49421,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_mesh11sd",
-      "promptEn": "Dynamic 802.11s Mesh Management Daemon",
-      "path": [
-        "Network",
-        "Mesh"
-      ]
-    },
-    {
       "symbol": "PACKAGE_meshtasticd-avahi-service",
       "promptEn": "Meshtastic daemon (avahi service)",
       "path": [
@@ -49888,14 +49742,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_babeld",
-      "promptEn": "A loop-avoiding distance-vector routing protocol",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
       "symbol": "PACKAGE_batmand",
       "promptEn": "B.A.T.M.A.N. layer 3 routing daemon",
       "path": [
@@ -49914,118 +49760,6 @@
     {
       "symbol": "PACKAGE_bfdd",
       "promptEn": "BFD daemon",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bird2",
-      "promptEn": "The BIRD Internet Routing Daemon (v2)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bird2c",
-      "promptEn": "The BIRD command-line client (v2)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bird2cl",
-      "promptEn": "The BIRD lightweight command-line client (v2)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bird3",
-      "promptEn": "The BIRD Internet Routing Daemon (v3)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bird3c",
-      "promptEn": "The BIRD command-line client (v3)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bird3cl",
-      "promptEn": "The BIRD lightweight command-line client (v3)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7",
-      "promptEn": "BMX7 layer 3 routing daemon",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7-iwinfo",
-      "promptEn": "link characteristics plugin via libiwinfo (recommended!)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7-json",
-      "promptEn": "json plugin based on json-c",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7-sms",
-      "promptEn": "sms plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7-table",
-      "promptEn": "plugin to announce routes from tables via tunnels",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7-topology",
-      "promptEn": "topology plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7-tun",
-      "promptEn": "ipip-based tunnel plugin (recommended!)",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_bmx7-uci-config",
-      "promptEn": "configuration plugin based on uci (recommended!)",
       "path": [
         "Network",
         "Routing and Redirection"
@@ -50453,174 +50187,6 @@
     {
       "symbol": "PACKAGE_nstat",
       "promptEn": "Network statistics utility",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd",
-      "promptEn": "OLSR (Optimized Link State Routing) daemon",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-arprefresh",
-      "promptEn": "Kernel ARP cache refresh plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-bmf",
-      "promptEn": "Basic multicast forwarding plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-dot-draw",
-      "promptEn": "Dot topology information plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-dyn-gw",
-      "promptEn": "Dynamic internet gateway plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-dyn-gw-plain",
-      "promptEn": "Dynamic internet gateway plain plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-filtergw",
-      "promptEn": "Filter Gateway plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-httpinfo",
-      "promptEn": "Small informative web server plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-jsoninfo",
-      "promptEn": "Small informative plugin with JSON output",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-mdns",
-      "promptEn": "MDNS/Zeroconf/Bonjour packet distribution",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-nameservice",
-      "promptEn": "Lightweight hostname resolver plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-netjson",
-      "promptEn": "netjson plugin with JSON output",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-p2pd",
-      "promptEn": "Peer to Peer Discovery plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-pgraph",
-      "promptEn": "output network topology for pgraph",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-pud",
-      "promptEn": "Position Update Distribution plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-quagga",
-      "promptEn": "Quagga plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-secure",
-      "promptEn": "Message signing plugin to secure routing domain",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-sgwdynspeed",
-      "promptEn": "Smart Gateway dynamic speed plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-txtinfo",
-      "promptEn": "Small informative web server plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-mod-watchdog",
-      "promptEn": "Watchdog plugin",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_olsrd-utils",
-      "promptEn": "Utils for OLSRD",
       "path": [
         "Network",
         "Routing and Redirection"
@@ -62836,34 +62402,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_alfred",
-      "promptEn": "A.L.F.R.E.D. - Almighty Lightweight Fact Remote Exchange Daemon",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_ALFRED_VIS",
-      "promptEn": "enable vis server for alfred",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_ALFRED_BATHOSTS",
-      "promptEn": "enable autogeneration of /etc/bat-hosts",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_ALFRED_GPSD",
-      "promptEn": "enable gpsd service for alfred",
-      "path": [
-        "Network"
-      ]
-    },
-    {
       "symbol": "PACKAGE_antiblock",
       "promptEn": "AntiBlock",
       "path": [
@@ -62908,27 +62446,6 @@
     {
       "symbol": "PACKAGE_banip",
       "promptEn": "banIP blocks IPs via named nftables Sets",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_batctl-default",
-      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Default)",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_batctl-full",
-      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Full)",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_batctl-tiny",
-      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Minimal)",
       "path": [
         "Network"
       ]
@@ -65650,6 +65167,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_oping",
+      "promptEn": "Send ICMP echo request to network hosts",
+      "path": [
+        "Network"
+      ]
+    },
+    {
       "symbol": "PACKAGE_oscam",
       "promptEn": "Open Source Conditional Access Modul",
       "path": [
@@ -66099,13 +65623,6 @@
     {
       "symbol": "PACKAGE_list-smargo",
       "promptEn": "List Smargo readers",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_oping",
-      "promptEn": "Send ICMP echo request to network hosts",
       "path": [
         "Network"
       ]
@@ -79422,7 +78939,6 @@
     "Instant Messaging",
     "Linux ATM tools",
     "LoRaWAN",
-    "Mesh",
     "Meshtastic",
     "NMAP Suite",
     "NTRIP",
