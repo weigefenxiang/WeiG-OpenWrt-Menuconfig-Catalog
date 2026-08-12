@@ -194,6 +194,14 @@ function timeoutForMode(policy, mode) {
   return Math.max(1, Math.min(360, configured));
 }
 
+export function normalizeProbeAuthorization({ requester = '', repositoryOwner = '', permission = '' } = {}) {
+  const actor = String(requester || '').trim();
+  const repositoryOwnerName = String(repositoryOwner || '').trim();
+  const owner = Boolean(repositoryOwnerName && actor.toLowerCase() === repositoryOwnerName.toLowerCase());
+  const authorization = String(permission || (owner ? 'admin' : 'read')).trim().toLowerCase();
+  return { actor, owner, authorization, elevatedParallel: owner || authorization === 'admin' };
+}
+
 export function createProbePlan({ index, env = {}, policy, request: normalizedRequest }) {
   if (Number(index?.schema) !== 2 || !Array.isArray(index?.sources)) throw new Error('Catalog index schema 2 is required');
   const probePolicy = policy?.probe || {};
@@ -217,9 +225,11 @@ export function createProbePlan({ index, env = {}, policy, request: normalizedRe
       packages: request.packages.join(','),
     })));
   if (!include.length) throw new Error('probe scope matched no available Catalog Source/Branch');
-  const owner = String(env.REPOSITORY_OWNER || '').toLowerCase();
-  const actor = String(env.GITHUB_ACTOR || '').toLowerCase();
-  const isOwner = Boolean(owner && actor === owner);
+  const authorization = normalizeProbeAuthorization({
+    requester: env.PROBE_REQUESTER || env.GITHUB_ACTOR || '',
+    repositoryOwner: env.REPOSITORY_OWNER || '',
+    permission: env.PROBE_AUTHORIZATION || '',
+  });
   const maxMatrixJobs = Number(probePolicy.maxMatrixJobs || 256);
   const collaboratorCap = Number(probePolicy.collaboratorMaxParallel || 3);
   const requestedParallel = request.maxParallel === 0 ? include.length : request.maxParallel;
@@ -229,14 +239,14 @@ export function createProbePlan({ index, env = {}, policy, request: normalizedRe
   return {
     schema: 3,
     generatedAt: new Date().toISOString(),
-    actor: env.GITHUB_ACTOR || '', owner: isOwner, authorized: env.PROBE_AUTHORIZED !== 'false',
-    authorization: env.PROBE_AUTHORIZATION || (isOwner ? 'admin' : 'write'),
+    actor: authorization.actor, owner: authorization.owner, authorized: env.PROBE_AUTHORIZED !== 'false',
+    authorization: authorization.authorization,
     codeRef: request.channel, dataBranch: runtimeDataBranchForChannel(request.channel),
     mode: request.mode, evidenceLevel: MODES_LIST.indexOf(request.mode) + 1,
     execute: request.execute, requested: request.packages, resolvedPackages: request.packages,
     packageConfig: request.packageConfig, mappings: [], scope: request.scope, targetPolicy: request.targetPolicy,
     requestedMaxParallel: request.maxParallel,
-    maxParallel: Math.max(1, Math.min(include.length, isOwner ? requestedParallel : Math.min(collaboratorCap, requestedParallel))),
+    maxParallel: Math.max(1, Math.min(include.length, authorization.elevatedParallel ? requestedParallel : Math.min(collaboratorCap, requestedParallel))),
     timeoutMinutes: timeoutForMode(policy, request.mode), matrix: { include },
   };
 }
@@ -387,10 +397,11 @@ export async function main(env = process.env) {
   const maximumBytes = Number(policy.probe?.maxPackageConfigBytes || 131072);
   const repository = env.GITHUB_REPOSITORY || '';
   const owner = env.REPOSITORY_OWNER || repository.split('/')[0] || '';
+  if (!repository || !owner) throw new Error('GITHUB_REPOSITORY is invalid');
   let actor = env.GITHUB_ACTOR || '';
   const issueNumber = String(env.PROBE_ISSUE_NUMBER || '');
   let request;
-  let permission = owner && actor.toLowerCase() === owner.toLowerCase() ? 'admin' : 'write';
+  let permission = 'read';
   if (issueNumber) {
     if (!/^\d+$/.test(issueNumber) || !env.PROBE_STATE_SHA256 || !env.PROBE_ISSUE_CREATED_AT) {
       throw new Error('Issue probe dispatch identity is incomplete');
@@ -412,13 +423,16 @@ export async function main(env = process.env) {
     }
     actor = String(issue.user?.login || '');
     permission = await actorPermission(repository, actor, owner, env.GITHUB_TOKEN || '');
-  } else request = manualRequest(env, maximumBytes);
+  } else {
+    request = manualRequest(env, maximumBytes);
+    permission = await actorPermission(repository, actor, owner, env.GITHUB_TOKEN || '');
+  }
   const authorized = WRITE_PERMISSIONS.has(permission);
   const dataBranch = runtimeDataBranchForChannel(request.channel);
   if (!repository || !dataBranch) throw new Error(`unsupported probe channel: ${request.channel}`);
   let plan;
   if (!authorized) {
-    plan = { schema: 3, generatedAt: new Date().toISOString(), actor, owner: false, relevant: true, authorized: false,
+    plan = { schema: 3, generatedAt: new Date().toISOString(), actor, owner: Boolean(owner && actor.toLowerCase() === owner.toLowerCase()), relevant: true, authorized: false,
       authorization: permission, codeRef: request.channel, dataBranch, mode: request.mode, evidenceLevel: 0,
       execute: false, requested: request.packages, resolvedPackages: [], packageConfig: request.packageConfig, mappings: [], scope: request.scope,
       targetPolicy: request.targetPolicy, maxParallel: 1, timeoutMinutes: timeoutForMode(policy, request.mode),
@@ -427,7 +441,8 @@ export async function main(env = process.env) {
     const base = `https://raw.githubusercontent.com/${repository}/${dataBranch}`;
     const index = await fetchJson(`${base}/index.json`, env.GITHUB_TOKEN || '');
     const preliminary = createProbePlan({ index, request, policy,
-      env: { ...env, CODE_REF: request.channel, DATA_BRANCH: dataBranch, PROBE_AUTHORIZED: 'true', PROBE_AUTHORIZATION: permission } });
+      env: { ...env, CODE_REF: request.channel, DATA_BRANCH: dataBranch, PROBE_REQUESTER: actor,
+      PROBE_AUTHORIZED: 'true', PROBE_AUTHORIZATION: permission } });
     plan = { ...(await attachProbeTargets(preliminary, { repository, dataRef: String(index.assetRef || dataBranch), token: env.GITHUB_TOKEN || '', policy })), relevant: true };
   }
   mkdirSync(join(ROOT, 'probe-diagnostics'), { recursive: true });
