@@ -1,0 +1,18 @@
+name: Package Compatibility Probe / 软件包兼容探针
+description: Submit the generated Advanced menuconfig package state / 提交由 Advanced menuconfig 生成的软件包状态
+title: "[probe] "
+labels: ["package-probe"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AutoBuild pre-fills the state below from the same resolved Advanced menuconfig Kconfig state. Do not edit it. / AutoBuild 会从 Advanced menuconfig 已解析的同一份 Kconfig 状态自动填入下面内容，请勿修改。
+        To cancel after submission, reply with exactly `/cancel`. / 提交后如需取消，请准确回复 `/cancel`。
+  - type: textarea
+    id: state
+    attributes:
+      label: Generated probe state / 自动生成探针状态
+      description: Contains only enabled PACKAGE_* Kconfig state plus probe controls; no config file is uploaded. / 仅包含已启用的 PACKAGE_* Kconfig 状态和探测参数，不上传配置文件。
+      render: text
+    validations:
+      required: true
