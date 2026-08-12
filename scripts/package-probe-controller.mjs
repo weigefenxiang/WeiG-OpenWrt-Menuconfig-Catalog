@@ -168,6 +168,22 @@ export function normalizeProbeRequest(raw, maximumBytes = 131072) {
   };
 }
 
+function requireNormalizedProbeRequest(value, maximumBytes) {
+  if (!plainObject(value) || Number(value.schema) !== 2 || !Array.isArray(value.packages)) {
+    throw new Error('createProbePlan requires a normalized probe request');
+  }
+  const packageState = normalizePackageConfig(value.packageConfig, maximumBytes);
+  if (packageState.packageConfig !== value.packageConfig ||
+      packageState.packages.length !== value.packages.length ||
+      packageState.packages.some((name, index) => name !== value.packages[index])) {
+    throw new Error('normalized probe request package state is inconsistent');
+  }
+  if (!plainObject(value.scope) || !plainObject(value.targetPolicy)) {
+    throw new Error('normalized probe request scope and target policy are required');
+  }
+  return value;
+}
+
 function scopeMatches(scope, source, branch) {
   if (scope.mode === 'pairs') return scope.pairs.some(([sourceId, branchId]) => sourceId === source && branchId === branch);
   return matchPattern(source, scope.source) && matchPattern(branch, scope.branch);
@@ -178,18 +194,20 @@ function timeoutForMode(policy, mode) {
   return Math.max(1, Math.min(360, configured));
 }
 
-export function createProbePlan({ index, env = {}, policy, request: rawRequest }) {
+export function createProbePlan({ index, env = {}, policy, request: normalizedRequest }) {
   if (Number(index?.schema) !== 2 || !Array.isArray(index?.sources)) throw new Error('Catalog index schema 2 is required');
   const probePolicy = policy?.probe || {};
   const maximumBytes = Number(probePolicy.maxPackageConfigBytes || 131072);
-  const request = rawRequest ? normalizeProbeRequest(rawRequest, maximumBytes) : normalizeProbeRequest({
-    schema: 2, channel: env.CODE_REF || 'main', mode: env.PROBE_MODE || 'package-compile',
-    packageConfig: env.PROBE_PACKAGE_CONFIG,
-    scope: { mode: 'patterns', source: env.SOURCE_PATTERN || '*', branch: env.BRANCH_PATTERN || '*' },
-    targetPolicy: { mode: env.TARGET_POLICY || 'auto' },
-    maxParallel: env.MAX_PARALLEL === undefined || env.MAX_PARALLEL === '' ? 0 : Number(env.MAX_PARALLEL),
-    execute: String(env.DRY_RUN || 'false') !== 'true',
-  }, maximumBytes);
+  const request = normalizedRequest
+    ? requireNormalizedProbeRequest(normalizedRequest, maximumBytes)
+    : normalizeProbeRequest({
+      schema: 2, channel: env.CODE_REF || 'main', mode: env.PROBE_MODE || 'package-compile',
+      packageConfig: env.PROBE_PACKAGE_CONFIG,
+      scope: { mode: 'patterns', source: env.SOURCE_PATTERN || '*', branch: env.BRANCH_PATTERN || '*' },
+      targetPolicy: { mode: env.TARGET_POLICY || 'auto' },
+      maxParallel: env.MAX_PARALLEL === undefined || env.MAX_PARALLEL === '' ? 0 : Number(env.MAX_PARALLEL),
+      execute: String(env.DRY_RUN || 'false') !== 'true',
+    }, maximumBytes);
   const include = index.sources.flatMap((source) => (source.branches || [])
     .filter((branch) => branch.state !== 'unavailable' && scopeMatches(request.scope, String(source.id || ''), String(branch.branch || '')))
     .map((branch) => ({

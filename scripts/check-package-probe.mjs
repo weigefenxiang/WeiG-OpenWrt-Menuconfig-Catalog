@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   createProbePlan,
@@ -15,11 +15,12 @@ import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import { parseProbeStateToken, PROBE_STATE_PREFIX } from './package-probe-state.mjs';
 import {
   isProbeIssue,
+  normalizeGatewayRequest,
   probeCancellationAuthorized,
   probeCancellationRequested,
   probeIssueCommand,
   probeRunMarkers,
-} from './package-probe-issue.mjs';
+} from './package-probe-gateway.mjs';
 import { aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
   requestedPackageStates } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
@@ -32,7 +33,7 @@ const gatewayWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'pack
 const issueForm = readFileSync(resolve(ROOT, '.github', 'ISSUE_TEMPLATE', 'package-probe.yml'), 'utf8');
 const catalogWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const controller = readFileSync(resolve(ROOT, 'scripts', 'package-probe-controller.mjs'), 'utf8');
-const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs'), 'utf8');
+const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-gateway.mjs'), 'utf8');
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
 
@@ -79,8 +80,18 @@ assert.equal(request.packageConfig, packageConfig);
 assert.deepEqual(request.packages, ['luci-app-oscam', 'oscam', 'libexample']);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, schema: 1 }), /schema 2/);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, unknown: true }), /unknown keys/);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, packages: ['oscam'] }), /unknown keys: packages/);
 assert.equal(normalizeProbeRequest({ ...baseRequest, channel: 'fix/source-compatibility' }).channel,
   'fix/source-compatibility');
+assert.deepEqual(normalizeProbeRequest({ ...baseRequest, targetPolicy: { mode: 'all' } }).targetPolicy, { mode: 'all' });
+assert.deepEqual(normalizeProbeRequest({ ...baseRequest, targetPolicy: {
+  mode: 'selected', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }],
+} }).targetPolicy, { mode: 'selected', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] });
+
+const gatewayRequest = normalizeGatewayRequest(baseRequest);
+assert.equal(gatewayRequest.channel, 'dev');
+assert.equal(gatewayRequest.mode, 'firmware-integration');
+assert.deepEqual(gatewayRequest.packages, ['luci-app-oscam', 'oscam', 'libexample']);
 
 const token = PROBE_STATE_PREFIX + gzipSync(Buffer.from(JSON.stringify(baseRequest))).toString('base64url');
 const parsedState = parseProbeStateToken(`### Generated probe state\n\n${token}\n`);
@@ -98,10 +109,8 @@ assert.equal(probeIssueCommand('/cancel now'), '');
 assert(probeCancellationAuthorized({ requester: 'Author', commenter: 'author', permission: 'read' }));
 for (const permission of ['write', 'maintain', 'admin']) assert(probeCancellationAuthorized({ requester: 'author', commenter: 'helper', permission }));
 assert(!probeCancellationAuthorized({ requester: 'author', commenter: 'reader', permission: 'read' }));
-for (const version of [1, 2]) {
-  const marker = `<!-- WEIG_PACKAGE_PROBE_RUN_V${version} run=123 sha=${'a'.repeat(64)} -->`;
-  assert.deepEqual(probeRunMarkers([{ body: marker }, { body: marker }]), [{ runId: 123, sha256: 'a'.repeat(64) }]);
-}
+const marker = `<!-- WEIG_PACKAGE_PROBE_RUN_V2 run=123 sha=${'a'.repeat(64)} -->`;
+assert.deepEqual(probeRunMarkers([{ body: marker }, { body: marker }]), [{ runId: 123, sha256: 'a'.repeat(64) }]);
 assert(probeCancellationRequested([{ body: '<!-- WEIG_PACKAGE_PROBE_CANCEL_V1 -->' }]));
 
 const selectableTarget = (id, selector, profile = '') => ({ id, targetSelector: selector,
@@ -116,9 +125,12 @@ assert.equal(preferredTarget.profile, 'DEVICE_generic');
 assert(preferredTarget.config.includes('CONFIG_TARGET_x86_64_DEVICE_generic=y'));
 assert.equal(probeTargetConfigs(core, { mode: 'boot-smoke', bootTargetPatterns: ['x86/64'] }).length, 1);
 
-const ownerPlan = createProbePlan({ index, policy, request: {
+assert.throws(() => createProbePlan({ index, policy, request: baseRequest,
+  env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } }),
+/createProbePlan requires a normalized probe request/);
+const ownerPlan = createProbePlan({ index, policy, request: normalizeProbeRequest({
   ...baseRequest, mode: 'package-compile', scope: { mode: 'all' }, targetPolicy: { mode: 'auto' },
-}, env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } });
+}), env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } });
 assert.equal(ownerPlan.matrix.include.length, 3);
 assert.equal(ownerPlan.maxParallel, 3);
 assert.equal(ownerPlan.mode, 'package-compile');
@@ -130,12 +142,21 @@ assert.deepEqual(ownerPlan.mappings, []);
 assert(ownerPlan.matrix.include.every((row) => row.packages === 'luci-app-oscam,oscam,libexample'));
 assert(!ownerPlan.matrix.include.some((row) => row.branch === 'broken'));
 
-const collaboratorPlan = createProbePlan({ index, policy, request: {
+const collaboratorPlan = createProbePlan({ index, policy, request: normalizeProbeRequest({
   ...baseRequest, mode: 'rootfs-integration', scope: { mode: 'patterns', source: 'Immortal*', branch: 'openwrt-*' },
   maxParallel: 20,
-}, env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'writer', PROBE_AUTHORIZATION: 'write' } });
+}), env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'writer', PROBE_AUTHORIZATION: 'write' } });
 assert.equal(collaboratorPlan.matrix.include.length, 2);
 assert.equal(collaboratorPlan.maxParallel, 2);
+
+const envPlan = createProbePlan({ index, policy, env: {
+  REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin', CODE_REF: 'dev',
+  PROBE_MODE: 'package-compile', PROBE_PACKAGE_CONFIG: packageConfig, SOURCE_PATTERN: 'ImmortalWrt',
+  BRANCH_PATTERN: 'master', TARGET_POLICY: 'auto', MAX_PARALLEL: '0', DRY_RUN: 'true',
+} });
+assert.equal(envPlan.matrix.include.length, 1);
+assert.equal(envPlan.execute, false);
+assert.deepEqual(envPlan.resolvedPackages, ['luci-app-oscam', 'oscam', 'libexample']);
 
 const apkIssues = parseProbeLog(
   'ERROR: luci-app-openvpn-server-3.0-r0: trying to overwrite etc/config/openvpn owned by openvpn-openssl-2.7.4-r3.\n' +
@@ -173,8 +194,10 @@ assert(workflow.includes('package_config:') && workflow.includes('state_sha256:'
 assert(!workflow.includes('inputs.packages') && !workflow.includes('inputs.request') && !workflow.includes('PROBE_REQUEST_SHA256'));
 assert(workflow.includes('timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout_minutes) }}'));
 assert(controller.includes('normalizePackageConfig') && controller.includes('parseProbeStateToken'));
+assert(controller.includes('requireNormalizedProbeRequest'));
 assert(!controller.includes('applications.json.gz') && !controller.includes('resolveProbePackages') && !controller.includes('maxPackages'));
 assert(!issueGateway.includes('downloadProbeRequest') && !issueGateway.includes('probe-request.json'));
+assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')), 'obsolete duplicate Probe Issue gateway must remain removed');
 assert(runner.includes('const state = PACKAGE_STATES.get(packageName)') && runner.includes('states[name] === PACKAGE_STATES.get(name)') && !runner.includes("PACKAGE_STATES.get(packageName) || 'n'"));
 assert(runner.includes('writeConfig(candidate, [])'), 'firmware baseline must exclude the shared package state');
 assert(workflow.includes('node scripts/run-package-probe.mjs') && runner.includes('package/install'));
