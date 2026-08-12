@@ -34,4 +34,4 @@ jobs:
       - name: Process the Issue request / 处理 Issue 请求
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/package-probe-issue.mjs
+        run: node scripts/package-probe-gateway.mjs

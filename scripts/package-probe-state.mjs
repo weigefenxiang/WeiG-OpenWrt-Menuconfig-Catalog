@@ -24,7 +24,9 @@ export function parseProbeStateToken(body) {
   let jsonBytes;
   try { jsonBytes = gunzipSync(compressed); }
   catch { throw new Error('Probe state is not valid gzip data'); }
-  if (!jsonBytes.length || jsonBytes.length > PROBE_STATE_MAX_JSON_BYTES) throw new Error('Probe state JSON size is invalid');
+  if (!jsonBytes.length || jsonBytes.length > PROBE_STATE_MAX_JSON_BYTES) {
+    throw new Error('Probe state JSON size is invalid');
+  }
   let raw;
   try { raw = JSON.parse(jsonBytes.toString('utf8')); }
   catch { throw new Error('Probe state is not valid JSON'); }
