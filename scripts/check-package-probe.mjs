@@ -166,7 +166,7 @@ for (const version of ['openwrt-27.01', 'openwrt-28.12', 'openwrt-29.10', 'openw
   assert(sourceAllowsBranch(lede, version), `lede future branch was not discovered: ${version}`);
 }
 
-assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-issue.mjs'));
+assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-gateway.mjs'));
 assert(gatewayWorkflow.includes('actions: write') && gatewayWorkflow.includes('issues: write'));
 assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && !issueForm.includes('probe-request.json') && issueForm.includes('`/cancel`'));
 assert(workflow.includes('package_config:') && workflow.includes('state_sha256:') && workflow.includes('PROBE_PACKAGE_CONFIG'));
