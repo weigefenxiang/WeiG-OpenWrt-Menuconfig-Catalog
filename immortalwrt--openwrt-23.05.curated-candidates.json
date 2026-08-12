@@ -8,7 +8,7 @@
     "commit": "0f110722021a93e60e7442ceded7eaea67ff921b",
     "legacy": false
   },
-  "generatedAt": "2026-08-12T00:51:20.514Z",
+  "generatedAt": "2026-08-12T23:41:58.406Z",
   "curated": [
     {
       "id": "3cat",
@@ -25,6 +25,14 @@
       ],
       "package": "luci-app-3ginfo-lite",
       "available": true
+    },
+    {
+      "id": "accesscontrol",
+      "packages": [
+        "luci-app-accesscontrol"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "acl",
@@ -59,6 +67,14 @@
       "available": true
     },
     {
+      "id": "adbyby-plus",
+      "packages": [
+        "luci-app-adbyby-plus"
+      ],
+      "package": "luci-app-adbyby-plus",
+      "available": true
+    },
+    {
       "id": "adguardhome",
       "packages": [
         "luci-app-adguardhome"
@@ -75,6 +91,22 @@
       "available": true
     },
     {
+      "id": "advancedsetting",
+      "packages": [
+        "luci-app-advancedsetting"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "ahcp",
+      "packages": [
+        "luci-app-ahcp"
+      ],
+      "package": "luci-app-ahcp",
+      "available": true
+    },
+    {
       "id": "airoha-npu",
       "packages": [
         "luci-app-airoha-npu"
@@ -88,6 +120,30 @@
         "luci-app-airplay2"
       ],
       "package": "luci-app-airplay2",
+      "available": true
+    },
+    {
+      "id": "airwhu",
+      "packages": [
+        "luci-app-airwhu"
+      ],
+      "package": "luci-app-airwhu",
+      "available": true
+    },
+    {
+      "id": "aliddns",
+      "packages": [
+        "luci-app-aliddns"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "alist",
+      "packages": [
+        "luci-app-alist"
+      ],
+      "package": "luci-app-alist",
       "available": true
     },
     {
@@ -147,6 +203,14 @@
       "available": true
     },
     {
+      "id": "asterisk",
+      "packages": [
+        "luci-app-asterisk"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "attendedsysupgrade",
       "packages": [
         "luci-app-attendedsysupgrade"
@@ -171,6 +235,14 @@
       "available": true
     },
     {
+      "id": "baidupcs-web",
+      "packages": [
+        "luci-app-baidupcs-web"
+      ],
+      "package": "luci-app-baidupcs-web",
+      "available": true
+    },
+    {
       "id": "banip",
       "packages": [
         "luci-app-banip"
@@ -187,6 +259,46 @@
       "available": true
     },
     {
+      "id": "beardropper",
+      "packages": [
+        "luci-app-beardropper"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "bird1-ipv4",
+      "packages": [
+        "luci-app-bird1-ipv4"
+      ],
+      "package": "luci-app-bird1-ipv4",
+      "available": true
+    },
+    {
+      "id": "bird1-ipv6",
+      "packages": [
+        "luci-app-bird1-ipv6"
+      ],
+      "package": "luci-app-bird1-ipv6",
+      "available": true
+    },
+    {
+      "id": "bird4",
+      "packages": [
+        "luci-app-bird4"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "bird6",
+      "packages": [
+        "luci-app-bird6"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "bitsrunlogin-go",
       "packages": [
         "luci-app-bitsrunlogin-go"
@@ -195,12 +307,28 @@
       "available": true
     },
     {
+      "id": "bmx6",
+      "packages": [
+        "luci-app-bmx6"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "bmx7",
       "packages": [
         "luci-app-bmx7"
       ],
       "package": "luci-app-bmx7",
       "available": true
+    },
+    {
+      "id": "brook-server",
+      "packages": [
+        "luci-app-brook-server"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "cd8021x",
@@ -219,11 +347,27 @@
       "available": false
     },
     {
+      "id": "cifs",
+      "packages": [
+        "luci-app-cifs"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "cifs-mount",
       "packages": [
         "luci-app-cifs-mount"
       ],
       "package": "luci-app-cifs-mount",
+      "available": true
+    },
+    {
+      "id": "cjdns",
+      "packages": [
+        "luci-app-cjdns"
+      ],
+      "package": "luci-app-cjdns",
       "available": true
     },
     {
@@ -283,9 +427,25 @@
       "available": true
     },
     {
+      "id": "cshark",
+      "packages": [
+        "luci-app-cshark"
+      ],
+      "package": "luci-app-cshark",
+      "available": true
+    },
+    {
       "id": "csshnpd",
       "packages": [
         "luci-app-csshnpd"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "cupsd",
+      "packages": [
+        "luci-app-cupsd"
       ],
       "package": "",
       "available": false
@@ -339,12 +499,36 @@
       "available": true
     },
     {
+      "id": "diag-core",
+      "packages": [
+        "luci-app-diag-core"
+      ],
+      "package": "luci-app-diag-core",
+      "available": true
+    },
+    {
       "id": "diskman",
       "packages": [
         "luci-app-diskman"
       ],
       "package": "luci-app-diskman",
       "available": true
+    },
+    {
+      "id": "dnscrypt-proxy",
+      "packages": [
+        "luci-app-dnscrypt-proxy"
+      ],
+      "package": "luci-app-dnscrypt-proxy",
+      "available": true
+    },
+    {
+      "id": "dnsforwarder",
+      "packages": [
+        "luci-app-dnsforwarder"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "docker",
@@ -379,6 +563,22 @@
       "available": true
     },
     {
+      "id": "dynapoint",
+      "packages": [
+        "luci-app-dynapoint"
+      ],
+      "package": "luci-app-dynapoint",
+      "available": true
+    },
+    {
+      "id": "e2guardian",
+      "packages": [
+        "luci-app-e2guardian"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "email",
       "packages": [
         "luci-app-email"
@@ -403,11 +603,27 @@
       "available": true
     },
     {
+      "id": "eqos-mtk",
+      "packages": [
+        "luci-app-eqos-mtk"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "example",
       "packages": [
         "luci-app-example"
       ],
       "package": "luci-app-example",
+      "available": true
+    },
+    {
+      "id": "fileassistant",
+      "packages": [
+        "luci-app-fileassistant"
+      ],
+      "package": "luci-app-fileassistant",
       "available": true
     },
     {
@@ -435,12 +651,52 @@
       "available": false
     },
     {
+      "id": "filetransfer",
+      "packages": [
+        "luci-app-filetransfer"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "firewall",
       "packages": [
         "luci-app-firewall"
       ],
       "package": "luci-app-firewall",
       "available": true
+    },
+    {
+      "id": "fogvdn",
+      "packages": [
+        "luci-app-fogvdn"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "freifunk-diagnostics",
+      "packages": [
+        "luci-app-freifunk-diagnostics"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "freifunk-policyrouting",
+      "packages": [
+        "luci-app-freifunk-policyrouting"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "freifunk-widgets",
+      "packages": [
+        "luci-app-freifunk-widgets"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "frpc",
@@ -475,11 +731,43 @@
       "available": true
     },
     {
+      "id": "gowebdav",
+      "packages": [
+        "luci-app-gowebdav"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "guest-wifi",
+      "packages": [
+        "luci-app-guest-wifi"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "haproxy-tcp",
+      "packages": [
+        "luci-app-haproxy-tcp"
+      ],
+      "package": "luci-app-haproxy-tcp",
+      "available": true
+    },
+    {
       "id": "hd-idle",
       "packages": [
         "luci-app-hd-idle"
       ],
       "package": "luci-app-hd-idle",
+      "available": true
+    },
+    {
+      "id": "hnet",
+      "packages": [
+        "luci-app-hnet"
+      ],
+      "package": "luci-app-hnet",
       "available": true
     },
     {
@@ -499,12 +787,36 @@
       "available": true
     },
     {
+      "id": "https_dns_proxy",
+      "packages": [
+        "luci-app-https_dns_proxy"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "ipsec-vpnd",
       "packages": [
         "luci-app-ipsec-vpnd"
       ],
       "package": "luci-app-ipsec-vpnd",
       "available": true
+    },
+    {
+      "id": "ipsec-vpnserver-manyusers",
+      "packages": [
+        "luci-app-ipsec-vpnserver-manyusers"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "iptvhelper",
+      "packages": [
+        "luci-app-iptvhelper"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "irqbalance",
@@ -523,12 +835,36 @@
       "available": true
     },
     {
+      "id": "k3usb",
+      "packages": [
+        "luci-app-k3usb"
+      ],
+      "package": "luci-app-k3usb",
+      "available": true
+    },
+    {
+      "id": "kcptun",
+      "packages": [
+        "luci-app-kcptun"
+      ],
+      "package": "luci-app-kcptun",
+      "available": true
+    },
+    {
       "id": "keepalived",
       "packages": [
         "luci-app-keepalived"
       ],
       "package": "luci-app-keepalived",
       "available": true
+    },
+    {
+      "id": "kodexplorer",
+      "packages": [
+        "luci-app-kodexplorer"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "ksmbd",
@@ -587,6 +923,14 @@
       "available": true
     },
     {
+      "id": "ltqtapi",
+      "packages": [
+        "luci-app-ltqtapi"
+      ],
+      "package": "luci-app-ltqtapi",
+      "available": true
+    },
+    {
       "id": "lucky",
       "packages": [
         "luci-app-lucky"
@@ -603,6 +947,22 @@
       "available": true
     },
     {
+      "id": "mentohust",
+      "packages": [
+        "luci-app-mentohust"
+      ],
+      "package": "luci-app-mentohust",
+      "available": true
+    },
+    {
+      "id": "meshwizard",
+      "packages": [
+        "luci-app-meshwizard"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "microsocks",
       "packages": [
         "luci-app-microsocks"
@@ -617,6 +977,14 @@
       ],
       "package": "luci-app-minidlna",
       "available": true
+    },
+    {
+      "id": "minieap",
+      "packages": [
+        "luci-app-minieap"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "mjpg-streamer",
@@ -659,6 +1027,30 @@
       "available": true
     },
     {
+      "id": "mtk",
+      "packages": [
+        "luci-app-mtk"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "mtwifi",
+      "packages": [
+        "luci-app-mtwifi"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "mtwifi-cfg",
+      "packages": [
+        "luci-app-mtwifi-cfg"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "music-remote-center",
       "packages": [
         "luci-app-music-remote-center"
@@ -675,12 +1067,44 @@
       "available": true
     },
     {
+      "id": "mwan3helper",
+      "packages": [
+        "luci-app-mwan3helper"
+      ],
+      "package": "luci-app-mwan3helper",
+      "available": true
+    },
+    {
+      "id": "mwol",
+      "packages": [
+        "luci-app-mwol"
+      ],
+      "package": "luci-app-mwol",
+      "available": true
+    },
+    {
       "id": "n2n",
       "packages": [
         "luci-app-n2n"
       ],
       "package": "luci-app-n2n",
       "available": true
+    },
+    {
+      "id": "n2n_v2",
+      "packages": [
+        "luci-app-n2n_v2"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "naiveproxy",
+      "packages": [
+        "luci-app-naiveproxy"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "natmap",
@@ -715,6 +1139,22 @@
       "available": true
     },
     {
+      "id": "nft-qos",
+      "packages": [
+        "luci-app-nft-qos"
+      ],
+      "package": "luci-app-nft-qos",
+      "available": true
+    },
+    {
+      "id": "nginx-pingos",
+      "packages": [
+        "luci-app-nginx-pingos"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "ngrokc",
       "packages": [
         "luci-app-ngrokc"
@@ -739,12 +1179,28 @@
       "available": true
     },
     {
+      "id": "noddos",
+      "packages": [
+        "luci-app-noddos"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "nps",
       "packages": [
         "luci-app-nps"
       ],
       "package": "luci-app-nps",
       "available": true
+    },
+    {
+      "id": "ntpc",
+      "packages": [
+        "luci-app-ntpc"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "nut",
@@ -795,6 +1251,14 @@
       "available": true
     },
     {
+      "id": "olsrd2",
+      "packages": [
+        "luci-app-olsrd2"
+      ],
+      "package": "luci-app-olsrd2",
+      "available": true
+    },
+    {
       "id": "omcproxy",
       "packages": [
         "luci-app-omcproxy"
@@ -811,6 +1275,14 @@
       "available": false
     },
     {
+      "id": "onliner",
+      "packages": [
+        "luci-app-onliner"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "openclash",
       "packages": [
         "luci-app-openclash"
@@ -822,6 +1294,14 @@
       "id": "openlist",
       "packages": [
         "luci-app-openlist"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "openthread",
+      "packages": [
+        "luci-app-openthread"
       ],
       "package": "",
       "available": false
@@ -848,6 +1328,14 @@
         "luci-app-openwisp"
       ],
       "package": "luci-app-openwisp",
+      "available": true
+    },
+    {
+      "id": "opkg",
+      "packages": [
+        "luci-app-opkg"
+      ],
+      "package": "luci-app-opkg",
       "available": true
     },
     {
@@ -896,6 +1384,14 @@
         "luci-app-pbr"
       ],
       "package": "luci-app-pbr",
+      "available": true
+    },
+    {
+      "id": "polipo",
+      "packages": [
+        "luci-app-polipo"
+      ],
+      "package": "luci-app-polipo",
       "available": true
     },
     {
@@ -955,6 +1451,14 @@
       "available": true
     },
     {
+      "id": "qos-gargoyle",
+      "packages": [
+        "luci-app-qos-gargoyle"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "qos-legacy",
       "packages": [
         "luci-app-qos-legacy"
@@ -969,6 +1473,30 @@
       ],
       "package": "",
       "available": false
+    },
+    {
+      "id": "qosv4",
+      "packages": [
+        "luci-app-qosv4"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "radicale",
+      "packages": [
+        "luci-app-radicale"
+      ],
+      "package": "luci-app-radicale",
+      "available": true
+    },
+    {
+      "id": "radicale2",
+      "packages": [
+        "luci-app-radicale2"
+      ],
+      "package": "luci-app-radicale2",
+      "available": true
     },
     {
       "id": "radicale3",
@@ -998,6 +1526,14 @@
       "id": "repeater",
       "packages": [
         "luci-app-repeater"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "rosy-file-server",
+      "packages": [
+        "luci-app-rosy-file-server"
       ],
       "package": "",
       "available": false
@@ -1059,12 +1595,60 @@
       "available": true
     },
     {
+      "id": "serverchan",
+      "packages": [
+        "luci-app-serverchan"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "shadowsocks-libev",
+      "packages": [
+        "luci-app-shadowsocks-libev"
+      ],
+      "package": "luci-app-shadowsocks-libev",
+      "available": true
+    },
+    {
+      "id": "shairplay",
+      "packages": [
+        "luci-app-shairplay"
+      ],
+      "package": "luci-app-shairplay",
+      "available": true
+    },
+    {
+      "id": "siitwizard",
+      "packages": [
+        "luci-app-siitwizard"
+      ],
+      "package": "luci-app-siitwizard",
+      "available": true
+    },
+    {
+      "id": "simple-adblock",
+      "packages": [
+        "luci-app-simple-adblock"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "smartdns",
       "packages": [
         "luci-app-smartdns"
       ],
       "package": "luci-app-smartdns",
       "available": true
+    },
+    {
+      "id": "smartinfo",
+      "packages": [
+        "luci-app-smartinfo"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "sms-tool-js",
@@ -1075,12 +1659,28 @@
       "available": true
     },
     {
+      "id": "smstool",
+      "packages": [
+        "luci-app-smstool"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "snmpd",
       "packages": [
         "luci-app-snmpd"
       ],
       "package": "luci-app-snmpd",
       "available": true
+    },
+    {
+      "id": "socat",
+      "packages": [
+        "luci-app-socat"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "softether",
@@ -1096,6 +1696,30 @@
         "luci-app-softethervpn"
       ],
       "package": "luci-app-softethervpn",
+      "available": true
+    },
+    {
+      "id": "softethervpn5",
+      "packages": [
+        "luci-app-softethervpn5"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "speederv2",
+      "packages": [
+        "luci-app-speederv2"
+      ],
+      "package": "luci-app-speederv2",
+      "available": true
+    },
+    {
+      "id": "splash",
+      "packages": [
+        "luci-app-splash"
+      ],
+      "package": "luci-app-splash",
       "available": true
     },
     {
@@ -1129,6 +1753,46 @@
       ],
       "package": "luci-app-sshtunnel",
       "available": true
+    },
+    {
+      "id": "ssocks",
+      "packages": [
+        "luci-app-ssocks"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "ssr-libev-server",
+      "packages": [
+        "luci-app-ssr-libev-server"
+      ],
+      "package": "luci-app-ssr-libev-server",
+      "available": true
+    },
+    {
+      "id": "ssr-mudb-server",
+      "packages": [
+        "luci-app-ssr-mudb-server"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "ssr-plus",
+      "packages": [
+        "luci-app-ssr-plus"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "ssrserver-python",
+      "packages": [
+        "luci-app-ssrserver-python"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "statistics",
@@ -1179,6 +1843,14 @@
       "available": false
     },
     {
+      "id": "timecontrol",
+      "packages": [
+        "luci-app-timecontrol"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "timewol",
       "packages": [
         "luci-app-timewol"
@@ -1219,6 +1891,14 @@
       "available": true
     },
     {
+      "id": "trojan-server",
+      "packages": [
+        "luci-app-trojan-server"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "ttyd",
       "packages": [
         "luci-app-ttyd"
@@ -1235,11 +1915,27 @@
       "available": false
     },
     {
+      "id": "turboacc-mtk",
+      "packages": [
+        "luci-app-turboacc-mtk"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "ua2f",
       "packages": [
         "luci-app-ua2f"
       ],
       "package": "luci-app-ua2f",
+      "available": true
+    },
+    {
+      "id": "udp2raw",
+      "packages": [
+        "luci-app-udp2raw"
+      ],
+      "package": "luci-app-udp2raw",
       "available": true
     },
     {
@@ -1259,12 +1955,28 @@
       "available": true
     },
     {
+      "id": "unblockmusic",
+      "packages": [
+        "luci-app-unblockmusic"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "unblockneteasemusic",
       "packages": [
         "luci-app-unblockneteasemusic"
       ],
       "package": "luci-app-unblockneteasemusic",
       "available": true
+    },
+    {
+      "id": "unblockneteasemusic-go",
+      "packages": [
+        "luci-app-unblockneteasemusic-go"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "unbound",
@@ -1288,6 +2000,14 @@
         "luci-app-usb-printer"
       ],
       "package": "luci-app-usb-printer",
+      "available": true
+    },
+    {
+      "id": "usb3disable",
+      "packages": [
+        "luci-app-usb3disable"
+      ],
+      "package": "luci-app-usb3disable",
       "available": true
     },
     {
@@ -1315,11 +2035,27 @@
       "available": false
     },
     {
+      "id": "v2ray-server",
+      "packages": [
+        "luci-app-v2ray-server"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "v2raya",
       "packages": [
         "luci-app-v2raya"
       ],
       "package": "luci-app-v2raya",
+      "available": true
+    },
+    {
+      "id": "verysync",
+      "packages": [
+        "luci-app-verysync"
+      ],
+      "package": "luci-app-verysync",
       "available": true
     },
     {
@@ -1331,12 +2067,36 @@
       "available": true
     },
     {
+      "id": "vnstat",
+      "packages": [
+        "luci-app-vnstat"
+      ],
+      "package": "luci-app-vnstat",
+      "available": true
+    },
+    {
       "id": "vnstat2",
       "packages": [
         "luci-app-vnstat2"
       ],
       "package": "luci-app-vnstat2",
       "available": true
+    },
+    {
+      "id": "vpn-policy-routing",
+      "packages": [
+        "luci-app-vpn-policy-routing"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "vpnbypass",
+      "packages": [
+        "luci-app-vpnbypass"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "vsftpd",
@@ -1347,12 +2107,44 @@
       "available": true
     },
     {
+      "id": "vssr",
+      "packages": [
+        "luci-app-vssr"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "watchcat",
       "packages": [
         "luci-app-watchcat"
       ],
       "package": "luci-app-watchcat",
       "available": true
+    },
+    {
+      "id": "webadmin",
+      "packages": [
+        "luci-app-webadmin"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "webrestriction",
+      "packages": [
+        "luci-app-webrestriction"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
+      "id": "weburl",
+      "packages": [
+        "luci-app-weburl"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "wechatpush",
@@ -1379,12 +2171,28 @@
       "available": true
     },
     {
+      "id": "wireguard",
+      "packages": [
+        "luci-app-wireguard"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "wol",
       "packages": [
         "luci-app-wol"
       ],
       "package": "luci-app-wol",
       "available": true
+    },
+    {
+      "id": "wrtbwmon",
+      "packages": [
+        "luci-app-wrtbwmon"
+      ],
+      "package": "",
+      "available": false
     },
     {
       "id": "xfrpc",
@@ -1411,6 +2219,22 @@
       "available": true
     },
     {
+      "id": "xunlei",
+      "packages": [
+        "luci-app-xunlei"
+      ],
+      "package": "luci-app-xunlei",
+      "available": true
+    },
+    {
+      "id": "yggdrasil",
+      "packages": [
+        "luci-app-yggdrasil"
+      ],
+      "package": "",
+      "available": false
+    },
+    {
       "id": "zerotier",
       "packages": [
         "luci-app-zerotier"
@@ -1426,8 +2250,12 @@
     "luci-app-acme",
     "luci-app-adblock",
     "luci-app-adblock-fast",
+    "luci-app-adbyby-plus",
     "luci-app-advanced-reboot",
+    "luci-app-ahcp",
     "luci-app-airplay2",
+    "luci-app-airwhu",
+    "luci-app-alist",
     "luci-app-amule",
     "luci-app-apinger",
     "luci-app-appfilter",
@@ -1437,12 +2265,16 @@
     "luci-app-attendedsysupgrade",
     "luci-app-autoreboot",
     "luci-app-babeld",
+    "luci-app-baidupcs-web",
     "luci-app-banip",
     "luci-app-bcp38",
+    "luci-app-bird1-ipv4",
+    "luci-app-bird1-ipv6",
     "luci-app-bitsrunlogin-go",
     "luci-app-bmx7",
     "luci-app-cd8021x",
     "luci-app-cifs-mount",
+    "luci-app-cjdns",
     "luci-app-clamav",
     "luci-app-cloudflared",
     "luci-app-commands",
@@ -1450,31 +2282,40 @@
     "luci-app-cpufreq",
     "luci-app-cpulimit",
     "luci-app-crowdsec-firewall-bouncer",
+    "luci-app-cshark",
     "luci-app-dae",
     "luci-app-daed",
     "luci-app-dawn",
     "luci-app-dcwapd",
     "luci-app-ddns",
     "luci-app-ddns-go",
+    "luci-app-diag-core",
     "luci-app-diskman",
+    "luci-app-dnscrypt-proxy",
     "luci-app-docker",
     "luci-app-dockerman",
     "luci-app-dufs",
     "luci-app-dump1090",
+    "luci-app-dynapoint",
     "luci-app-eoip",
     "luci-app-eqos",
     "luci-app-example",
+    "luci-app-fileassistant",
     "luci-app-filebrowser",
     "luci-app-firewall",
     "luci-app-frpc",
     "luci-app-frps",
     "luci-app-fwknopd",
     "luci-app-gost",
+    "luci-app-haproxy-tcp",
     "luci-app-hd-idle",
+    "luci-app-hnet",
     "luci-app-homeproxy",
     "luci-app-https-dns-proxy",
     "luci-app-ipsec-vpnd",
     "luci-app-k3screenctrl",
+    "luci-app-k3usb",
+    "luci-app-kcptun",
     "luci-app-keepalived",
     "luci-app-ksmbd",
     "luci-app-ledtrig-rssi",
@@ -1483,7 +2324,9 @@
     "luci-app-libreswan",
     "luci-app-lldpd",
     "luci-app-lorawan-basicstation",
+    "luci-app-ltqtapi",
     "luci-app-lxc",
+    "luci-app-mentohust",
     "luci-app-microsocks",
     "luci-app-minidlna",
     "luci-app-mjpg-streamer",
@@ -1492,11 +2335,14 @@
     "luci-app-msd_lite",
     "luci-app-music-remote-center",
     "luci-app-mwan3",
+    "luci-app-mwan3helper",
+    "luci-app-mwol",
     "luci-app-n2n",
     "luci-app-natmap",
     "luci-app-netdata",
     "luci-app-nextdns",
     "luci-app-nfs",
+    "luci-app-nft-qos",
     "luci-app-ngrokc",
     "luci-app-njitclient",
     "luci-app-nlbwmon",
@@ -1507,22 +2353,27 @@
     "luci-app-olsr",
     "luci-app-olsr-services",
     "luci-app-olsr-viz",
+    "luci-app-olsrd2",
     "luci-app-omcproxy",
     "luci-app-openclash",
     "luci-app-openvpn",
     "luci-app-openvpn-server",
     "luci-app-openwisp",
+    "luci-app-opkg",
     "luci-app-oscam",
     "luci-app-p910nd",
     "luci-app-pagekitec",
     "luci-app-passwall",
     "luci-app-pbr",
+    "luci-app-polipo",
     "luci-app-pppoe-relay",
     "luci-app-pppoe-server",
     "luci-app-privoxy",
     "luci-app-ps3netsrv",
     "luci-app-qbittorrent",
     "luci-app-qos",
+    "luci-app-radicale",
+    "luci-app-radicale2",
     "luci-app-ramfree",
     "luci-app-rclone",
     "luci-app-rp-pppoe-server",
@@ -1530,15 +2381,21 @@
     "luci-app-samba4",
     "luci-app-scutclient",
     "luci-app-ser2net",
+    "luci-app-shadowsocks-libev",
+    "luci-app-shairplay",
+    "luci-app-siitwizard",
     "luci-app-smartdns",
     "luci-app-sms-tool-js",
     "luci-app-snmpd",
     "luci-app-softether",
     "luci-app-softethervpn",
+    "luci-app-speederv2",
+    "luci-app-splash",
     "luci-app-spotifyd",
     "luci-app-sqm",
     "luci-app-squid",
     "luci-app-sshtunnel",
+    "luci-app-ssr-libev-server",
     "luci-app-statistics",
     "luci-app-syncdial",
     "luci-app-syncthing",
@@ -1550,15 +2407,19 @@
     "luci-app-travelmate",
     "luci-app-ttyd",
     "luci-app-ua2f",
+    "luci-app-udp2raw",
     "luci-app-udpxy",
     "luci-app-uhttpd",
     "luci-app-unblockneteasemusic",
     "luci-app-unbound",
     "luci-app-upnp",
     "luci-app-usb-printer",
+    "luci-app-usb3disable",
     "luci-app-usteer",
     "luci-app-v2raya",
+    "luci-app-verysync",
     "luci-app-vlmcsd",
+    "luci-app-vnstat",
     "luci-app-vnstat2",
     "luci-app-vsftpd",
     "luci-app-watchcat",
@@ -1568,36 +2429,102 @@
     "luci-app-xfrpc",
     "luci-app-xinetd",
     "luci-app-xlnetacc",
+    "luci-app-xunlei",
     "luci-app-zerotier"
   ],
   "missing": [
+    "accesscontrol",
     "adguardhome",
+    "advancedsetting",
     "airoha-npu",
+    "aliddns",
     "antiblock",
+    "asterisk",
+    "beardropper",
+    "bird4",
+    "bird6",
+    "bmx6",
+    "brook-server",
     "chrony",
+    "cifs",
     "csshnpd",
+    "cupsd",
+    "dnsforwarder",
+    "e2guardian",
     "email",
+    "eqos-mtk",
     "filebrowser-go",
     "filemanager",
+    "filetransfer",
+    "fogvdn",
+    "freifunk-diagnostics",
+    "freifunk-policyrouting",
+    "freifunk-widgets",
+    "gowebdav",
+    "guest-wifi",
+    "https_dns_proxy",
+    "ipsec-vpnserver-manyusers",
+    "iptvhelper",
     "irqbalance",
+    "kodexplorer",
     "lucky",
+    "meshwizard",
+    "minieap",
     "mosdns",
+    "mtk",
+    "mtwifi",
+    "mtwifi-cfg",
+    "n2n_v2",
+    "naiveproxy",
+    "nginx-pingos",
+    "noddos",
+    "ntpc",
     "onekeyap",
+    "onliner",
     "openlist",
+    "openthread",
     "package-manager",
     "qiyougamebooster",
+    "qos-gargoyle",
     "qos-legacy",
     "qosify",
+    "qosv4",
     "radicale3",
     "repeater",
+    "rosy-file-server",
     "rtp2httpd",
     "samba",
+    "serverchan",
+    "simple-adblock",
+    "smartinfo",
+    "smstool",
+    "socat",
+    "softethervpn5",
+    "ssocks",
+    "ssr-mudb-server",
+    "ssr-plus",
+    "ssrserver-python",
     "strongswan-swanctl",
     "tailscale-community",
+    "timecontrol",
+    "trojan-server",
     "turboacc",
+    "turboacc-mtk",
+    "unblockmusic",
+    "unblockneteasemusic-go",
     "ustreamer",
     "uugamebooster",
-    "wifihistory"
+    "v2ray-server",
+    "vpn-policy-routing",
+    "vpnbypass",
+    "vssr",
+    "webadmin",
+    "webrestriction",
+    "weburl",
+    "wifihistory",
+    "wireguard",
+    "wrtbwmon",
+    "yggdrasil"
   ],
   "applications": {
     "count": 187,

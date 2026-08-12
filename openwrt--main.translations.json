@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-12T00:51:51.284Z",
+  "generatedAt": "2026-08-12T23:42:31.973Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,8 +18,8 @@
     "fr",
     "vi"
   ],
-  "options": 9950,
-  "translatedZhCN": 121,
+  "options": 9953,
+  "translatedZhCN": 122,
   "missingZhCN": [
     {
       "symbol": "TARGET_uml",
@@ -41147,8 +41147,8 @@
       ]
     },
     {
-      "symbol": "PACKAGE_luci-app-openthread",
-      "promptEn": "LuCI Support for OpenThread Border Router",
+      "symbol": "PACKAGE_luci-app-sfp-info",
+      "promptEn": "SFP/QSFP Transceiver Diagnostics",
       "path": [
         "LuCI",
         "3. Applications"
@@ -62665,6 +62665,14 @@
       ]
     },
     {
+      "symbol": "SINGBOX_WITH_CCM",
+      "promptEn": "Build with Claude Code Multiplexer service support",
+      "path": [
+        "Network",
+        "Select build options"
+      ]
+    },
+    {
       "symbol": "SINGBOX_WITH_CLASH_API",
       "promptEn": "Build with Clash API support",
       "path": [
@@ -62699,6 +62707,14 @@
     {
       "symbol": "SINGBOX_WITH_GVISOR",
       "promptEn": "Build with gVisor support",
+      "path": [
+        "Network",
+        "Select build options"
+      ]
+    },
+    {
+      "symbol": "SINGBOX_WITH_OCM",
+      "promptEn": "Build with OpenAI Codex Multiplexer service support",
       "path": [
         "Network",
         "Select build options"
