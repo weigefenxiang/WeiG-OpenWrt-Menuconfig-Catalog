@@ -2,14 +2,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 name: Package Compatibility Probe / 软件包兼容探针
 run-name: >-
-  ${{ inputs.issue_number != '' && format('Package probe issue #{0} / 软件包探针请求 #{0}', inputs.issue_number)
-      || format('Package probe · {0} / 软件包探针', inputs.mode) }}
+  ${{ inputs.issue_number != '' && format('Package probe issue #{0} · batch {1}', inputs.issue_number, inputs.batch_index)
+      || format('Package probe · {0} · batch {1}', inputs.mode, inputs.batch_index) }}
 
 on:
   workflow_dispatch:
     inputs:
       package_config:
-        description: "Exact CONFIG_PACKAGE_*=m/y state for manual runs / 手动运行的精确 CONFIG_PACKAGE_*=m/y 状态"
+        description: "Final CONFIG_PACKAGE_*=m/y state for manual runs / 手动运行的最终 PACKAGE 状态"
+        required: false
+        default: ""
+      baseline_package_config:
+        description: "Baseline CONFIG_PACKAGE_*=m/y state for manual runs / 手动运行的基线 PACKAGE 状态"
+        required: false
+        default: ""
+      roots:
+        description: "Direct Probe roots, comma separated / 直接测试入口，逗号分隔"
         required: false
         default: ""
       mode:
@@ -18,39 +26,72 @@ on:
         type: choice
         options: [package-compile, rootfs-integration, firmware-integration, boot-smoke]
         default: package-compile
+      use_defconfig:
+        description: "Run the selected upstream make defconfig / 使用所选上游 make defconfig"
+        required: true
+        type: boolean
+        default: true
       source:
-        description: "Catalog Source glob / Catalog Source 通配"
+        description: "Source filter or * / Source 筛选或 *"
         required: true
         default: "*"
       branch:
-        description: "Catalog Branch glob / Catalog Branch 通配"
+        description: "Branch filter or * / Branch 筛选或 *"
         required: true
         default: "*"
-      target_policy:
-        description: "Auto chooses one environment and fallback candidates; all expands every representative environment / 自动选择一个环境及回退目标；全部展开所有代表环境"
+      target_system:
+        description: "Target System filter or * / Target System 筛选或 *"
+        required: true
+        default: "*"
+      subtarget:
+        description: "Subtarget filter or * / Subtarget 筛选或 *"
+        required: true
+        default: "*"
+      target_profile:
+        description: "Target Profile filter or * / Target Profile 筛选或 *"
+        required: true
+        default: "*"
+      coverage_mode:
+        description: "Auto maximizes coverage within the limit; all exhausts every matching environment / Auto 在上限内最大覆盖；all 全量遍历"
         required: true
         type: choice
         options: [auto, all]
         default: auto
+      coverage_limit:
+        description: "Auto environment limit 1-256; empty uses the mode default / Auto 环境上限 1-256；留空使用深度默认值"
+        required: false
+        default: ""
       max_parallel:
-        description: "Owner: 0 means the full plan; write collaborators are capped at 3 / 所有者 0 表示完整计划；写协作者最多 3"
+        description: "Owner/admin: 0 means the batch size; write collaborators remain capped / 所有者或管理员 0 表示批次数量；写协作者仍受限"
         required: true
         default: "0"
       plan_only:
-        description: "Resolve and display the plan without compiling / 只解析并显示计划，不执行编译"
+        description: "Resolve the plan without compiling / 只解析计划，不执行编译"
         required: true
         type: boolean
         default: true
       issue_number:
-        description: "Gateway Issue number; leave empty for manual runs / 网关 Issue 编号；手动运行时留空"
+        description: "Gateway Issue number / 网关 Issue 编号"
         required: false
         default: ""
       state_sha256:
-        description: "Gateway state SHA-256; leave empty for manual runs / 网关状态 SHA-256；手动运行时留空"
+        description: "Gateway Probe state SHA-256 / 网关 Probe 状态 SHA-256"
         required: false
         default: ""
       issue_created_at:
-        description: "Gateway Issue creation identity; leave empty for manual runs / 网关 Issue 创建标识；手动运行时留空"
+        description: "Gateway Issue creation identity / 网关 Issue 创建标识"
+        required: false
+        default: ""
+      batch_index:
+        description: "Internal continuation batch index / 内部分批索引"
+        required: false
+        default: "0"
+      sampling_seed:
+        description: "Internal sampling seed / 内部抽样种子"
+        required: false
+        default: ""
+      data_commit:
+        description: "Internal pinned Catalog data commit / 内部固定 Catalog 数据提交"
         required: false
         default: ""
 
@@ -70,9 +111,23 @@ jobs:
       relevant: ${{ steps.plan.outputs.relevant }}
       authorized: ${{ steps.plan.outputs.authorized }}
       plan_count: ${{ steps.plan.outputs.plan_count }}
+      roots: ${{ steps.plan.outputs.roots }}
       packages: ${{ steps.plan.outputs.packages }}
       package_config: ${{ steps.plan.outputs.package_config }}
+      baseline_package_config: ${{ steps.plan.outputs.baseline_package_config }}
+      package_intent: ${{ steps.plan.outputs.package_intent }}
+      use_defconfig: ${{ steps.plan.outputs.use_defconfig }}
       data_branch: ${{ steps.plan.outputs.data_branch }}
+      data_commit: ${{ steps.plan.outputs.data_commit }}
+      sampling_seed: ${{ steps.plan.outputs.sampling_seed }}
+      batch_index: ${{ steps.plan.outputs.batch_index }}
+      batch_count: ${{ steps.plan.outputs.batch_count }}
+      has_next_batch: ${{ steps.plan.outputs.has_next_batch }}
+      next_batch_index: ${{ steps.plan.outputs.next_batch_index }}
+      coverage_total: ${{ steps.plan.outputs.coverage_total }}
+      coverage_planned: ${{ steps.plan.outputs.coverage_planned }}
+      coverage_mode: ${{ steps.plan.outputs.coverage_mode }}
+      coverage_sampled: ${{ steps.plan.outputs.coverage_sampled }}
       mode: ${{ steps.plan.outputs.mode }}
       evidence_level: ${{ steps.plan.outputs.evidence_level }}
       timeout_minutes: ${{ steps.plan.outputs.timeout_minutes }}
@@ -80,23 +135,33 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - id: plan
-        name: Build a bounded Matrix from Catalog index / 从 Catalog index 生成受限矩阵
+        name: Build Probe V3 Matrix from Catalog / 从 Catalog 生成 Probe V3 Matrix
         env:
           GITHUB_TOKEN: ${{ github.token }}
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           CODE_REF: ${{ github.ref_name }}
           PROBE_PACKAGE_CONFIG: ${{ inputs.package_config }}
+          PROBE_BASELINE_PACKAGE_CONFIG: ${{ inputs.baseline_package_config }}
+          PROBE_ROOTS: ${{ inputs.roots }}
           PROBE_MODE: ${{ inputs.mode }}
+          PROBE_USE_DEFCONFIG: ${{ inputs.use_defconfig }}
           SOURCE_PATTERN: ${{ inputs.source }}
           BRANCH_PATTERN: ${{ inputs.branch }}
-          TARGET_POLICY: ${{ inputs.target_policy }}
+          TARGET_SYSTEM: ${{ inputs.target_system }}
+          SUBTARGET: ${{ inputs.subtarget }}
+          TARGET_PROFILE: ${{ inputs.target_profile }}
+          COVERAGE_MODE: ${{ inputs.coverage_mode }}
+          COVERAGE_LIMIT: ${{ inputs.coverage_limit }}
           MAX_PARALLEL: ${{ inputs.max_parallel }}
           DRY_RUN: ${{ inputs.plan_only }}
           PROBE_ISSUE_NUMBER: ${{ inputs.issue_number }}
           PROBE_STATE_SHA256: ${{ inputs.state_sha256 }}
           PROBE_ISSUE_CREATED_AT: ${{ inputs.issue_created_at }}
+          PROBE_BATCH_INDEX: ${{ inputs.batch_index }}
+          PROBE_SAMPLING_SEED: ${{ inputs.sampling_seed }}
+          PROBE_DATA_COMMIT: ${{ inputs.data_commit }}
         run: node scripts/package-probe-controller.mjs
-      - name: Upload normalized probe plan / 上传规范化探针计划
+      - name: Upload normalized Probe plan / 上传规范化 Probe 计划
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -106,7 +171,7 @@ jobs:
           if-no-files-found: warn
 
   probe:
-    name: Probe · ${{ matrix.source }} · ${{ matrix.branch }} · ${{ matrix.target }} / 探测
+    name: Probe · ${{ matrix.source }} · ${{ matrix.branch }} · ${{ matrix.targetSystem }}/${{ matrix.subtarget }} · ${{ matrix.profile }}
     needs: plan
     if: needs.plan.outputs.relevant == 'true' && needs.plan.outputs.authorized == 'true' && needs.plan.outputs.execute == 'true'
     runs-on: ubuntu-24.04
@@ -122,17 +187,25 @@ jobs:
       PROBE_REPO: ${{ matrix.repo }}
       PROBE_BRANCH: ${{ matrix.branch }}
       PROBE_UPSTREAM_COMMIT: ${{ matrix.upstreamCommit }}
+      PROBE_TARGET_SYSTEM: ${{ matrix.targetSystem }}
+      PROBE_SUBTARGET: ${{ matrix.subtarget }}
       PROBE_TARGET: ${{ matrix.target }}
       PROBE_PROFILE: ${{ matrix.profile }}
+      PROBE_PROFILE_LABEL: ${{ matrix.profileLabel }}
       PROBE_TARGET_CONFIG: ${{ matrix.targetConfig }}
-      PROBE_FALLBACK_TARGETS: ${{ matrix.fallbackTargets }}
-      PROBE_COVERAGE_TOTAL: ${{ matrix.coverageTotal }}
-      PROBE_COVERAGE_PLANNED: ${{ matrix.coveragePlanned }}
-      PROBE_REDUCTION_BUDGET: ${{ matrix.reductionBudget }}
-      PROBE_PACKAGES: ${{ needs.plan.outputs.packages }}
+      PROBE_ROOTS: ${{ needs.plan.outputs.roots }}
       PROBE_PACKAGE_CONFIG: ${{ needs.plan.outputs.package_config }}
+      PROBE_BASELINE_PACKAGE_CONFIG: ${{ needs.plan.outputs.baseline_package_config }}
+      PROBE_PACKAGE_INTENT: ${{ needs.plan.outputs.package_intent }}
+      PROBE_USE_DEFCONFIG: ${{ needs.plan.outputs.use_defconfig }}
       PROBE_MODE: ${{ needs.plan.outputs.mode }}
       PROBE_EVIDENCE_LEVEL: ${{ needs.plan.outputs.evidence_level }}
+      PROBE_COVERAGE_MODE: ${{ needs.plan.outputs.coverage_mode }}
+      PROBE_COVERAGE_TOTAL: ${{ needs.plan.outputs.coverage_total }}
+      PROBE_COVERAGE_PLANNED: ${{ needs.plan.outputs.coverage_planned }}
+      PROBE_COVERAGE_SAMPLED: ${{ needs.plan.outputs.coverage_sampled }}
+      PROBE_BATCH_INDEX: ${{ needs.plan.outputs.batch_index }}
+      PROBE_BATCH_COUNT: ${{ needs.plan.outputs.batch_count }}
       PROBE_CONFIG: work/upstream/.config
       PROBE_WORKDIR: work/upstream
       PROBE_LOG: ${{ github.workspace }}/probe.log
@@ -146,11 +219,11 @@ jobs:
           set -o pipefail
           {
             sudo -E apt-get -qq update
-              sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
-                gettext git libncurses5-dev libssl-dev python3 python3-setuptools rsync unzip zlib1g-dev file wget
+            sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+              gettext git libncurses5-dev libssl-dev python3 python3-setuptools rsync unzip zlib1g-dev file wget
           } 2>&1 | tee -a "$PROBE_LOG"
           if [[ "$PROBE_MODE" == boot-smoke ]]; then sudo -E apt-get -qq install qemu-system-x86 2>&1 | tee -a "$PROBE_LOG"; fi
-      - name: Clone the exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
+      - name: Clone exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
         run: |
           set -o pipefail
           {
@@ -169,10 +242,10 @@ jobs:
           set -o pipefail
           { ./scripts/feeds update -a && ./scripts/feeds install -a; } 2>&1 | tee -a "$PROBE_LOG"
       - id: build
-        name: Run the selected probe depth / 执行所选探测深度
+        name: Run selected Probe depth / 执行所选探测深度
         continue-on-error: true
         run: node scripts/run-package-probe.mjs
-      - name: Write normalized evidence and public Summary / 生成规范化证据与公开摘要
+      - name: Write normalized evidence / 生成规范化证据
         if: always()
         env:
           PROBE_CONCLUSION: ${{ steps.build.outcome }}
@@ -193,20 +266,22 @@ jobs:
           path: |
             probe.log
             boot-smoke.log
+            probe-runtime.json
           retention-days: 30
           if-no-files-found: warn
-      - name: Finalize probe result / 确认探针结果
+      - name: Finalize Probe environment result / 确认单环境结果
         if: steps.build.outcome != 'success'
         run: exit 1
 
   summary:
-    name: 99 · Probe result / 探针结果
+    name: 99 · Probe result and continuation / 探针结果与续批
     needs: [plan, probe]
     if: always()
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       issues: write
+      actions: write
     steps:
       - uses: actions/checkout@v7
       - name: Download normalized evidence / 下载规范化证据
@@ -216,7 +291,7 @@ jobs:
         with:
           pattern: package-probe-evidence-*
           path: collected-evidence
-      - name: Aggregate Source/Branch/Target results / 聚合源码分支目标结果
+      - name: Aggregate current batch / 聚合当前批次
         env:
           PLAN_RESULT: ${{ needs.plan.result }}
           PROBE_RESULT: ${{ needs.probe.result }}
@@ -226,48 +301,130 @@ jobs:
           REQUESTED_PLAN_ONLY: ${{ inputs.plan_only }}
           PLAN_COUNT: ${{ needs.plan.outputs.plan_count }}
           DATA_BRANCH: ${{ needs.plan.outputs.data_branch }}
+          COVERAGE_TOTAL: ${{ needs.plan.outputs.coverage_total }}
+          COVERAGE_PLANNED: ${{ needs.plan.outputs.coverage_planned }}
+          COVERAGE_SAMPLED: ${{ needs.plan.outputs.coverage_sampled }}
+          BATCH_INDEX: ${{ needs.plan.outputs.batch_index }}
+          BATCH_COUNT: ${{ needs.plan.outputs.batch_count }}
         run: node scripts/write-package-probe-evidence.mjs --aggregate collected-evidence
-      - name: Upload aggregated result / 上传聚合结果
+      - name: Upload aggregated batch result / 上传批次聚合结果
         uses: actions/upload-artifact@v7
         with:
           name: package-probe-result-${{ github.run_id }}-${{ github.run_attempt }}
           path: probe-diagnostics/
           retention-days: 60
           if-no-files-found: error
-      - name: Comment on the request Issue; close conclusive results / 回复请求 Issue；结论明确时关闭
+      - name: Comment, continue the next batch, or close / 回复、续批或关闭
         if: always() && inputs.issue_number != ''
         uses: actions/github-script@v8
         env:
           ISSUE_NUMBER: ${{ inputs.issue_number }}
-          PLAN_RESULT: ${{ needs.plan.result }}
-          PROBE_RESULT: ${{ needs.probe.result }}
-          AUTHORIZED: ${{ needs.plan.outputs.authorized }}
+          STATE_SHA256: ${{ inputs.state_sha256 }}
+          ISSUE_CREATED_AT: ${{ inputs.issue_created_at }}
+          BATCH_INDEX: ${{ needs.plan.outputs.batch_index }}
+          BATCH_COUNT: ${{ needs.plan.outputs.batch_count }}
+          HAS_NEXT_BATCH: ${{ needs.plan.outputs.has_next_batch }}
+          NEXT_BATCH_INDEX: ${{ needs.plan.outputs.next_batch_index }}
+          SAMPLING_SEED: ${{ needs.plan.outputs.sampling_seed }}
+          DATA_COMMIT: ${{ needs.plan.outputs.data_commit }}
+          MANUAL_PACKAGE_CONFIG: ${{ inputs.package_config }}
+          MANUAL_BASELINE_PACKAGE_CONFIG: ${{ inputs.baseline_package_config }}
+          MANUAL_ROOTS: ${{ inputs.roots }}
+          MANUAL_MODE: ${{ inputs.mode }}
+          MANUAL_USE_DEFCONFIG: ${{ inputs.use_defconfig }}
+          MANUAL_SOURCE: ${{ inputs.source }}
+          MANUAL_BRANCH: ${{ inputs.branch }}
+          MANUAL_TARGET_SYSTEM: ${{ inputs.target_system }}
+          MANUAL_SUBTARGET: ${{ inputs.subtarget }}
+          MANUAL_TARGET_PROFILE: ${{ inputs.target_profile }}
+          MANUAL_COVERAGE_MODE: ${{ inputs.coverage_mode }}
+          MANUAL_COVERAGE_LIMIT: ${{ inputs.coverage_limit }}
+          MANUAL_MAX_PARALLEL: ${{ inputs.max_parallel }}
+          MANUAL_PLAN_ONLY: ${{ inputs.plan_only }}
         with:
           script: |
             const fs = require('fs');
+            const issueNumber = Number(process.env.ISSUE_NUMBER);
+            const batchIndex = Number(process.env.BATCH_INDEX || 0);
+            const batchCount = Number(process.env.BATCH_COUNT || 1);
+            const stateSha = process.env.STATE_SHA256;
             const summary = fs.existsSync('probe-diagnostics/FINAL_SUMMARY.md')
               ? fs.readFileSync('probe-diagnostics/FINAL_SUMMARY.md', 'utf8').slice(0, 5000)
-              : 'Probe request could not be resolved. / 无法解析探针请求。';
+              : 'Probe batch could not be summarized. / 无法汇总探针批次。';
             const results = fs.existsSync('probe-diagnostics/results.json')
               ? JSON.parse(fs.readFileSync('probe-diagnostics/results.json', 'utf8'))
-              : { scopes: [] };
-            const conclusive = results.scopes.length > 0 &&
-              results.scopes.every((row) => row.conclusion !== 'inconclusive');
-            const issueNumber = Number(process.env.ISSUE_NUMBER);
+              : { overallConclusion: 'inconclusive' };
+            const batchConclusion = results.overallConclusion || 'inconclusive';
+            const batchMarker = `<!-- WEIG_PACKAGE_PROBE_BATCH_V3 sha=${stateSha} batch=${batchIndex} conclusion=${batchConclusion} -->`;
             await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              body: `${summary}\n\nRun / 运行: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+              body: `${summary}\n\n${batchMarker}`,
             });
-            if (conclusive) {
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                state: 'closed',
-                state_reason: 'completed',
+
+            const { data: issue } = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber });
+            const { data: comments } = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber, per_page: 100,
+            });
+            const cancelled = issue.state !== 'open' || comments.some((row) => String(row.body || '').includes('WEIG_PACKAGE_PROBE_CANCEL_V1'));
+            if (cancelled) return;
+
+            if (process.env.HAS_NEXT_BATCH === 'true') {
+              const next = String(process.env.NEXT_BATCH_INDEX);
+              const started = Date.now();
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner, repo: context.repo.repo, workflow_id: 'package-probe.yml', ref: context.ref.replace('refs/heads/', ''),
+                inputs: {
+                  package_config: process.env.MANUAL_PACKAGE_CONFIG, baseline_package_config: process.env.MANUAL_BASELINE_PACKAGE_CONFIG, roots: process.env.MANUAL_ROOTS,
+                  mode: process.env.MANUAL_MODE, use_defconfig: process.env.MANUAL_USE_DEFCONFIG, source: process.env.MANUAL_SOURCE, branch: process.env.MANUAL_BRANCH,
+                  target_system: process.env.MANUAL_TARGET_SYSTEM, subtarget: process.env.MANUAL_SUBTARGET, target_profile: process.env.MANUAL_TARGET_PROFILE,
+                  coverage_mode: process.env.MANUAL_COVERAGE_MODE, coverage_limit: process.env.MANUAL_COVERAGE_LIMIT,
+                  max_parallel: process.env.MANUAL_MAX_PARALLEL, plan_only: process.env.MANUAL_PLAN_ONLY,
+                  issue_number: String(issueNumber), state_sha256: stateSha, issue_created_at: process.env.ISSUE_CREATED_AT,
+                  batch_index: next, sampling_seed: process.env.SAMPLING_SEED, data_commit: process.env.DATA_COMMIT,
+                },
               });
+              let nextRun = null;
+              for (let attempt = 0; attempt < 10 && !nextRun; attempt++) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                const { data } = await github.rest.actions.listWorkflowRuns({
+                  owner: context.repo.owner, repo: context.repo.repo, workflow_id: 'package-probe.yml', event: 'workflow_dispatch', branch: context.ref.replace('refs/heads/', ''), per_page: 50,
+                });
+                nextRun = data.workflow_runs.find((row) => new Date(row.created_at).getTime() >= started - 5000 &&
+                  String(row.display_title || '').includes(`issue #${issueNumber}`) && String(row.display_title || '').includes(`batch ${next}`));
+              }
+              if (nextRun) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+                  body: `Next batch queued / 下一批已排队: ${nextRun.html_url}\n\n<!-- WEIG_PACKAGE_PROBE_RUN_V3 run=${nextRun.id} sha=${stateSha} batch=${next} -->`,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+                  body: `Next batch dispatch was accepted but its Run identity could not be resolved automatically. / 下一批已接受派发，但未能自动解析 Run 身份。`,
+                });
+              }
+              return;
+            }
+
+            const markerRe = new RegExp(`WEIG_PACKAGE_PROBE_BATCH_V3\\s+sha=${stateSha}\\s+batch=(\\d+)\\s+conclusion=([a-z-]+)`, 'g');
+            const batches = new Map();
+            for (const row of comments) {
+              for (const match of String(row.body || '').matchAll(markerRe)) batches.set(Number(match[1]), match[2]);
+            }
+            batches.set(batchIndex, batchConclusion);
+            const values = [...batches.values()];
+            let finalConclusion = 'inconclusive';
+            if (batches.size === batchCount && !values.some((row) => row === 'inconclusive')) {
+              const compatibleOnly = values.every((row) => ['fully-compatible', 'sampled-compatible'].includes(row));
+              const incompatibleOnly = values.every((row) => ['fully-incompatible', 'sampled-incompatible'].includes(row));
+              finalConclusion = compatibleOnly ? 'fully-compatible' : incompatibleOnly ? 'fully-incompatible' : 'partially-compatible';
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+              body: `Final Probe V3 conclusion / 最终 Probe V3 结论: **${finalConclusion}** · batches ${batches.size}/${batchCount}`,
+            });
+            if (finalConclusion !== 'inconclusive') {
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber, state: 'closed', state_reason: 'completed' });
             }
       - name: Finalize controller result / 确认控制器结果
         shell: bash
@@ -279,5 +436,5 @@ jobs:
         run: |
           [[ "$PLAN_RESULT" == success ]]
           if [[ "$AUTHORIZED" == true && "$EXECUTE" == true && "$PROBE_RESULT" != success ]]; then
-            echo "::warning::Probe Matrix result is $PROBE_RESULT; the normalized evidence remains authoritative. / 探针 Matrix 结果为 $PROBE_RESULT；以规范化证据为准。"
+            echo "::warning::Probe Matrix contains incompatible or inconclusive environments; normalized evidence is authoritative. / Probe Matrix 包含不兼容或不确定环境；以规范化证据为准。"
           fi

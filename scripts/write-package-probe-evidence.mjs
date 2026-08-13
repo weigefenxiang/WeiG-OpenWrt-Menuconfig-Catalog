@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-FileCopyrightText: 2026 weigefenxiang <weigefenxiang@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -10,35 +12,30 @@ export function parseProbeLog(log) {
   const text = String(log || '');
   const issues = [];
   for (const match of text.matchAll(/(?:ERROR:\s+)?([^\s:]+?)(?:-[0-9][^:\s]*)?:\s+trying to overwrite\s+([^\s,]+)\s+owned by\s+([^\s,.]+)/gi)) {
-    issues.push({ type: 'rootfs-conflict', package: packageName(match[1]),
-      path: `/${String(match[2]).replace(/^\/+/, '')}`, owner: packageName(match[3]), manager: 'apk' });
+    issues.push({ type: 'rootfs-conflict', package: packageName(match[1]), path: `/${String(match[2]).replace(/^\/+/, '')}`,
+      owner: packageName(match[3]), manager: 'apk' });
   }
   for (const match of text.matchAll(/Package\s+([^\s]+)\s+wants to install file\s+([^\s]+).*?already provided by package\s+([^\s.]+)/gis)) {
-    issues.push({ type: 'rootfs-conflict', package: packageName(match[1]), path: match[2],
-      owner: packageName(match[3]), manager: 'opkg' });
+    issues.push({ type: 'rootfs-conflict', package: packageName(match[1]), path: match[2], owner: packageName(match[3]), manager: 'opkg' });
   }
   for (const match of text.matchAll(/ERROR:\s+(package\/[A-Za-z0-9_./+@-]+)\s+failed to build/gi)) {
     issues.push({ type: 'package-build-failure', target: match[1] });
   }
-  for (const match of text.matchAll(/ERROR:\s+package compile failed:\s+([A-Za-z0-9_.+@-]+)/gi)) {
-    issues.push({ type: 'package-build-failure', target: match[1] });
-  }
-  if (/ERROR:\s+RootFS integration failed after package compilation/i.test(text)) {
-    issues.push({ type: 'rootfs-integration-failure' });
-  }
-  if (/ERROR:\s+package-enabled firmware failed after baseline success/i.test(text)) {
-    issues.push({ type: 'package-firmware-failure' });
-  }
+  if (/ERROR:\s+package compile failed for Probe roots:/i.test(text)) issues.push({ type: 'package-build-failure' });
+  if (/ERROR:\s+RootFS integration failed after Probe-root compilation/i.test(text)) issues.push({ type: 'rootfs-integration-failure' });
+  if (/ERROR:\s+Final package-enabled firmware failed after Baseline success/i.test(text)) issues.push({ type: 'package-firmware-failure' });
   for (const match of text.matchAll(/(?:WARNING|ERROR):\s+Makefile ['"]?([^'"\s]+)['"]? has a dependency on ['"]?([^'"\s,]+)[,'"]? which does not exist/gi)) {
     issues.push({ type: 'missing-dependency', makefile: match[1], dependency: match[2] });
   }
   if (/No rule to make target/i.test(text)) issues.push({ type: 'missing-target' });
-  if (/requested package states did not survive make defconfig/i.test(text)) issues.push({ type: 'kconfig-unsatisfied' });
+  if (/directly selected Probe roots did not survive/i.test(text)) issues.push({ type: 'kconfig-unsatisfied' });
+  if (/upstream package metadata does not contain Probe root|ambiguous upstream Source-Makefile|tmp\/\.packageinfo is missing/i.test(text)) {
+    issues.push({ type: 'metadata-unresolved' });
+  }
+  if (/baseline firmware failed|baseline-kconfig-failure/i.test(text)) issues.push({ type: 'baseline-failure' });
   if (/No space left on device/i.test(text)) issues.push({ type: 'infrastructure-failure', reason: 'disk-full' });
   if (/timed?\s*out|timeout:/i.test(text)) issues.push({ type: 'timeout' });
-  if (/Hash check failed|download failed|Connection timed out|Could not resolve host/i.test(text)) {
-    issues.push({ type: 'package-download-failure' });
-  }
+  if (/Hash check failed|download failed|Connection timed out|Could not resolve host/i.test(text)) issues.push({ type: 'package-download-failure' });
   if (/not enough space|image is too big|filesystem.*too large/i.test(text)) issues.push({ type: 'image-too-large' });
   if (/Boot smoke did not reach/i.test(text)) issues.push({ type: 'boot-failure' });
   return [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()];
@@ -62,77 +59,66 @@ function normalizedErrors(log) {
 }
 
 function evidenceFingerprint(issues, errors) {
-  const canonical = JSON.stringify({ issues, errors: errors.slice(-20) });
-  return createHash('sha256').update(canonical).digest('hex');
+  return createHash('sha256').update(JSON.stringify({ issues, errors: errors.slice(-20) })).digest('hex');
 }
 
-function inferConclusion(runtime, issues, fallback) {
-  if (runtime?.conclusion) {
-    if (issues.some((row) => row.type === 'timeout')) return 'inconclusive';
-    if (issues.some((row) => row.type === 'infrastructure-failure' || row.type === 'package-download-failure')) {
-      return 'infrastructure-failure';
-    }
-    if (runtime.conclusion === 'fully-incompatible' && runtime.attempts?.some((row) =>
-      ['environment', 'environmentReset', 'baselineKconfig', 'baselineFirmware']
-        .some((stage) => row.stages?.[stage] === 'failure'))) {
-      return 'inconclusive';
-    }
+function normalizedRuntimeConclusion(runtime, issues, fallback) {
+  if (issues.some((row) => ['timeout', 'infrastructure-failure', 'package-download-failure', 'metadata-unresolved', 'baseline-failure'].includes(row.type))) {
+    return 'inconclusive';
+  }
+  if (runtime?.conclusion === 'compatible' || runtime?.conclusion === 'incompatible' || runtime?.conclusion === 'inconclusive') {
     return runtime.conclusion;
   }
-  return fallback === 'success' ? 'sampled-compatible' : 'inconclusive';
+  return fallback === 'success' ? 'compatible' : 'inconclusive';
 }
 
 export function createEvidence({ log, config = '', runtime = null, env = {} }) {
-  const packages = String(env.PROBE_PACKAGES || '').split(',').map((row) => row.trim()).filter(Boolean);
+  const roots = String(env.PROBE_ROOTS || '').split(',').map((row) => row.trim()).filter(Boolean);
   const errors = normalizedErrors(log);
   const issues = parseProbeLog(log);
-  const conclusion = inferConclusion(runtime, issues, env.PROBE_CONCLUSION || 'unknown');
+  const conclusion = normalizedRuntimeConclusion(runtime, issues, env.PROBE_CONCLUSION || 'unknown');
+  const attempt = runtime?.attempts?.[0] || {};
   return {
-    schema: 3,
-    generatedAt: new Date().toISOString(), source: env.PROBE_SOURCE || '', repo: env.PROBE_REPO || '',
-    branch: env.PROBE_BRANCH || '', upstreamCommit: env.PROBE_UPSTREAM_COMMIT || '',
-    target: env.PROBE_TARGET || '', profile: env.PROBE_PROFILE || '', mode: env.PROBE_MODE || '',
-    evidenceLevel: Number(env.PROBE_EVIDENCE_LEVEL || 0), packages,
-    packageStates: runtime?.attempts?.find((attempt) => Object.keys(attempt.packageStates || {}).length)?.packageStates ||
-      requestedPackageStates(config, packages), conclusion,
-    coverage: runtime ? { requested: runtime.requestedCoverage, planned: runtime.plannedCoverage,
-      attempted: runtime.attempts?.length || 0, complete: Boolean(runtime.coverageComplete) } : null,
-    attempts: runtime?.attempts || [], reduction: runtime?.reduction || null,
-    issues, errors, fingerprint: evidenceFingerprint(issues, errors),
+    schema: 4,
+    generatedAt: new Date().toISOString(),
+    source: env.PROBE_SOURCE || runtime?.environment?.source || '', repo: env.PROBE_REPO || '', branch: env.PROBE_BRANCH || runtime?.environment?.branch || '',
+    upstreamCommit: env.PROBE_UPSTREAM_COMMIT || '', targetSystem: env.PROBE_TARGET_SYSTEM || runtime?.environment?.targetSystem || '',
+    subtarget: env.PROBE_SUBTARGET || runtime?.environment?.subtarget || '', target: env.PROBE_TARGET || runtime?.environment?.target || '',
+    profile: env.PROBE_PROFILE || runtime?.environment?.profile || '', profileLabel: env.PROBE_PROFILE_LABEL || '', mode: env.PROBE_MODE || runtime?.mode || '',
+    evidenceLevel: Number(env.PROBE_EVIDENCE_LEVEL || 0), useDefconfig: runtime?.useDefconfig ?? String(env.PROBE_USE_DEFCONFIG || 'true') !== 'false',
+    roots: runtime?.roots || roots, rootMappings: attempt.rootMappings || [], rootTargets: attempt.rootTargets || [],
+    baselinePackageCount: Number(runtime?.baselinePackageCount || env.PROBE_BASELINE_PACKAGE_COUNT || 0),
+    finalPackageCount: Number(runtime?.finalPackageCount || env.PROBE_FINAL_PACKAGE_COUNT || 0),
+    rootStates: attempt.rootStates || requestedPackageStates(config, runtime?.roots || roots),
+    conclusion,
+    coverage: {
+      mode: String(env.PROBE_COVERAGE_MODE || 'auto'), total: Number(env.PROBE_COVERAGE_TOTAL || 1), planned: Number(env.PROBE_COVERAGE_PLANNED || 1),
+      sampled: String(env.PROBE_COVERAGE_SAMPLED || 'false') === 'true', batchIndex: Number(env.PROBE_BATCH_INDEX || 0), batchCount: Number(env.PROBE_BATCH_COUNT || 1),
+    },
+    attempts: runtime?.attempts || [], issues, errors, fingerprint: evidenceFingerprint(issues, errors),
     run: `run:${env.GITHUB_RUN_ID || ''}`,
     runUrl: `${env.GITHUB_SERVER_URL || ''}/${env.GITHUB_REPOSITORY || ''}/actions/runs/${env.GITHUB_RUN_ID || ''}`,
   };
 }
 
-function issueText(issue) {
-  return issue.path || issue.target || issue.dependency || issue.reason || issue.type;
-}
+function issueText(issue) { return issue.path || issue.target || issue.dependency || issue.reason || issue.type; }
 
 export function evidenceSummaryLines(evidence) {
-  const serialRecoveries = (evidence.attempts || []).flatMap((attempt) =>
-    (attempt.serialRetries || []).filter((retry) => retry.result === 'recovered').map((retry) => retry.label));
-  const issueRows = evidence.issues.length
-    ? evidence.issues.map((row) => `- \`${row.type}\`: ${issueText(row)}`)
-    : ['- No normalized issue detected / 未检测到规范化问题'];
+  const serialRecoveries = evidence.attempts.flatMap((attempt) => (attempt.serialRetries || []).filter((row) => row.result === 'recovered').map((row) => row.label));
   return [
     '## Package compatibility probe evidence / 软件包兼容探针证据', '',
     `- Source/Branch / 源码分支: \`${evidence.source}/${evidence.branch}\``,
+    `- Target / 目标: \`${evidence.targetSystem || '-'}/${evidence.subtarget || '-'}/${evidence.profile || '-'}\``,
     `- Upstream commit / 上游提交: \`${evidence.upstreamCommit || 'unknown'}\``,
-    `- Target/Profile: \`${evidence.target}/${evidence.profile || '-'}\``,
-    `- Mode / 探测方式: \`${evidence.mode}\``,
-    `- Evidence level / 证据等级: L${evidence.evidenceLevel}`,
-    `- Packages / 软件包: ${evidence.packages.map((row) => `\`${row}\``).join(', ')}`,
-    `- Final states / 最终状态: ${Object.entries(evidence.packageStates).map(([name, state]) => `\`${name}=${state}\``).join(', ')}`,
+    `- Mode / 探测方式: \`${evidence.mode}\` (L${evidence.evidenceLevel})`,
+    `- Defconfig: \`${evidence.useDefconfig ? 'on' : 'off'}\``,
+    `- Probe roots / 测试入口: ${evidence.roots.map((row) => `\`${row}\``).join(', ') || '-'}`,
+    `- Baseline / Final packages: ${evidence.baselinePackageCount} / ${evidence.finalPackageCount}`,
     `- Conclusion / 结论: **${evidence.conclusion}**`,
-    ...(serialRecoveries.length
-      ? [`- Serial recovery / 串行复核恢复: ${[...new Set(serialRecoveries)].map((row) => `\`${row}\``).join(', ')}`]
-      : []),
+    ...(serialRecoveries.length ? [`- Serial recovery / 串行复核恢复: ${[...new Set(serialRecoveries)].map((row) => `\`${row}\``).join(', ')}`] : []),
     `- Fingerprint / 错误指纹: \`${evidence.fingerprint.slice(0, 16)}\``,
-    ...(evidence.reduction?.candidateMinimalFailureSet?.length
-      ? [`- Bounded reduction candidate / 有限缩减候选: ${evidence.reduction.candidateMinimalFailureSet.map((row) => `\`${row}\``).join(', ')} (${evidence.reduction.attempts.length}/${evidence.reduction.budget})`]
-      : []),
-    `- Run / 运行: ${evidence.runUrl}`, '',
-    '### Normalized issues / 规范化问题', '', ...issueRows, '',
+    `- Run / 运行: ${evidence.runUrl}`, '', '### Normalized issues / 规范化问题', '',
+    ...(evidence.issues.length ? evidence.issues.map((row) => `- \`${row.type}\`: ${issueText(row)}`) : ['- No normalized issue detected / 未检测到规范化问题']), '',
   ];
 }
 
@@ -147,46 +133,36 @@ function evidenceFiles(directory) {
   return rows;
 }
 
-const PACKAGE_FAILURE_TYPES = new Set([
-  'rootfs-conflict', 'package-build-failure', 'missing-dependency', 'missing-target',
-  'kconfig-unsatisfied', 'rootfs-integration-failure', 'package-firmware-failure', 'image-too-large',
-]);
-
-function packageCausedFailure(row) {
-  return (row.attempts || []).length > 0 && (row.attempts || []).every((attempt) => attempt.result === 'failure') &&
-    (row.issues || []).some((issue) => PACKAGE_FAILURE_TYPES.has(issue.type)) &&
-    !(row.issues || []).some((issue) => ['infrastructure-failure', 'timeout', 'package-download-failure', 'boot-failure'].includes(issue.type)) &&
-    !(row.attempts || []).some((attempt) => attempt.stages?.baselineFirmware === 'failure');
+function environmentKey(row, depth = 5) {
+  return [row.source, row.branch, row.targetSystem, row.subtarget, row.profile].slice(0, depth).join('/');
 }
 
-export function aggregateScopeConclusions(evidence) {
-  const scopes = new Map();
+function conclusionForRows(rows, exhaustive) {
+  const compatible = rows.filter((row) => row.conclusion === 'compatible').length;
+  const incompatible = rows.filter((row) => row.conclusion === 'incompatible').length;
+  const inconclusive = rows.length - compatible - incompatible;
+  if (!compatible && !incompatible) return 'inconclusive';
+  if (compatible && incompatible) return 'partially-compatible';
+  if (inconclusive) return 'inconclusive';
+  if (compatible) return exhaustive ? 'fully-compatible' : 'sampled-compatible';
+  return exhaustive ? 'fully-incompatible' : 'sampled-incompatible';
+}
+
+export function aggregateScopeConclusions(evidence, options = {}) {
+  const depth = Number(options.depth || 2);
+  const groups = new Map();
   for (const row of evidence) {
-    const key = [row.source, row.branch, row.mode, ...(row.packages || [])].join('\0');
-    const scope = scopes.get(key) || {
-      source: row.source, branch: row.branch, mode: row.mode, packages: row.packages || [],
-      expected: 0, attempted: 0, successes: 0, failures: 0, packageFailures: 0, rows: 0,
-    };
-    scope.rows++;
-    scope.expected = Math.max(scope.expected, Number(row.coverage?.requested || 1));
-    const attempts = (row.attempts || []).length || Number(row.coverage?.attempted || 0);
-    scope.attempted += attempts;
-    scope.successes += (row.attempts || []).filter((attempt) => attempt.result === 'success').length;
-    scope.failures += (row.attempts || []).filter((attempt) => attempt.result === 'failure').length;
-    if (packageCausedFailure(row)) scope.packageFailures += attempts;
-    scopes.set(key, scope);
+    const key = environmentKey(row, depth);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
   }
-  return [...scopes.values()].map((scope) => {
-    const complete = scope.expected > 0 && scope.attempted >= scope.expected;
-    let conclusion = 'inconclusive';
-    if (scope.successes > 0) conclusion = complete
-      ? (scope.failures > 0 ? 'partially-compatible' : 'fully-compatible')
-      : 'sampled-compatible';
-    else if (complete && scope.failures === scope.attempted && scope.packageFailures === scope.attempted) {
-      conclusion = 'fully-incompatible';
-    } else if (scope.attempted > 0 && scope.packageFailures === scope.attempted) conclusion = 'sampled-incompatible';
-    return { ...scope, complete, conclusion };
-  }).sort((left, right) => `${left.source}/${left.branch}`.localeCompare(`${right.source}/${right.branch}`));
+  return [...groups.entries()].map(([path, rows]) => ({
+    path, source: rows[0]?.source || '', branch: depth >= 2 ? rows[0]?.branch || '' : '',
+    attempted: rows.length, compatible: rows.filter((row) => row.conclusion === 'compatible').length,
+    incompatible: rows.filter((row) => row.conclusion === 'incompatible').length,
+    inconclusive: rows.filter((row) => row.conclusion === 'inconclusive').length,
+    conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
+  })).sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
 }
 
 function optionalBoolean(value) {
@@ -203,83 +179,59 @@ export function aggregateRunStatus(env = {}, evidenceCount = 0) {
   const requestedPlanOnly = optionalBoolean(env.REQUESTED_PLAN_ONLY);
   const plannedExecute = optionalBoolean(env.EXECUTE);
   const execute = plannedExecute ?? (requestedPlanOnly === null ? null : !requestedPlanOnly);
-
   if (planResult !== 'success') return { state: 'plan-failure', planResult, probeResult, execute };
   if (relevant === false) return { state: 'not-relevant', planResult, probeResult, execute: false };
   if (authorized === false) return { state: 'authorization-denied', planResult, probeResult, execute: false };
   if (execute === false) return { state: 'plan-only', planResult, probeResult, execute };
   if (execute === true) {
-    if (probeResult === 'success') return {
-      state: evidenceCount > 0 ? 'execution-success' : 'execution-evidence-missing',
-      planResult, probeResult, execute,
-    };
-    if (['failure', 'cancelled'].includes(probeResult)) {
-      return { state: 'execution-failure', planResult, probeResult, execute };
-    }
+    if (probeResult === 'success') return { state: evidenceCount ? 'execution-success' : 'execution-evidence-missing', planResult, probeResult, execute };
+    if (['failure', 'cancelled'].includes(probeResult)) return { state: evidenceCount ? 'execution-collected-with-failures' : 'execution-failure', planResult, probeResult, execute };
     if (probeResult === 'skipped') return { state: 'execution-skipped', planResult, probeResult, execute };
     return { state: 'execution-incomplete', planResult, probeResult, execute };
   }
-  if (evidenceCount > 0) return {
-    state: probeResult === 'success' ? 'execution-success' : 'execution-incomplete',
-    planResult, probeResult, execute,
-  };
-  return { state: 'unresolved', planResult, probeResult, execute };
+  return evidenceCount ? { state: 'execution-incomplete', planResult, probeResult, execute } : { state: 'unresolved', planResult, probeResult, execute };
 }
 
 function noEvidenceLines(status) {
   const messages = {
     'plan-failure': 'Probe planning failed before Matrix creation; no compilation was executed. / 探针计划在创建 Matrix 前失败；未执行编译。',
-    'plan-only': 'Plan only; no compilation was requested, so no compatibility conclusion or build log is available. / 仅生成计划；未请求编译，因此没有兼容性结论或构建日志。',
-    'not-relevant': 'The request was not relevant to this probe workflow; no compilation was executed. / 请求不适用于此探针工作流；未执行编译。',
+    'plan-only': 'Plan only; no compilation was requested, so no compatibility conclusion is available. / 仅生成计划；未请求编译，因此没有兼容性结论。',
     'authorization-denied': 'Probe authorization was denied; no compilation was executed. / 探针授权未通过；未执行编译。',
-    'execution-failure': 'Compilation was requested, but execution failed or was cancelled before normalized evidence was collected. / 已请求编译，但执行失败或取消，未收集到规范化证据。',
-    'execution-skipped': 'Compilation was requested, but the Probe Matrix was skipped. / 已请求编译，但探针 Matrix 被跳过。',
-    'execution-evidence-missing': 'The Probe Matrix reported success, but no normalized evidence was collected; treat this run as incomplete. / 探针 Matrix 报告成功，但未收集到规范化证据；本次运行应视为不完整。',
-    'execution-incomplete': 'Compilation was requested, but execution did not reach a conclusive result. / 已请求编译，但执行未得到明确结果。',
-    unresolved: 'The probe run state could not be resolved; no compatibility conclusion is available. / 无法确定探针运行状态；没有兼容性结论。',
+    'execution-failure': 'Compilation was requested, but no normalized evidence was collected. / 已请求编译，但没有收集到规范化证据。',
   };
-  return [`> ${messages[status.state] || messages.unresolved}`, ''];
+  return [`> ${messages[status.state] || 'No conclusive normalized evidence is available. / 没有可用的明确规范化证据。'}`, ''];
 }
 
 export function aggregateEvidence(directory, env = {}) {
   const evidence = evidenceFiles(directory).map((file) => JSON.parse(readFileSync(file, 'utf8')))
-    .sort((left, right) => `${left.source}/${left.branch}/${left.target}`.localeCompare(`${right.source}/${right.branch}/${right.target}`));
+    .sort((a, b) => environmentKey(a).localeCompare(environmentKey(b), undefined, { numeric: true }));
   const grouped = new Map();
   for (const row of evidence) {
     if (!row.issues?.length) continue;
     const group = grouped.get(row.fingerprint) || { fingerprint: row.fingerprint, issues: row.issues, environments: [] };
-    group.environments.push(`${row.source}/${row.branch}/${row.target}`);
-    grouped.set(row.fingerprint, group);
+    group.environments.push(environmentKey(row)); grouped.set(row.fingerprint, group);
   }
-  const scopes = aggregateScopeConclusions(evidence);
+  const exhaustive = Number(env.BATCH_COUNT || 1) === 1 && String(env.COVERAGE_SAMPLED || 'false') !== 'true' &&
+    Number(env.COVERAGE_PLANNED || evidence.length) === Number(env.COVERAGE_TOTAL || evidence.length);
+  const scopes = aggregateScopeConclusions(evidence, { depth: 2, exhaustive });
+  const overallConclusion = conclusionForRows(evidence, exhaustive);
   const runStatus = aggregateRunStatus(env, evidence.length);
   const lines = ['## Package compatibility probe result / 软件包兼容探针结果', '',
     `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
-    `- Planned jobs / 计划任务: ${env.PLAN_COUNT || evidence.length}`,
+    `- Coverage / 覆盖: ${env.COVERAGE_PLANNED || evidence.length}/${env.COVERAGE_TOTAL || evidence.length}${exhaustive ? ' (complete)' : ' (sampled)'}`,
+    `- Batch / 批次: ${Number(env.BATCH_INDEX || 0) + 1}/${env.BATCH_COUNT || 1}`,
     `- Collected evidence / 已收集证据: ${evidence.length}`,
-    `- Plan / 计划: \`${env.PLAN_RESULT || 'unknown'}\``,
-    `- Matrix / 矩阵: \`${env.PROBE_RESULT || 'unknown'}\``,
+    `- Conclusion / 结论: **${evidence.length ? overallConclusion : 'inconclusive'}**`,
+    `- Run state / 运行状态: **${runStatus.state}**`,
     `- Run / 运行: ${env.GITHUB_SERVER_URL || ''}/${env.GITHUB_REPOSITORY || ''}/actions/runs/${env.GITHUB_RUN_ID || ''}`, ''];
-  lines.splice(5, 0, `- Run state / 运行状态: **${runStatus.state}**`);
-  if (!evidence.length) {
-    lines.push(...noEvidenceLines(runStatus));
-  } else {
-    lines.push('### Source/Branch coverage conclusion / 源码分支覆盖结论', '',
-      '| Source/Branch | Packages / 软件包 | Coverage / 覆盖 | Conclusion / 结论 |',
-      '|---|---|---:|---|',
-      ...scopes.map((scope) => `| ${scope.source}/${scope.branch} | ${scope.packages.map((row) => `\`${row}\``).join(', ')} | ${scope.attempted}/${scope.expected} | **${scope.conclusion}** |`), '');
-    lines.push('| Source/Branch | Target/Profile | Mode / 模式 | Conclusion / 结论 | Issues / 问题 |',
-      '|---|---|---|---|---|',
-      ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.target}/${row.profile || '-'} | ${row.mode} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || '-'} |`), '');
-    if (grouped.size) {
-      lines.push('### Grouped issue fingerprints / 同类问题指纹', '');
-      for (const group of grouped.values()) lines.push(
-        `<details><summary><code>${group.fingerprint.slice(0, 16)}</code> · ${group.environments.length} environment(s) / 个环境</summary>`, '',
-        `- Issues / 问题: ${group.issues.map((row) => `\`${row.type}: ${issueText(row)}\``).join(', ')}`,
-        `- Environments / 环境: ${group.environments.map((row) => `\`${row}\``).join(', ')}`, '', '</details>', '');
-    }
+  if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
+  else {
+    lines.push('### Source/Branch conclusion / 源码分支结论', '', '| Source/Branch | Tested / 已测 | Conclusion / 结论 |', '|---|---:|---|',
+      ...scopes.map((scope) => `| ${scope.path} | ${scope.attempted} | **${scope.conclusion}** |`), '',
+      '| Source/Branch | Target System/Subtarget/Profile | Conclusion / 结论 | Issues / 问题 |', '|---|---|---|---|',
+      ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.targetSystem || '-'}/${row.subtarget || '-'}/${row.profile || '-'} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || '-'} |`), '');
   }
-  return { evidence, groups: [...grouped.values()], scopes, runStatus, lines };
+  return { evidence, groups: [...grouped.values()], scopes, overallConclusion: evidence.length ? overallConclusion : 'inconclusive', runStatus, lines };
 }
 
 export function main(env = process.env) {
@@ -288,8 +240,9 @@ export function main(env = process.env) {
     const aggregate = aggregateEvidence(directory, env);
     mkdirSync('probe-diagnostics', { recursive: true });
     writeFileSync('probe-diagnostics/FINAL_SUMMARY.md', aggregate.lines.join('\n') + '\n');
-    writeFileSync('probe-diagnostics/results.json', JSON.stringify({ schema: 1, generatedAt: new Date().toISOString(),
-      runStatus: aggregate.runStatus, evidence: aggregate.evidence, groups: aggregate.groups, scopes: aggregate.scopes }, null, 2) + '\n');
+    writeFileSync('probe-diagnostics/results.json', JSON.stringify({ schema: 2, generatedAt: new Date().toISOString(),
+      runStatus: aggregate.runStatus, overallConclusion: aggregate.overallConclusion, evidence: aggregate.evidence,
+      groups: aggregate.groups, scopes: aggregate.scopes }, null, 2) + '\n');
     if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, aggregate.lines.join('\n') + '\n');
     return aggregate;
   }
