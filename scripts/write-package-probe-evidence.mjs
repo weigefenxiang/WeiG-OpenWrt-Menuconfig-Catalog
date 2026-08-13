@@ -137,10 +137,17 @@ function environmentKey(row, depth = 5) {
   return [row.source, row.branch, row.targetSystem, row.subtarget, row.profile].slice(0, depth).join('/');
 }
 
-function conclusionForRows(rows, exhaustive) {
+function conclusionStats(rows) {
   const compatible = rows.filter((row) => row.conclusion === 'compatible').length;
   const incompatible = rows.filter((row) => row.conclusion === 'incompatible').length;
   const inconclusive = rows.length - compatible - incompatible;
+  const conclusive = compatible + incompatible;
+  return { attempted: rows.length, compatible, incompatible, inconclusive, conclusive,
+    compatibilityRate: conclusive ? compatible / conclusive : null };
+}
+
+function conclusionForRows(rows, exhaustive) {
+  const { compatible, incompatible, inconclusive } = conclusionStats(rows);
   if (!compatible && !incompatible) return 'inconclusive';
   if (compatible && incompatible) return 'partially-compatible';
   if (inconclusive) return 'inconclusive';
@@ -158,11 +165,28 @@ export function aggregateScopeConclusions(evidence, options = {}) {
   }
   return [...groups.entries()].map(([path, rows]) => ({
     path, source: rows[0]?.source || '', branch: depth >= 2 ? rows[0]?.branch || '' : '',
-    attempted: rows.length, compatible: rows.filter((row) => row.conclusion === 'compatible').length,
-    incompatible: rows.filter((row) => row.conclusion === 'incompatible').length,
-    inconclusive: rows.filter((row) => row.conclusion === 'inconclusive').length,
-    conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
+    ...conclusionStats(rows), conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
   })).sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
+}
+
+function formatCompatibilityRate(scope) {
+  return scope.compatibilityRate === null ? '—' : `${Math.round(scope.compatibilityRate * 100)}%`;
+}
+
+function compactScopeConclusions(evidence, exhaustive) {
+  const sources = aggregateScopeConclusions(evidence, { depth: 1, exhaustive });
+  const branches = aggregateScopeConclusions(evidence, { depth: 2, exhaustive });
+  const rows = [];
+  for (const source of sources) {
+    const sourceBranches = branches.filter((row) => row.source === source.source);
+    const uniformConclusive = source.inconclusive === 0 && (
+      (source.compatible > 0 && source.incompatible === 0) ||
+      (source.incompatible > 0 && source.compatible === 0)
+    );
+    if (uniformConclusive || source.conclusive === 0) rows.push({ ...source, branch: '' });
+    else rows.push(...sourceBranches);
+  }
+  return rows.sort((a, b) => `${a.source}/${a.branch}`.localeCompare(`${b.source}/${b.branch}`, undefined, { numeric: true }));
 }
 
 function optionalBoolean(value) {
@@ -214,9 +238,13 @@ export function aggregateEvidence(directory, env = {}) {
   const exhaustive = Number(env.BATCH_COUNT || 1) === 1 && String(env.COVERAGE_SAMPLED || 'false') !== 'true' &&
     Number(env.COVERAGE_PLANNED || evidence.length) === Number(env.COVERAGE_TOTAL || evidence.length);
   const scopes = aggregateScopeConclusions(evidence, { depth: 2, exhaustive });
+  const summaryScopes = compactScopeConclusions(evidence, exhaustive);
+  const overallStats = conclusionStats(evidence);
   const overallConclusion = conclusionForRows(evidence, exhaustive);
   const runStatus = aggregateRunStatus(env, evidence.length);
   const lines = ['## Package compatibility probe result / 软件包兼容探针结果', '',
+    `- Observed compatibility / 已测兼容率: **${formatCompatibilityRate(overallStats)}** (${overallStats.compatible}/${overallStats.conclusive} conclusive / 明确结果)`,
+    `- Inconclusive / 未定: ${overallStats.inconclusive}`,
     `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
     `- Coverage / 覆盖: ${env.COVERAGE_PLANNED || evidence.length}/${env.COVERAGE_TOTAL || evidence.length}${exhaustive ? ' (complete)' : ' (sampled)'}`,
     `- Batch / 批次: ${Number(env.BATCH_INDEX || 0) + 1}/${env.BATCH_COUNT || 1}`,
@@ -226,12 +254,17 @@ export function aggregateEvidence(directory, env = {}) {
     `- Run / 运行: ${env.GITHUB_SERVER_URL || ''}/${env.GITHUB_REPOSITORY || ''}/actions/runs/${env.GITHUB_RUN_ID || ''}`, ''];
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
-    lines.push('### Source/Branch conclusion / 源码分支结论', '', '| Source/Branch | Tested / 已测 | Conclusion / 结论 |', '|---|---:|---|',
-      ...scopes.map((scope) => `| ${scope.path} | ${scope.attempted} | **${scope.conclusion}** |`), '',
+    lines.push('### Source/Branch compatibility / 源码分支兼容率', '',
+      '| Source | Branch | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Inconclusive / 未定 |',
+      '|---|---|---:|---:|---:|',
+      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.branch || '—'} | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.inconclusive} |`), '',
+      '<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',
       '| Source/Branch | Target System/Subtarget/Profile | Conclusion / 结论 | Issues / 问题 |', '|---|---|---|---|',
-      ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.targetSystem || '-'}/${row.subtarget || '-'}/${row.profile || '-'} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || '-'} |`), '');
+      ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.targetSystem || '-'}/${row.subtarget || '-'}/${row.profile || '-'} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || '-'} |`), '',
+      '</details>', '');
   }
-  return { evidence, groups: [...grouped.values()], scopes, overallConclusion: evidence.length ? overallConclusion : 'inconclusive', runStatus, lines };
+  return { evidence, groups: [...grouped.values()], scopes, summaryScopes, overallStats,
+    overallConclusion: evidence.length ? overallConclusion : 'inconclusive', runStatus, lines };
 }
 
 export function main(env = process.env) {
@@ -241,8 +274,8 @@ export function main(env = process.env) {
     mkdirSync('probe-diagnostics', { recursive: true });
     writeFileSync('probe-diagnostics/FINAL_SUMMARY.md', aggregate.lines.join('\n') + '\n');
     writeFileSync('probe-diagnostics/results.json', JSON.stringify({ schema: 2, generatedAt: new Date().toISOString(),
-      runStatus: aggregate.runStatus, overallConclusion: aggregate.overallConclusion, evidence: aggregate.evidence,
-      groups: aggregate.groups, scopes: aggregate.scopes }, null, 2) + '\n');
+      runStatus: aggregate.runStatus, overallConclusion: aggregate.overallConclusion, overallStats: aggregate.overallStats,
+      evidence: aggregate.evidence, groups: aggregate.groups, scopes: aggregate.scopes, summaryScopes: aggregate.summaryScopes }, null, 2) + '\n');
     if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, aggregate.lines.join('\n') + '\n');
     return aggregate;
   }
