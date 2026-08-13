@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   createProbePlan,
@@ -13,14 +13,6 @@ import {
 } from './package-probe-controller.mjs';
 import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import { parseProbeStateToken, PROBE_STATE_PREFIX } from './package-probe-state.mjs';
-import {
-  isProbeIssue,
-  normalizeGatewayRequest,
-  probeCancellationAuthorized,
-  probeCancellationRequested,
-  probeIssueCommand,
-  probeRunMarkers,
-} from './package-probe-gateway.mjs';
 import { aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
   requestedPackageStates } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
@@ -29,11 +21,8 @@ const ROOT = resolve(import.meta.dirname, '..');
 const policy = JSON.parse(readFileSync(resolve(ROOT, '.github', 'automation-policy.json'), 'utf8'));
 const config = JSON.parse(readFileSync(resolve(ROOT, 'catalog.config.json'), 'utf8'));
 const workflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe.yml'), 'utf8');
-const gatewayWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe-request.yml'), 'utf8');
-const issueForm = readFileSync(resolve(ROOT, '.github', 'ISSUE_TEMPLATE', 'package-probe.yml'), 'utf8');
 const catalogWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const controller = readFileSync(resolve(ROOT, 'scripts', 'package-probe-controller.mjs'), 'utf8');
-const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-gateway.mjs'), 'utf8');
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
 
@@ -88,11 +77,6 @@ assert.deepEqual(normalizeProbeRequest({ ...baseRequest, targetPolicy: {
   mode: 'selected', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }],
 } }).targetPolicy, { mode: 'selected', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] });
 
-const gatewayRequest = normalizeGatewayRequest(baseRequest);
-assert.equal(gatewayRequest.channel, 'dev');
-assert.equal(gatewayRequest.mode, 'firmware-integration');
-assert.deepEqual(gatewayRequest.packages, ['luci-app-oscam', 'oscam', 'libexample']);
-
 const token = PROBE_STATE_PREFIX + gzipSync(Buffer.from(JSON.stringify(baseRequest))).toString('base64url');
 const parsedState = parseProbeStateToken(`### Generated probe state\n\n${token}\n`);
 assert.deepEqual(parsedState.raw, baseRequest);
@@ -100,18 +84,6 @@ assert.match(parsedState.sha256, /^[a-f0-9]{64}$/);
 assert.throws(() => parseProbeStateToken('no generated state'), /exactly one/);
 assert.throws(() => parseProbeStateToken(`${token}\n${token}`), /exactly one/);
 assert.throws(() => parseProbeStateToken(`${PROBE_STATE_PREFIX}${Buffer.from('not gzip').toString('base64url')}`), /gzip/);
-
-assert(isProbeIssue({ title: '[probe] package', user: { login: 'author' } }));
-assert(!isProbeIssue({ title: '[build] package' }));
-assert(!isProbeIssue({ title: '[probe] pull', pull_request: {} }));
-assert.equal(probeIssueCommand(' /CANCEL\n'), 'cancel');
-assert.equal(probeIssueCommand('/cancel now'), '');
-assert(probeCancellationAuthorized({ requester: 'Author', commenter: 'author', permission: 'read' }));
-for (const permission of ['write', 'maintain', 'admin']) assert(probeCancellationAuthorized({ requester: 'author', commenter: 'helper', permission }));
-assert(!probeCancellationAuthorized({ requester: 'author', commenter: 'reader', permission: 'read' }));
-const marker = `<!-- WEIG_PACKAGE_PROBE_RUN_V2 run=123 sha=${'a'.repeat(64)} -->`;
-assert.deepEqual(probeRunMarkers([{ body: marker }, { body: marker }]), [{ runId: 123, sha256: 'a'.repeat(64) }]);
-assert(probeCancellationRequested([{ body: '<!-- WEIG_PACKAGE_PROBE_CANCEL_V1 -->' }]));
 
 const selectableTarget = (id, selector, profile = '') => ({ id, targetSelector: selector,
   contract: { selectable: true, boardSelector: selector.split('_').slice(0, 2).join('_') },
@@ -187,17 +159,12 @@ for (const version of ['openwrt-27.01', 'openwrt-28.12', 'openwrt-29.10', 'openw
   assert(sourceAllowsBranch(lede, version), `lede future branch was not discovered: ${version}`);
 }
 
-assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-gateway.mjs'));
-assert(gatewayWorkflow.includes('actions: write') && gatewayWorkflow.includes('issues: write'));
-assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && !issueForm.includes('probe-request.json') && issueForm.includes('`/cancel`'));
 assert(workflow.includes('package_config:') && workflow.includes('state_sha256:') && workflow.includes('PROBE_PACKAGE_CONFIG'));
 assert(!workflow.includes('inputs.packages') && !workflow.includes('inputs.request') && !workflow.includes('PROBE_REQUEST_SHA256'));
 assert(workflow.includes('timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout_minutes) }}'));
 assert(controller.includes('normalizePackageConfig') && controller.includes('parseProbeStateToken'));
 assert(controller.includes('requireNormalizedProbeRequest'));
 assert(!controller.includes('applications.json.gz') && !controller.includes('resolveProbePackages') && !controller.includes('maxPackages'));
-assert(!issueGateway.includes('downloadProbeRequest') && !issueGateway.includes('probe-request.json'));
-assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')), 'obsolete duplicate Probe Issue gateway must remain removed');
 assert(runner.includes('const state = PACKAGE_STATES.get(packageName)') && runner.includes('states[name] === PACKAGE_STATES.get(name)') && !runner.includes("PACKAGE_STATES.get(packageName) || 'n'"));
 assert(runner.includes('writeConfig(candidate, [])'), 'firmware baseline must exclude the shared package state');
 assert(workflow.includes('node scripts/run-package-probe.mjs') && runner.includes('package/install'));
