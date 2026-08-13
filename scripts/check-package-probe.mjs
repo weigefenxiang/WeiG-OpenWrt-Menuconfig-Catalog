@@ -317,6 +317,8 @@ assert.equal(policy.probe.fullLogDays, 30);
 assert(!('maxPackages' in policy.probe));
 for (const key of ['howTo', 'submittedState', 'stateInstruction', 'invalid']) assert(probeUi.strings[key]?.en && probeUi.strings[key]?.['zh-CN']);
 assert(!probeUi.strings.downloadedRequest && !probeUi.strings.uploadInstruction);
-assert(catalogWorkflow.includes('!scripts/run-package-probe.mjs') && catalogWorkflow.includes('!scripts/package-probe-*.mjs'));
+assert(catalogWorkflow.includes('scripts/catalog-change-impact.mjs') &&
+  !catalogWorkflow.includes('!scripts/run-package-probe.mjs') && !catalogWorkflow.includes('!scripts/package-probe-*.mjs'),
+'Catalog workflow must delegate Probe/no-data routing to the single change-impact registry');
 
 console.log('Package probe shared-state checks passed.');

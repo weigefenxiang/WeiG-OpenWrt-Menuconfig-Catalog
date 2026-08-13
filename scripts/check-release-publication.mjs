@@ -11,12 +11,18 @@ const catalog = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'
 
 for (const needle of [
   '- "scripts/**"',
-  '- "!scripts/package-probe-*.mjs"',
-  '- "!scripts/run-package-probe.mjs"',
-  '- "!scripts/write-package-probe-evidence.mjs"',
-  '- "catalog.config.json"',
+  '- "translations/**"',
+  '- "*.json"',
+  '- ".github/workflows/catalog.yml"',
+  'node scripts/catalog-change-impact.mjs',
+  "needs.mode.outputs.mode == 'full'",
+  "needs.mode.outputs.mode == 'root-assets'",
 ]) {
-  assert(catalog.includes(needle), `catalog trigger contract missing: ${needle}`);
+  assert(catalog.includes(needle), `catalog trigger/router contract missing: ${needle}`);
+}
+for (const legacy of ['!scripts/package-probe-*.mjs', '!scripts/run-package-probe.mjs',
+  '!scripts/write-package-probe-evidence.mjs']) {
+  assert(!catalog.includes(legacy), `legacy trigger blacklist returned: ${legacy}`);
 }
 
 const publishScript = resolve(ROOT, 'scripts', 'publish-release.sh');
