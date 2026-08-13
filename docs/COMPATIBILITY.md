@@ -58,7 +58,14 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 新增规则前先查上游源码和真实证据；确认一个范围后横向检查同 Source/Branch 机制。Source/Branch 新版本若已被 glob 覆盖，无需增加 JSON 项，但首次真实探测仍应记录证据。上游修复后及时删减，禁止 zombie rule。
 
-Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 有四个递进深度：`package-compile` 只编译软件包与依赖闭包；`rootfs-integration` 继续安装到 RootFS，以发现 APK/OPKG 文件归属和同装冲突；`firmware-integration` 在相同 Source/Branch/Target 下构建基础固件与加入软件包的固件作 A/B 对照；实验性的 `boot-smoke`（界面译为“启动自检”）只对 Catalog 允许的通用可启动目标验证启动标志，不加入插件专属运行判断。
+### 探针深度边界
+
+Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 有四个递进深度：
+
+- **L1 软件包编译（`package-compile`）**：先准备 OpenWrt host tools 和所选 Target 的完整工具链，再编译所选软件包及其依赖闭包。首次运行时 tools/toolchain 和依赖编译量可能很大，因此日志看起来接近完整构建；但此级别不执行 `world`、`package/install` 或镜像生成，不会产生固件。
+- **L2 根文件系统集成（`rootfs-integration`）**：完整执行 L1 后，再运行 `package/install`，把所选软件包集成进 RootFS staging，以发现 APK/OPKG 文件归属和共同安装冲突；仍不生成固件。
+- **L3 固件集成（`firmware-integration`）**：在同一 Source/Branch/Target 环境中执行两次 `world` 构建。第一次生成不含所选软件包的基准固件，第二次生成加入所选软件包的固件，以便区分上游基础构建失败和软件包引入的失败。
+- **L4 启动自检（`boot-smoke`）**：完整执行 L3 后，仅对 Catalog 允许的 x86/64 通用可启动镜像使用 QEMU 检查通用启动标志。它不是插件服务运行测试，也不是实体设备的驱动、网络或硬件功能测试。
 
 请求可包含 1–8 个 Catalog 应用 ID 或 package ID，并选择全部、当前或指定 Source/Branch，以及自动目标、当前 Target/Profile 或全部代表目标。控制器只读取当前代码频道对应数据分支的 `index.json`、`applications.json.gz` 与匹配 Branch 的 `core` 分片，校验 SHA-256 后动态生成 Matrix。自动目标优先 x86/64，并可在同一 Job 内依次尝试 Catalog 合法后备目标；全部目标受 256 Job 上限约束。只有某软件包在全部合法环境中均由软件包原因失败，才能标记为“完全不兼容”；部分 Target 失败只是带覆盖率的证据，基础固件失败、下载失败、磁盘不足和超时归为基础设施或不确定结果。
 

@@ -220,6 +220,10 @@ jobs:
         env:
           PLAN_RESULT: ${{ needs.plan.result }}
           PROBE_RESULT: ${{ needs.probe.result }}
+          EXECUTE: ${{ needs.plan.outputs.execute }}
+          AUTHORIZED: ${{ needs.plan.outputs.authorized }}
+          RELEVANT: ${{ needs.plan.outputs.relevant }}
+          REQUESTED_PLAN_ONLY: ${{ inputs.plan_only }}
           PLAN_COUNT: ${{ needs.plan.outputs.plan_count }}
           DATA_BRANCH: ${{ needs.plan.outputs.data_branch }}
         run: node scripts/write-package-probe-evidence.mjs --aggregate collected-evidence

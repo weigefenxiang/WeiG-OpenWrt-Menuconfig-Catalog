@@ -58,7 +58,14 @@ Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only 
 
 Inspect upstream source and real evidence before adding a rule, then audit the same Source/Branch mechanism horizontally. A future Branch already covered by a glob needs no JSON row, but its first real probe should still be recorded. Narrow rules promptly after fixes; zombie rules are forbidden.
 
-Catalog's **Package Compatibility Probe / 软件包兼容探针** has four increasing depths. `package-compile` builds only the package and dependency closure. `rootfs-integration` then installs it into RootFS to expose APK/OPKG ownership and co-install failures. `firmware-integration` builds a baseline image and a package-enabled image in the same Source/Branch/Target environment for A/B comparison. Experimental `boot-smoke` (shown as “启动自检” in Chinese) checks only generic boot-ready markers on Catalog-approved bootable targets and never adds package-specific runtime logic.
+### Probe depth boundaries
+
+Catalog's **Package Compatibility Probe / 软件包兼容探针** has four increasing depths:
+
+- **L1 Package compile (`package-compile`)**: first prepare the OpenWrt host tools and the complete toolchain for the selected Target, then compile the selected packages and their dependency closure. A cold run can compile a large tools/toolchain and dependency set, so its log can resemble a complete build. It does not run `world`, `package/install`, or image generation, and produces no firmware.
+- **L2 RootFS integration (`rootfs-integration`)**: complete L1, then run `package/install` to integrate the selected packages into RootFS staging and expose APK/OPKG ownership or co-install conflicts. It still produces no firmware.
+- **L3 Firmware integration (`firmware-integration`)**: run `world` twice in the same Source/Branch/Target environment. The first build creates a baseline firmware without the selected packages; the second creates a firmware with them, separating an upstream baseline failure from a package-introduced failure.
+- **L4 Boot smoke (`boot-smoke`)**: complete L3, then use QEMU only for Catalog-approved generic x86/64 bootable images and check generic startup markers. It is neither a package-service runtime test nor a physical-device driver, network, or hardware-function test.
 
 A request carries 1–8 Catalog application or package IDs and chooses all, current, or explicit Source/Branch entries plus an automatic target, the current Target/Profile, or all representative targets. The controller reads only `index.json`, `applications.json.gz`, and each matched Branch's `core` shard from the data branch paired with the code channel, verifies SHA-256, and creates the dynamic Matrix. Automatic coverage prefers x86/64 and can try Catalog-valid fallback targets sequentially inside one job; all-target coverage remains bounded by the 256-job limit. A package is “fully incompatible” only when every legal environment fails for a package-caused reason. Partial Target failures are evidence with explicit coverage, while baseline-image failures, downloads, disk exhaustion, and timeouts are infrastructure or inconclusive results.
 

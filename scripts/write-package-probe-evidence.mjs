@@ -189,6 +189,58 @@ export function aggregateScopeConclusions(evidence) {
   }).sort((left, right) => `${left.source}/${left.branch}`.localeCompare(`${right.source}/${right.branch}`));
 }
 
+function optionalBoolean(value) {
+  if (value === true || String(value).toLowerCase() === 'true') return true;
+  if (value === false || String(value).toLowerCase() === 'false') return false;
+  return null;
+}
+
+export function aggregateRunStatus(env = {}, evidenceCount = 0) {
+  const planResult = String(env.PLAN_RESULT || 'unknown').toLowerCase();
+  const probeResult = String(env.PROBE_RESULT || 'unknown').toLowerCase();
+  const authorized = optionalBoolean(env.AUTHORIZED);
+  const relevant = optionalBoolean(env.RELEVANT);
+  const requestedPlanOnly = optionalBoolean(env.REQUESTED_PLAN_ONLY);
+  const plannedExecute = optionalBoolean(env.EXECUTE);
+  const execute = plannedExecute ?? (requestedPlanOnly === null ? null : !requestedPlanOnly);
+
+  if (planResult !== 'success') return { state: 'plan-failure', planResult, probeResult, execute };
+  if (relevant === false) return { state: 'not-relevant', planResult, probeResult, execute: false };
+  if (authorized === false) return { state: 'authorization-denied', planResult, probeResult, execute: false };
+  if (execute === false) return { state: 'plan-only', planResult, probeResult, execute };
+  if (execute === true) {
+    if (probeResult === 'success') return {
+      state: evidenceCount > 0 ? 'execution-success' : 'execution-evidence-missing',
+      planResult, probeResult, execute,
+    };
+    if (['failure', 'cancelled'].includes(probeResult)) {
+      return { state: 'execution-failure', planResult, probeResult, execute };
+    }
+    if (probeResult === 'skipped') return { state: 'execution-skipped', planResult, probeResult, execute };
+    return { state: 'execution-incomplete', planResult, probeResult, execute };
+  }
+  if (evidenceCount > 0) return {
+    state: probeResult === 'success' ? 'execution-success' : 'execution-incomplete',
+    planResult, probeResult, execute,
+  };
+  return { state: 'unresolved', planResult, probeResult, execute };
+}
+
+function noEvidenceLines(status) {
+  const messages = {
+    'plan-failure': 'Probe planning failed before Matrix creation; no compilation was executed. / 探针计划在创建 Matrix 前失败；未执行编译。',
+    'plan-only': 'Plan only; no compilation was requested, so no compatibility conclusion or build log is available. / 仅生成计划；未请求编译，因此没有兼容性结论或构建日志。',
+    'not-relevant': 'The request was not relevant to this probe workflow; no compilation was executed. / 请求不适用于此探针工作流；未执行编译。',
+    'authorization-denied': 'Probe authorization was denied; no compilation was executed. / 探针授权未通过；未执行编译。',
+    'execution-failure': 'Compilation was requested, but execution failed or was cancelled before normalized evidence was collected. / 已请求编译，但执行失败或取消，未收集到规范化证据。',
+    'execution-skipped': 'Compilation was requested, but the Probe Matrix was skipped. / 已请求编译，但探针 Matrix 被跳过。',
+    'execution-evidence-missing': 'The Probe Matrix reported success, but no normalized evidence was collected; treat this run as incomplete. / 探针 Matrix 报告成功，但未收集到规范化证据；本次运行应视为不完整。',
+    'execution-incomplete': 'Compilation was requested, but execution did not reach a conclusive result. / 已请求编译，但执行未得到明确结果。',
+    unresolved: 'The probe run state could not be resolved; no compatibility conclusion is available. / 无法确定探针运行状态；没有兼容性结论。',
+  };
+  return [`> ${messages[status.state] || messages.unresolved}`, ''];
+}
+
 export function aggregateEvidence(directory, env = {}) {
   const evidence = evidenceFiles(directory).map((file) => JSON.parse(readFileSync(file, 'utf8')))
     .sort((left, right) => `${left.source}/${left.branch}/${left.target}`.localeCompare(`${right.source}/${right.branch}/${right.target}`));
@@ -200,6 +252,7 @@ export function aggregateEvidence(directory, env = {}) {
     grouped.set(row.fingerprint, group);
   }
   const scopes = aggregateScopeConclusions(evidence);
+  const runStatus = aggregateRunStatus(env, evidence.length);
   const lines = ['## Package compatibility probe result / 软件包兼容探针结果', '',
     `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
     `- Planned jobs / 计划任务: ${env.PLAN_COUNT || evidence.length}`,
@@ -207,8 +260,9 @@ export function aggregateEvidence(directory, env = {}) {
     `- Plan / 计划: \`${env.PLAN_RESULT || 'unknown'}\``,
     `- Matrix / 矩阵: \`${env.PROBE_RESULT || 'unknown'}\``,
     `- Run / 运行: ${env.GITHUB_SERVER_URL || ''}/${env.GITHUB_REPOSITORY || ''}/actions/runs/${env.GITHUB_RUN_ID || ''}`, ''];
+  lines.splice(5, 0, `- Run state / 运行状态: **${runStatus.state}**`);
   if (!evidence.length) {
-    lines.push('> Plan only; no compilation was executed, so no compatibility conclusion or build log is available. / 仅生成计划；未执行编译，因此没有兼容性结论或构建日志。', '');
+    lines.push(...noEvidenceLines(runStatus));
   } else {
     lines.push('### Source/Branch coverage conclusion / 源码分支覆盖结论', '',
       '| Source/Branch | Packages / 软件包 | Coverage / 覆盖 | Conclusion / 结论 |',
@@ -225,7 +279,7 @@ export function aggregateEvidence(directory, env = {}) {
         `- Environments / 环境: ${group.environments.map((row) => `\`${row}\``).join(', ')}`, '', '</details>', '');
     }
   }
-  return { evidence, groups: [...grouped.values()], scopes, lines };
+  return { evidence, groups: [...grouped.values()], scopes, runStatus, lines };
 }
 
 export function main(env = process.env) {
@@ -235,7 +289,7 @@ export function main(env = process.env) {
     mkdirSync('probe-diagnostics', { recursive: true });
     writeFileSync('probe-diagnostics/FINAL_SUMMARY.md', aggregate.lines.join('\n') + '\n');
     writeFileSync('probe-diagnostics/results.json', JSON.stringify({ schema: 1, generatedAt: new Date().toISOString(),
-      evidence: aggregate.evidence, groups: aggregate.groups, scopes: aggregate.scopes }, null, 2) + '\n');
+      runStatus: aggregate.runStatus, evidence: aggregate.evidence, groups: aggregate.groups, scopes: aggregate.scopes }, null, 2) + '\n');
     if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, aggregate.lines.join('\n') + '\n');
     return aggregate;
   }

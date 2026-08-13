@@ -61,31 +61,80 @@ function targetConfig(target, profile) {
   };
 }
 
+function preferredProfile(profiles) {
+  return profiles.find((row) => row.id === 'DEVICE_generic') ||
+    profiles.find((row) => row.id === 'generic') || profiles.find((row) => row.id === 'Default') || profiles[0];
+}
+
 function targetRows(core, selections = []) {
   if (Number(core?.schema) !== 6 || !Array.isArray(core?.targets)) {
     throw new Error('Catalog core schema 6 with targets is required');
   }
   const rows = [];
+  const mappings = [];
+  const skipped = [];
   const selected = Array.isArray(selections) ? selections : [];
-  for (const target of core.targets) {
-    const profiles = (target.profiles || []).filter((profile) => profile?.selectable !== false && profile?.selector);
+  const targets = core.targets.map((target) => ({
+    target,
+    profiles: (target.profiles || []).filter((profile) => profile?.selectable !== false && profile?.selector),
+  }));
+  const append = (target, profile) => {
+    const config = targetConfig(target, profile);
+    if (!config) return false;
+    if (!rows.some((row) => row.target === config.target && row.profile === config.profile)) rows.push(config);
+    return true;
+  };
+  if (selected.length) {
+    for (const selection of selected) {
+      const targetId = String(selection?.target || '');
+      const requestedProfile = String(selection?.profile || '');
+      const entry = targets.find((row) => String(row.target?.id || '') === targetId);
+      if (!entry) {
+        skipped.push({ target: targetId, requestedProfile, reason: 'target-not-found' });
+        continue;
+      }
+      const { target, profiles } = entry;
+      const selectable = target?.contract?.selectable === true || target?.selectable === true || profiles.length > 0;
+      if (!selectable) {
+        skipped.push({ target: targetId, requestedProfile, reason: 'target-not-selectable' });
+        continue;
+      }
+      let profile;
+      if (!requestedProfile) {
+        profile = preferredProfile(profiles);
+      } else {
+        profile = profiles.find((candidate) => String(candidate.id || '') === requestedProfile);
+        if (!profile && profiles.length === 1) {
+          profile = profiles[0];
+          mappings.push({
+            target: targetId,
+            requestedProfile,
+            resolvedProfile: String(profile.id || ''),
+            reason: 'unique-selectable-profile',
+          });
+        } else if (!profile) {
+          skipped.push({
+            target: targetId,
+            requestedProfile,
+            candidates: profiles.map((candidate) => String(candidate.id || '')),
+            reason: profiles.length ? 'profile-not-found-ambiguous' : 'profile-not-found',
+          });
+          continue;
+        }
+      }
+      if (!append(target, profile)) {
+        skipped.push({ target: targetId, requestedProfile, reason: 'selector-contract-missing' });
+      }
+    }
+    return { rows, mappings, skipped };
+  }
+  for (const { target, profiles } of targets) {
     const selectable = target?.contract?.selectable === true || target?.selectable === true || profiles.length > 0;
     if (!selectable) continue;
-    const matching = selected.filter((row) => row.target === String(target.id || ''));
-    if (selected.length && !matching.length) continue;
-    const preferredProfile = profiles.find((row) => row.id === 'DEVICE_generic') ||
-      profiles.find((row) => row.id === 'generic') || profiles.find((row) => row.id === 'Default') || profiles[0];
-    const requestedProfiles = matching.length
-      ? matching.map((row) => row.profile
-        ? profiles.find((profile) => profile.id === row.profile)
-        : preferredProfile).filter(Boolean)
-      : [preferredProfile];
-    for (const profile of requestedProfiles) {
-      const config = targetConfig(target, profile);
-      if (config && !rows.some((row) => row.target === config.target && row.profile === config.profile)) rows.push(config);
-    }
+    append(target, preferredProfile(profiles));
   }
-  return rows;
+  if (!rows.length) skipped.push({ target: '', requestedProfile: '', reason: 'no-selectable-target' });
+  return { rows, mappings, skipped };
 }
 
 function preferredTargets(rows, patterns = ['x86/64', '*']) {
@@ -98,15 +147,25 @@ function preferredTargets(rows, patterns = ['x86/64', '*']) {
   });
 }
 
-export function probeTargetConfigs(core, options = {}) {
+export function resolveProbeTargetConfigs(core, options = {}) {
   const patterns = options.preferredTargetPatterns || ['x86/64', '*'];
-  let rows = preferredTargets(targetRows(core, options.selections), patterns);
+  const resolved = targetRows(core, options.selections);
+  let rows = preferredTargets(resolved.rows, patterns);
   if (options.mode === 'boot-smoke') {
     const bootPatterns = options.bootTargetPatterns || [];
     rows = rows.filter((row) => bootPatterns.some((pattern) => matchPattern(row.target, pattern)));
+    if (!rows.length) resolved.skipped.push({ target: '', requestedProfile: '', reason: 'boot-target-not-supported' });
   }
-  if (!rows.length) throw new Error('Catalog core contains no selectable Target for this probe mode');
-  return rows;
+  return { ...resolved, rows };
+}
+
+export function probeTargetConfigs(core, options = {}) {
+  const resolved = resolveProbeTargetConfigs(core, options);
+  if (!resolved.rows.length) {
+    const reasons = stableUnique(resolved.skipped.map((row) => row.reason)).join(', ') || 'unknown';
+    throw new Error(`Catalog core contains no selectable Target for this probe mode (${reasons})`);
+  }
+  return resolved.rows;
 }
 
 export function probeTargetConfig(core) {
@@ -281,44 +340,50 @@ async function fetchVerifiedGzipJson(url, expectedHash, token = '') {
   return JSON.parse(gunzipSync(compressed).toString('utf8'));
 }
 
-function selectionMatches(selection, row) {
-  return selection.target === row.target && (!selection.profile || selection.profile === row.profile);
-}
-
-async function attachProbeTargets(plan, { repository, dataRef, token, policy }) {
+export async function attachProbeTargets(plan, { repository, dataRef, token, policy, loadCore } = {}) {
   const probePolicy = policy?.probe || {};
   const expand = async (sourceBranch) => {
-    if (!sourceBranch.coreAsset || !sourceBranch.coreHash) throw new Error(`${sourceBranch.source}/${sourceBranch.branch}: Catalog core asset contract is missing`);
-    const core = await fetchVerifiedGzipJson(
-      `https://raw.githubusercontent.com/${repository}/${dataRef}/${sourceBranch.coreAsset}`,
-      sourceBranch.coreHash, token);
-    let candidates = probeTargetConfigs(core, {
-      mode: plan.mode,
-      preferredTargetPatterns: probePolicy.preferredTargetPatterns,
-      bootTargetPatterns: probePolicy.bootTargetPatterns,
-      selections: plan.targetPolicy.mode === 'selected' ? plan.targetPolicy.selections : [],
-    });
-    if (plan.targetPolicy.mode === 'selected') candidates = candidates.filter((row) =>
-      plan.targetPolicy.selections.some((selection) => selectionMatches(selection, row)));
-    if (!candidates.length) throw new Error(`${sourceBranch.source}/${sourceBranch.branch}: selected Target policy matched no buildable environment`);
-    const expanded = [];
-    if (plan.targetPolicy.mode === 'auto') {
-      const maximum = Number(probePolicy.maxAutoTargetAttempts || 8);
-      const selected = candidates[0];
-      const fallback = candidates.slice(1, maximum);
-      expanded.push({ ...sourceBranch, key: safeKey(`${sourceBranch.key}-${selected.target}-${selected.profile}`),
-        target: selected.target, profile: selected.profile, targetConfig: selected.config,
-        fallbackTargets: Buffer.from(JSON.stringify(fallback)).toString('base64url'),
-        coverageTotal: candidates.length, coveragePlanned: 1 + fallback.length,
-        reductionBudget: Number(probePolicy.reductionMaxAttempts?.[plan.mode] || 0) });
-    } else {
-      for (const selected of candidates) expanded.push({ ...sourceBranch,
-        key: safeKey(`${sourceBranch.key}-${selected.target}-${selected.profile}`),
-        target: selected.target, profile: selected.profile, targetConfig: selected.config,
-        fallbackTargets: '', coverageTotal: candidates.length, coveragePlanned: candidates.length,
-        reductionBudget: Number(probePolicy.reductionMaxAttempts?.[plan.mode] || 0) });
+    try {
+      if (!loadCore && (!sourceBranch.coreAsset || !sourceBranch.coreHash)) throw new Error('Catalog core asset contract is missing');
+      const core = loadCore
+        ? await loadCore(sourceBranch)
+        : await fetchVerifiedGzipJson(
+          `https://raw.githubusercontent.com/${repository}/${dataRef}/${sourceBranch.coreAsset}`,
+          sourceBranch.coreHash, token);
+      const resolved = resolveProbeTargetConfigs(core, {
+        mode: plan.mode,
+        preferredTargetPatterns: probePolicy.preferredTargetPatterns,
+        bootTargetPatterns: probePolicy.bootTargetPatterns,
+        selections: plan.targetPolicy.mode === 'selected' ? plan.targetPolicy.selections : [],
+      });
+      const candidates = resolved.rows;
+      const annotate = (row) => ({ source: sourceBranch.source, branch: sourceBranch.branch, ...row });
+      const diagnostics = {
+        mappings: resolved.mappings.map(annotate),
+        skipped: resolved.skipped.map(annotate),
+      };
+      if (!candidates.length) return { rows: [], ...diagnostics };
+      const expanded = [];
+      if (plan.targetPolicy.mode === 'auto') {
+        const maximum = Number(probePolicy.maxAutoTargetAttempts || 8);
+        const selected = candidates[0];
+        const fallback = candidates.slice(1, maximum);
+        expanded.push({ ...sourceBranch, key: safeKey(`${sourceBranch.key}-${selected.target}-${selected.profile}`),
+          target: selected.target, profile: selected.profile, targetConfig: selected.config,
+          fallbackTargets: Buffer.from(JSON.stringify(fallback)).toString('base64url'),
+          coverageTotal: candidates.length, coveragePlanned: 1 + fallback.length,
+          reductionBudget: Number(probePolicy.reductionMaxAttempts?.[plan.mode] || 0) });
+      } else {
+        for (const selected of candidates) expanded.push({ ...sourceBranch,
+          key: safeKey(`${sourceBranch.key}-${selected.target}-${selected.profile}`),
+          target: selected.target, profile: selected.profile, targetConfig: selected.config,
+          fallbackTargets: '', coverageTotal: candidates.length, coveragePlanned: candidates.length,
+          reductionBudget: Number(probePolicy.reductionMaxAttempts?.[plan.mode] || 0) });
+      }
+      return { rows: expanded, ...diagnostics };
+    } catch (error) {
+      throw new Error(`${sourceBranch.source}/${sourceBranch.branch}: ${error.message}`, { cause: error });
     }
-    return expanded;
   };
   const input = plan.matrix.include;
   const expanded = new Array(input.length);
@@ -330,12 +395,22 @@ async function attachProbeTargets(plan, { repository, dataRef, token, policy }) 
       expanded[index] = await expand(input[index]);
     }
   }));
-  const rows = expanded.flat();
+  const rows = expanded.flatMap((result) => result.rows);
+  const mappings = expanded.flatMap((result) => result.mappings);
+  const skipped = expanded.flatMap((result) => result.skipped);
+  if (!rows.length) {
+    const failedPlan = { ...plan, maxParallel: 1, mappings: [...(plan.mappings || []), ...mappings], skipped,
+      matrix: { include: [] } };
+    const detail = skipped.map((row) => `${row.source}/${row.branch}: ${row.reason}`).join('; ');
+    const error = new Error(`probe plan resolved no buildable Source/Branch/Target environment${detail ? ` (${detail})` : ''}`);
+    error.probePlan = failedPlan;
+    throw error;
+  }
   const limit = Number(probePolicy.maxMatrixJobs || 256);
   if (rows.length > limit) throw new Error(`probe plan has ${rows.length} jobs; the configured limit is ${limit}`);
   const maxParallel = plan.owner && plan.requestedMaxParallel === 0
     ? rows.length : Math.min(plan.maxParallel, rows.length);
-  return { ...plan, maxParallel, matrix: { include: rows } };
+  return { ...plan, mappings: [...(plan.mappings || []), ...mappings], skipped, maxParallel, matrix: { include: rows } };
 }
 
 function writeOutputs(plan, extra = {}) {
@@ -351,7 +426,9 @@ function writeOutputs(plan, extra = {}) {
   appendFileSync(output, Object.entries(rows).map(([key, value]) => `${key}=${value}`).join('\n') + '\n');
 }
 
-function writeSummary(plan) {
+const markdownCell = (value) => String(value ?? '').replace(/\|/g, '\\|');
+
+export function probePlanSummary(plan) {
   const rows = [
     '## Package compatibility probe plan / 软件包兼容探针计划', '',
     `- Actor / 提交者: \`${plan.actor}\`${plan.owner ? ' (repository owner / 仓库所有者)' : ''}`,
@@ -361,6 +438,8 @@ function writeSummary(plan) {
     `- Requested / 请求: ${plan.requested.map((row) => `\`${row}\``).join(', ') || '-'}`,
     `- Resolved packages / 实际软件包: ${plan.resolvedPackages.map((row) => `\`${row}\``).join(', ') || '-'}`,
     `- Source/Branch/Target jobs / 源码分支目标任务: ${plan.matrix.include.length}`,
+    `- Profile mappings / Profile 映射: ${(plan.mappings || []).length}`,
+    `- Skipped Source/Branch entries / 跳过源码分支: ${(plan.skipped || []).length}`,
     `- Maximum parallel jobs / 最大并发任务: ${plan.maxParallel}`,
     `- Execute compilation / 执行编译: ${plan.execute}`,
     '',
@@ -370,8 +449,22 @@ function writeSummary(plan) {
   if (plan.matrix.include.length) rows.push(
     '| Source | Branch | Target/Profile | Coverage / 覆盖 | Upstream commit / 上游提交 |',
     '|---|---|---|---:|---|',
-    ...plan.matrix.include.map((row) => `| ${row.source} | ${row.branch} | ${row.target || '-'}/${row.profile || '-'} | ${row.coveragePlanned || 1}/${row.coverageTotal || 1} | \`${row.upstreamCommit || 'unknown'}\` |`), '');
-  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, rows.join('\n'));
+    ...plan.matrix.include.map((row) => `| ${markdownCell(row.source)} | ${markdownCell(row.branch)} | ${markdownCell(row.target || '-')}/${markdownCell(row.profile || '-')} | ${row.coveragePlanned || 1}/${row.coverageTotal || 1} | \`${row.upstreamCommit || 'unknown'}\` |`), '');
+  if (plan.mappings?.length) rows.push(
+    '### Profile mappings / Profile 映射', '',
+    '| Source | Branch | Target | Requested Profile | Resolved Profile | Reason |',
+    '|---|---|---|---|---|---|',
+    ...plan.mappings.map((row) => `| ${markdownCell(row.source)} | ${markdownCell(row.branch)} | ${markdownCell(row.target)} | ${markdownCell(row.requestedProfile)} | ${markdownCell(row.resolvedProfile)} | ${markdownCell(row.reason)} |`), '');
+  if (plan.skipped?.length) rows.push(
+    '### Skipped Source/Branch entries / 跳过的源码分支', '',
+    '| Source | Branch | Target | Requested Profile | Reason | Candidates |',
+    '|---|---|---|---|---|---|',
+    ...plan.skipped.map((row) => `| ${markdownCell(row.source)} | ${markdownCell(row.branch)} | ${markdownCell(row.target || '-')} | ${markdownCell(row.requestedProfile || '-')} | ${markdownCell(row.reason)} | ${markdownCell((row.candidates || []).join(', ') || '-')} |`), '');
+  return rows.join('\n');
+}
+
+function writeSummary(plan) {
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, probePlanSummary(plan));
 }
 
 async function actorPermission(repository, actor, owner, token) {
@@ -443,7 +536,17 @@ export async function main(env = process.env) {
     const preliminary = createProbePlan({ index, request, policy,
       env: { ...env, CODE_REF: request.channel, DATA_BRANCH: dataBranch, PROBE_REQUESTER: actor,
       PROBE_AUTHORIZED: 'true', PROBE_AUTHORIZATION: permission } });
-    plan = { ...(await attachProbeTargets(preliminary, { repository, dataRef: String(index.assetRef || dataBranch), token: env.GITHUB_TOKEN || '', policy })), relevant: true };
+    try {
+      plan = { ...(await attachProbeTargets(preliminary, { repository, dataRef: String(index.assetRef || dataBranch), token: env.GITHUB_TOKEN || '', policy })), relevant: true };
+    } catch (error) {
+      if (error.probePlan) {
+        mkdirSync(join(ROOT, 'probe-diagnostics'), { recursive: true });
+        writeFileSync(join(ROOT, 'probe-diagnostics', 'plan.json'), JSON.stringify(error.probePlan, null, 2) + '\n');
+        writeOutputs(error.probePlan, { issueNumber });
+        writeSummary(error.probePlan);
+      }
+      throw error;
+    }
   }
   mkdirSync(join(ROOT, 'probe-diagnostics'), { recursive: true });
   writeFileSync(join(ROOT, 'probe-diagnostics', 'plan.json'), JSON.stringify(plan, null, 2) + '\n');

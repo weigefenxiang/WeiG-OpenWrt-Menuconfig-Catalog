@@ -4,12 +4,15 @@ import { gzipSync } from 'node:zlib';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
+  attachProbeTargets,
   createProbePlan,
   normalizePackageConfig,
   normalizeProbeMode,
   normalizeProbeRequest,
+  probePlanSummary,
   probeTargetConfig,
   probeTargetConfigs,
+  resolveProbeTargetConfigs,
 } from './package-probe-controller.mjs';
 import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import { parseProbeStateToken, PROBE_STATE_PREFIX } from './package-probe-state.mjs';
@@ -36,6 +39,16 @@ const controller = readFileSync(resolve(ROOT, 'scripts', 'package-probe-controll
 const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-gateway.mjs'), 'utf8');
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
+
+const runnerSection = (start, end) => {
+  const from = runner.indexOf(start);
+  const to = runner.indexOf(end, from + start.length);
+  assert(from >= 0 && to > from, `runner section is missing: ${start}`);
+  return runner.slice(from, to);
+};
+const packageCompileContract = runnerSection('async function packageCompile', 'async function rootfsIntegration');
+const rootfsContract = runnerSection('async function rootfsIntegration', 'async function firmwareIntegration');
+const firmwareContract = runnerSection('async function firmwareIntegration', 'async function runCandidate');
 
 const packageConfig = [
   'CONFIG_PACKAGE_luci-app-oscam=y',
@@ -125,6 +138,38 @@ assert.equal(preferredTarget.profile, 'DEVICE_generic');
 assert(preferredTarget.config.includes('CONFIG_TARGET_x86_64_DEVICE_generic=y'));
 assert.equal(probeTargetConfigs(core, { mode: 'boot-smoke', bootTargetPatterns: ['x86/64'] }).length, 1);
 
+const legacySingleProfileCore = { schema: 6, targets: [selectableTarget('x86/64', 'TARGET_x86_64', 'Generic')] };
+const uniqueFallback = resolveProbeTargetConfigs(legacySingleProfileCore, {
+  mode: 'package-compile', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }],
+});
+assert.equal(uniqueFallback.rows.length, 1);
+assert.equal(uniqueFallback.rows[0].profile, 'Generic');
+assert.deepEqual(uniqueFallback.mappings, [{
+  target: 'x86/64', requestedProfile: 'DEVICE_generic', resolvedProfile: 'Generic',
+  reason: 'unique-selectable-profile',
+}]);
+
+const ambiguousProfileCore = { schema: 6, targets: [selectableTarget('x86/64', 'TARGET_x86_64', 'Generic')] };
+ambiguousProfileCore.targets[0].profiles.push({
+  id: 'Alternate', selector: 'TARGET_x86_64_Alternate', targetSelector: 'TARGET_x86_64',
+  boardSelector: 'TARGET_x86', selectable: true,
+});
+const ambiguousFallback = resolveProbeTargetConfigs(ambiguousProfileCore, {
+  mode: 'package-compile', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }],
+});
+assert.equal(ambiguousFallback.rows.length, 0);
+assert.equal(ambiguousFallback.mappings.length, 0);
+assert.equal(ambiguousFallback.skipped[0].reason, 'profile-not-found-ambiguous');
+assert.deepEqual(ambiguousFallback.skipped[0].candidates, ['Generic', 'Alternate']);
+const blankProfileSelection = resolveProbeTargetConfigs({ schema: 6, targets: [{
+  ...selectableTarget('x86/64', 'TARGET_x86_64', 'Alternate'),
+  profiles: [
+    { id: 'Alternate', selector: 'TARGET_x86_64_Alternate', selectable: true },
+    { id: 'Default', selector: 'TARGET_x86_64_Default', selectable: true },
+  ],
+}] }, { mode: 'package-compile', selections: [{ target: 'x86/64', profile: '' }] });
+assert.equal(blankProfileSelection.rows[0].profile, 'Default', 'blank selected Profile must preserve preferred Profile ordering');
+
 assert.throws(() => createProbePlan({ index, policy, request: baseRequest,
   env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } }),
 /createProbePlan requires a normalized probe request/);
@@ -157,6 +202,51 @@ const envPlan = createProbePlan({ index, policy, env: {
 assert.equal(envPlan.matrix.include.length, 1);
 assert.equal(envPlan.execute, false);
 assert.deepEqual(envPlan.resolvedPackages, ['luci-app-oscam', 'oscam', 'libexample']);
+
+const mixedIndex = { schema: 2, sources: [{ id: 'OpenWrt', label: 'OpenWrt', repo: 'example/openwrt', branches: [
+  { branch: 'new', commit: '1'.repeat(40), state: 'fresh' },
+  { branch: 'legacy', commit: '2'.repeat(40), state: 'fresh' },
+  { branch: 'ambiguous', commit: '3'.repeat(40), state: 'fresh' },
+] }] };
+const mixedRequest = normalizeProbeRequest({ ...baseRequest, mode: 'package-compile', scope: { mode: 'all' },
+  targetPolicy: { mode: 'selected', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] } });
+const mixedPreliminary = createProbePlan({ index: mixedIndex, policy, request: mixedRequest,
+  env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } });
+const coresByBranch = new Map([
+  ['new', core],
+  ['legacy', legacySingleProfileCore],
+  ['ambiguous', ambiguousProfileCore],
+]);
+const mixedPlan = await attachProbeTargets(mixedPreliminary, { policy,
+  loadCore: async (sourceBranch) => coresByBranch.get(sourceBranch.branch) });
+assert.equal(mixedPlan.matrix.include.length, 2, 'one unresolved branch must not suppress valid branches');
+assert.deepEqual(mixedPlan.matrix.include.map((row) => [row.branch, row.profile]), [
+  ['new', 'DEVICE_generic'], ['legacy', 'Generic'],
+]);
+assert.deepEqual(mixedPlan.mappings.map((row) => [row.source, row.branch, row.requestedProfile, row.resolvedProfile]), [
+  ['OpenWrt', 'legacy', 'DEVICE_generic', 'Generic'],
+]);
+assert.equal(mixedPlan.skipped.length, 1);
+assert.equal(mixedPlan.skipped[0].source, 'OpenWrt');
+assert.equal(mixedPlan.skipped[0].branch, 'ambiguous');
+assert.equal(mixedPlan.skipped[0].reason, 'profile-not-found-ambiguous');
+const mixedSummary = probePlanSummary(mixedPlan);
+assert.match(mixedSummary, /Profile mappings \/ Profile 映射: 1/);
+assert.match(mixedSummary, /Skipped Source\/Branch entries \/ 跳过源码分支: 1/);
+assert.match(mixedSummary, /OpenWrt \| legacy \| x86\/64 \| DEVICE_generic \| Generic/);
+assert.match(mixedSummary, /OpenWrt \| ambiguous \| x86\/64 \| DEVICE_generic \| profile-not-found-ambiguous/);
+
+const failedPreliminary = createProbePlan({ index: { ...mixedIndex, sources: [{ ...mixedIndex.sources[0],
+  branches: [{ branch: 'ambiguous', commit: '3'.repeat(40), state: 'fresh' }] }] }, policy, request: mixedRequest,
+  env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } });
+await assert.rejects(async () => attachProbeTargets(failedPreliminary, { policy,
+  loadCore: async () => ambiguousProfileCore }), (error) => {
+  assert.match(error.message, /OpenWrt\/ambiguous: profile-not-found-ambiguous/);
+  assert.equal(error.probePlan.matrix.include.length, 0);
+  assert.equal(error.probePlan.skipped[0].source, 'OpenWrt');
+  assert.equal(error.probePlan.skipped[0].branch, 'ambiguous');
+  return true;
+});
 
 const apkIssues = parseProbeLog(
   'ERROR: luci-app-openvpn-server-3.0-r0: trying to overwrite etc/config/openvpn owned by openvpn-openssl-2.7.4-r3.\n' +
@@ -201,6 +291,23 @@ assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')), 'obsole
 assert(runner.includes('const state = PACKAGE_STATES.get(packageName)') && runner.includes('states[name] === PACKAGE_STATES.get(name)') && !runner.includes("PACKAGE_STATES.get(packageName) || 'n'"));
 assert(runner.includes('writeConfig(candidate, [])'), 'firmware baseline must exclude the shared package state');
 assert(workflow.includes('node scripts/run-package-probe.mjs') && runner.includes('package/install'));
+assert(packageCompileContract.includes("['tools/install', 'toolchain/install']") &&
+  packageCompileContract.includes('`package/${packageName}/compile`') &&
+  !packageCompileContract.includes("['package/install']") &&
+  !packageCompileContract.includes('makeWithSerialRetry([],') &&
+  !packageCompileContract.includes('run-boot-smoke.sh'),
+'L1 must prepare tools/toolchain and compile only requested packages plus dependencies, without RootFS/world/image stages');
+assert(rootfsContract.includes('await packageCompile(candidate, attempt)') &&
+  rootfsContract.includes("['package/install']") &&
+  !rootfsContract.includes('makeWithSerialRetry([],') &&
+  !rootfsContract.includes('run-boot-smoke.sh'),
+'L2 must extend L1 only with RootFS package installation');
+assert.equal([...firmwareContract.matchAll(/makeWithSerialRetry\(\[\],/g)].length, 2,
+  'L3 must retain exactly two world builds for baseline and package-enabled firmware');
+assert(firmwareContract.includes('writeConfig(candidate, [])') &&
+  firmwareContract.includes("join(ROOT, 'scripts', 'run-boot-smoke.sh')") &&
+  !firmwareContract.includes("['package/install']"),
+'L3/L4 must retain baseline/package firmware A/B builds and add QEMU smoke only after firmware integration');
 assert(workflow.includes('retention-days: 60') && workflow.includes('retention-days: 30'));
 assert.equal(policy.probe.collaboratorMaxParallel, 3);
 assert.equal(policy.probe.maxMatrixJobs, 256);

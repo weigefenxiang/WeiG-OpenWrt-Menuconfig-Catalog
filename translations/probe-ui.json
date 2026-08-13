@@ -87,9 +87,9 @@
       "zh-TW": "套件編譯"
     },
     "packageCompileHelp": {
-      "en": "Build the selected package and dependency closure with the target toolchain.",
-      "zh-CN": "使用目标工具链编译所选软件包及其依赖闭包。",
-      "zh-TW": "使用目標工具鏈編譯所選套件及其相依閉包。"
+      "en": "Prepare OpenWrt tools and the target toolchain, then compile the selected packages and their dependency closure. No firmware image is generated.",
+      "zh-CN": "先准备 OpenWrt tools 和目标工具链，再编译所选软件包及其依赖闭包；不生成固件镜像。",
+      "zh-TW": "先準備 OpenWrt tools 和目標工具鏈，再編譯所選套件及其相依閉包；不產生韌體映像。"
     },
     "rootfsIntegration": {
       "en": "RootFS integration",
@@ -97,9 +97,9 @@
       "zh-TW": "根檔案系統整合"
     },
     "rootfsIntegrationHelp": {
-      "en": "Install selected packages into RootFS to expose APK/OPKG ownership and co-install conflicts.",
-      "zh-CN": "把所选软件包安装进 RootFS，用于发现 APK/OPKG 文件归属和共同安装冲突。",
-      "zh-TW": "把所選套件安裝進 RootFS，用於發現 APK/OPKG 檔案歸屬及共同安裝衝突。"
+      "en": "Run L1, then run package/install to integrate the selected packages into RootFS and expose APK/OPKG ownership or co-install conflicts. No firmware image is generated.",
+      "zh-CN": "执行 L1 后运行 package/install，把所选软件包集成进 RootFS，以发现 APK/OPKG 文件归属或共同安装冲突；不生成固件镜像。",
+      "zh-TW": "執行 L1 後執行 package/install，把所選套件整合進 RootFS，以發現 APK/OPKG 檔案歸屬或共同安裝衝突；不產生韌體映像。"
     },
     "firmwareIntegration": {
       "en": "Firmware integration",
@@ -107,9 +107,9 @@
       "zh-TW": "韌體整合"
     },
     "firmwareIntegrationHelp": {
-      "en": "Build a baseline image and an image with the selected packages in the same Source/Branch/Target environment.",
-      "zh-CN": "在相同 Source/Branch/Target 环境中分别构建基础固件和加入所选软件包的固件。",
-      "zh-TW": "在相同 Source/Branch/Target 環境中分別建置基礎韌體及加入所選套件的韌體。"
+      "en": "Run two world builds in the same Source/Branch/Target environment: first a baseline firmware, then a firmware with the selected packages for A/B comparison.",
+      "zh-CN": "在相同 Source/Branch/Target 环境中执行两次 world 构建：先构建基准固件，再构建加入所选软件包的固件，进行 A/B 对照。",
+      "zh-TW": "在相同 Source/Branch/Target 環境中執行兩次 world 建置：先建置基準韌體，再建置加入所選套件的韌體，進行 A/B 對照。"
     },
     "bootSmoke": {
       "en": "Boot smoke",
@@ -117,9 +117,9 @@
       "zh-TW": "啟動自檢"
     },
     "bootSmokeHelp": {
-      "en": "Experimental generic boot validation for Catalog-approved bootable targets; no package-specific runtime checks.",
-      "zh-CN": "对 Catalog 认可的可启动目标执行实验性通用启动验证，不包含插件专属运行检查。",
-      "zh-TW": "對 Catalog 認可的可啟動目標執行實驗性通用啟動驗證，不包含套件專屬執行檢查。"
+      "en": "Run L3, then boot an approved x86/64 image in QEMU and check generic startup markers. This is not a package-service or device-hardware test.",
+      "zh-CN": "执行 L3 后，在 QEMU 中启动获准的 x86/64 镜像并检查通用启动标志；这不是插件服务测试，也不是设备硬件测试。",
+      "zh-TW": "執行 L3 後，在 QEMU 中啟動獲准的 x86/64 映像並檢查通用啟動標誌；這不是套件服務測試，也不是裝置硬體測試。"
     },
     "preview": {
       "en": "Preview plan",
