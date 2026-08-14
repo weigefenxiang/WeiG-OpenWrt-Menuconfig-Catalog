@@ -20,13 +20,23 @@ const channelContracts = [
   [buildDataBranchForCodeRef('main'), 'catalog-candidate', 'build main'],
   [buildDataBranchForCodeRef('dev'), 'catalog-dev', 'build dev'],
   [buildDataBranchForCodeRef('staging'), 'catalog-staging', 'build staging'],
-  [buildDataBranchForCodeRef('fix/demo'), 'catalog-fix', 'build fix'],
+  [buildDataBranchForCodeRef('fix/demo'), 'catalog-fix', 'build legacy fix'],
+  [buildDataBranchForCodeRef('fix/demo-A'), 'catalog-fix-A', 'build fix A'],
+  [buildDataBranchForCodeRef('fix/demo-B'), 'catalog-fix-B', 'build fix B'],
+  [buildDataBranchForCodeRef('fix/demo-C'), 'catalog-fix-C', 'build fix C'],
+  [buildDataBranchForCodeRef('fix/demo-a'), 'catalog-fix-A', 'build lowercase fix A'],
   [runtimeDataBranchForChannel('main'), 'catalog-data', 'runtime main'],
   [runtimeDataBranchForChannel('dev'), 'catalog-dev', 'runtime dev'],
   [runtimeDataBranchForChannel('staging'), 'catalog-staging', 'runtime staging'],
-  [runtimeDataBranchForChannel('fix/demo'), 'catalog-fix', 'runtime fix'],
+  [runtimeDataBranchForChannel('fix/demo'), 'catalog-fix', 'runtime legacy fix'],
+  [runtimeDataBranchForChannel('fix/demo-A'), 'catalog-fix-A', 'runtime fix A'],
+  [runtimeDataBranchForChannel('fix/demo-B'), 'catalog-fix-B', 'runtime fix B'],
+  [runtimeDataBranchForChannel('fix/demo-C'), 'catalog-fix-C', 'runtime fix C'],
   [translationChannel('candidate')?.codeRef, 'main', 'translation candidate code'],
   [translationChannel('candidate')?.dataBranch, 'catalog-candidate', 'translation candidate data'],
+  [translationChannel('fix/demo-A')?.dataBranch, 'catalog-fix-A', 'translation fix A data'],
+  [translationChannel('fix/demo-B')?.dataBranch, 'catalog-fix-B', 'translation fix B data'],
+  [translationChannel('fix/demo-C')?.dataBranch, 'catalog-fix-C', 'translation fix C data'],
 ];
 for (const [actual, expected, label] of channelContracts) {
   if (actual !== expected) failures.push(`${label}: ${actual || '(empty)'} != ${expected}`);
@@ -53,6 +63,7 @@ for (const [name, text] of workflows) {
 
 requireText(catalog, 'scripts/catalog-channels.mjs build', 'catalog build must use centralized channel mapping');
 requireText(catalog, 'catalog-candidate', 'main build must support catalog-candidate');
+requireText(catalog, 'catalog-fix-[ABC]', 'Catalog experiment lanes must be explicitly bounded to A/B/C');
 forbidText(catalog, "github.ref_name == 'main' && 'catalog-data'", 'catalog main must not map directly to catalog-data');
 forbidText(catalog, 'Publish complete catalog Release', 'catalog build must not publish production Release');
 
