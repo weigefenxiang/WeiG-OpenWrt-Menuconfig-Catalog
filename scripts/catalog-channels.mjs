@@ -17,15 +17,22 @@ const RUNTIME_DATA_BRANCHES = Object.freeze({
   main: PRODUCTION_DATA_BRANCH,
 });
 
+export function fixDataBranchForCodeRef(codeRef) {
+  const ref = String(codeRef || '').trim();
+  if (!ref.startsWith('fix/')) return '';
+  const lane = /-([ABC])$/i.exec(ref)?.[1]?.toUpperCase() || '';
+  return lane ? `catalog-fix-${lane}` : 'catalog-fix';
+}
+
 export function buildDataBranchForCodeRef(codeRef) {
   const ref = String(codeRef || '').trim();
-  if (ref.startsWith('fix/')) return 'catalog-fix';
+  if (ref.startsWith('fix/')) return fixDataBranchForCodeRef(ref);
   return BUILD_DATA_BRANCHES[ref] || '';
 }
 
 export function runtimeDataBranchForChannel(channel) {
   const ref = String(channel || '').trim();
-  if (ref.startsWith('fix/')) return 'catalog-fix';
+  if (ref.startsWith('fix/')) return fixDataBranchForCodeRef(ref);
   return RUNTIME_DATA_BRANCHES[ref] || '';
 }
 
@@ -34,7 +41,7 @@ export function translationChannel(channel) {
   if (value === 'candidate') return { codeRef: 'main', dataBranch: PRODUCTION_CANDIDATE_BRANCH };
   if (value === 'dev') return { codeRef: 'dev', dataBranch: 'catalog-dev' };
   if (value === 'staging') return { codeRef: 'staging', dataBranch: 'catalog-staging' };
-  if (value.startsWith('fix/')) return { codeRef: value, dataBranch: 'catalog-fix' };
+  if (value.startsWith('fix/')) return { codeRef: value, dataBranch: fixDataBranchForCodeRef(value) };
   return null;
 }
 
