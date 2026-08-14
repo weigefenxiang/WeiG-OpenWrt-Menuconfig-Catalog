@@ -34,7 +34,7 @@ export function parseProbeLog(log) {
   }
   if (/baseline firmware failed|baseline-kconfig-failure/i.test(text)) issues.push({ type: 'baseline-failure' });
   if (/No space left on device/i.test(text)) issues.push({ type: 'infrastructure-failure', reason: 'disk-full' });
-  if (/timed?\s*out|timeout:/i.test(text)) issues.push({ type: 'timeout' });
+  if (/(?:^|[\s:])(?:timed?\s*out|timeout:)/i.test(text)) issues.push({ type: 'timeout' });
   if (/Hash check failed|download failed|Connection timed out|Could not resolve host/i.test(text)) issues.push({ type: 'package-download-failure' });
   if (/not enough space|image is too big|filesystem.*too large/i.test(text)) issues.push({ type: 'image-too-large' });
   if (/Boot smoke did not reach/i.test(text)) issues.push({ type: 'boot-failure' });

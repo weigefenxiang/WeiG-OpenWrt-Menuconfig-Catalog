@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { aggregateEvidence, aggregateRunStatus, aggregateScopeConclusions, createEvidence } from './write-package-probe-evidence.mjs';
+import {
+  aggregateEvidence, aggregateRunStatus, aggregateScopeConclusions, createEvidence, parseProbeLog,
+} from './write-package-probe-evidence.mjs';
 
 const state = (env, count = 0) => aggregateRunStatus(env, count).state;
 assert.equal(state({ PLAN_RESULT: 'failure', PROBE_RESULT: 'skipped' }), 'plan-failure');
@@ -19,6 +21,19 @@ assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A',
 
 const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'incompatible', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
 assert.equal(infrastructure.conclusion, 'inconclusive');
+
+const timeoutPackageNames = parseProbeLog([
+  'Package: python-async-timeout:',
+  'Package: python3-async-timeout:',
+  'Package: cttimeout:',
+].join('\n'));
+assert(!timeoutPackageNames.some((issue) => issue.type === 'timeout'), 'package names containing timeout must not be classified as runner timeout');
+assert(parseProbeLog('ERROR: operation timed out after 300 seconds').some((issue) => issue.type === 'timeout'));
+const packageNameEvidence = createEvidence({
+  log: 'Package: python-async-timeout:\nPackage: cttimeout:\nERROR: package compile failed for Probe roots: alpha\n',
+  runtime: { conclusion: 'incompatible', attempts: [] }, env: { PROBE_ROOTS: 'alpha' },
+});
+assert.equal(packageNameEvidence.conclusion, 'incompatible', 'timeout-like package names must not downgrade a conclusive package failure');
 
 const dir = mkdtempSync(join(tmpdir(), 'probe-evidence-'));
 try {

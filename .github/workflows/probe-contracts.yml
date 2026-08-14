@@ -1,0 +1,40 @@
+name: Probe contracts
+
+on:
+  push:
+    branches: [main, dev, staging, "fix/**"]
+    paths:
+      - "scripts/package-probe-*.mjs"
+      - "scripts/run-package-probe.mjs"
+      - "scripts/write-package-probe-evidence*.mjs"
+      - "scripts/check-package-probe*.mjs"
+      - "scripts/check-probe-authorization.mjs"
+      - "scripts/catalog-change-impact.mjs"
+      - ".github/workflows/package-probe*.yml"
+      - ".github/workflows/probe-contracts.yml"
+  pull_request:
+    paths:
+      - "scripts/package-probe-*.mjs"
+      - "scripts/run-package-probe.mjs"
+      - "scripts/write-package-probe-evidence*.mjs"
+      - "scripts/check-package-probe*.mjs"
+      - "scripts/check-probe-authorization.mjs"
+      - "scripts/catalog-change-impact.mjs"
+      - ".github/workflows/package-probe*.yml"
+      - ".github/workflows/probe-contracts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Probe contracts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check Probe runner syntax
+        run: node --check scripts/run-package-probe.mjs
+      - name: Check Catalog impact registry
+        run: node scripts/catalog-change-impact.mjs --check-registry
+      - name: Run project contract tests
+        run: npm test
