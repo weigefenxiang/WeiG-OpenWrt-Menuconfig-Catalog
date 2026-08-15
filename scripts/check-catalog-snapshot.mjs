@@ -5,10 +5,11 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { indexContract, stampIndex } from './index-contract.mjs';
-import { stampCatalogSnapshot } from './stamp-catalog-snapshot.mjs';
+import { stampCatalogSnapshot, verifyReusableCatalogSnapshot } from './stamp-catalog-snapshot.mjs';
 
 const ref = '0123456789abcdef0123456789abcdef01234567';
 const codeSha = '89abcdef0123456789abcdef0123456789abcdef';
+const previousCodeSha = '76543210fedcba9876543210fedcba9876543210';
 const input = stampIndex({
   schema: 2,
   generatedAt: '2026-08-06T00:00:00Z',
@@ -53,6 +54,27 @@ for (const invalid of [
   if (!rejected) throw new Error('snapshot stamp accepted an invalid immutable identity');
 }
 
+const reusable = stampCatalogSnapshot(input, ref, {
+  codeRef: 'dev', codeSha: previousCodeSha, complete: true,
+});
+const reuse = verifyReusableCatalogSnapshot(reusable, {
+  repository: 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog',
+  codeRef: 'dev',
+  previousCodeSha,
+});
+if (reuse.assetRef !== ref || reuse.complete !== true) {
+  throw new Error('reusable snapshot verification changed immutable identity');
+}
+for (const invalidReuse of [
+  () => verifyReusableCatalogSnapshot(reusable, { repository: 'other/repo', codeRef: 'dev', previousCodeSha }),
+  () => verifyReusableCatalogSnapshot(reusable, { repository: 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog', codeRef: 'staging', previousCodeSha }),
+  () => verifyReusableCatalogSnapshot(reusable, { repository: 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog', codeRef: 'dev', previousCodeSha: codeSha }),
+]) {
+  let rejected = false;
+  try { invalidReuse(); } catch { rejected = true; }
+  if (!rejected) throw new Error('reusable snapshot verification accepted mismatched provenance');
+}
+
 const temp = mkdtempSync(join(tmpdir(), 'catalog-snapshot-'));
 try {
   const file = join(temp, 'index.json');
@@ -71,6 +93,28 @@ try {
   const cli = JSON.parse(readFileSync(file, 'utf8'));
   if (cli.assetRef !== ref || cli.hash !== indexContract(cli).hash || cli.provenance?.codeSha !== codeSha) {
     throw new Error('snapshot CLI wrote an invalid index contract');
+  }
+
+  writeFileSync(file, JSON.stringify(reusable, null, 2) + '\n');
+  const reuseResult = spawnSync(process.execPath, [
+    fileURLToPath(new URL('./stamp-catalog-snapshot.mjs', import.meta.url)),
+    file,
+    ref,
+    'dev',
+    codeSha,
+    '',
+    previousCodeSha,
+  ], {
+    encoding: 'utf8',
+    env: { ...process.env, GITHUB_REPOSITORY: 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog' },
+  });
+  if (reuseResult.status !== 0) {
+    throw new Error(`snapshot reuse CLI failed: ${reuseResult.stderr || reuseResult.stdout}`);
+  }
+  const promoted = JSON.parse(readFileSync(file, 'utf8'));
+  if (promoted.assetRef !== ref || promoted.provenance?.codeRef !== 'dev' ||
+      promoted.provenance?.codeSha !== codeSha || promoted.provenance?.complete !== true) {
+    throw new Error('snapshot reuse CLI did not preserve assets while advancing provenance');
   }
 } finally {
   rmSync(temp, { recursive: true, force: true });
