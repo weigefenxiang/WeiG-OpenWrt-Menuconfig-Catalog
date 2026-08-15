@@ -1,0 +1,82 @@
+name: Retire DA and obsolete experiments once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/maintenance-retire-da-once.yml"
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete abandoned DA branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          for branch in \
+            'fix/DA' \
+            'work/da-catalog-smoke'
+          do
+            echo "Deleting branch: $branch"
+            gh api -X DELETE "repos/$repo/git/refs/heads/$branch" >/dev/null 2>&1 || true
+          done
+
+      - name: Disable obsolete workflows and delete their runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          workflow_ids=(
+            334956330
+            334799627
+            334587032
+            334814360
+            334224436
+            334309591
+            334226246
+            334516073
+            334752050
+            334213946
+            334267470
+            334268002
+            334268510
+            334271581
+            334294857
+            334295681
+          )
+
+          for workflow_id in "${workflow_ids[@]}"; do
+            echo "Retiring workflow id: $workflow_id"
+            gh api -X PUT "repos/$repo/actions/workflows/$workflow_id/disable" >/dev/null 2>&1 || true
+            for pass in $(seq 1 20); do
+              mapfile -t runs < <(gh api "repos/$repo/actions/workflows/$workflow_id/runs?per_page=100" --jq '.workflow_runs[].id' 2>/dev/null || true)
+              ((${#runs[@]} == 0)) && break
+              for run_id in "${runs[@]}"; do
+                gh api -X DELETE "repos/$repo/actions/runs/$run_id" >/dev/null 2>&1 || true
+              done
+            done
+          done
+
+      - name: Remove this one-shot maintenance workflow
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          repo="$GITHUB_REPOSITORY"
+          path='.github/workflows/maintenance-retire-da-once.yml'
+          file_sha="$(gh api "repos/$repo/contents/$path?ref=main" --jq '.sha' 2>/dev/null || true)"
+          if [[ -n "$file_sha" ]]; then
+            gh api -X DELETE "repos/$repo/contents/$path" \
+              -f message='chore: remove DA retirement maintenance' \
+              -f sha="$file_sha" \
+              -f branch='main' >/dev/null 2>&1 || true
+          fi
+          gh api -X DELETE "repos/$repo/actions/runs/$GITHUB_RUN_ID" >/dev/null 2>&1 || true
