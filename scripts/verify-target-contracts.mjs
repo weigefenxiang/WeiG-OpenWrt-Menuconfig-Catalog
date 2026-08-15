@@ -8,36 +8,15 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import {
   parseInfoRecords, parseKconfigTree, resolveTargetSelectors, safeSlug, targetBuildContract,
 } from './lib.mjs';
+import { buildProfileSeed, parseConfigSymbols } from './profile-config-contract.mjs';
+
+export { buildProfileSeed, parseConfigSymbols };
+export const buildProbeConfig = buildProfileSeed;
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-export function buildProbeConfig(target, profile, selectors = resolveTargetSelectors(target, profile)) {
-  const targetSelector = selectors.target || `TARGET_${target.board}${target.subtarget ? `_${target.subtarget}` : ''}`;
-  const profileSelector = selectors.profile || `${targetSelector}_${profile.id}`;
-  const boardSelector = selectors.board || `TARGET_${target.board}`;
-  const parent = boardSelector && boardSelector !== targetSelector ? [`CONFIG_${boardSelector}=y`] : [];
-  return [
-    'CONFIG_HAVE_DOT_CONFIG=y',
-    ...parent,
-    `CONFIG_${targetSelector}=y`,
-    `CONFIG_${profileSelector}=y`,
-    '',
-  ].join('\n');
-}
-
-function configSymbols(text) {
-  const values = new Map();
-  for (const line of String(text).replace(/\r\n/g, '\n').split('\n')) {
-    const enabled = line.match(/^CONFIG_([A-Za-z0-9_.+-]+)=(.*)$/);
-    if (enabled) values.set(enabled[1], enabled[2]);
-    const disabled = line.match(/^# CONFIG_([A-Za-z0-9_.+-]+) is not set$/);
-    if (disabled) values.set(disabled[1], 'n');
-  }
-  return values;
-}
-
 export function verifyProbeConfig(text, target, profile, selectors = resolveTargetSelectors(target, profile)) {
-  const values = configSymbols(text);
+  const values = parseConfigSymbols(text);
   const expected = new Map([
     [selectors.target, 'y'],
     [selectors.profile, 'y'],
@@ -143,7 +122,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const selectors = resolveTargetSelectors(target, profile, kconfigSymbols);
       const label = `${target.board}/${target.subtarget || '(no-subtarget)'}/${profile.id}`;
       const configPath = join(probeDir, `${safeSlug(target.id)}--${safeSlug(profile.id)}.config`);
-      writeFileSync(configPath, buildProbeConfig(target, profile, selectors));
+      writeFileSync(configPath, buildProfileSeed(target, profile, selectors));
       try {
         execFileSync(conf, [`--defconfig=${configPath}`, '-w', configPath, 'Config.in'], {
           cwd: tree, stdio: 'pipe', encoding: 'utf8', timeout: 120000,
