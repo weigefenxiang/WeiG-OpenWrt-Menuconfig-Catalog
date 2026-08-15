@@ -7,43 +7,48 @@ on:
 
 permissions:
   contents: write
-
-concurrency:
-  group: catalog-write-catalog-dev
-  cancel-in-progress: false
+  actions: write
 
 jobs:
-  reuse:
-    name: Reuse verified catalog-dev snapshot / 复用已验证 catalog-dev 快照
+  preflight:
+    name: Verify reusable catalog-dev snapshot / 验证 catalog-dev 可复用快照
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
+    concurrency:
+      group: catalog-reuse-preflight-dev
+      cancel-in-progress: true
+    outputs:
+      mode: ${{ steps.impact.outputs.mode }}
+      reuse: ${{ steps.verify.outputs.reuse }}
+      asset_ref: ${{ steps.verify.outputs.asset_ref }}
+      base_sha: ${{ steps.verify.outputs.base_sha }}
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - id: impact
-        name: Classify dev change impact / 判定 dev 变更影响
+        name: Classify current dev push / 判定当前 dev 推送影响
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          reuse=false
           mode=full
           if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
-                "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]] &&
-             git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+                "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]]; then
+            if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 origin "$BEFORE_SHA"
+            fi
+            git cat-file -e "$BEFORE_SHA^{commit}"
             mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
             node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"
             mode="$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
             [[ -n "$mode" ]]
-            if [[ "$mode" == none ]]; then reuse=true; fi
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          echo "reuse=$reuse" >> "$GITHUB_OUTPUT"
 
       - name: Fetch current catalog-dev snapshot / 获取当前 catalog-dev 快照
-        if: steps.impact.outputs.reuse == 'true'
+        if: steps.impact.outputs.mode == 'none'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -51,63 +56,176 @@ jobs:
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
           git clone --depth 1 --single-branch --branch catalog-dev "$remote" reusable
 
-      - name: Verify immutable assets and reusable provenance / 验证资产与可复用来源
-        if: steps.impact.outputs.reuse == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - id: verify
+        name: Verify cumulative reuse safety / 验证累计复用安全性
+        if: steps.impact.outputs.mode == 'none'
         run: |
           set -euo pipefail
           node scripts/sync-index-assets.mjs reusable --check
-          readarray -t snapshot < <(node - <<'NODE'
-          const i = require('./reusable/index.json');
-          console.log(String(i.assetRef || ''));
-          console.log(String(i.provenance?.codeSha || ''));
+          readarray -t snapshot < <(node --input-type=module - <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { verifyReusableCatalogSnapshot } from './scripts/stamp-catalog-snapshot.mjs';
+          const index = JSON.parse(readFileSync('reusable/index.json', 'utf8'));
+          const baseSha = String(index?.provenance?.codeSha || '').trim().toLowerCase();
+          const reusable = verifyReusableCatalogSnapshot(index, {
+            repository: process.env.GITHUB_REPOSITORY || '',
+            codeRef: 'dev',
+            previousCodeSha: baseSha,
+          });
+          console.log(reusable.assetRef);
+          console.log(baseSha);
           NODE
           )
           asset_ref="${snapshot[0]}"
           base_sha="${snapshot[1]}"
-          [[ "$asset_ref" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]]
-          git cat-file -e "${base_sha}^{commit}"
+
+          for deepen in 32 64 128 256; do
+            if git cat-file -e "$base_sha^{commit}" 2>/dev/null &&
+               git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" 2>/dev/null; then
+              break
+            fi
+            [[ "$(git rev-parse --is-shallow-repository)" == true ]] || break
+            git fetch --no-tags --deepen="$deepen" origin dev
+          done
+          if ! git cat-file -e "$base_sha^{commit}" 2>/dev/null ||
+             ! git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" 2>/dev/null; then
+            if [[ "$(git rev-parse --is-shallow-repository)" == true ]]; then
+              git fetch --no-tags --unshallow origin dev
+            fi
+          fi
+          git cat-file -e "$base_sha^{commit}"
           git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA"
+
           mapfile -t since_snapshot < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
           node scripts/catalog-change-impact.mjs "${since_snapshot[@]}" | tee "$RUNNER_TEMP/catalog-reuse-impact.outputs"
           [[ "$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-reuse-impact.outputs")" == none ]]
+
           git -C reusable fetch --depth 1 origin "$asset_ref"
           git -C reusable cat-file -e "${asset_ref}^{commit}"
+          echo "reuse=true" >> "$GITHUB_OUTPUT"
+          echo "asset_ref=$asset_ref" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Preflight summary / 预检摘要
+        if: always()
+        env:
+          MODE: ${{ steps.impact.outputs.mode }}
+          REUSE: ${{ steps.verify.outputs.reuse }}
+          BASE_SHA: ${{ steps.verify.outputs.base_sha }}
+        run: |
+          {
+            echo "## Catalog dev reuse preflight"
+            echo
+            echo "- Push impact: \`${MODE:-unknown}\`"
+            echo "- Cumulative reusable: \`${REUSE:-false}\`"
+            echo "- Published code base: \`${BASE_SHA:-n/a}\`"
+            echo "- Current dev: \`${GITHUB_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Advance catalog-dev provenance / 推进 catalog-dev 来源身份
+    needs: preflight
+    if: needs.preflight.outputs.reuse == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    concurrency:
+      group: catalog-write-catalog-dev
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Ensure this is still the latest dev / 确认仍为最新 dev
+        id: latest
+        run: |
+          set -euo pipefail
+          current_sha="$(git ls-remote origin refs/heads/dev | awk '{print $1}')"
+          [[ "$current_sha" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$current_sha" == "$GITHUB_SHA" ]]; then
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+            echo "A newer dev push exists; skip stale reuse publish."
+          fi
+
+      - name: Cancel stale Catalog builds / 取消过期 Catalog 构建
+        if: steps.latest.outputs.latest == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mapfile -t stale_runs < <(
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/catalog.yml/runs?branch=dev&per_page=50" \
+              --jq ".workflow_runs[] | select(.head_sha != \"${GITHUB_SHA}\") | select(.status != \"completed\") | .id"
+          )
+          for run_id in "${stale_runs[@]}"; do
+            echo "Cancel stale Catalog run: $run_id"
+            gh api --method POST "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel" || true
+          done
+
+      - name: Publish provenance-only reuse / 发布仅来源身份复用
+        if: steps.latest.outputs.latest == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_ASSET_REF: ${{ needs.preflight.outputs.asset_ref }}
+          EXPECTED_BASE_SHA: ${{ needs.preflight.outputs.base_sha }}
+        run: |
+          set -euo pipefail
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+          git clone --depth 1 --single-branch --branch catalog-dev "$remote" reusable
+          node scripts/sync-index-assets.mjs reusable --check
+
+          readarray -t current < <(node - <<'NODE'
+          const i = require('./reusable/index.json');
+          console.log(String(i.assetRef || '').trim().toLowerCase());
+          console.log(String(i.provenance?.codeSha || '').trim().toLowerCase());
+          NODE
+          )
+          current_asset_ref="${current[0]}"
+          current_base_sha="${current[1]}"
+          if [[ "$current_base_sha" == "$GITHUB_SHA" ]]; then
+            echo "catalog-dev provenance already points at current dev."
+            exit 0
+          fi
+          [[ "$current_asset_ref" == "$EXPECTED_ASSET_REF" ]] || {
+            echo "catalog-dev assetRef changed after preflight; refuse stale reuse."; exit 1;
+          }
+          [[ "$current_base_sha" == "$EXPECTED_BASE_SHA" ]] || {
+            echo "catalog-dev provenance changed after preflight; refuse stale reuse."; exit 1;
+          }
+
           node scripts/stamp-catalog-snapshot.mjs \
             reusable/index.json \
-            "$asset_ref" \
+            "$current_asset_ref" \
             dev \
             "$GITHUB_SHA" \
             "" \
-            "$base_sha"
+            "$current_base_sha"
           node scripts/sync-index-assets.mjs reusable --check
 
-      - name: Advance catalog-dev provenance only / 仅推进 catalog-dev 来源身份
-        if: steps.impact.outputs.reuse == 'true'
-        run: |
-          set -euo pipefail
           git -C reusable config user.name github-actions[bot]
           git -C reusable config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git -C reusable add index.json
           changed="$(git -C reusable diff --cached --name-only)"
-          [[ "$changed" == "index.json" ]] || { echo "unexpected reusable snapshot changes: $changed"; exit 1; }
+          [[ "$changed" == "index.json" ]] || {
+            echo "unexpected reusable snapshot changes: $changed"; exit 1;
+          }
           git -C reusable commit -m "data: reuse catalog-dev snapshot"
           git -C reusable push origin HEAD:catalog-dev
 
-      - name: Reuse summary / 复用摘要
+      - name: Publish summary / 发布摘要
         if: always()
         env:
-          MODE: ${{ steps.impact.outputs.mode }}
-          REUSE: ${{ steps.impact.outputs.reuse }}
-          BEFORE_SHA: ${{ github.event.before }}
+          LATEST: ${{ steps.latest.outputs.latest }}
+          BASE_SHA: ${{ needs.preflight.outputs.base_sha }}
+          ASSET_REF: ${{ needs.preflight.outputs.asset_ref }}
         run: |
           {
-            echo "## Catalog dev snapshot reuse"
+            echo "## Catalog dev reuse publish"
             echo
-            echo "- Impact mode: \`${MODE:-unknown}\`"
-            echo "- Reused: \`${REUSE:-false}\`"
-            echo "- Previous dev: \`${BEFORE_SHA}\`"
+            echo "- Latest dev: \`${LATEST:-false}\`"
+            echo "- Previous provenance: \`${BASE_SHA:-n/a}\`"
+            echo "- Preserved assetRef: \`${ASSET_REF:-n/a}\`"
             echo "- Current dev: \`${GITHUB_SHA}\`"
           } >> "$GITHUB_STEP_SUMMARY"
