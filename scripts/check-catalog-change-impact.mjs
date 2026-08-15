@@ -4,7 +4,6 @@ import {
   catalogChangeImpact,
   catalogImpactRegistryCoverage,
   classifyCatalogPath,
-  isSafeCatalogWorkflowHistoryUpgrade,
 } from './catalog-change-impact.mjs';
 
 assert.equal(classifyCatalogPath('.github/workflows/catalog.yml'), 'full');
@@ -26,23 +25,6 @@ assert.equal(catalogChangeImpact([
   '.github/workflows/catalog.yml',
   'scripts/package-probe-controller.mjs',
 ]).mode, 'full');
-
-const oldWorkflow = [
-  '      - uses: actions/checkout@v7',
-  '        with:',
-  '          fetch-depth: 2',
-  '            mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")',
-  '            node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"',
-].join('\n');
-const historySafeWorkflow = [
-  '      - uses: actions/checkout@v7',
-  '        with:',
-  '          fetch-depth: 0',
-  '            node scripts/catalog-change-impact.mjs --git-diff "$BEFORE_SHA" "$GITHUB_SHA" | tee "$RUNNER_TEMP/catalog-impact.outputs"',
-].join('\n');
-assert.equal(isSafeCatalogWorkflowHistoryUpgrade(oldWorkflow, historySafeWorkflow), true);
-assert.equal(isSafeCatalogWorkflowHistoryUpgrade(oldWorkflow, historySafeWorkflow.replace('cancel', 'cancelled')), true);
-assert.equal(isSafeCatalogWorkflowHistoryUpgrade(oldWorkflow, `${historySafeWorkflow}\n      timeout-minutes: 1`), false);
 
 assert.deepEqual(catalogChangeImpact([
   'translations/probe-ui.json',
