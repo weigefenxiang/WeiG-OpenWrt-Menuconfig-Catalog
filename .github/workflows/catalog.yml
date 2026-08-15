@@ -20,7 +20,7 @@ permissions:
 
 concurrency:
   group: catalog-build-${{ github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref_name == 'fix-E' }}
 
 jobs:
   mode:
