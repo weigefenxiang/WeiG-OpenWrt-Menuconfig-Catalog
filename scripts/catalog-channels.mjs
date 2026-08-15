@@ -12,12 +12,14 @@ const BUILD_DATA_BRANCHES = Object.freeze({
   dev: 'catalog-dev',
   staging: 'catalog-staging',
   main: PRODUCTION_CANDIDATE_BRANCH,
+  'fix-E': 'catalog-fix-E',
 });
 
 const RUNTIME_DATA_BRANCHES = Object.freeze({
   dev: 'catalog-dev',
   staging: 'catalog-staging',
   main: PRODUCTION_DATA_BRANCH,
+  'fix-E': 'catalog-fix-E',
 });
 
 function dExperimentDataBranch(ref) {
@@ -36,14 +38,16 @@ export function fixDataBranchForCodeRef(codeRef) {
 
 export function buildDataBranchForCodeRef(codeRef) {
   const ref = String(codeRef || '').trim();
+  if (BUILD_DATA_BRANCHES[ref]) return BUILD_DATA_BRANCHES[ref];
   if (ref.startsWith('fix/')) return fixDataBranchForCodeRef(ref);
-  return BUILD_DATA_BRANCHES[ref] || '';
+  return '';
 }
 
 export function runtimeDataBranchForChannel(channel) {
   const ref = String(channel || '').trim();
+  if (RUNTIME_DATA_BRANCHES[ref]) return RUNTIME_DATA_BRANCHES[ref];
   if (ref.startsWith('fix/')) return fixDataBranchForCodeRef(ref);
-  return RUNTIME_DATA_BRANCHES[ref] || '';
+  return '';
 }
 
 export function translationChannel(channel) {
@@ -51,6 +55,7 @@ export function translationChannel(channel) {
   if (value === 'candidate') return { codeRef: 'main', dataBranch: PRODUCTION_CANDIDATE_BRANCH };
   if (value === 'dev') return { codeRef: 'dev', dataBranch: 'catalog-dev' };
   if (value === 'staging') return { codeRef: 'staging', dataBranch: 'catalog-staging' };
+  if (value === 'fix-E') return { codeRef: 'fix-E', dataBranch: 'catalog-fix-E' };
   if (value.startsWith('fix/')) return { codeRef: value, dataBranch: fixDataBranchForCodeRef(value) };
   return null;
 }
