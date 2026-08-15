@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - id: impact
         name: Classify dev change impact / 判定 dev 变更影响
@@ -51,16 +51,28 @@ jobs:
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
           git clone --depth 1 --single-branch --branch catalog-dev "$remote" reusable
 
-      - name: Verify immutable assets and previous provenance / 验证资产与上一版来源
+      - name: Verify immutable assets and reusable provenance / 验证资产与可复用来源
         if: steps.impact.outputs.reuse == 'true'
         env:
-          BEFORE_SHA: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           node scripts/sync-index-assets.mjs reusable --check
-          asset_ref="$(node -e "const i=require('./reusable/index.json'); process.stdout.write(String(i.assetRef || ''))")"
+          readarray -t snapshot < <(node - <<'NODE'
+          const i = require('./reusable/index.json');
+          console.log(String(i.assetRef || ''));
+          console.log(String(i.provenance?.codeSha || ''));
+          NODE
+          )
+          asset_ref="${snapshot[0]}"
+          base_sha="${snapshot[1]}"
           [[ "$asset_ref" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]]
+          git cat-file -e "${base_sha}^{commit}"
+          git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA"
+          mapfile -t since_snapshot < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
+          node scripts/catalog-change-impact.mjs "${since_snapshot[@]}" | tee "$RUNNER_TEMP/catalog-reuse-impact.outputs"
+          [[ "$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-reuse-impact.outputs")" == none ]]
           git -C reusable fetch --depth 1 origin "$asset_ref"
           git -C reusable cat-file -e "${asset_ref}^{commit}"
           node scripts/stamp-catalog-snapshot.mjs \
@@ -69,7 +81,7 @@ jobs:
             dev \
             "$GITHUB_SHA" \
             "" \
-            "$BEFORE_SHA"
+            "$base_sha"
           node scripts/sync-index-assets.mjs reusable --check
 
       - name: Advance catalog-dev provenance only / 仅推进 catalog-dev 来源身份
