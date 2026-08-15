@@ -17,9 +17,16 @@ const RUNTIME_DATA_BRANCHES = Object.freeze({
   main: PRODUCTION_DATA_BRANCH,
 });
 
+function dExperimentDataBranch(ref) {
+  const match = /^fix\/(DA|DB)$/i.exec(ref);
+  return match ? `catalog-${match[1].toUpperCase()}` : '';
+}
+
 export function fixDataBranchForCodeRef(codeRef) {
   const ref = String(codeRef || '').trim();
   if (!ref.startsWith('fix/')) return '';
+  const dBranch = dExperimentDataBranch(ref);
+  if (dBranch) return dBranch;
   const lane = /-([ABC])$/i.exec(ref)?.[1]?.toUpperCase() || '';
   return lane ? `catalog-fix-${lane}` : 'catalog-fix';
 }
