@@ -13,6 +13,9 @@ assert.equal(classifyCatalogPath('scripts/package-probe-controller.mjs'), 'none'
 assert.equal(classifyCatalogPath('translations/probe-ui.json'), 'applications');
 assert.equal(classifyCatalogPath('compatibility.json'), 'compatibility');
 assert.equal(classifyCatalogPath('scripts/generate-catalog.mjs'), 'full');
+assert.equal(classifyCatalogPath('scripts/generate-profile-config-groups.mjs'), 'full');
+assert.equal(classifyCatalogPath('scripts/check-profile-config-groups.mjs'), 'none');
+assert.equal(classifyCatalogPath('scripts/benchmark-profile-config-groups.mjs'), 'none');
 assert.equal(classifyCatalogPath('docs/COMPATIBILITY.md'), 'none');
 
 assert.equal(pushBeforeSha({ before: 'A'.repeat(40) }), 'a'.repeat(40));
@@ -29,6 +32,10 @@ assert.deepEqual(catalogChangeImpact([
 assert.equal(catalogChangeImpact([
   '.github/workflows/catalog.yml',
   'scripts/package-probe-controller.mjs',
+]).mode, 'full');
+assert.equal(catalogChangeImpact([
+  'scripts/generate-profile-config-groups.mjs',
+  'scripts/check-profile-config-groups.mjs',
 ]).mode, 'full');
 
 assert.deepEqual(catalogChangeImpact([
