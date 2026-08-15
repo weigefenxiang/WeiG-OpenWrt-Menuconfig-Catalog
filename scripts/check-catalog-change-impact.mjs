@@ -5,6 +5,7 @@ import {
   catalogImpactRegistryCoverage,
   classifyCatalogPath,
 } from './catalog-change-impact.mjs';
+import { pushBeforeSha } from './catalog-channels.mjs';
 
 assert.equal(classifyCatalogPath('.github/workflows/catalog.yml'), 'full');
 assert.equal(classifyCatalogPath('.github/workflows/catalog-reuse.yml'), 'none');
@@ -13,6 +14,10 @@ assert.equal(classifyCatalogPath('translations/probe-ui.json'), 'applications');
 assert.equal(classifyCatalogPath('compatibility.json'), 'compatibility');
 assert.equal(classifyCatalogPath('scripts/generate-catalog.mjs'), 'full');
 assert.equal(classifyCatalogPath('docs/COMPATIBILITY.md'), 'none');
+
+assert.equal(pushBeforeSha({ before: 'A'.repeat(40) }), 'a'.repeat(40));
+assert.equal(pushBeforeSha({ before: '0'.repeat(40) }), '');
+assert.equal(pushBeforeSha({ before: 'bad' }), '');
 
 assert.deepEqual(catalogChangeImpact([
   'scripts/package-probe-controller.mjs',
