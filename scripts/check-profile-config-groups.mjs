@@ -28,27 +28,30 @@ const rows = [
   entry('x86', 'x86', '', 'Generic', 'TARGET_x86_64', 'TARGET_x86'),
   entry('x86/64', 'x86', '64', 'Generic', 'TARGET_x86_64_Generic', 'TARGET_x86_64'),
   entry('ath25', 'ath25', '', 'Default', 'TARGET_ath25_Default', 'TARGET_ath25'),
+  entry('ath25', 'ath25', '', 'DEVICE_generic', 'TARGET_ath25_DEVICE_generic', 'TARGET_ath25'),
 ];
 const topology = buildIdentityTopology(rows);
 for (let index = 0; index < rows.length; index += 1) {
   const identityIndex = index === 2 ? 3 : index;
   rows[index].values = new Map([['COMMON', 'y'], ...deriveIdentityValues(topology, identityIndex)]);
 }
-rows[4].values.set('TARGET_SUBTARGET', '"generic"');
+for (const index of [4, 5]) rows[index].values.set('TARGET_SUBTARGET', '"generic"');
 
 const payload = buildProfileGroupDocument(rows, { id: 'Fixture', branch: 'test', commit: 'fixture' });
-assert.equal(payload.profiles.length, 5);
+assert.equal(payload.profiles.length, 6);
 assert.equal(payload.groups.length, 1, 'identity-only differences must share one exact Config Group');
 assert.deepEqual(payload.identity.aliases, [[2, 3]], 'canonical Native identity alias must be preserved');
-assert.equal(payload.identity.overrides.length, 1, 'non-tree Native identity must use one exact override');
-assert.equal(payload.identity.overrides[0][0], 4);
-assert.equal(new Map(payload.identity.overrides[0][1]).get('TARGET_SUBTARGET'), '"generic"');
+assert.deepEqual(payload.identity.targetOverrides, [
+  ['ath25', [['TARGET_SUBTARGET', '"generic"']]],
+], 'uniform Native identity normalization must collapse to one Target-level override');
+assert.deepEqual(payload.identity.overrides, [], 'Target-level normalization must avoid repeated per-Profile identity state');
 assert.equal(payload.metrics.reconstructionMismatches, 0);
-assert.equal(payload.metrics.profilesInSharedGroups, 5);
-assert.equal(payload.metrics.identityOverrides, 1);
+assert.equal(payload.metrics.profilesInSharedGroups, 6);
+assert.equal(payload.metrics.targetIdentityOverrides, 1);
+assert.equal(payload.metrics.identityOverrides, 0);
 assert.equal(payload.profileFields.indexOf('boardSelector'), 5, 'Profile rows must carry the exact Catalog board selector');
 assert(payload.profiles.slice(0, 4).every((row) => row[5] === 'TARGET_x86'), 'x86 board selectors must round-trip exactly');
-assert.equal(payload.profiles[4][5], 'TARGET_ath25');
+assert(payload.profiles.slice(4).every((row) => row[5] === 'TARGET_ath25'), 'ath25 board selectors must round-trip exactly');
 assert(!payload.symbols.some((symbol) => symbol.startsWith('TARGET_')), 'derived identity symbols must not be repeated in semantic dictionary');
 
 const changed = rows.map((row) => ({ ...row, values: new Map(row.values) }));
@@ -56,6 +59,12 @@ changed[1].values.set('FEATURE', 'y');
 const split = buildProfileGroupDocument(changed, { id: 'Fixture', branch: 'test', commit: 'fixture' });
 assert.equal(split.groups.length, 2, 'real semantic differences must not collapse into one Config Group');
 assert.equal(split.metrics.reconstructionMismatches, 0);
+
+const irregular = rows.map((row) => ({ ...row, values: new Map(row.values) }));
+irregular[4].values.set('TARGET_PROFILE', '"Canonical-Only"');
+const guarded = buildProfileGroupDocument(irregular, { id: 'Fixture', branch: 'test', commit: 'fixture' });
+assert(guarded.identity.overrides.some(([index]) => index === 4), 'non-uniform non-tree identity must remain an exact per-Profile override');
+assert.equal(guarded.metrics.reconstructionMismatches, 0);
 
 const grouped = groupConfigPairs([[0, 'n'], [1, 'm'], [2, 'y'], [3, '"hello"'], [4, '123']]);
 assert.deepEqual(grouped, [[0], [1], [2], [3, '"hello"', 4, '123']]);
@@ -82,4 +91,4 @@ const ordered = await mapConcurrentOrdered([40, 10, 30, 5], async (delay, index)
 assert.equal(maxActive, 2);
 assert.deepEqual(ordered, ['row-0', 'row-1', 'row-2', 'row-3']);
 
-console.log('E Profile Config Group checks passed: exact grouping, exact selectors, aliases, non-tree identity overrides, semantic split, grouped states, bounded workers.');
+console.log('E Profile Config Group checks passed: exact grouping, exact selectors, Target identity normalization, aliases, exact fallback overrides, semantic split, grouped states, bounded workers.');
