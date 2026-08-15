@@ -2,14 +2,19 @@ name: Probe contracts
 
 on:
   push:
-    branches: [main, dev, staging, "fix/**"]
+    branches: [main, dev, staging, "fix-D", "fix/**"]
     paths:
       - "scripts/package-probe-*.mjs"
       - "scripts/run-package-probe.mjs"
       - "scripts/write-package-probe-evidence*.mjs"
       - "scripts/check-package-probe*.mjs"
       - "scripts/check-probe-authorization.mjs"
+      - "scripts/profile-config-contract.mjs"
+      - "scripts/check-profile-config-contract.mjs"
+      - "scripts/verify-target-contracts.mjs"
+      - "scripts/catalog-channels.mjs"
       - "scripts/catalog-change-impact.mjs"
+      - "package.json"
       - ".github/workflows/package-probe*.yml"
       - ".github/workflows/probe-contracts.yml"
   pull_request:
@@ -19,7 +24,12 @@ on:
       - "scripts/write-package-probe-evidence*.mjs"
       - "scripts/check-package-probe*.mjs"
       - "scripts/check-probe-authorization.mjs"
+      - "scripts/profile-config-contract.mjs"
+      - "scripts/check-profile-config-contract.mjs"
+      - "scripts/verify-target-contracts.mjs"
+      - "scripts/catalog-channels.mjs"
       - "scripts/catalog-change-impact.mjs"
+      - "package.json"
       - ".github/workflows/package-probe*.yml"
       - ".github/workflows/probe-contracts.yml"
 
