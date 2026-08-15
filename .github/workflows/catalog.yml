@@ -222,7 +222,7 @@ jobs:
       - name: Validate non-production publish channel
         run: |
           case "$CATALOG_DATA_BRANCH" in
-            catalog-DA|catalog-DB|catalog-fix|catalog-fix-[ABC]|catalog-dev|catalog-staging|catalog-candidate) ;;
+            catalog-fix|catalog-fix-[ABC]|catalog-dev|catalog-staging|catalog-candidate) ;;
             *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
           esac
       - uses: actions/checkout@v7
@@ -295,7 +295,7 @@ jobs:
       - name: Validate non-production publish channel
         run: |
           case "$CATALOG_DATA_BRANCH" in
-            catalog-DA|catalog-DB|catalog-fix|catalog-fix-[ABC]|catalog-dev|catalog-staging|catalog-candidate) ;;
+            catalog-fix|catalog-fix-[ABC]|catalog-dev|catalog-staging|catalog-candidate) ;;
             *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
           esac
       - uses: actions/checkout@v7
