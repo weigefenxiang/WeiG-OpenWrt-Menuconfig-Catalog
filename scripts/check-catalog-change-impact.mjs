@@ -6,6 +6,7 @@ import {
   classifyCatalogPath,
 } from './catalog-change-impact.mjs';
 
+assert.equal(classifyCatalogPath('.github/workflows/catalog.yml'), 'none');
 assert.equal(classifyCatalogPath('scripts/package-probe-controller.mjs'), 'none');
 assert.equal(classifyCatalogPath('translations/probe-ui.json'), 'applications');
 assert.equal(classifyCatalogPath('compatibility.json'), 'compatibility');
@@ -13,9 +14,11 @@ assert.equal(classifyCatalogPath('scripts/generate-catalog.mjs'), 'full');
 assert.equal(classifyCatalogPath('docs/COMPATIBILITY.md'), 'none');
 
 assert.deepEqual(catalogChangeImpact([
+  '.github/workflows/catalog.yml',
   'scripts/package-probe-controller.mjs',
   'scripts/check-package-probe.mjs',
 ]), { mode: 'none', fastAssets: [], classified: [
+  { path: '.github/workflows/catalog.yml', impact: 'none' },
   { path: 'scripts/package-probe-controller.mjs', impact: 'none' },
   { path: 'scripts/check-package-probe.mjs', impact: 'none' },
 ] });
