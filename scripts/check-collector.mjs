@@ -115,12 +115,15 @@ function addPrevious(previous, branchName) {
   writeFileSync(join(previous, `openwrt--${branchName}.translations.json`), '{"old":true}\n');
 }
 
-function run(root, shouldPass = true) {
+function run(root, shouldPass = true, refName = '') {
   const args = [
     script, join(root, 'current'), join(root, 'previous'), join(root, 'dist'),
     join(root, 'attempts'), join(root, 'diagnostics'),
   ];
-  const result = spawnSync(process.execPath, args, { encoding: 'utf8' });
+  const env = { ...process.env };
+  if (refName) env.GITHUB_REF_NAME = refName;
+  else delete env.GITHUB_REF_NAME;
+  const result = spawnSync(process.execPath, args, { encoding: 'utf8', env });
   if (shouldPass && result.status !== 0) throw new Error(result.stderr || result.stdout);
   if (!shouldPass && result.status === 0) throw new Error('fatal Artifact fixture unexpectedly passed');
   if (!existsSync(join(root, 'diagnostics', 'publish-inputs.json'))) {
@@ -140,6 +143,15 @@ try {
   if (!validManifest.complete || validManifest.fresh !== 1 ||
       validJson.generation !== 'current') throw new Error('valid current result was not published');
 
+  const eValid = fixture('e-valid', (root, previous) => {
+    addPrevious(previous, 'main');
+    addArtifact(root, 2, 'main');
+  });
+  const eValidManifest = run(eValid, true, 'fix-E');
+  if (!eValidManifest.complete || eValidManifest.fatalErrors.length) {
+    throw new Error('complete E snapshot was unexpectedly rejected');
+  }
+
   const mixed = fixture('mixed', (root, previous) => {
     addPrevious(previous, 'main');
     addPrevious(previous, 'openwrt-24.10');
@@ -152,6 +164,17 @@ try {
   if (mixedManifest.complete || mixedManifest.fresh !== 1 || mixedManifest.lastGood !== 1 ||
       unavailable?.publishState !== 'unavailable') {
     throw new Error('partial success did not publish fresh plus last-good');
+  }
+
+  const eMixed = fixture('e-mixed', (root, previous) => {
+    addPrevious(previous, 'main');
+    addPrevious(previous, 'openwrt-24.10');
+    addArtifact(root, 2, 'main');
+    addArtifact(root, 3, 'openwrt-24.10', 'failure');
+  });
+  const eMixedManifest = run(eMixed, false, 'fix-E');
+  if (!eMixedManifest.fatalErrors.some((item) => item.includes('fail-closed'))) {
+    throw new Error('incomplete E snapshot was not fail-closed');
   }
 
   const quarantined = fixture('quarantined', (root, previous) => {
@@ -188,7 +211,7 @@ try {
     mkdirSync(join(root, 'current'), { recursive: true });
   });
   run(fatal, false);
-  console.log('catalog collector checks passed: fresh, partial, quarantine, contract, relations, last-good, fatal');
+  console.log('catalog collector checks passed: fresh, partial, E fail-closed, quarantine, contract, relations, last-good, fatal');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }
