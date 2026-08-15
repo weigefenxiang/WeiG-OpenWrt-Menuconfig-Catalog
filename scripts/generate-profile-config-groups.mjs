@@ -131,6 +131,7 @@ export function buildIdentityTopology(rows) {
   const targetSelectorsByBoard = new Map();
   const profileSelectorsByTarget = new Map();
   const profilesByIdentity = new Map();
+  const profilesByTarget = new Map();
   const identitySymbols = new Set(FIXED_IDENTITY_SYMBOLS);
   for (const symbol of boardSelectors) identitySymbols.add(symbol);
   profiles.forEach((row, index) => {
@@ -144,15 +145,21 @@ export function buildIdentityTopology(rows) {
       profileSelectorsByTarget.get(row.target).add(row.selector);
       identitySymbols.add(row.selector);
     }
-    const key = `${row.board}\0${row.subtarget}\0${row.profile}`;
-    const indexes = profilesByIdentity.get(key) || [];
-    indexes.push(index);
-    profilesByIdentity.set(key, indexes);
+    const identityKey = `${row.board}\0${row.subtarget}\0${row.profile}`;
+    const identityIndexes = profilesByIdentity.get(identityKey) || [];
+    identityIndexes.push(index);
+    profilesByIdentity.set(identityKey, identityIndexes);
+    const targetIndexes = profilesByTarget.get(row.target) || [];
+    targetIndexes.push(index);
+    profilesByTarget.set(row.target, targetIndexes);
   });
-  return { profiles, boardSelectors, targetSelectorsByBoard, profileSelectorsByTarget, profilesByIdentity, identitySymbols };
+  return {
+    profiles, boardSelectors, targetSelectorsByBoard, profileSelectorsByTarget,
+    profilesByIdentity, profilesByTarget, identitySymbols,
+  };
 }
 
-export function deriveIdentityValues(topology, profileIndex) {
+function baseIdentityValues(topology, profileIndex) {
   const row = topology.profiles[profileIndex];
   if (!row) throw new Error(`invalid Profile identity index: ${profileIndex}`);
   const values = new Map([
@@ -170,23 +177,76 @@ export function deriveIdentityValues(topology, profileIndex) {
   return values;
 }
 
+function applyIdentityOverride(values, pairs) {
+  const next = new Map(values);
+  for (const [symbol, value] of pairs || []) next.set(symbol, value);
+  return next;
+}
+
+export function deriveIdentityValues(topology, profileIndex, targetOverrides = new Map()) {
+  const row = topology.profiles[profileIndex];
+  return applyIdentityOverride(baseIdentityValues(topology, profileIndex), targetOverrides.get(row.target));
+}
+
 export function actualIdentityValues(values, topology) {
   return new Map([...values].filter(([symbol]) => topology.identitySymbols.has(symbol)));
 }
 
-export function resolveIdentityProfileIndex(values, topology, requestedIndex) {
+function fixedOnlyDelta(actual, derived) {
+  const fixed = new Set(FIXED_IDENTITY_SYMBOLS);
+  const symbols = new Set([...actual.keys(), ...derived.keys()]);
+  const delta = [];
+  for (const symbol of symbols) {
+    const left = actual.get(symbol);
+    const right = derived.get(symbol);
+    if (left === right) continue;
+    if (!fixed.has(symbol) || !actual.has(symbol)) return null;
+    delta.push([symbol, left]);
+  }
+  return delta.sort(([left], [right]) => left.localeCompare(right));
+}
+
+export function discoverTargetIdentityOverrides(rows, topology) {
+  const targetOverrides = new Map();
+  for (const [target, indexes] of topology.profilesByTarget) {
+    let candidate = null;
+    let valid = true;
+    for (const index of indexes) {
+      const actual = actualIdentityValues(rows[index].values, topology);
+      const derived = baseIdentityValues(topology, index);
+      const delta = fixedOnlyDelta(actual, derived);
+      if (delta === null) {
+        valid = false;
+        break;
+      }
+      const key = JSON.stringify(delta);
+      if (candidate === null) candidate = { key, delta };
+      else if (candidate.key !== key) {
+        valid = false;
+        break;
+      }
+    }
+    if (valid && candidate?.delta.length) targetOverrides.set(target, candidate.delta);
+  }
+  return targetOverrides;
+}
+
+export function resolveIdentityProfileIndex(values, topology, requestedIndex, targetOverrides = new Map()) {
   const actual = actualIdentityValues(values, topology);
-  if (mapEqual(actual, deriveIdentityValues(topology, requestedIndex))) return requestedIndex;
+  if (mapEqual(actual, deriveIdentityValues(topology, requestedIndex, targetOverrides))) return requestedIndex;
   const board = scalar(values.get('TARGET_BOARD'));
   const subtarget = scalar(values.get('TARGET_SUBTARGET'));
   const profile = scalar(values.get('TARGET_PROFILE'));
   const candidates = topology.profilesByIdentity.get(`${board}\0${subtarget}\0${profile}`) || [];
-  const exact = candidates.filter((index) => mapEqual(actual, deriveIdentityValues(topology, index)));
+  const exact = candidates.filter((index) =>
+    mapEqual(actual, deriveIdentityValues(topology, index, targetOverrides)));
   return exact.length === 1 ? exact[0] : -1;
 }
 
-function resolveIdentity(rows, topology, requestedIndex) {
-  const profileIndex = resolveIdentityProfileIndex(rows[requestedIndex].values, topology, requestedIndex);
+function resolveIdentity(rows, topology, requestedIndex, targetOverrides) {
+  const profileIndex = resolveIdentityProfileIndex(
+    rows[requestedIndex].values, topology, requestedIndex, targetOverrides,
+  );
   if (profileIndex >= 0) return { profileIndex, override: null };
   const actual = actualIdentityValues(rows[requestedIndex].values, topology);
   if (!actual.size) {
@@ -241,7 +301,9 @@ function exactGroup(semanticRows) {
 export function buildProfileGroupDocument(rows, source, options = {}) {
   if (!rows.length) throw new Error('Profile Config Group input is empty');
   const topology = buildIdentityTopology(rows);
-  const identityResolutions = rows.map((_, index) => resolveIdentity(rows, topology, index));
+  const targetOverrideMap = discoverTargetIdentityOverrides(rows, topology);
+  const identityResolutions = rows.map((_, index) =>
+    resolveIdentity(rows, topology, index, targetOverrideMap));
   const identityProfileIndexes = identityResolutions.map((item) => item.profileIndex);
   const identityOverrides = identityResolutions
     .map((item, index) => item.override ? [index, item.override] : null)
@@ -266,13 +328,14 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
   const identityAliases = identityResolutions
     .map((item, index) => !item.override && item.profileIndex !== index ? [index, item.profileIndex] : null)
     .filter(Boolean);
+  const targetOverrides = [...targetOverrideMap.entries()].sort(([left], [right]) => left.localeCompare(right));
 
   let reconstructionMismatches = 0;
   for (let index = 0; index < rows.length; index += 1) {
     const values = reconstructSemantic(symbols, commonGroups, groupRows[groupIds[index]]);
     const identityValues = identityOverrideByProfile.has(index)
       ? new Map(identityOverrideByProfile.get(index))
-      : deriveIdentityValues(topology, identityProfileIndexes[index]);
+      : deriveIdentityValues(topology, identityProfileIndexes[index], targetOverrideMap);
     for (const [symbol, value] of identityValues) values.set(symbol, value);
     const parity = compareConfigSemantics(rows[index].values, values);
     if (!parity.equal || parity.leftHash !== profiles[index][8]) reconstructionMismatches += 1;
@@ -294,6 +357,7 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
     identity: {
       mode: 'catalog-target-tree-v1',
       fixed: FIXED_IDENTITY_SYMBOLS,
+      targetOverrides,
       aliases: identityAliases,
       overrides: identityOverrides,
     },
@@ -308,6 +372,7 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
       profilesInSharedGroups: sizes.filter((size) => size > 1).reduce((sum, size) => sum + size, 0),
       largestGroup: Math.max(0, ...sizes),
       identitySymbols: topology.identitySymbols.size,
+      targetIdentityOverrides: targetOverrides.length,
       identityAliases: identityAliases.length,
       identityOverrides: identityOverrides.length,
       dictionarySymbols: symbols.length,
@@ -358,7 +423,17 @@ function restoreFile(path, snapshot) {
   else rmSync(path, { force: true });
 }
 
-function makeParityIndexes(count, aliases = [], overrides = []) {
+function targetOverrideSampleIndexes(rows, targetOverrides) {
+  const targets = new Set((targetOverrides || []).map(([target]) => target));
+  const firstByTarget = new Map();
+  rows.forEach((row, index) => {
+    if (targets.has(row.target.id) && !firstByTarget.has(row.target.id)) firstByTarget.set(row.target.id, index);
+  });
+  return [...firstByTarget.values()];
+}
+
+function makeParityIndexes(rows, aliases = [], overrides = [], targetOverrides = []) {
+  const count = rows.length;
   if (!count) return [];
   const spread = [0, Math.floor((count - 1) / 4), Math.floor((count - 1) / 2),
     Math.floor(((count - 1) * 3) / 4), count - 1];
@@ -366,11 +441,12 @@ function makeParityIndexes(count, aliases = [], overrides = []) {
     ...spread,
     ...aliases.flatMap((pair) => pair),
     ...overrides.map((pair) => pair[0]),
+    ...targetOverrideSampleIndexes(rows, targetOverrides),
   ])].filter((index) => index >= 0 && index < count).sort((a, b) => a - b);
 }
 
-function verifyMakeDefconfigParity(tree, rows, aliases, overrides) {
-  const indexes = makeParityIndexes(rows.length, aliases, overrides);
+function verifyMakeDefconfigParity(tree, rows, aliases, overrides, targetOverrides) {
+  const indexes = makeParityIndexes(rows, aliases, overrides, targetOverrides);
   const configPath = join(tree, '.config');
   const oldConfigPath = join(tree, '.config.old');
   const originalConfig = snapshotFile(configPath);
@@ -450,7 +526,8 @@ async function main() {
     const preliminary = buildProfileGroupDocument(rows, { id: args['source-id'], branch: args.branch, commit: '' });
     const aliases = preliminary.identity.aliases;
     const overrides = preliminary.identity.overrides;
-    const nativeParitySamples = verifyMakeDefconfigParity(tree, rows, aliases, overrides);
+    const targetOverrides = preliminary.identity.targetOverrides;
+    const nativeParitySamples = verifyMakeDefconfigParity(tree, rows, aliases, overrides, targetOverrides);
     let commit = '';
     try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
     const rawConfigBytes = rows.reduce((sum, row) => sum + row.rawBytes, 0);
@@ -469,8 +546,8 @@ async function main() {
       asset, hash: sha256(compressed), bytes: compressed.byteLength,
       sha256: sha256(Buffer.from(json)), jsonBytes: Buffer.byteLength(json),
       schema: payload.schema, encoding: payload.encoding, profiles: payload.profiles.length,
-      configGroups: payload.groups.length, identityAliases: payload.identity.aliases.length,
-      identityOverrides: payload.identity.overrides.length,
+      configGroups: payload.groups.length, targetIdentityOverrides: payload.identity.targetOverrides.length,
+      identityAliases: payload.identity.aliases.length, identityOverrides: payload.identity.overrides.length,
       commonSymbols: payload.metrics.commonSymbols, dictionarySymbols: payload.symbols.length,
     };
     meta.sizeReport ||= {};
@@ -481,8 +558,9 @@ async function main() {
     };
     writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
     console.log(`E Profile Config Groups: ${payload.profiles.length} profiles -> ${payload.groups.length} exact groups / ` +
-      `${payload.identity.aliases.length} identity aliases / ${payload.identity.overrides.length} identity overrides / ` +
-      `${compressed.byteLength} compressed bytes / ${nativeParitySamples} make defconfig parity samples`);
+      `${payload.identity.targetOverrides.length} target identity overrides / ${payload.identity.aliases.length} identity aliases / ` +
+      `${payload.identity.overrides.length} profile identity overrides / ${compressed.byteLength} compressed bytes / ` +
+      `${nativeParitySamples} make defconfig parity samples`);
   } finally {
     rmSync(workDir, { recursive: true, force: true });
   }
