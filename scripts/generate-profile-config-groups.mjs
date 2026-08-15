@@ -108,6 +108,10 @@ function mapEqual(left, right) {
   return true;
 }
 
+function sortedEntries(values) {
+  return [...values].sort(([left], [right]) => left.localeCompare(right));
+}
+
 function normalizedProfileMeta(row) {
   return {
     target: row.target.id,
@@ -178,12 +182,18 @@ export function resolveIdentityProfileIndex(values, topology, requestedIndex) {
   const profile = scalar(values.get('TARGET_PROFILE'));
   const candidates = topology.profilesByIdentity.get(`${board}\0${subtarget}\0${profile}`) || [];
   const exact = candidates.filter((index) => mapEqual(actual, deriveIdentityValues(topology, index)));
-  if (exact.length !== 1) {
+  return exact.length === 1 ? exact[0] : -1;
+}
+
+function resolveIdentity(rows, topology, requestedIndex) {
+  const profileIndex = resolveIdentityProfileIndex(rows[requestedIndex].values, topology, requestedIndex);
+  if (profileIndex >= 0) return { profileIndex, override: null };
+  const actual = actualIdentityValues(rows[requestedIndex].values, topology);
+  if (!actual.size) {
     const requested = topology.profiles[requestedIndex];
-    throw new Error(`cannot derive Native Profile identity for ${requested.target}/${requested.profile}: ` +
-      `resolved=${board}/${subtarget}/${profile}, candidates=${exact.length}`);
+    throw new Error(`Native Profile identity is empty for ${requested.target}/${requested.profile}`);
   }
-  return exact[0];
+  return { profileIndex: requestedIndex, override: sortedEntries(actual) };
 }
 
 function semanticValues(values, topology) {
@@ -231,7 +241,12 @@ function exactGroup(semanticRows) {
 export function buildProfileGroupDocument(rows, source, options = {}) {
   if (!rows.length) throw new Error('Profile Config Group input is empty');
   const topology = buildIdentityTopology(rows);
-  const identityProfileIndexes = rows.map((row, index) => resolveIdentityProfileIndex(row.values, topology, index));
+  const identityResolutions = rows.map((_, index) => resolveIdentity(rows, topology, index));
+  const identityProfileIndexes = identityResolutions.map((item) => item.profileIndex);
+  const identityOverrides = identityResolutions
+    .map((item, index) => item.override ? [index, item.override] : null)
+    .filter(Boolean);
+  const identityOverrideByProfile = new Map(identityOverrides);
   const semanticRows = rows.map((row) => semanticValues(row.values, topology));
   let common = null;
   for (const values of semanticRows) common = intersectCommonValues(common, values);
@@ -248,14 +263,17 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
       configSemanticHash(row.values), row.values.size, groupIds[index],
     ];
   });
-  const identityAliases = identityProfileIndexes
-    .map((identityIndex, index) => identityIndex === index ? null : [index, identityIndex])
+  const identityAliases = identityResolutions
+    .map((item, index) => !item.override && item.profileIndex !== index ? [index, item.profileIndex] : null)
     .filter(Boolean);
 
   let reconstructionMismatches = 0;
   for (let index = 0; index < rows.length; index += 1) {
     const values = reconstructSemantic(symbols, commonGroups, groupRows[groupIds[index]]);
-    for (const [symbol, value] of deriveIdentityValues(topology, identityProfileIndexes[index])) values.set(symbol, value);
+    const identityValues = identityOverrideByProfile.has(index)
+      ? new Map(identityOverrideByProfile.get(index))
+      : deriveIdentityValues(topology, identityProfileIndexes[index]);
+    for (const [symbol, value] of identityValues) values.set(symbol, value);
     const parity = compareConfigSemantics(rows[index].values, values);
     if (!parity.equal || parity.leftHash !== profiles[index][8]) reconstructionMismatches += 1;
   }
@@ -273,7 +291,12 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
     source,
     profileFields: PROFILE_GROUP_FIELDS,
     stateGroups: PROFILE_GROUP_STATE_GROUPS,
-    identity: { mode: 'catalog-target-tree-v1', fixed: FIXED_IDENTITY_SYMBOLS, aliases: identityAliases },
+    identity: {
+      mode: 'catalog-target-tree-v1',
+      fixed: FIXED_IDENTITY_SYMBOLS,
+      aliases: identityAliases,
+      overrides: identityOverrides,
+    },
     symbols,
     common: commonGroups,
     groups: groupRows,
@@ -286,6 +309,7 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
       largestGroup: Math.max(0, ...sizes),
       identitySymbols: topology.identitySymbols.size,
       identityAliases: identityAliases.length,
+      identityOverrides: identityOverrides.length,
       dictionarySymbols: symbols.length,
       commonSymbols: commonPairs.length,
       semanticStatePairs,
@@ -334,16 +358,19 @@ function restoreFile(path, snapshot) {
   else rmSync(path, { force: true });
 }
 
-function makeParityIndexes(count, aliases = []) {
+function makeParityIndexes(count, aliases = [], overrides = []) {
   if (!count) return [];
   const spread = [0, Math.floor((count - 1) / 4), Math.floor((count - 1) / 2),
     Math.floor(((count - 1) * 3) / 4), count - 1];
-  return [...new Set([...spread, ...aliases.flatMap((pair) => pair)])]
-    .filter((index) => index >= 0 && index < count).sort((a, b) => a - b);
+  return [...new Set([
+    ...spread,
+    ...aliases.flatMap((pair) => pair),
+    ...overrides.map((pair) => pair[0]),
+  ])].filter((index) => index >= 0 && index < count).sort((a, b) => a - b);
 }
 
-function verifyMakeDefconfigParity(tree, rows, aliases) {
-  const indexes = makeParityIndexes(rows.length, aliases);
+function verifyMakeDefconfigParity(tree, rows, aliases, overrides) {
+  const indexes = makeParityIndexes(rows.length, aliases, overrides);
   const configPath = join(tree, '.config');
   const oldConfigPath = join(tree, '.config.old');
   const originalConfig = snapshotFile(configPath);
@@ -422,7 +449,8 @@ async function main() {
 
     const preliminary = buildProfileGroupDocument(rows, { id: args['source-id'], branch: args.branch, commit: '' });
     const aliases = preliminary.identity.aliases;
-    const nativeParitySamples = verifyMakeDefconfigParity(tree, rows, aliases);
+    const overrides = preliminary.identity.overrides;
+    const nativeParitySamples = verifyMakeDefconfigParity(tree, rows, aliases, overrides);
     let commit = '';
     try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
     const rawConfigBytes = rows.reduce((sum, row) => sum + row.rawBytes, 0);
@@ -442,6 +470,7 @@ async function main() {
       sha256: sha256(Buffer.from(json)), jsonBytes: Buffer.byteLength(json),
       schema: payload.schema, encoding: payload.encoding, profiles: payload.profiles.length,
       configGroups: payload.groups.length, identityAliases: payload.identity.aliases.length,
+      identityOverrides: payload.identity.overrides.length,
       commonSymbols: payload.metrics.commonSymbols, dictionarySymbols: payload.symbols.length,
     };
     meta.sizeReport ||= {};
@@ -452,8 +481,8 @@ async function main() {
     };
     writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
     console.log(`E Profile Config Groups: ${payload.profiles.length} profiles -> ${payload.groups.length} exact groups / ` +
-      `${payload.identity.aliases.length} identity aliases / ${compressed.byteLength} compressed bytes / ` +
-      `${nativeParitySamples} make defconfig parity samples`);
+      `${payload.identity.aliases.length} identity aliases / ${payload.identity.overrides.length} identity overrides / ` +
+      `${compressed.byteLength} compressed bytes / ${nativeParitySamples} make defconfig parity samples`);
   } finally {
     rmSync(workDir, { recursive: true, force: true });
   }
