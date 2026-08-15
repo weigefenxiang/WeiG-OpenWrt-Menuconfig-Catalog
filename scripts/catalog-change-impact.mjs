@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const GIT_SHA_RE = /^[0-9a-f]{40}$/i;
+const CATALOG_WORKFLOW = '.github/workflows/catalog.yml';
 
 const REGISTRY = Object.freeze({
   applications: Object.freeze([
@@ -16,7 +19,7 @@ const REGISTRY = Object.freeze({
     'scripts/compatibility-rules.mjs',
   ]),
   full: Object.freeze([
-    '.github/workflows/catalog.yml',
+    CATALOG_WORKFLOW,
     'catalog.config.json',
     'translations/menu-i18n.json',
     'translations/zh-CN.json',
@@ -104,7 +107,7 @@ function normalizePath(path) {
 
 function isManagedPath(path) {
   return path.startsWith('scripts/') || path.startsWith('translations/') ||
-    path === '.github/workflows/catalog.yml' || (!path.includes('/') && path.endsWith('.json'));
+    path === CATALOG_WORKFLOW || (!path.includes('/') && path.endsWith('.json'));
 }
 
 export function classifyCatalogPath(input) {
@@ -118,9 +121,7 @@ export function classifyCatalogPath(input) {
   return 'none';
 }
 
-export function catalogChangeImpact(inputs) {
-  const changed = [...new Set((inputs || []).map(normalizePath).filter(Boolean))];
-  const classified = changed.map((path) => ({ path, impact: classifyCatalogPath(path) }));
+function resultFromClassified(classified) {
   if (classified.some((item) => item.impact === 'full')) {
     return { mode: 'full', fastAssets: [], classified };
   }
@@ -130,20 +131,67 @@ export function catalogChangeImpact(inputs) {
   return { mode: fastAssets.length ? 'root-assets' : 'none', fastAssets, classified };
 }
 
+export function catalogChangeImpact(inputs) {
+  const changed = [...new Set((inputs || []).map(normalizePath).filter(Boolean))];
+  return resultFromClassified(changed.map((path) => ({ path, impact: classifyCatalogPath(path) })));
+}
+
+export function isSafeCatalogWorkflowHistoryUpgrade(beforeText, afterText) {
+  const before = String(beforeText || '');
+  let reverted = String(afterText || '');
+  const oldCheckout = '          fetch-depth: 2';
+  const newCheckout = '          fetch-depth: 0';
+  const oldClassifier = [
+    '            mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")',
+    '            node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"',
+  ].join('\n');
+  const newClassifier = '            node scripts/catalog-change-impact.mjs --git-diff "$BEFORE_SHA" "$GITHUB_SHA" | tee "$RUNNER_TEMP/catalog-impact.outputs"';
+  if (!reverted.includes(newCheckout) || !reverted.includes(newClassifier)) return false;
+  reverted = reverted.replace(newCheckout, oldCheckout).replace(newClassifier, oldClassifier);
+  return reverted === before;
+}
+
+function git(args, cwd) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8' });
+}
+
+function gitFileText(ref, path, cwd) {
+  return git(['show', `${ref}:${path}`], cwd);
+}
+
+export function catalogChangeImpactFromGit(beforeSha, afterSha, root = ROOT) {
+  const before = String(beforeSha || '').trim().toLowerCase();
+  const after = String(afterSha || '').trim().toLowerCase();
+  if (!GIT_SHA_RE.test(before) || !GIT_SHA_RE.test(after)) {
+    throw new Error('Catalog impact Git range requires two full commit SHAs');
+  }
+  const changed = git(['diff', '--name-only', before, after], root)
+    .split(/\r?\n/).map(normalizePath).filter(Boolean);
+  const classified = [...new Set(changed)].map((path) => {
+    let impact = classifyCatalogPath(path);
+    if (path === CATALOG_WORKFLOW && impact === 'full') {
+      const beforeText = gitFileText(before, path, root);
+      const afterText = gitFileText(after, path, root);
+      if (isSafeCatalogWorkflowHistoryUpgrade(beforeText, afterText)) impact = 'none';
+    }
+    return { path, impact };
+  });
+  return resultFromClassified(classified);
+}
+
 export function catalogImpactRegistryCoverage(root = ROOT) {
   const managed = [
     ...readdirSync(resolve(root, 'scripts')).map((name) => `scripts/${name}`),
     ...readdirSync(resolve(root, 'translations')).map((name) => `translations/${name}`),
     ...readdirSync(root).filter((name) => name.endsWith('.json')),
-    '.github/workflows/catalog.yml',
+    CATALOG_WORKFLOW,
   ].sort();
   const missing = managed.filter((path) => !CLASS_BY_PATH.has(path));
   const stale = [...CLASS_BY_PATH.keys()].filter((path) => isManagedPath(path) && !managed.includes(path)).sort();
   return { managed, missing, stale };
 }
 
-function printResult(paths) {
-  const result = catalogChangeImpact(paths);
+function printResult(result) {
   process.stdout.write(`mode=${result.mode}\n`);
   process.stdout.write(`fast_assets=${result.fastAssets.join(',')}\n`);
   process.stdout.write(`classified=${JSON.stringify(result.classified)}\n`);
@@ -159,7 +207,9 @@ if (invokedDirectly) {
       process.exit(1);
     }
     console.log(`Catalog impact registry covers ${coverage.managed.length} managed files.`);
+  } else if (process.argv[2] === '--git-diff') {
+    printResult(catalogChangeImpactFromGit(process.argv[3], process.argv[4]));
   } else {
-    printResult(process.argv.slice(2));
+    printResult(catalogChangeImpact(process.argv.slice(2)));
   }
 }
