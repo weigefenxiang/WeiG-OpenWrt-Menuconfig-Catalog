@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
 export const PRODUCTION_CANDIDATE_BRANCH = 'catalog-candidate';
 export const PRODUCTION_DATA_BRANCH = 'catalog-data';
+const GIT_SHA_RE = /^[0-9a-f]{40}$/i;
 
 const BUILD_DATA_BRANCHES = Object.freeze({
   dev: 'catalog-dev',
@@ -52,6 +55,30 @@ export function translationChannel(channel) {
   return null;
 }
 
+export function pushBeforeSha(event = {}) {
+  const before = String(event?.before || '').trim().toLowerCase();
+  if (!GIT_SHA_RE.test(before) || /^0{40}$/.test(before)) return '';
+  return before;
+}
+
+export function ensurePushBeforeCommitAvailable({
+  eventName = process.env.GITHUB_EVENT_NAME || '',
+  eventPath = process.env.GITHUB_EVENT_PATH || '',
+  cwd = process.cwd(),
+} = {}) {
+  if (eventName !== 'push' || !eventPath) return '';
+  const before = pushBeforeSha(JSON.parse(readFileSync(eventPath, 'utf8')));
+  if (!before) return '';
+  try {
+    execFileSync('git', ['cat-file', '-e', `${before}^{commit}`], { cwd, stdio: 'ignore' });
+    return before;
+  } catch {
+    execFileSync('git', ['fetch', '--no-tags', '--depth=1', 'origin', before], { cwd, stdio: 'inherit' });
+    execFileSync('git', ['cat-file', '-e', `${before}^{commit}`], { cwd, stdio: 'ignore' });
+    return before;
+  }
+}
+
 function printResult(mode, value) {
   if (mode === 'build') {
     const branch = buildDataBranchForCodeRef(value);
@@ -75,4 +102,7 @@ function printResult(mode, value) {
 }
 
 const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (invokedDirectly) printResult(process.argv[2] || '', process.argv[3] || '');
+if (invokedDirectly) {
+  ensurePushBeforeCommitAvailable();
+  printResult(process.argv[2] || '', process.argv[3] || '');
+}
