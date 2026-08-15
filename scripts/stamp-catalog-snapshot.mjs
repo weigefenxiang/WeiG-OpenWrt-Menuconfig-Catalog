@@ -29,6 +29,42 @@ export function catalogProvenance(existing = {}, { codeRef = '', codeSha = '', c
   };
 }
 
+export function verifyReusableCatalogSnapshot(index, {
+  repository = '',
+  codeRef = '',
+  previousCodeSha = '',
+} = {}) {
+  const assetRef = String(index?.assetRef || '').trim().toLowerCase();
+  if (index?.assetRefType !== 'git-commit' || !GIT_COMMIT_RE.test(assetRef)) {
+    throw new Error('reusable Catalog snapshot requires an immutable Git assetRef');
+  }
+  const provenance = index?.provenance;
+  if (!provenance || typeof provenance !== 'object' || Array.isArray(provenance)) {
+    throw new Error('reusable Catalog snapshot requires provenance');
+  }
+  const expectedRepository = String(repository || '').trim();
+  const actualRepository = String(provenance.repository || '').trim();
+  if (expectedRepository && actualRepository !== expectedRepository) {
+    throw new Error(`reusable Catalog repository mismatch: ${actualRepository || '(missing)'} != ${expectedRepository}`);
+  }
+  const expectedRef = String(codeRef || '').trim();
+  if (!CODE_REF_RE.test(expectedRef) || provenance.codeRef !== expectedRef) {
+    throw new Error(`reusable Catalog codeRef mismatch: ${provenance.codeRef || '(missing)'} != ${expectedRef || '(invalid)'}`);
+  }
+  const expectedPreviousSha = String(previousCodeSha || '').trim().toLowerCase();
+  if (!GIT_COMMIT_RE.test(expectedPreviousSha)) {
+    throw new Error('reusable Catalog previous code SHA must be a full 40-character Git commit SHA');
+  }
+  const actualCodeSha = String(provenance.codeSha || '').trim().toLowerCase();
+  if (actualCodeSha !== expectedPreviousSha) {
+    throw new Error(`reusable Catalog code SHA mismatch: ${actualCodeSha || '(missing)'} != ${expectedPreviousSha}`);
+  }
+  if (typeof provenance.complete !== 'boolean') {
+    throw new Error('reusable Catalog provenance complete must be boolean');
+  }
+  return { assetRef, complete: provenance.complete };
+}
+
 export function stampCatalogSnapshot(index, assetRef, provenance = {}) {
   const normalizedRef = String(assetRef || '').trim().toLowerCase();
   if (!GIT_COMMIT_RE.test(normalizedRef)) {
@@ -48,9 +84,26 @@ const invokedDirectly = process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (invokedDirectly) {
-  const [indexArg = 'dist/index.json', assetRef = '', codeRef = '', codeSha = '', complete = ''] = process.argv.slice(2);
+  const [
+    indexArg = 'dist/index.json',
+    assetRef = '',
+    codeRef = '',
+    codeSha = '',
+    complete = '',
+    previousCodeSha = '',
+  ] = process.argv.slice(2);
   const indexFile = resolve(indexArg);
   const index = JSON.parse(readFileSync(indexFile, 'utf8'));
+  if (previousCodeSha) {
+    const reusable = verifyReusableCatalogSnapshot(index, {
+      repository: process.env.GITHUB_REPOSITORY || '',
+      codeRef,
+      previousCodeSha,
+    });
+    if (String(assetRef || '').trim().toLowerCase() !== reusable.assetRef) {
+      throw new Error('Catalog reuse must preserve the existing assetRef');
+    }
+  }
   const stamped = stampCatalogSnapshot(index, assetRef, {
     ...(codeRef ? { codeRef } : {}),
     ...(codeSha ? { codeSha } : {}),
