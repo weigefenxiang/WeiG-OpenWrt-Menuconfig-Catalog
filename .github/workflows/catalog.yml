@@ -6,7 +6,7 @@ on:
   schedule:
     - cron: "17 19 * * 6"
   push:
-    branches: [main, dev, staging, "fix/**"]
+    branches: [main, dev, staging, "fix-*", "fix/**"]
     # Broad managed scopes route through scripts/catalog-change-impact.mjs.
     # The registry is the single authority for none/root-asset/full impact.
     paths:
@@ -100,7 +100,7 @@ jobs:
     name: ${{ matrix.jobName }}
     needs: discover
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       CATALOG_SOURCE_ID: ${{ matrix.source }}
       CATALOG_SOURCE_LABEL: ${{ matrix.label }}
@@ -163,6 +163,16 @@ jobs:
             --source-id "${{ matrix.source }}" \
             --branch "${{ matrix.branch }}" \
             --out dist
+      - name: Generate E Native Profile Config Groups / 生成 E 原生 Profile 配置组
+        id: experiment
+        if: steps.kconfig_contract.outcome == 'success' && github.ref_name == 'fix-E'
+        timeout-minutes: 45
+        run: |
+          bash scripts/run-stage.sh profile-config-groups node scripts/generate-profile-config-groups.mjs \
+            --tree work/upstream \
+            --source-id "${{ matrix.source }}" \
+            --branch "${{ matrix.branch }}" \
+            --out dist
       - name: Record branch attempt
         if: always()
         env:
@@ -188,6 +198,8 @@ jobs:
           METADATA_OUTCOME: ${{ steps.metadata.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
           KCONFIG_CONTRACT_OUTCOME: ${{ steps.kconfig_contract.outcome }}
+          EXPERIMENT_STAGE: ${{ github.ref_name == 'fix-E' && 'profile-config-groups' || '' }}
+          EXPERIMENT_OUTCOME: ${{ steps.experiment.outcome }}
         run: node scripts/write-attempt.mjs
       - name: Upload branch result
         if: always()
@@ -222,7 +234,7 @@ jobs:
       - name: Validate non-production publish channel
         run: |
           case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-fix-[ABC]|catalog-dev|catalog-staging|catalog-candidate) ;;
+            catalog-fix|catalog-fix-[ABC]|catalog-fix-E|catalog-dev|catalog-staging|catalog-candidate) ;;
             *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
           esac
       - uses: actions/checkout@v7
@@ -295,7 +307,7 @@ jobs:
       - name: Validate non-production publish channel
         run: |
           case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-fix-[ABC]|catalog-dev|catalog-staging|catalog-candidate) ;;
+            catalog-fix|catalog-fix-[ABC]|catalog-fix-E|catalog-dev|catalog-staging|catalog-candidate) ;;
             *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
           esac
       - uses: actions/checkout@v7
