@@ -34,6 +34,7 @@ const REGISTRY = Object.freeze({
   ]),
   none: Object.freeze([
     'package.json',
+    'scripts/benchmark-profile-wire-format.mjs',
     'scripts/catalog-change-impact.mjs',
     'scripts/catalog-channels.mjs',
     'scripts/catalog-size-report.mjs',
@@ -49,6 +50,7 @@ const REGISTRY = Object.freeze({
     'scripts/check-production-boundary.mjs',
     'scripts/check-production-promotion.mjs',
     'scripts/check-profile-config-contract.mjs',
+    'scripts/check-profile-wire-format-benchmark.mjs',
     'scripts/check-release-publication.mjs',
     'scripts/check-translation-assets.mjs',
     'scripts/check-translation-plan.mjs',
