@@ -39,10 +39,11 @@ function configMap(input) {
 }
 
 export function normalizeConfigSemantics(input) {
-  return [...configMap(input)]
+  const values = configMap(input);
+  const lines = [...values]
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([symbol, value]) => `CONFIG_${symbol}=${value}`)
-    .join('\n') + (configMap(input).size ? '\n' : '');
+    .map(([symbol, value]) => `CONFIG_${symbol}=${value}`);
+  return lines.length ? `${lines.join('\n')}\n` : '';
 }
 
 export function configSemanticHash(input) {
