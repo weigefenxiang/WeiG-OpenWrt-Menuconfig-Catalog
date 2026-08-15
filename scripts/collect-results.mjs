@@ -249,6 +249,9 @@ if (!dataAssets.length) fatalErrors.push('没有本次成功数据或历史 last
 const complete = attempts.length > 0 && branches.length === attempts.length &&
   branches.every((item) => item.attemptStatus === 'success' &&
     item.publishState === 'fresh' && item.issues.length === 0) && warnings.length === 0;
+if (process.env.GITHUB_REF_NAME === 'fix-E' && !complete) {
+  fatalErrors.push('E Catalog snapshot is incomplete; catalog-fix-E publication is fail-closed');
+}
 const manifest = {
   schema: 2,
   collectedAt: new Date().toISOString(),
