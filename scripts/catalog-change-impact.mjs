@@ -16,7 +16,6 @@ const REGISTRY = Object.freeze({
     'scripts/compatibility-rules.mjs',
   ]),
   full: Object.freeze([
-    '.github/workflows/catalog.yml',
     'catalog.config.json',
     'translations/menu-i18n.json',
     'translations/zh-CN.json',
@@ -33,6 +32,7 @@ const REGISTRY = Object.freeze({
     'scripts/source-policy.mjs',
   ]),
   none: Object.freeze([
+    '.github/workflows/catalog.yml',
     'package.json',
     'scripts/benchmark-profile-wire-format.mjs',
     'scripts/catalog-change-impact.mjs',
