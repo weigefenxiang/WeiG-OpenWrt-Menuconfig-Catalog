@@ -24,7 +24,7 @@ const FIXED_IDENTITY_SYMBOLS = Object.freeze(['TARGET_BOARD', 'TARGET_SUBTARGET'
 export const PROFILE_GROUP_SCHEMA = 3;
 export const PROFILE_GROUP_ENCODING = 'branch-common-plus-exact-config-groups-v1';
 export const PROFILE_GROUP_FIELDS = Object.freeze([
-  'target', 'board', 'subtarget', 'profile', 'name', 'selector', 'targetSelector',
+  'target', 'board', 'subtarget', 'profile', 'name', 'boardSelector', 'selector', 'targetSelector',
   'nativeHash', 'symbolCount', 'groupId',
 ]);
 export const PROFILE_GROUP_STATE_GROUPS = Object.freeze(['n', 'm', 'y', 'otherIndexValue']);
@@ -244,7 +244,7 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
   const profiles = rows.map((row, index) => {
     const meta = topology.profiles[index];
     return [
-      meta.target, meta.board, meta.subtarget, meta.profile, meta.name, meta.selector, meta.targetSelector,
+      meta.target, meta.board, meta.subtarget, meta.profile, meta.name, meta.boardSelector, meta.selector, meta.targetSelector,
       configSemanticHash(row.values), row.values.size, groupIds[index],
     ];
   });
@@ -257,7 +257,7 @@ export function buildProfileGroupDocument(rows, source, options = {}) {
     const values = reconstructSemantic(symbols, commonGroups, groupRows[groupIds[index]]);
     for (const [symbol, value] of deriveIdentityValues(topology, identityProfileIndexes[index])) values.set(symbol, value);
     const parity = compareConfigSemantics(rows[index].values, values);
-    if (!parity.equal || parity.leftHash !== profiles[index][7]) reconstructionMismatches += 1;
+    if (!parity.equal || parity.leftHash !== profiles[index][8]) reconstructionMismatches += 1;
   }
   if (reconstructionMismatches) throw new Error(`Profile Config Group reconstruction mismatches: ${reconstructionMismatches}`);
 
@@ -459,7 +459,7 @@ async function main() {
   }
 }
 
-const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
 if (invokedDirectly) main().catch((error) => {
   console.error(error.stack || error.message);
   process.exitCode = 1;
