@@ -16,31 +16,39 @@ assert.deepEqual(PROFILE_GROUP_FIELDS, [
 ]);
 assert.deepEqual(PROFILE_GROUP_STATE_GROUPS, ['n', 'm', 'y', 'otherIndexValue']);
 
-const entry = (target, subtarget, profile, selector, targetSelector) => ({
-  target: { id: target, board: 'x86', subtarget },
+const entry = (target, board, subtarget, profile, selector, targetSelector, boardSelector = `TARGET_${board}`) => ({
+  target: { id: target, board, subtarget },
   profile: { id: profile, name: profile },
-  selectors: { board: 'TARGET_x86', target: targetSelector, profile: selector },
+  selectors: { board: boardSelector, target: targetSelector, profile: selector },
   values: new Map(),
 });
 const rows = [
-  entry('x86/64', '64', 'DEVICE_a', 'TARGET_x86_64_DEVICE_a', 'TARGET_x86_64'),
-  entry('x86/64', '64', 'DEVICE_b', 'TARGET_x86_64_DEVICE_b', 'TARGET_x86_64'),
-  entry('x86', '', 'Generic', 'TARGET_x86_64', 'TARGET_x86'),
-  entry('x86/64', '64', 'Generic', 'TARGET_x86_64_Generic', 'TARGET_x86_64'),
+  entry('x86/64', 'x86', '64', 'DEVICE_a', 'TARGET_x86_64_DEVICE_a', 'TARGET_x86_64'),
+  entry('x86/64', 'x86', '64', 'DEVICE_b', 'TARGET_x86_64_DEVICE_b', 'TARGET_x86_64'),
+  entry('x86', 'x86', '', 'Generic', 'TARGET_x86_64', 'TARGET_x86'),
+  entry('x86/64', 'x86', '64', 'Generic', 'TARGET_x86_64_Generic', 'TARGET_x86_64'),
+  entry('ath25', 'ath25', '', 'Default', 'TARGET_ath25_Default', 'TARGET_ath25'),
 ];
 const topology = buildIdentityTopology(rows);
 for (let index = 0; index < rows.length; index += 1) {
   const identityIndex = index === 2 ? 3 : index;
   rows[index].values = new Map([['COMMON', 'y'], ...deriveIdentityValues(topology, identityIndex)]);
 }
+rows[4].values.set('TARGET_SUBTARGET', '"generic"');
+
 const payload = buildProfileGroupDocument(rows, { id: 'Fixture', branch: 'test', commit: 'fixture' });
-assert.equal(payload.profiles.length, 4);
+assert.equal(payload.profiles.length, 5);
 assert.equal(payload.groups.length, 1, 'identity-only differences must share one exact Config Group');
 assert.deepEqual(payload.identity.aliases, [[2, 3]], 'canonical Native identity alias must be preserved');
+assert.equal(payload.identity.overrides.length, 1, 'non-tree Native identity must use one exact override');
+assert.equal(payload.identity.overrides[0][0], 4);
+assert.equal(new Map(payload.identity.overrides[0][1]).get('TARGET_SUBTARGET'), '"generic"');
 assert.equal(payload.metrics.reconstructionMismatches, 0);
-assert.equal(payload.metrics.profilesInSharedGroups, 4);
+assert.equal(payload.metrics.profilesInSharedGroups, 5);
+assert.equal(payload.metrics.identityOverrides, 1);
 assert.equal(payload.profileFields.indexOf('boardSelector'), 5, 'Profile rows must carry the exact Catalog board selector');
-assert(payload.profiles.every((row) => row[5] === 'TARGET_x86'), 'fixture board selectors must round-trip exactly');
+assert(payload.profiles.slice(0, 4).every((row) => row[5] === 'TARGET_x86'), 'x86 board selectors must round-trip exactly');
+assert.equal(payload.profiles[4][5], 'TARGET_ath25');
 assert(!payload.symbols.some((symbol) => symbol.startsWith('TARGET_')), 'derived identity symbols must not be repeated in semantic dictionary');
 
 const changed = rows.map((row) => ({ ...row, values: new Map(row.values) }));
@@ -74,4 +82,4 @@ const ordered = await mapConcurrentOrdered([40, 10, 30, 5], async (delay, index)
 assert.equal(maxActive, 2);
 assert.deepEqual(ordered, ['row-0', 'row-1', 'row-2', 'row-3']);
 
-console.log('E Profile Config Group checks passed: exact grouping, exact board selectors, identity alias reconstruction, semantic split, grouped states, bounded workers.');
+console.log('E Profile Config Group checks passed: exact grouping, exact selectors, aliases, non-tree identity overrides, semantic split, grouped states, bounded workers.');
