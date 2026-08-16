@@ -12,12 +12,40 @@ try {
   const asset = 'applications.json.gz';
   writeFileSync(join(temp, asset), gzipSync(Buffer.from(JSON.stringify({ schema: 1, items: [] }))));
   const contract = fileContract(join(temp, asset));
+  const profileAsset = 'demo--main.profiles.json.gz';
+  writeFileSync(join(temp, profileAsset), gzipSync(Buffer.from(JSON.stringify({
+    schema: 3,
+    encoding: 'branch-common-plus-exact-config-groups-v1',
+    source: 'demo',
+    branch: 'main',
+    profiles: [],
+    groups: [],
+  }))));
+  const profileContract = fileContract(join(temp, profileAsset));
   const codeSha = '1'.repeat(40);
   const assetRef = '2'.repeat(40);
   const base = stampIndex({
     schema: 2,
     generatedAt: '2026-08-11T00:00:00Z',
-    sources: [],
+    sources: [{
+      id: 'demo',
+      branches: [{
+        id: 'main',
+        branch: 'main',
+        state: 'fresh',
+        assets: {
+          profileBaselines: {
+            asset: profileAsset,
+            hash: profileContract.hash,
+            bytes: profileContract.bytes,
+            schema: 3,
+            encoding: 'branch-common-plus-exact-config-groups-v1',
+            profiles: 1,
+            configGroups: 1,
+          },
+        },
+      }],
+    }],
     assets: { applications: { asset, hash: contract.hash, bytes: contract.bytes, schema: 1 } },
   });
   const valid = stampCatalogSnapshot(base, assetRef, {
