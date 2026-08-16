@@ -1,0 +1,38 @@
+name: E dev Profile baseline activation
+
+on:
+  push:
+    branches: [fix-E]
+    paths:
+      - ".e-dev-profile-baselines.py"
+      - ".github/workflows/e-dev-profile-baselines.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: e-dev-profile-baselines-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - name: Apply dev Profile baseline activation
+        run: python3 .e-dev-profile-baselines.py
+      - name: Remove one-shot validation files
+        run: git rm -f .e-dev-profile-baselines.py .github/workflows/e-dev-profile-baselines.yml
+      - name: Run Catalog contract tests
+        run: npm test
+      - name: Commit validated activation
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --stat
+          git commit -m "ci: enable Profile baselines on Catalog dev"
+          git push origin HEAD:fix-E
