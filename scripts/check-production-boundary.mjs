@@ -38,6 +38,8 @@ const channelContracts = [
   [translationChannel('fix-F')?.codeRef, 'fix-F', 'translation fix F code'],
   [translationChannel('fix-F')?.dataBranch, 'catalog-fix-F', 'translation fix F data'],
   [validatePromotionSource('fix-F', 'catalog-dev').targetDataBranch, 'catalog-fix-F', 'seed fix F'],
+  [validatePromotionSource('fix-F', 'catalog-fix-F').sourceCodeRef, 'fix-F', 'reuse fix F code'],
+  [validatePromotionSource('fix-F', 'catalog-fix-F').targetDataBranch, 'catalog-fix-F', 'reuse fix F data'],
   [validatePromotionSource('dev', 'catalog-fix-F').targetDataBranch, 'catalog-dev', 'promote fix F to dev'],
   [validatePromotionSource('staging', 'catalog-dev').targetDataBranch, 'catalog-staging', 'promote dev to staging'],
   [validatePromotionSource('main', 'catalog-staging').targetDataBranch, 'catalog-candidate', 'promote staging to candidate'],
@@ -49,6 +51,7 @@ for (const invalid of [
   () => validatePromotionSource('dev', 'catalog-staging'),
   () => validatePromotionSource('staging', 'catalog-fix-F'),
   () => validatePromotionSource('main', 'catalog-dev'),
+  () => validatePromotionSource('fix-F', 'catalog-staging'),
   () => validatePromotionSource('fix-F', 'catalog-candidate'),
 ]) {
   try { invalid(); failures.push('invalid Catalog promotion edge was accepted'); } catch {}
@@ -80,6 +83,8 @@ for (const [name, text] of workflows) {
 
 requireText(catalog, 'scripts/catalog-channels.mjs build', 'catalog build must use centralized channel mapping');
 requireText(catalog, 'scripts/catalog-channels.mjs validate-non-production', 'catalog writers must use centralized non-production guard');
+requireText(catalog, 'steps:\n      - uses: actions/checkout@v7\n      - name: Validate non-production publish channel',
+  'Catalog publish must checkout code before invoking channel validation scripts');
 forbidText(catalog, 'catalog-fix-[ABC]', 'Catalog workflow must not hard-code A/B/C lanes');
 forbidText(catalog, 'catalog-fix-E', 'Catalog workflow must not hard-code E lane');
 forbidText(catalog, '- "scripts/**"', 'Catalog heavy push must not watch every script');
@@ -89,6 +94,8 @@ forbidText(catalog, 'Publish complete catalog Release', 'catalog build must not 
 requireText(reuse, 'branches: [main, dev, staging, "fix-*"]', 'reuse workflow must cover canonical fix/dev/staging/main');
 requireText(reuse, 'scripts/catalog-channels.mjs validate-promotion', 'reuse workflow must validate promotion edges centrally');
 requireText(reuse, 'scripts/catalog-change-impact.mjs', 'reuse workflow must gate on data impact');
+requireText(reuse, 'source_data_branch="$target_data_branch"', 'fix reuse must prefer its existing isolated runtime snapshot');
+requireText(reuse, 'refs/heads/$target_data_branch', 'fix reuse must verify the isolated runtime branch exists before self-reuse');
 requireText(reuse, 'EXPECTED_ASSET_REF', 'reuse workflow must pin immutable asset identity');
 
 requireText(translation, 'default: candidate', 'translation default must be candidate');
