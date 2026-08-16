@@ -44,6 +44,10 @@ if (stamped.hash !== contract.hash || stamped.bytes !== contract.bytes) {
 }
 const restamped = stampCatalogSnapshot(stamped, ref, { codeRef: 'main', codeSha, complete: true });
 if (JSON.stringify(restamped) !== JSON.stringify(stamped)) throw new Error('identical snapshot stamp was not deterministic');
+const eStamped = stampCatalogSnapshot(input, ref, { codeRef: 'fix-E', codeSha, complete: true });
+if (eStamped.provenance?.codeRef !== 'fix-E' || eStamped.provenance?.complete !== true) {
+  throw new Error('E snapshot provenance was not accepted');
+}
 for (const invalid of [
   () => stampCatalogSnapshot(input, 'catalog-data'),
   () => stampCatalogSnapshot(input, ref, { codeRef: 'main', codeSha: 'bad', complete: true }),
@@ -65,6 +69,17 @@ const reuse = verifyReusableCatalogSnapshot(reusable, {
 if (reuse.assetRef !== ref || reuse.complete !== true) {
   throw new Error('reusable snapshot verification changed immutable identity');
 }
+const reusableE = stampCatalogSnapshot(input, ref, {
+  codeRef: 'fix-E', codeSha: previousCodeSha, complete: true,
+});
+const reuseE = verifyReusableCatalogSnapshot(reusableE, {
+  repository: 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog',
+  codeRef: 'fix-E',
+  previousCodeSha,
+});
+if (reuseE.assetRef !== ref || reuseE.complete !== true) {
+  throw new Error('E reusable snapshot verification changed immutable identity');
+}
 for (const invalidReuse of [
   () => verifyReusableCatalogSnapshot(reusable, { repository: 'other/repo', codeRef: 'dev', previousCodeSha }),
   () => verifyReusableCatalogSnapshot(reusable, { repository: 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog', codeRef: 'staging', previousCodeSha }),
@@ -83,7 +98,7 @@ try {
     fileURLToPath(new URL('./stamp-catalog-snapshot.mjs', import.meta.url)),
     file,
     ref,
-    'main',
+    'fix-E',
     codeSha,
     'true',
   ], { encoding: 'utf8' });
@@ -91,16 +106,17 @@ try {
     throw new Error(`snapshot CLI failed: ${result.stderr || result.stdout}`);
   }
   const cli = JSON.parse(readFileSync(file, 'utf8'));
-  if (cli.assetRef !== ref || cli.hash !== indexContract(cli).hash || cli.provenance?.codeSha !== codeSha) {
-    throw new Error('snapshot CLI wrote an invalid index contract');
+  if (cli.assetRef !== ref || cli.hash !== indexContract(cli).hash || cli.provenance?.codeRef !== 'fix-E' ||
+      cli.provenance?.codeSha !== codeSha) {
+    throw new Error('snapshot CLI wrote an invalid E index contract');
   }
 
-  writeFileSync(file, JSON.stringify(reusable, null, 2) + '\n');
+  writeFileSync(file, JSON.stringify(reusableE, null, 2) + '\n');
   const reuseResult = spawnSync(process.execPath, [
     fileURLToPath(new URL('./stamp-catalog-snapshot.mjs', import.meta.url)),
     file,
     ref,
-    'dev',
+    'fix-E',
     codeSha,
     '',
     previousCodeSha,
@@ -112,9 +128,9 @@ try {
     throw new Error(`snapshot reuse CLI failed: ${reuseResult.stderr || reuseResult.stdout}`);
   }
   const promoted = JSON.parse(readFileSync(file, 'utf8'));
-  if (promoted.assetRef !== ref || promoted.provenance?.codeRef !== 'dev' ||
+  if (promoted.assetRef !== ref || promoted.provenance?.codeRef !== 'fix-E' ||
       promoted.provenance?.codeSha !== codeSha || promoted.provenance?.complete !== true) {
-    throw new Error('snapshot reuse CLI did not preserve assets while advancing provenance');
+    throw new Error('snapshot reuse CLI did not preserve E assets while advancing provenance');
   }
 } finally {
   rmSync(temp, { recursive: true, force: true });
