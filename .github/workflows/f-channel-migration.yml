@@ -40,6 +40,18 @@ jobs:
           PY
       - name: Apply complete intended migration in workspace
         run: python3 .f-channel-migration.py
+      - name: Align release trigger regression with Data Surface Gate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/check-release-publication.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = '''for (const needle of [\n  '- "scripts/**"',\n  '- "translations/**"',\n  '- "*.json"',\n  '- ".github/workflows/catalog.yml"',\n  'node scripts/catalog-change-impact.mjs',\n  "needs.mode.outputs.mode == 'full'",\n  "needs.mode.outputs.mode == 'root-assets'",\n]) {\n  assert(catalog.includes(needle), `catalog trigger/router contract missing: ${needle}`);\n}\nfor (const legacy of ['!scripts/package-probe-*.mjs', '!scripts/run-package-probe.mjs',\n  '!scripts/write-package-probe-evidence.mjs']) {\n  assert(!catalog.includes(legacy), `legacy trigger blacklist returned: ${legacy}`);\n}\n'''
+          new = '''for (const needle of [\n  '- "catalog.config.json"',\n  '- "compatibility.json"',\n  '- "curated-sizes.json"',\n  '- "translations/menu-i18n.json"',\n  '- "translations/zh-CN.json"',\n  '- "translations/probe-ui.json"',\n  '- "scripts/generate-catalog.mjs"',\n  '- "scripts/build-index.mjs"',\n  'node scripts/catalog-change-impact.mjs',\n  "needs.mode.outputs.mode == 'full'",\n  "needs.mode.outputs.mode == 'root-assets'",\n]) {\n  assert(catalog.includes(needle), `catalog runtime trigger/router contract missing: ${needle}`);\n}\nfor (const forbidden of [\n  '- "scripts/**"', '- "translations/**"', '- "*.json"', '- ".github/workflows/catalog.yml"',\n  '!scripts/package-probe-*.mjs', '!scripts/run-package-probe.mjs', '!scripts/write-package-probe-evidence.mjs',\n]) {\n  assert(!catalog.includes(forbidden), `non-runtime Catalog trigger returned: ${forbidden}`);\n}\n'''
+          if text.count(old) != 1:
+              raise SystemExit('release trigger contract anchor changed')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+          PY
       - name: Run Catalog contract suite
         run: npm test
       - name: Restore workflow files before bot commit
@@ -56,6 +68,7 @@ jobs:
             scripts/check-catalog-change-impact.mjs \
             scripts/check-catalog-snapshot.mjs \
             scripts/check-production-boundary.mjs \
+            scripts/check-release-publication.mjs \
             .f-output-catalog.yml \
             .f-output-catalog-reuse.yml \
             .f-output-catalog-production.yml \
