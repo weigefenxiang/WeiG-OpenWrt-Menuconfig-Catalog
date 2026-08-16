@@ -44,7 +44,13 @@ jobs:
           set -euo pipefail
           source_data_branch="$SOURCE_OVERRIDE"
           if [[ -z "$source_data_branch" ]]; then
-            eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+            target_data_branch="$(node scripts/catalog-channels.mjs build "$GITHUB_REF_NAME")"
+            if [[ "$GITHUB_REF_NAME" == fix-* ]] &&
+               git ls-remote --exit-code --heads origin "refs/heads/$target_data_branch" >/dev/null 2>&1; then
+              source_data_branch="$target_data_branch"
+            else
+              eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+            fi
           fi
           node scripts/catalog-channels.mjs validate-promotion "$GITHUB_REF_NAME" "$source_data_branch" | tee "$RUNNER_TEMP/promotion.outputs"
           cat "$RUNNER_TEMP/promotion.outputs" >> "$GITHUB_OUTPUT"
