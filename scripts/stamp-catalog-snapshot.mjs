@@ -6,6 +6,7 @@ import { indexBody, stampIndex } from './index-contract.mjs';
 
 export const GIT_COMMIT_RE = /^[0-9a-f]{40}$/;
 const CODE_REF_RE = /^(?:main|dev|staging|fix-[A-Za-z0-9][A-Za-z0-9._-]{0,95}|fix\/[A-Za-z0-9._/-]+)$/;
+const SHA256_RE = /^[0-9a-f]{64}$/;
 
 function normalizeComplete(value, fallback) {
   if (value === undefined || value === null || value === '') return fallback;
@@ -27,6 +28,32 @@ export function catalogProvenance(existing = {}, { codeRef = '', codeSha = '', c
     codeSha: normalizedSha,
     complete: normalizeComplete(complete, current.complete === true),
   };
+}
+
+export function verifyCatalogRuntimeSurface(index) {
+  if (!index || typeof index !== 'object' || !Array.isArray(index.sources)) {
+    throw new Error('Catalog runtime surface requires an index sources array');
+  }
+  let checked = 0;
+  for (const source of index.sources) {
+    for (const branch of source.branches || []) {
+      if (branch?.state === 'unavailable') continue;
+      const contract = branch?.assets?.profileBaselines;
+      const identity = `${source?.id || 'unknown'}/${branch?.branch || branch?.id || 'unknown'}`;
+      if (!contract || typeof contract !== 'object' ||
+          !/^[A-Za-z0-9._-]+\.profiles\.json\.gz$/.test(String(contract.asset || '')) ||
+          !SHA256_RE.test(String(contract.hash || '').toLowerCase()) ||
+          !Number.isSafeInteger(Number(contract.bytes)) || Number(contract.bytes) <= 0 ||
+          Number(contract.schema || 0) < 3 || !String(contract.encoding || '').trim() ||
+          !Number.isSafeInteger(Number(contract.profiles)) || Number(contract.profiles) <= 0 ||
+          !Number.isSafeInteger(Number(contract.configGroups)) || Number(contract.configGroups) <= 0) {
+        throw new Error(`Catalog runtime Profile baseline contract is missing or invalid: ${identity}`);
+      }
+      checked += 1;
+    }
+  }
+  if (!checked) throw new Error('Catalog runtime surface has no available Profile baseline contracts');
+  return { profileBaselineBranches: checked };
 }
 
 export function verifyReusableCatalogSnapshot(index, {
@@ -62,6 +89,7 @@ export function verifyReusableCatalogSnapshot(index, {
   if (typeof provenance.complete !== 'boolean') {
     throw new Error('reusable Catalog provenance complete must be boolean');
   }
+  if (provenance.complete === true) verifyCatalogRuntimeSurface(index);
   return { assetRef, complete: provenance.complete };
 }
 
@@ -77,6 +105,7 @@ export function stampCatalogSnapshot(index, assetRef, provenance = {}) {
   };
   const normalizedProvenance = catalogProvenance(body.provenance, provenance);
   if (Object.keys(normalizedProvenance).length) body.provenance = normalizedProvenance;
+  if (normalizedProvenance.complete === true) verifyCatalogRuntimeSurface(body);
   return stampIndex(body);
 }
 
