@@ -76,8 +76,17 @@ export function validateProfileBaselineDocument(document, {
       document.kind !== 'profile-baselines' || Number(document.schema || 0) < 3 ||
       !String(document.encoding || '').trim() || !Array.isArray(document.symbols) ||
       !Array.isArray(document.common) || !Array.isArray(document.groups) ||
-      !Array.isArray(document.profiles) || !document.identity || typeof document.identity !== 'object') {
+      !Array.isArray(document.profiles) || !Array.isArray(document.profileFields) ||
+      !Array.isArray(document.stateGroups) || document.stateGroups.length !== 4 ||
+      !document.identity || typeof document.identity !== 'object' ||
+      !String(document.identity.mode || '').trim() ||
+      !Array.isArray(document.identity.targetOverrides) || !Array.isArray(document.identity.aliases) ||
+      !Array.isArray(document.identity.overrides)) {
     throw new Error('invalid Native Profile baseline document');
+  }
+  if (document.groups.some((group) => !Array.isArray(group) || group.length !== document.stateGroups.length) ||
+      document.profiles.some((profile) => !Array.isArray(profile) || profile.length !== document.profileFields.length)) {
+    throw new Error('invalid Native Profile baseline row shape');
   }
   const source = document.source && typeof document.source === 'object' ? document.source : {};
   if (sourceId && String(source.id || '') !== String(sourceId)) {
