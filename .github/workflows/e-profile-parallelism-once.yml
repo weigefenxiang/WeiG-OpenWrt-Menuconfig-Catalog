@@ -1,0 +1,41 @@
+name: E Profile parallelism one-shot
+
+on:
+  push:
+    branches: [fix-E]
+    paths:
+      - ".github/workflows/e-profile-parallelism-once.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: e-profile-parallelism-once
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix-E
+          fetch-depth: 0
+      - name: Apply Profile parallelism optimization
+        run: python3 .e-profile-parallelism-once.py
+      - name: Remove one-shot controls
+        run: rm .e-profile-parallelism-once.py .github/workflows/e-profile-parallelism-once.yml
+      - name: Run focused Profile Group checks
+        run: node scripts/check-profile-config-groups.mjs
+      - name: Run full Catalog checks
+        run: npm test
+      - name: Commit final optimization
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "perf: scale Profile config generation to available CPUs"
+          git push origin HEAD:fix-E
