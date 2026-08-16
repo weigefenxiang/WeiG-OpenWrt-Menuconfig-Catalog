@@ -188,6 +188,20 @@ function ensureCommitAvailable(sha, cwd = ROOT) {
   }
 }
 
+function ensureAncestorAvailable(base, target, cwd = ROOT) {
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
+    return;
+  } catch (initialError) {
+    const shallow = gitText(['rev-parse', '--is-shallow-repository'], cwd);
+    if (shallow !== 'true') throw initialError;
+    execFileSync('git', ['fetch', '--no-tags', '--unshallow', 'origin'], { cwd, stdio: 'ignore' });
+    ensureCommitAvailable(base, cwd);
+    ensureCommitAvailable(target, cwd);
+    execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
+  }
+}
+
 function readRemoteSnapshot(dataBranch, cwd = ROOT) {
   const remoteRef = `refs/remotes/origin/${dataBranch}`;
   execFileSync('git', [
@@ -203,7 +217,7 @@ export function catalogImpactBetweenCommits(baseSha, targetSha, { cwd = ROOT } =
   if (!GIT_SHA_RE.test(base) || !GIT_SHA_RE.test(target)) throw new Error('Catalog snapshot comparison requires full Git SHAs');
   ensureCommitAvailable(base, cwd);
   ensureCommitAvailable(target, cwd);
-  execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
+  ensureAncestorAvailable(base, target, cwd);
   const output = gitText(['diff', '--name-only', base, target], cwd);
   const changed = output ? output.split(/\r?\n/).filter(Boolean) : [];
   return catalogChangeImpact(changed);
