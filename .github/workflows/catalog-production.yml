@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: catalog-write-catalog-data
+  group: catalog-write-catalog-main
   cancel-in-progress: false
 
 jobs:
@@ -49,19 +49,19 @@ jobs:
           asset_ref="$(node -e "const i=require('./candidate/index.json'); process.stdout.write(i.assetRef)")"
           git -C candidate cat-file -e "${asset_ref}^{commit}"
           git -C candidate merge-base --is-ancestor "$asset_ref" "${{ steps.candidate.outputs.candidate_sha }}"
-      - name: Promote exact snapshot to catalog-data
+      - name: Promote exact snapshot to catalog-main
         id: data
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
-          production_ref="$(git ls-remote --heads "$remote" refs/heads/catalog-data)"
+          production_ref="$(git ls-remote --heads "$remote" refs/heads/catalog-main)"
           if [[ -n "$production_ref" ]]; then
-            git clone --single-branch --branch catalog-data "$remote" production
+            git clone --single-branch --branch catalog-main "$remote" production
           else
             git init production
-            git -C production checkout -b catalog-data
+            git -C production checkout -b catalog-main
             git -C production remote add origin "$remote"
           fi
           git -C production config user.name github-actions[bot]
@@ -69,10 +69,10 @@ jobs:
           rsync -a --delete --exclude=.git candidate/ production/
           git -C production add -A
           if git -C production diff --cached --quiet; then
-            echo "catalog-data already matches the verified candidate."
+            echo "catalog-main already matches the verified candidate."
           else
             git -C production commit -m "data: promote catalog candidate"
-            git -C production push origin HEAD:catalog-data
+            git -C production push origin HEAD:catalog-main
           fi
           echo "production_sha=$(git -C production rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Publish complete catalog Release alias
@@ -92,5 +92,5 @@ jobs:
             echo "- Code: \`${GITHUB_SHA}\`"
             echo "- Candidate: \`${{ steps.candidate.outputs.candidate_sha }}\`"
             echo "- Asset snapshot: \`${{ steps.verify.outputs.asset_ref }}\`"
-            echo "- catalog-data: \`${{ steps.data.outputs.production_sha }}\`"
+            echo "- catalog-main: \`${{ steps.data.outputs.production_sha }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

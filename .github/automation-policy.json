@@ -8,13 +8,6 @@
     "normalizedEvidenceDays": 60,
     "fullLogDays": 30,
     "timeoutMinutes": 360,
-    "maxAutoTargetAttempts": 8,
-    "reductionMaxAttempts": {
-      "package-compile": 8,
-      "rootfs-integration": 4,
-      "firmware-integration": 2,
-      "boot-smoke": 0
-    },
     "preferredTargetPatterns": [
       "x86/64",
       "*"
@@ -28,7 +21,14 @@
       "firmware-integration": 360,
       "boot-smoke": 360
     },
-    "maxPackageConfigBytes": 131072
+    "maxPackageConfigBytes": 131072,
+    "autoCoverageLimits": {
+      "package-compile": 200,
+      "rootfs-integration": 100,
+      "firmware-integration": 30,
+      "boot-smoke": 10
+    },
+    "maxAutoCoverage": 256
   },
   "translation": {
     "defaultDataBranch": "catalog-candidate",

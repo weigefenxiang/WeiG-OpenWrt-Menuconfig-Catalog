@@ -6,23 +6,30 @@ on:
   schedule:
     - cron: "17 19 * * 6"
   push:
-    branches: [main, dev, staging, "fix/**"]
+    branches: [main, dev, staging, "fix-*", "fix/**"]
+    # Only inputs that can change browser/build runtime Catalog data start this heavy workflow.
+    # Control-plane/test/performance changes are covered by Probe contracts + catalog-reuse.
     paths:
-      - "scripts/**"
-      - "!scripts/check-*.mjs"
-      - "!scripts/package-probe-*.mjs"
-      - "!scripts/run-package-probe.mjs"
-      - "!scripts/write-package-probe-evidence.mjs"
-      - "!scripts/translate-*.mjs"
-      - "!scripts/translation-*.mjs"
-      - "!scripts/sync-translation-assets.mjs"
-      - "!scripts/resolve-translation-provider.mjs"
-      - "!scripts/write-translation-summary.mjs"
       - "catalog.config.json"
       - "compatibility.json"
       - "curated-sizes.json"
-      - "translations/**"
-      - ".github/workflows/catalog.yml"
+      - "translations/menu-i18n.json"
+      - "translations/zh-CN.json"
+      - "translations/probe-ui.json"
+      - "scripts/build-index.mjs"
+      - "scripts/clone-upstream.sh"
+      - "scripts/compact-relations.mjs"
+      - "scripts/compatibility-rules.mjs"
+      - "scripts/curated-applications.mjs"
+      - "scripts/discover.mjs"
+      - "scripts/generate-catalog.mjs"
+      - "scripts/generate-profile-config-groups.mjs"
+      - "scripts/index-contract.mjs"
+      - "scripts/kconfig-relations.mjs"
+      - "scripts/lib.mjs"
+      - "scripts/prepare-metadata.sh"
+      - "scripts/profile-config-contract.mjs"
+      - "scripts/source-policy.mjs"
 
 permissions:
   contents: write
@@ -36,7 +43,8 @@ jobs:
     name: 00 · Select publish mode / 选择发布模式
     runs-on: ubuntu-24.04
     outputs:
-      fast_asset: ${{ steps.mode.outputs.fast_asset }}
+      mode: ${{ steps.mode.outputs.mode }}
+      fast_assets: ${{ steps.mode.outputs.fast_assets }}
       data_branch: ${{ steps.channel.outputs.data_branch }}
     steps:
       - uses: actions/checkout@v7
@@ -46,27 +54,28 @@ jobs:
         name: Resolve isolated data channel / 解析隔离数据通道
         run: echo "data_branch=$(node scripts/catalog-channels.mjs build "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
       - id: mode
-        name: Detect root-asset-only push
+        name: Classify Catalog change impact / 判定 Catalog 变更影响
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: |
-          fast_asset=none
+          mode=full
+          fast_assets=
           if [[ "$GITHUB_EVENT_NAME" == push && "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
                 "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]] &&
              git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
             mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
-            if [[ "${#changed[@]}" -eq 1 && "${changed[0]}" == compatibility.json ]]; then
-              fast_asset=compatibility
-            elif [[ "${#changed[@]}" -eq 1 && "${changed[0]}" == curated-sizes.json ]]; then
-              fast_asset=applications
-            fi
+            node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"
+            mode="$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
+            fast_assets="$(sed -n 's/^fast_assets=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
+            test -n "$mode"
           fi
-          echo "fast_asset=$fast_asset" >> "$GITHUB_OUTPUT"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "fast_assets=$fast_assets" >> "$GITHUB_OUTPUT"
 
   discover:
     name: 01 · Discover / 发现源码分支
     needs: mode
-    if: needs.mode.outputs.fast_asset == 'none'
+    if: needs.mode.outputs.mode == 'full'
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -107,7 +116,7 @@ jobs:
     name: ${{ matrix.jobName }}
     needs: discover
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       CATALOG_SOURCE_ID: ${{ matrix.source }}
       CATALOG_SOURCE_LABEL: ${{ matrix.label }}
@@ -170,6 +179,16 @@ jobs:
             --source-id "${{ matrix.source }}" \
             --branch "${{ matrix.branch }}" \
             --out dist
+      - name: Generate E Native Profile Config Groups / 生成 E 原生 Profile 配置组
+        id: experiment
+        if: steps.kconfig_contract.outcome == 'success'
+        timeout-minutes: 45
+        run: |
+          bash scripts/run-stage.sh profile-config-groups node scripts/generate-profile-config-groups.mjs \
+            --tree work/upstream \
+            --source-id "${{ matrix.source }}" \
+            --branch "${{ matrix.branch }}" \
+            --out dist
       - name: Record branch attempt
         if: always()
         env:
@@ -195,6 +214,8 @@ jobs:
           METADATA_OUTCOME: ${{ steps.metadata.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
           KCONFIG_CONTRACT_OUTCOME: ${{ steps.kconfig_contract.outcome }}
+          EXPERIMENT_STAGE: ${{ steps.kconfig_contract.outcome == 'success' && 'profile-config-groups' || '' }}
+          EXPERIMENT_OUTCOME: ${{ steps.experiment.outcome }}
         run: node scripts/write-attempt.mjs
       - name: Upload branch result
         if: always()
@@ -215,56 +236,71 @@ jobs:
           if-no-files-found: error
 
   publish-root-asset:
-    name: 02 · Publish ${{ needs.mode.outputs.fast_asset }} only / 仅发布根资产
+    name: 02 · Publish root assets only / 仅发布根资产
     needs: mode
-    if: needs.mode.outputs.fast_asset != 'none'
+    if: needs.mode.outputs.mode == 'root-assets'
     runs-on: ubuntu-24.04
     concurrency:
       group: catalog-write-${{ needs.mode.outputs.data_branch }}
       cancel-in-progress: false
     env:
       CATALOG_DATA_BRANCH: ${{ needs.mode.outputs.data_branch }}
-      FAST_ASSET: ${{ needs.mode.outputs.fast_asset }}
+      FAST_ASSETS: ${{ needs.mode.outputs.fast_assets }}
     steps:
-      - name: Validate non-production publish channel
-        run: |
-          case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-dev|catalog-staging|catalog-candidate) ;;
-            *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
-          esac
       - uses: actions/checkout@v7
-      - name: Fetch only the current root-asset contract
+      - name: Validate non-production publish channel
+        run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
+      - name: Fetch current root-asset contracts
         run: |
-          case "$FAST_ASSET" in
-            compatibility|applications) ;;
-            *) echo "unsupported fast asset: $FAST_ASSET"; exit 1 ;;
-          esac
-          git clone --filter=blob:none --no-checkout --single-branch \
-            --branch "$CATALOG_DATA_BRANCH" \
-            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" previous
+          IFS=',' read -ra assets <<< "$FAST_ASSETS"
+          test "${#assets[@]}" -gt 0
+          sparse=(/index.json)
+          for asset in "${assets[@]}"; do
+            case "$asset" in
+              compatibility|applications) ;;
+              *) echo "unsupported fast asset: $asset"; exit 1 ;;
+            esac
+            sparse+=("/$asset.json.gz")
+          done
+          remote="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          if git ls-remote --exit-code --heads "$remote" "refs/heads/$CATALOG_DATA_BRANCH" >/dev/null 2>&1; then
+            git clone --filter=blob:none --no-checkout --single-branch --branch "$CATALOG_DATA_BRANCH" "$remote" previous
+          else
+            eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+            node scripts/catalog-channels.mjs validate-promotion "$GITHUB_REF_NAME" "$source_data_branch" >/dev/null
+            git clone --filter=blob:none --no-checkout --single-branch --branch "$source_data_branch" "$remote" previous
+            git -C previous checkout -b "$CATALOG_DATA_BRANCH"
+          fi
           git -C previous sparse-checkout init --no-cone
-          git -C previous sparse-checkout set /index.json "/$FAST_ASSET.json.gz"
+          git -C previous sparse-checkout set "${sparse[@]}"
           git -C previous checkout "$CATALOG_DATA_BRANCH"
           test -f previous/index.json
-          test -f "previous/$FAST_ASSET.json.gz"
-      - name: Rebuild root-asset contract
-        run: node scripts/build-index.mjs "--$FAST_ASSET-only" previous/index.json previous/index.json
-      - name: Publish root-asset contract
+          for asset in "${assets[@]}"; do test -f "previous/$asset.json.gz"; done
+      - name: Rebuild root-asset contracts
+        run: |
+          IFS=',' read -ra assets <<< "$FAST_ASSETS"
+          for asset in "${assets[@]}"; do
+            node scripts/build-index.mjs "--$asset-only" previous/index.json previous/index.json
+          done
+      - name: Publish root-asset contracts
         run: |
           set -euo pipefail
+          IFS=',' read -ra assets <<< "$FAST_ASSETS"
           git -C previous config user.name github-actions[bot]
           git -C previous config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git -C previous add --sparse index.json "$FAST_ASSET.json.gz"
+          add=(index.json)
+          for asset in "${assets[@]}"; do add+=("$asset.json.gz"); done
+          git -C previous add --sparse "${add[@]}"
           if git -C previous diff --cached --quiet; then
-            echo "$FAST_ASSET contract is unchanged; nothing to publish."
+            echo "Root asset contracts are unchanged; nothing to publish."
             exit 0
           fi
-          git -C previous commit -m "data: refresh $FAST_ASSET asset"
+          git -C previous commit -m "data: refresh Catalog root assets"
           asset_commit="$(git -C previous rev-parse HEAD)"
           node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA"
           git -C previous add --sparse index.json
           if ! git -C previous diff --cached --quiet; then
-            git -C previous commit -m "data: pin $FAST_ASSET snapshot"
+            git -C previous commit -m "data: pin Catalog root assets"
           fi
           git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"
 
@@ -286,13 +322,9 @@ jobs:
       CATALOG_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       CATALOG_ARTIFACT_NAME: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
     steps:
-      - name: Validate non-production publish channel
-        run: |
-          case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-dev|catalog-staging|catalog-candidate) ;;
-            *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
-          esac
       - uses: actions/checkout@v7
+      - name: Validate non-production publish channel
+        run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
       - uses: actions/download-artifact@v8
         with:
           pattern: "*-catalog-*"

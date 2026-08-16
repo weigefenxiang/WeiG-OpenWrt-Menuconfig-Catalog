@@ -16,6 +16,9 @@ const steps = [
   ['extract', process.env.EXTRACT_OUTCOME],
   ['kconfig-contract', process.env.KCONFIG_CONTRACT_OUTCOME],
 ];
+if (process.env.EXPERIMENT_STAGE && process.env.EXPERIMENT_OUTCOME) {
+  steps.push([process.env.EXPERIMENT_STAGE, process.env.EXPERIMENT_OUTCOME]);
+}
 const failed = steps.find(([, outcome]) => outcome && outcome !== 'success' && outcome !== 'skipped');
 const status = process.env.JOB_STATUS === 'success' ? 'success' : 'failure';
 const outDir = resolve(process.env.ATTEMPT_DIR || 'attempts');

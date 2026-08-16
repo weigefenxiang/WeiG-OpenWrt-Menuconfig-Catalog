@@ -5,43 +5,29 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { parseProbeStateToken } from './package-probe-state.mjs';
+import { normalizeProbeRequest } from './package-probe-controller.mjs';
 
 const WRITE_PERMISSIONS = new Set(['admin', 'maintain', 'write']);
-const MODES = new Set(['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke']);
 const PROBE_TITLE_RE = /^\[probe\](?:\s|$)/i;
-const CHANNEL_RE = /^(?:main|dev|staging|fix\/[A-Za-z0-9._/-]{1,150})$/;
-const PACKAGE_LINE_RE = /^CONFIG_PACKAGE_[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}=[my]$/;
-const RUN_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_RUN_V2\s+run=(\d+)\s+sha=([a-f0-9]{64})\s*-->/gi;
-const INTAKE_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_INTAKE_V2\s+sha=([a-f0-9]{64})\s*-->/i;
+const RUN_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_RUN_V3\s+run=(\d+)\s+sha=([a-f0-9]{64})(?:\s+batch=(\d+))?\s*-->/gi;
+const INTAKE_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_INTAKE_V3\s+sha=([a-f0-9]{64})\s*-->/i;
 const CANCEL_MARKER = '<!-- WEIG_PACKAGE_PROBE_CANCEL_V1 -->';
 
 const plainObject = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
 export function normalizeGatewayRequest(raw) {
-  if (!plainObject(raw) || Number(raw.schema) !== 2) throw new Error('Probe state requires schema 2');
-  const channel = String(raw.channel || 'main').trim();
-  if (!CHANNEL_RE.test(channel) || channel.includes('..') || channel.endsWith('/')) {
-    throw new Error(`unsupported probe channel: ${channel}`);
-  }
-  const mode = String(raw.mode || 'package-compile');
-  if (!MODES.has(mode)) throw new Error(`unsupported probe mode: ${mode}`);
-  const packageConfig = String(raw.packageConfig || '').replace(/\r\n/g, '\n').trim();
-  if (!packageConfig || Buffer.byteLength(packageConfig, 'utf8') > 131072) {
-    throw new Error('packageConfig is empty or too large');
-  }
-  const lines = packageConfig.split('\n');
-  if (lines.some((line) => !PACKAGE_LINE_RE.test(line))) {
-    throw new Error('packageConfig contains an invalid PACKAGE_* state');
-  }
-  if (!plainObject(raw.scope) || !plainObject(raw.targetPolicy)) {
-    throw new Error('Probe scope and target policy are required');
-  }
+  const request = normalizeProbeRequest(raw);
   return {
-    channel,
-    mode,
-    packages: [...new Set(lines.map((line) => line.slice('CONFIG_PACKAGE_'.length, line.lastIndexOf('='))))],
+    channel: request.channel,
+    mode: request.mode,
+    useDefconfig: request.useDefconfig,
+    roots: request.roots,
+    finalPackageCount: request.packages.length,
+    environmentScope: request.environmentScope,
+    coverage: request.coverage,
   };
 }
+
 
 export function probeIssueCommand(body) {
   return String(body || '').trim().toLowerCase() === '/cancel' ? 'cancel' : '';
@@ -55,7 +41,7 @@ export function probeRunMarkers(comments) {
   const rows = [];
   for (const comment of comments || []) {
     for (const match of String(comment?.body || '').matchAll(RUN_MARKER_RE)) {
-      rows.push({ runId: Number(match[1]), sha256: match[2] });
+      rows.push({ runId: Number(match[1]), sha256: match[2], batchIndex: Number(match[3] || 0) });
     }
   }
   return [...new Map(rows.map((row) => [row.runId, row])).values()];
@@ -141,7 +127,8 @@ async function closeIssue(api, owner, repo, number) {
 async function workerSupportsGateway(api, owner, repo, channel) {
   const data = await api(`/repos/${owner}/${repo}/contents/.github/workflows/package-probe.yml?ref=${encodeURIComponent(channel)}`);
   const text = Buffer.from(String(data?.content || '').replace(/\s+/g, ''), 'base64').toString('utf8');
-  return ['issue_number:', 'state_sha256:', 'issue_created_at:'].every((needle) => text.includes(needle));
+  return ['issue_number:', 'state_sha256:', 'issue_created_at:', 'batch_index:', 'sampling_seed:', 'data_commit:']
+    .every((needle) => text.includes(needle));
 }
 
 async function cancelRun(api, owner, repo, runId) {
@@ -188,9 +175,12 @@ async function intake(env, event) {
     `@${requester}`, '', 'Request accepted / 请求已接收', '',
     `- Channel / 通道: \`${request.channel}\``,
     `- Mode / 深度: \`${request.mode}\``,
-    `- Packages / 软件包: ${request.packages.map((row) => `\`${row}\``).join(', ')}`,
+    `- Probe roots / 测试入口: ${request.roots.map((row) => `\`${row}\``).join(', ')}`,
+    `- Final enabled packages / 最终启用软件包: ${request.finalPackageCount}`,
+    `- Defconfig: \`${request.useDefconfig ? 'on' : 'off'}\``,
+    `- Coverage / 覆盖: \`${request.coverage.mode}${request.coverage.mode === 'auto' ? ` <= ${request.coverage.limit}` : ''}\``,
     '', 'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。', '',
-    `<!-- WEIG_PACKAGE_PROBE_INTAKE_V2 sha=${parsedState.sha256} -->`,
+    `<!-- WEIG_PACKAGE_PROBE_INTAKE_V3 sha=${parsedState.sha256} -->`,
   ].join('\n'));
   const [currentIssue, beforeDispatch] = await Promise.all([
     api(`/repos/${owner}/${repo}/issues/${issue.number}`), issueComments(api, owner, repo, issue.number),
@@ -207,6 +197,9 @@ async function intake(env, event) {
         issue_number: String(issue.number),
         state_sha256: parsedState.sha256,
         issue_created_at: String(issue.created_at || ''),
+        batch_index: '0',
+        sampling_seed: '',
+        data_commit: '',
       },
       return_run_details: true,
     },
@@ -216,7 +209,7 @@ async function intake(env, event) {
   await comment(api, owner, repo, issue.number, [
     'Probe started / 探针已启动', '', `Run / 运行: ${dispatched.html_url}`, '',
     'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。', '',
-    `<!-- WEIG_PACKAGE_PROBE_RUN_V2 run=${runId} sha=${parsedState.sha256} -->`,
+    `<!-- WEIG_PACKAGE_PROBE_RUN_V3 run=${runId} sha=${parsedState.sha256} batch=0 -->`,
   ].join('\n'));
   const [latestIssue, afterDispatch] = await Promise.all([
     api(`/repos/${owner}/${repo}/issues/${issue.number}`), issueComments(api, owner, repo, issue.number),
