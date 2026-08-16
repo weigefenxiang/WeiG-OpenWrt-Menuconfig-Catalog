@@ -7,6 +7,7 @@ import { configuredReuseSourceForCodeRef } from './catalog-channels.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const GIT_SHA_RE = /^[0-9a-f]{40}$/i;
+const PROMOTION_ONLY_PUSH_REFS = new Set(['dev', 'staging', 'main']);
 
 const REGISTRY = Object.freeze({
   applications: Object.freeze([
@@ -147,6 +148,22 @@ export function catalogChangeImpact(inputs) {
   return { mode: fastAssets.length ? 'root-assets' : 'none', fastAssets, classified };
 }
 
+export function isPromotionOnlyPush(codeRef, eventName) {
+  return String(eventName || '').trim() === 'push' &&
+    PROMOTION_ONLY_PUSH_REFS.has(String(codeRef || '').trim());
+}
+
+export function assertPromotionPushReusesSnapshot({ eventName, codeRef, source, snapshotImpact } = {}) {
+  if (!isPromotionOnlyPush(codeRef, eventName)) return false;
+  if (!source?.dataBranch || !source?.codeRef) {
+    throw new Error(`Catalog promotion push ${codeRef} requires a validated predecessor snapshot`);
+  }
+  if (!snapshotImpact || snapshotImpact.mode !== 'none') {
+    throw new Error(`Catalog promotion push ${codeRef} cannot start heavy generation; generate and validate runtime data in the source lane first`);
+  }
+  return true;
+}
+
 export function catalogPromotionImpact(pushImpact, snapshotImpact, identity = {}) {
   if (snapshotImpact?.mode !== 'none') return pushImpact;
   return {
@@ -201,8 +218,12 @@ export function promotionAwareCatalogChangeImpact(inputs, {
 } = {}) {
   const pushImpact = catalogChangeImpact(inputs);
   if (eventName !== 'push' || !codeRef || !GIT_SHA_RE.test(String(targetSha || '').trim())) return pushImpact;
+  const promotionOnly = isPromotionOnlyPush(codeRef, eventName);
   const source = configuredReuseSourceForCodeRef(codeRef, { cwd });
-  if (!source?.dataBranch || !source?.codeRef) return pushImpact;
+  if (!source?.dataBranch || !source?.codeRef) {
+    if (promotionOnly) assertPromotionPushReusesSnapshot({ eventName, codeRef, source });
+    return pushImpact;
+  }
 
   try {
     const index = readRemoteSnapshot(source.dataBranch, cwd);
@@ -211,18 +232,25 @@ export function promotionAwareCatalogChangeImpact(inputs, {
     const assetRef = String(index?.assetRef || '').trim().toLowerCase();
     if (provenance.complete !== true || provenance.codeRef !== source.codeRef ||
         !GIT_SHA_RE.test(baseSha) || !GIT_SHA_RE.test(assetRef)) {
+      if (promotionOnly) {
+        throw new Error(`Catalog predecessor ${source.dataBranch} is not a complete reusable snapshot for ${source.codeRef}`);
+      }
       return pushImpact;
     }
     const snapshotImpact = catalogImpactBetweenCommits(baseSha, targetSha, { cwd });
+    assertPromotionPushReusesSnapshot({ eventName, codeRef, source, snapshotImpact });
     const result = catalogPromotionImpact(pushImpact, snapshotImpact, {
       dataBranch: source.dataBranch,
       baseSha,
     });
     if (result.mode === 'none' && pushImpact.mode !== 'none') {
-      warn(`Reusable Catalog snapshot ${source.dataBranch}@${assetRef} already covers the target Data Surface; skip duplicate generation.`);
+      warn(`Reusable Catalog snapshot ${source.dataBranch}@${assetRef} already covers the target Data Surface; skip duplicate heavy generation.`);
     }
     return result;
   } catch (error) {
+    if (promotionOnly) {
+      throw new Error(`Catalog promotion push ${codeRef} is fail-closed: ${error.message}`);
+    }
     warn(`Catalog snapshot reuse precheck unavailable; keep conservative ${pushImpact.mode} mode: ${error.message}`);
     return pushImpact;
   }
