@@ -6,7 +6,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import {
   existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync,
 } from 'node:fs';
-import { cpus } from 'node:os';
+import { availableParallelism } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +19,6 @@ import {
 } from './profile-config-contract.mjs';
 
 const execFileAsync = promisify(execFile);
-const MAX_PROFILE_JOBS = 4;
 const FIXED_IDENTITY_SYMBOLS = Object.freeze(['TARGET_BOARD', 'TARGET_SUBTARGET', 'TARGET_PROFILE']);
 export const PROFILE_GROUP_SCHEMA = 3;
 export const PROFILE_GROUP_ENCODING = 'branch-common-plus-exact-config-groups-v1';
@@ -29,10 +28,10 @@ export const PROFILE_GROUP_FIELDS = Object.freeze([
 ]);
 export const PROFILE_GROUP_STATE_GROUPS = Object.freeze(['n', 'm', 'y', 'otherIndexValue']);
 
-export function normalizeProfileGroupJobs(value, cpuCount = cpus().length) {
+export function normalizeProfileGroupJobs(value, parallelism = availableParallelism()) {
   const requested = Number.parseInt(String(value || ''), 10);
-  const fallback = Math.max(1, Number(cpuCount) || 1);
-  return Math.max(1, Math.min(MAX_PROFILE_JOBS, Number.isFinite(requested) && requested > 0 ? requested : fallback));
+  if (Number.isFinite(requested) && requested > 0) return requested;
+  return Math.max(1, Number(parallelism) || 1);
 }
 
 export async function mapConcurrentOrdered(items, worker, concurrency = 1) {
@@ -501,12 +500,14 @@ async function main() {
   execFileSync('make', ['-C', tree, 'scripts/config/conf'], { stdio: 'inherit' });
   const conf = join(tree, 'scripts', 'config', 'conf');
   if (!existsSync(conf)) throw new Error(`upstream Kconfig resolver is unavailable: ${conf}`);
-  const jobs = normalizeProfileGroupJobs(args.jobs || process.env.PROFILE_GROUP_JOBS);
-  console.log(`E Native Profile workers: ${jobs}`);
+  const requestedJobs = normalizeProfileGroupJobs(args.jobs || process.env.PROFILE_GROUP_JOBS);
+  const jobs = Math.max(1, Math.min(entries.length, requestedJobs));
+  console.log(`E Native Profile workers: ${jobs}${jobs === requestedJobs ? '' : ` (requested ${requestedJobs})`}`);
   const workDir = join(outDir, `.profile-group-work-${process.pid}`);
   mkdirSync(workDir, { recursive: true });
   try {
     let completed = 0;
+    const nativeStarted = Date.now();
     const rows = await mapConcurrentOrdered(entries, async (entry, index) => {
       const configPath = join(workDir,
         `${String(index).padStart(6, '0')}--${safeSlug(entry.target.id)}--${safeSlug(entry.profile.id)}.config`);
@@ -523,18 +524,22 @@ async function main() {
       return { ...entry, values, rawBytes: statSync(configPath).size };
     }, jobs);
 
-    const preliminary = buildProfileGroupDocument(rows, { id: args['source-id'], branch: args.branch, commit: '' });
-    const aliases = preliminary.identity.aliases;
-    const overrides = preliminary.identity.overrides;
-    const targetOverrides = preliminary.identity.targetOverrides;
-    const nativeParitySamples = verifyMakeDefconfigParity(tree, rows, aliases, overrides, targetOverrides);
+    const nativeConfigMs = Date.now() - nativeStarted;
+    const nativeProfilesPerSecond = nativeConfigMs > 0 ? (rows.length * 1000) / nativeConfigMs : rows.length;
+    console.log(`E Native Profile throughput: ${rows.length} profiles / ${nativeConfigMs} ms / ${nativeProfilesPerSecond.toFixed(2)} profiles/s`);
+
     let commit = '';
     try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
     const rawConfigBytes = rows.reduce((sum, row) => sum + row.rawBytes, 0);
     const payload = buildProfileGroupDocument(rows, { id: args['source-id'], branch: args.branch, commit }, {
-      generatedAt: new Date().toISOString(), rawConfigBytes, concurrency: jobs,
-      nativeParitySamples, generationMs: Date.now() - started,
+      rawConfigBytes, concurrency: jobs,
     });
+    const nativeParitySamples = verifyMakeDefconfigParity(
+      tree, rows, payload.identity.aliases, payload.identity.overrides, payload.identity.targetOverrides,
+    );
+    payload.generatedAt = new Date().toISOString();
+    payload.metrics.nativeParitySamples = nativeParitySamples;
+    payload.metrics.generationMs = Date.now() - started;
     const json = JSON.stringify(payload);
     const compressed = gzipSync(Buffer.from(json), { level: 9 });
     const asset = `${slug}.profiles.json.gz`;
@@ -560,7 +565,7 @@ async function main() {
     console.log(`E Profile Config Groups: ${payload.profiles.length} profiles -> ${payload.groups.length} exact groups / ` +
       `${payload.identity.targetOverrides.length} target identity overrides / ${payload.identity.aliases.length} identity aliases / ` +
       `${payload.identity.overrides.length} profile identity overrides / ${compressed.byteLength} compressed bytes / ` +
-      `${nativeParitySamples} make defconfig parity samples`);
+      `${nativeParitySamples} make defconfig parity samples / ${payload.metrics.generationMs} ms total`);
   } finally {
     rmSync(workDir, { recursive: true, force: true });
   }

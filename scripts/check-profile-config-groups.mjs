@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 weigefenxiang <weigefenxiang@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   PROFILE_GROUP_ENCODING, PROFILE_GROUP_FIELDS, PROFILE_GROUP_SCHEMA, PROFILE_GROUP_STATE_GROUPS,
   buildIdentityTopology, buildProfileGroupDocument, deriveIdentityValues,
@@ -15,6 +16,15 @@ assert.deepEqual(PROFILE_GROUP_FIELDS, [
   'nativeHash', 'symbolCount', 'groupId',
 ]);
 assert.deepEqual(PROFILE_GROUP_STATE_GROUPS, ['n', 'm', 'y', 'otherIndexValue']);
+
+const generatorSource = readFileSync(new URL('./generate-profile-config-groups.mjs', import.meta.url), 'utf8');
+assert(generatorSource.includes("import { availableParallelism } from 'node:os';"),
+  'Profile generation must use the runtime-available parallelism authority');
+assert(!generatorSource.includes('MAX_PROFILE_JOBS'), 'Profile generation must not retain a fixed worker cap');
+assert(!generatorSource.includes('const preliminary = buildProfileGroupDocument('),
+  'Profile generation must not build the complete Config Group document twice');
+assert.equal((generatorSource.match(/const payload = buildProfileGroupDocument\(rows,/g) || []).length, 1,
+  'Profile generation must build the final Config Group document exactly once');
 
 const entry = (target, board, subtarget, profile, selector, targetSelector, boardSelector = `TARGET_${board}`) => ({
   target: { id: target, board, subtarget },
@@ -73,9 +83,12 @@ for (const invalid of [null, [[], [], []], [[], [], [], [0]], [[], [], [], [], [
   assert.throws(() => ungroupConfigPairs(invalid));
 }
 
-assert.equal(normalizeProfileGroupJobs('', 8), 4);
+assert.equal(normalizeProfileGroupJobs('', 8), 8);
 assert.equal(normalizeProfileGroupJobs('1', 8), 1);
-assert.equal(normalizeProfileGroupJobs('9', 8), 4);
+assert.equal(normalizeProfileGroupJobs('9', 8), 9);
+assert.equal(normalizeProfileGroupJobs('0', 8), 8);
+assert.equal(normalizeProfileGroupJobs('invalid', 8), 8);
+assert.equal(normalizeProfileGroupJobs('', 0), 1);
 let active = 0;
 let maxActive = 0;
 const ordered = await mapConcurrentOrdered([40, 10, 30, 5], async (delay, index) => {
@@ -91,4 +104,4 @@ const ordered = await mapConcurrentOrdered([40, 10, 30, 5], async (delay, index)
 assert.equal(maxActive, 2);
 assert.deepEqual(ordered, ['row-0', 'row-1', 'row-2', 'row-3']);
 
-console.log('E Profile Config Group checks passed: exact grouping, exact selectors, Target identity normalization, aliases, exact fallback overrides, semantic split, grouped states, bounded workers.');
+console.log('E Profile Config Group checks passed: exact grouping, exact selectors, Target identity normalization, aliases, exact fallback overrides, semantic split, grouped states, runtime parallelism, explicit override, ordered worker pool.');
