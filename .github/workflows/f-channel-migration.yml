@@ -1,0 +1,47 @@
+name: F channel migration validation
+
+on:
+  push:
+    branches: [fix-F]
+    paths:
+      - ".f-channel-migration.py"
+      - ".github/workflows/f-channel-migration.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: f-channel-migration-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Apply complete intended migration in workspace
+        run: python3 .f-channel-migration.py
+      - name: Run Catalog contract suite
+        run: npm test
+      - name: Restore workflow files before bot commit
+        run: git checkout -- .github/workflows/catalog.yml .github/workflows/catalog-reuse.yml .github/workflows/catalog-production.yml .github/workflows/probe-contracts.yml
+      - name: Commit tested non-workflow changes and workflow outputs
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            scripts/catalog-channels.mjs \
+            scripts/stamp-catalog-snapshot.mjs \
+            scripts/catalog-change-impact.mjs \
+            scripts/check-catalog-change-impact.mjs \
+            scripts/check-catalog-snapshot.mjs \
+            scripts/check-production-boundary.mjs \
+            .f-output-catalog.yml \
+            .f-output-catalog-reuse.yml \
+            .f-output-catalog-production.yml \
+            .f-output-probe-contracts.yml
+          git diff --cached --stat
+          git commit -m "refactor: standardize Catalog channel promotion"
+          git push origin HEAD:fix-F
