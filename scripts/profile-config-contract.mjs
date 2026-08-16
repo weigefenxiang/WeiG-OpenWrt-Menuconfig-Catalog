@@ -68,3 +68,40 @@ export function compareConfigSemantics(leftInput, rightInput) {
     rightHash: configSemanticHash(right),
   };
 }
+
+export function validateProfileBaselineDocument(document, {
+  sourceId = '', branch = '', commit = '', contract = null,
+} = {}) {
+  if (!document || typeof document !== 'object' || Array.isArray(document) ||
+      document.kind !== 'profile-baselines' || Number(document.schema || 0) < 3 ||
+      !String(document.encoding || '').trim() || !Array.isArray(document.symbols) ||
+      !Array.isArray(document.common) || !Array.isArray(document.groups) ||
+      !Array.isArray(document.profiles) || !document.identity || typeof document.identity !== 'object') {
+    throw new Error('invalid Native Profile baseline document');
+  }
+  const source = document.source && typeof document.source === 'object' ? document.source : {};
+  if (sourceId && String(source.id || '') !== String(sourceId)) {
+    throw new Error(`Profile baseline source mismatch: ${source.id || '(missing)'} != ${sourceId}`);
+  }
+  if (branch && String(source.branch || '') !== String(branch)) {
+    throw new Error(`Profile baseline branch mismatch: ${source.branch || '(missing)'} != ${branch}`);
+  }
+  if (commit && String(source.commit || '').toLowerCase() !== String(commit).toLowerCase()) {
+    throw new Error(`Profile baseline commit mismatch: ${source.commit || '(missing)'} != ${commit}`);
+  }
+  if (!document.profiles.length || !document.groups.length) {
+    throw new Error('Native Profile baseline has no Profile or Config Group rows');
+  }
+  if (Number(document.metrics?.reconstructionMismatches ?? -1) !== 0) {
+    throw new Error('Native Profile baseline reconstruction parity is not clean');
+  }
+  if (contract && typeof contract === 'object') {
+    if (Number(contract.schema || 0) !== Number(document.schema) ||
+        String(contract.encoding || '') !== String(document.encoding || '') ||
+        Number(contract.profiles || 0) !== document.profiles.length ||
+        Number(contract.configGroups || 0) !== document.groups.length) {
+      throw new Error('Native Profile baseline does not match its Catalog asset contract');
+    }
+  }
+  return document;
+}
