@@ -12,14 +12,14 @@
       "zh-TW": "套件相容性探針"
     },
     "intro": {
-      "en": "Check package compilation, RootFS installation, firmware integration, and optional boot behavior across Catalog Source/Branch environments.",
-      "zh-CN": "检查软件包在 Catalog 各源码分支中的编译、RootFS 安装、固件集成和可选启动行为。",
-      "zh-TW": "檢查套件在 Catalog 各原始碼分支中的編譯、RootFS 安裝、韌體整合及可選啟動行為。"
+      "en": "Choose packages to validate and probe them across real Source / Branch / Target environments from the current Catalog.",
+      "zh-CN": "选择本次要验证的软件包，并在当前 Catalog 的真实 Source / Branch / Target 环境中进行兼容性探测。",
+      "zh-TW": "選擇本次要驗證的套件，並在目前 Catalog 的真實 Source / Branch / Target 環境中進行相容性探測。"
     },
     "howTo": {
-      "en": "Probe and Advanced menuconfig share one resolved Kconfig state. Every enabled PACKAGE_* dependency is included; choose depth and scope, preview, then submit the generated state.",
-      "zh-CN": "Probe 与 Advanced menuconfig 共用同一份已解析 Kconfig 状态，所有启用的 PACKAGE_* 依赖都会包含在内；设置探测深度和范围、预览后直接提交生成状态。",
-      "zh-TW": "Probe 與 Advanced menuconfig 共用同一份已解析 Kconfig 狀態，所有啟用的 PACKAGE_* 相依套件都會包含在內；設定探測深度和範圍、預覽後直接提交產生狀態。"
+      "en": "Probe shares one Kconfig state with Advanced menuconfig. Direct user intent is recorded separately from automatic Kconfig changes, while dependency truth remains in Catalog Kconfig. Once inside upstream source, build ordering belongs to upstream Make.",
+      "zh-CN": "Probe 与 Advanced menuconfig 共用同一份 Kconfig 状态；用户直接选择与 Kconfig 自动联动分开记录，但依赖关系仍只由 Catalog Kconfig 计算。进入上游源码后，实际依赖构建顺序交给上游 Make。",
+      "zh-TW": "Probe 與 Advanced menuconfig 共用同一份 Kconfig 狀態；使用者直接選擇與 Kconfig 自動聯動分開記錄，但相依關係仍只由 Catalog Kconfig 計算。進入上游原始碼後，實際相依建置順序交給上游 Make。"
     },
     "search": {
       "en": "Search applications or package IDs",
@@ -27,9 +27,9 @@
       "zh-TW": "搜尋應用程式或套件 ID"
     },
     "selected": {
-      "en": "Selected",
-      "zh-CN": "已选择",
-      "zh-TW": "已選擇"
+      "en": "User selection",
+      "zh-CN": "用户选择",
+      "zh-TW": "使用者選擇"
     },
     "depth": {
       "en": "Probe depth",
@@ -87,9 +87,9 @@
       "zh-TW": "套件編譯"
     },
     "packageCompileHelp": {
-      "en": "Build the selected package and dependency closure with the target toolchain.",
-      "zh-CN": "使用目标工具链编译所选软件包及其依赖闭包。",
-      "zh-TW": "使用目標工具鏈編譯所選套件及其相依閉包。"
+      "en": "L1: Treat directly selected packages as roots, resolve their upstream package metadata, and enter the upstream dependency graph with one Make invocation. Probe does not schedule dependencies package by package.",
+      "zh-CN": "L1：以用户直接选择的软件包为 Root，解析上游 package metadata 后，以一次 Make 调用进入上游依赖图；不自行逐包调度依赖。",
+      "zh-TW": "L1：以使用者直接選擇的套件為 Root，解析上游 package metadata 後，以一次 Make 呼叫進入上游相依圖；不自行逐套件調度相依。"
     },
     "rootfsIntegration": {
       "en": "RootFS integration",
@@ -97,9 +97,9 @@
       "zh-TW": "根檔案系統整合"
     },
     "rootfsIntegrationHelp": {
-      "en": "Install selected packages into RootFS to expose APK/OPKG ownership and co-install conflicts.",
-      "zh-CN": "把所选软件包安装进 RootFS，用于发现 APK/OPKG 文件归属和共同安装冲突。",
-      "zh-TW": "把所選套件安裝進 RootFS，用於發現 APK/OPKG 檔案歸屬及共同安裝衝突。"
+      "en": "L2: Includes L1 and runs upstream package/install with the complete Final state to expose APK/OPKG ownership, path, and co-install conflicts.",
+      "zh-CN": "L2：包含 L1，并执行上游 package/install，用完整 Final 状态检查 APK/OPKG 文件归属、路径冲突与共同安装问题。",
+      "zh-TW": "L2：包含 L1，並執行上游 package/install，用完整 Final 狀態檢查 APK/OPKG 檔案歸屬、路徑衝突與共同安裝問題。"
     },
     "firmwareIntegration": {
       "en": "Firmware integration",
@@ -107,9 +107,9 @@
       "zh-TW": "韌體整合"
     },
     "firmwareIntegrationHelp": {
-      "en": "Build a baseline image and an image with the selected packages in the same Source/Branch/Target environment.",
-      "zh-CN": "在相同 Source/Branch/Target 环境中分别构建基础固件和加入所选软件包的固件。",
-      "zh-TW": "在相同 Source/Branch/Target 環境中分別建置基礎韌體及加入所選套件的韌體。"
+      "en": "L3: Build the Baseline captured when Probe opened and the user-modified Final firmware in the same real environment. A failing Baseline is not attributed to the package.",
+      "zh-CN": "L3：在同一个真实环境中分别构建 Probe 打开时的 Baseline 与用户选择后的 Final 固件；Baseline 本身失败时不归因给插件。",
+      "zh-TW": "L3：在同一個真實環境中分別建置 Probe 開啟時的 Baseline 與使用者選擇後的 Final 韌體；Baseline 本身失敗時不歸因給套件。"
     },
     "bootSmoke": {
       "en": "Boot smoke",
@@ -117,9 +117,9 @@
       "zh-TW": "啟動自檢"
     },
     "bootSmokeHelp": {
-      "en": "Experimental generic boot validation for Catalog-approved bootable targets; no package-specific runtime checks.",
-      "zh-CN": "对 Catalog 认可的可启动目标执行实验性通用启动验证，不包含插件专属运行检查。",
-      "zh-TW": "對 Catalog 認可的可啟動目標執行實驗性通用啟動驗證，不包含套件專屬執行檢查。"
+      "en": "L4: After a successful L3 Final firmware build, run generic QEMU boot smoke on Catalog-approved bootable environments. This is not package-service or real-hardware functional testing.",
+      "zh-CN": "L4：在 L3 Final 固件成功后，对 Catalog 认可的可启动环境执行通用 QEMU 启动自检；不是插件服务或真实硬件功能测试。",
+      "zh-TW": "L4：在 L3 Final 韌體成功後，對 Catalog 認可的可啟動環境執行通用 QEMU 啟動自檢；不是套件服務或真實硬體功能測試。"
     },
     "preview": {
       "en": "Preview plan",
@@ -137,9 +137,9 @@
       "zh-TW": "提交後如需取消，請在同一個 Issue 中準確回覆 /cancel。"
     },
     "permission": {
-      "en": "Repository owners may run the full plan; write collaborators are capped at three concurrent jobs; visitors cannot start the probe Matrix.",
-      "zh-CN": "仓库所有者可以运行完整计划；有写权限的协作者最多并发 3；普通访客不能启动探针 Matrix。",
-      "zh-TW": "儲存庫擁有者可以執行完整計畫；具寫入權限的協作者最多同時執行 3 個工作；一般訪客不能啟動探針 Matrix。"
+      "en": "Execution permission and concurrency caps are decided server-side from the real Issue author and repository permission; browser parameters cannot elevate permission.",
+      "zh-CN": "执行权限与并发上限由 Catalog 服务端根据真实 Issue 作者和仓库权限决定；浏览器参数不能提升权限。",
+      "zh-TW": "執行權限與並行上限由 Catalog 服務端依真實 Issue 作者與儲存庫權限決定；瀏覽器參數不能提升權限。"
     },
     "retention": {
       "en": "Normalized evidence is retained for 60 days; complete probe logs are retained for 30 days.",
@@ -167,19 +167,169 @@
       "zh-TW": "找不到相符的套件。"
     },
     "invalid": {
-      "en": "The Advanced menuconfig state needs at least one enabled package and one Source/Branch entry.",
-      "zh-CN": "Advanced menuconfig 状态至少需要一个启用的软件包和一个 Source/Branch。",
-      "zh-TW": "Advanced menuconfig 狀態至少需要一個啟用的套件與一個 Source/Branch。"
+      "en": "At least one package must be directly enabled in this Probe session, and the environment scope must match at least one real environment.",
+      "zh-CN": "至少需要一个本次直接启用的软件包，并且测试环境范围必须匹配至少一个真实环境。",
+      "zh-TW": "至少需要一個本次直接啟用的套件，且測試環境範圍必須符合至少一個真實環境。"
     },
     "submittedState": {
-      "en": "The current Advanced menuconfig package state was carried into the GitHub Issue.",
-      "zh-CN": "当前 Advanced menuconfig 软件包状态已带入 GitHub Issue。",
-      "zh-TW": "目前 Advanced menuconfig 套件狀態已帶入 GitHub Issue。"
+      "en": "The Probe V3 state was carried into the GitHub Issue.",
+      "zh-CN": "Probe V3 状态已带入 GitHub Issue。",
+      "zh-TW": "Probe V3 狀態已帶入 GitHub Issue。"
     },
     "stateInstruction": {
-      "en": "Probe transports the resolved PACKAGE_* state and probe controls; it maintains no second package selection and uploads no config file.",
-      "zh-CN": "Probe 只传递已解析的 PACKAGE_* 状态和探测参数，不维护第二套软件包选择，也不上传配置文件。",
-      "zh-TW": "Probe 只傳遞已解析的 PACKAGE_* 狀態與探測參數，不維護第二套套件選擇，也不上傳設定檔。"
+      "en": "Probe V3 transports Baseline, direct user Intent, Final PACKAGE_* state, five-dimensional environment constraints, and coverage controls. It does not transport a dependency table, build order, or second package database.",
+      "zh-CN": "Probe V3 只传递 Baseline、用户直接 Intent、最终 PACKAGE_* 状态、五维环境条件和覆盖参数；不会上传依赖表、构建顺序或第二套软件包数据库。",
+      "zh-TW": "Probe V3 只傳遞 Baseline、使用者直接 Intent、最終 PACKAGE_* 狀態、五維環境條件與覆蓋參數；不會上傳相依表、建置順序或第二套套件資料庫。"
+    },
+    "baseline": {
+      "en": "Baseline",
+      "zh-CN": "基线",
+      "zh-TW": "基線"
+    },
+    "linkage": {
+      "en": "Automatic linkage",
+      "zh-CN": "自动联动",
+      "zh-TW": "自動聯動"
+    },
+    "linkageDetail": {
+      "en": "View automatic dependencies / linkage",
+      "zh-CN": "查看自动依赖 / 联动",
+      "zh-TW": "查看自動相依 / 聯動"
+    },
+    "finalState": {
+      "en": "Final",
+      "zh-CN": "最终",
+      "zh-TW": "最終"
+    },
+    "defconfig": {
+      "en": "Defconfig",
+      "zh-CN": "Defconfig",
+      "zh-TW": "Defconfig"
+    },
+    "defconfigHelp": {
+      "en": "Run the selected Source's own make defconfig to normalize the submitted state with upstream Kconfig. Enabled by default and optional.",
+      "zh-CN": "使用当前 Source 自己的 make defconfig 对提交状态进行上游 Kconfig 规范化；默认开启，可关闭。",
+      "zh-TW": "使用目前 Source 自己的 make defconfig 對提交狀態進行上游 Kconfig 規範化；預設開啟，可關閉。"
+    },
+    "environment": {
+      "en": "Environment",
+      "zh-CN": "环境",
+      "zh-TW": "環境"
+    },
+    "source": {
+      "en": "Source",
+      "zh-CN": "Source",
+      "zh-TW": "Source"
+    },
+    "branch": {
+      "en": "Branch",
+      "zh-CN": "Branch",
+      "zh-TW": "Branch"
+    },
+    "targetSystem": {
+      "en": "Target System",
+      "zh-CN": "Target System",
+      "zh-TW": "Target System"
+    },
+    "subtarget": {
+      "en": "Subtarget",
+      "zh-CN": "Subtarget",
+      "zh-TW": "Subtarget"
+    },
+    "targetProfile": {
+      "en": "Target Profile",
+      "zh-CN": "Target Profile",
+      "zh-TW": "Target Profile"
+    },
+    "all": {
+      "en": "All",
+      "zh-CN": "全部",
+      "zh-TW": "全部"
+    },
+    "searchDimension": {
+      "en": "Search",
+      "zh-CN": "搜索",
+      "zh-TW": "搜尋"
+    },
+    "currentEnvironment": {
+      "en": "Current environment",
+      "zh-CN": "当前环境",
+      "zh-TW": "目前環境"
+    },
+    "crossSourceTarget": {
+      "en": "Current target · across Source / Branch",
+      "zh-CN": "当前 Target · 跨 Source / Branch",
+      "zh-TW": "目前 Target · 跨 Source / Branch"
+    },
+    "clearFilters": {
+      "en": "Clear filters",
+      "zh-CN": "清空筛选",
+      "zh-TW": "清空篩選"
+    },
+    "coverageMode": {
+      "en": "Coverage mode",
+      "zh-CN": "执行方式",
+      "zh-TW": "執行方式"
+    },
+    "autoCoverage": {
+      "en": "Auto maximize coverage",
+      "zh-CN": "Auto 尽可能覆盖",
+      "zh-TW": "Auto 儘可能覆蓋"
+    },
+    "exhaustiveCoverage": {
+      "en": "Exhaustive",
+      "zh-CN": "全部遍历",
+      "zh-TW": "全部遍歷"
+    },
+    "autoLimit": {
+      "en": "At most",
+      "zh-CN": "最多",
+      "zh-TW": "最多"
+    },
+    "environments": {
+      "en": "environments",
+      "zh-CN": "个环境",
+      "zh-TW": "個環境"
+    },
+    "currentMatches": {
+      "en": "Current matches",
+      "zh-CN": "当前匹配",
+      "zh-TW": "目前匹配"
+    },
+    "scopeDetail": {
+      "en": "Scope and matches",
+      "zh-CN": "当前范围与匹配详情",
+      "zh-TW": "目前範圍與匹配詳情"
+    },
+    "coveragePreview": {
+      "en": "Auto coverage estimate",
+      "zh-CN": "Auto 覆盖预估",
+      "zh-TW": "Auto 覆蓋預估"
+    },
+    "executionPreview": {
+      "en": "Execution preview",
+      "zh-CN": "执行预览",
+      "zh-TW": "執行預覽"
+    },
+    "loadingEnvironments": {
+      "en": "Loading Target structures for Source / Branch entries…",
+      "zh-CN": "正在读取各 Source / Branch 的 Target 结构…",
+      "zh-TW": "正在讀取各 Source / Branch 的 Target 結構…"
+    },
+    "sampled": {
+      "en": "Sampled",
+      "zh-CN": "抽样",
+      "zh-TW": "抽樣"
+    },
+    "batches": {
+      "en": "batches",
+      "zh-CN": "批次",
+      "zh-TW": "批次"
+    },
+    "notApplicable": {
+      "en": "No matching environment",
+      "zh-CN": "无匹配环境",
+      "zh-TW": "無匹配環境"
     }
   }
 }

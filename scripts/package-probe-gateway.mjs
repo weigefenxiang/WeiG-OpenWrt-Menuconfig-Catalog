@@ -4,24 +4,28 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import {
-  normalizeProbeEnvelope,
-  parseProbeEnvelopeToken,
-  probeGatewayDispatchInputs,
-  probeGatewayWorkerCompatible,
-} from './package-probe-envelope.mjs';
+import { parseProbeStateToken } from './package-probe-state.mjs';
+import { normalizeProbeRequest } from './package-probe-controller.mjs';
 
 const WRITE_PERMISSIONS = new Set(['admin', 'maintain', 'write']);
 const PROBE_TITLE_RE = /^\[probe\](?:\s|$)/i;
-const RUN_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_RUN_V([23])\s+run=(\d+)\s+sha=([a-f0-9]{64})(?:\s+batch=(\d+))?\s*-->/gi;
-const INTAKE_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_INTAKE_V[23]\s+sha=([a-f0-9]{64})\s*-->/i;
+const RUN_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_RUN_V3\s+run=(\d+)\s+sha=([a-f0-9]{64})(?:\s+batch=(\d+))?\s*-->/gi;
+const INTAKE_MARKER_RE = /<!--\s*WEIG_PACKAGE_PROBE_INTAKE_V3\s+sha=([a-f0-9]{64})\s*-->/i;
 const CANCEL_MARKER = '<!-- WEIG_PACKAGE_PROBE_CANCEL_V1 -->';
 
 const plainObject = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
-
-export function normalizeGatewayRequest(raw, protocolVersion = Number(raw?.schema)) {
-  return normalizeProbeEnvelope(raw, protocolVersion);
+export function normalizeGatewayRequest(raw) {
+  const request = normalizeProbeRequest(raw);
+  return {
+    channel: request.channel,
+    mode: request.mode,
+    useDefconfig: request.useDefconfig,
+    roots: request.roots,
+    finalPackageCount: request.packages.length,
+    environmentScope: request.environmentScope,
+    coverage: request.coverage,
+  };
 }
 
 
@@ -36,11 +40,8 @@ export function isProbeIssue(issue) {
 export function probeRunMarkers(comments) {
   const rows = [];
   for (const comment of comments || []) {
-    for (const match of String(comment?.body || '').matchAll(new RegExp(RUN_MARKER_RE.source, RUN_MARKER_RE.flags))) {
-      const protocolVersion = Number(match[1]);
-      const row = { runId: Number(match[2]), sha256: match[3] };
-      if (protocolVersion === 3) row.batchIndex = Number(match[4] || 0);
-      rows.push(row);
+    for (const match of String(comment?.body || '').matchAll(RUN_MARKER_RE)) {
+      rows.push({ runId: Number(match[1]), sha256: match[2], batchIndex: Number(match[3] || 0) });
     }
   }
   return [...new Map(rows.map((row) => [row.runId, row])).values()];
@@ -123,16 +124,12 @@ async function closeIssue(api, owner, repo, number) {
   });
 }
 
-async function workerSupportsGateway(api, owner, repo, channel, protocolVersion) {
-  const ref = encodeURIComponent(channel);
-  const [workflowData, parserData] = await Promise.all([
-    api(`/repos/${owner}/${repo}/contents/.github/workflows/package-probe.yml?ref=${ref}`),
-    api(`/repos/${owner}/${repo}/contents/scripts/package-probe-state.mjs?ref=${ref}`),
-  ]);
-  const decode = (data) => Buffer.from(String(data?.content || '').replace(/\s+/g, ''), 'base64').toString('utf8');
-  return probeGatewayWorkerCompatible(protocolVersion, decode(workflowData), decode(parserData));
+async function workerSupportsGateway(api, owner, repo, channel) {
+  const data = await api(`/repos/${owner}/${repo}/contents/.github/workflows/package-probe.yml?ref=${encodeURIComponent(channel)}`);
+  const text = Buffer.from(String(data?.content || '').replace(/\s+/g, ''), 'base64').toString('utf8');
+  return ['issue_number:', 'state_sha256:', 'issue_created_at:', 'batch_index:', 'sampling_seed:', 'data_commit:']
+    .every((needle) => text.includes(needle));
 }
-
 
 async function cancelRun(api, owner, repo, runId) {
   const run = await api(`/repos/${owner}/${repo}/actions/runs/${runId}`);
@@ -151,34 +148,14 @@ async function cancelRun(api, owner, repo, runId) {
   return { url: run.html_url, state: 'cancel-requested', active: true };
 }
 
-function intakeMarker(protocolVersion, sha256) {
-  return `<!-- WEIG_PACKAGE_PROBE_INTAKE_V${protocolVersion} sha=${sha256} -->`;
-}
-
-function runMarker(protocolVersion, runId, sha256) {
-  return protocolVersion === 3
-    ? `<!-- WEIG_PACKAGE_PROBE_RUN_V3 run=${runId} sha=${sha256} batch=0 -->`
-    : `<!-- WEIG_PACKAGE_PROBE_RUN_V2 run=${runId} sha=${sha256} -->`;
-}
-
-function requestSummary(request) {
-  return [
-    `- Protocol / 协议: \`V${request.protocolVersion}\` / schema \`${request.schema}\``,
-    `- Channel / 通道: \`${request.channel}\``,
-    `- Mode / 深度: \`${request.mode}\``,
-    '- Full request validation / 完整请求校验: `worker-side / 目标分支 Worker`',
-  ];
-}
-
-
 async function intake(env, event) {
   const issue = event.issue;
   if (!isProbeIssue(issue)) return { relevant: false };
   const { owner, repo } = repositoryParts(env);
   const api = apiClient(env);
   const requester = String(issue.user?.login || '');
-  const parsedState = parseProbeEnvelopeToken(issue.body || '');
-  const request = normalizeGatewayRequest(parsedState.raw, parsedState.protocolVersion);
+  const parsedState = parseProbeStateToken(issue.body || '');
+  const request = normalizeGatewayRequest(parsedState.raw);
   const permission = await permissionFor(api, owner, repo, requester);
   const comments = await issueComments(api, owner, repo, issue.number);
   if (comments.some((row) => INTAKE_MARKER_RE.test(String(row.body || ''))) || probeRunMarkers(comments).length) {
@@ -191,13 +168,19 @@ async function intake(env, event) {
     await closeIssue(api, owner, repo, issue.number);
     return { relevant: true, authorized: false };
   }
-  if (!await workerSupportsGateway(api, owner, repo, request.channel, request.protocolVersion)) {
-    throw new Error(`Probe worker on ${request.channel} does not support V${request.protocolVersion} state-token dispatch`);
+  if (!await workerSupportsGateway(api, owner, repo, request.channel)) {
+    throw new Error(`Probe worker on ${request.channel} is not compatible with state-token Issue dispatch`);
   }
   await comment(api, owner, repo, issue.number, [
-    `@${requester}`, '', 'Request accepted / 请求已接收', '', ...requestSummary(request), '',
-    'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。', '',
-    intakeMarker(request.protocolVersion, parsedState.sha256),
+    `@${requester}`, '', 'Request accepted / 请求已接收', '',
+    `- Channel / 通道: \`${request.channel}\``,
+    `- Mode / 深度: \`${request.mode}\``,
+    `- Probe roots / 测试入口: ${request.roots.map((row) => `\`${row}\``).join(', ')}`,
+    `- Final enabled packages / 最终启用软件包: ${request.finalPackageCount}`,
+    `- Defconfig: \`${request.useDefconfig ? 'on' : 'off'}\``,
+    `- Coverage / 覆盖: \`${request.coverage.mode}${request.coverage.mode === 'auto' ? ` <= ${request.coverage.limit}` : ''}\``,
+    '', 'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。', '',
+    `<!-- WEIG_PACKAGE_PROBE_INTAKE_V3 sha=${parsedState.sha256} -->`,
   ].join('\n'));
   const [currentIssue, beforeDispatch] = await Promise.all([
     api(`/repos/${owner}/${repo}/issues/${issue.number}`), issueComments(api, owner, repo, issue.number),
@@ -210,9 +193,14 @@ async function intake(env, event) {
     method: 'POST',
     body: {
       ref: request.channel,
-      inputs: probeGatewayDispatchInputs(request.protocolVersion, {
-        issueNumber: issue.number, stateSha256: parsedState.sha256, issueCreatedAt: issue.created_at,
-      }),
+      inputs: {
+        issue_number: String(issue.number),
+        state_sha256: parsedState.sha256,
+        issue_created_at: String(issue.created_at || ''),
+        batch_index: '0',
+        sampling_seed: '',
+        data_commit: '',
+      },
       return_run_details: true,
     },
   });
@@ -221,7 +209,7 @@ async function intake(env, event) {
   await comment(api, owner, repo, issue.number, [
     'Probe started / 探针已启动', '', `Run / 运行: ${dispatched.html_url}`, '',
     'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。', '',
-    runMarker(request.protocolVersion, runId, parsedState.sha256),
+    `<!-- WEIG_PACKAGE_PROBE_RUN_V3 run=${runId} sha=${parsedState.sha256} batch=0 -->`,
   ].join('\n'));
   const [latestIssue, afterDispatch] = await Promise.all([
     api(`/repos/${owner}/${repo}/issues/${issue.number}`), issueComments(api, owner, repo, issue.number),
@@ -277,7 +265,7 @@ export async function main(env = process.env) {
         const api = apiClient(env);
         await comment(api, owner, repo, event.issue.number, [
           'Request rejected / 请求被拒绝', '', `\`${String(error?.message || error).slice(0, 1000)}\``, '',
-          'Return to the current AutoBuild page and submit the generated Package Probe state again. / 请返回当前 AutoBuild 页面，重新提交由插件兼容探针生成的状态。',
+          'Return to AutoBuild, reopen Package Probe, and submit the generated Advanced menuconfig state again. / 请返回 AutoBuild，重新打开插件兼容探针并再次提交由 Advanced menuconfig 生成的状态。',
         ].join('\n'));
         await closeIssue(api, owner, repo, event.issue.number);
       }

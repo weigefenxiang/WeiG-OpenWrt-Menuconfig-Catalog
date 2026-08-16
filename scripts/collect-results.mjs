@@ -7,6 +7,7 @@ import {
 import { gunzipSync } from 'node:zlib';
 import { basename, join, resolve } from 'node:path';
 import { safeSlug } from './lib.mjs';
+import { validateProfileBaselineDocument } from './profile-config-contract.mjs';
 
 const [rawArg = 'current', previousArg = 'previous', distArg = 'dist',
   attemptsArg = 'current-attempts', diagnosticsArg = 'publish-diagnostics'] = process.argv.slice(2);
@@ -214,13 +215,22 @@ for (const artifactDir of artifactDirs) {
           (contract.sha256 && contract.sha256 !== jsonHash)) {
         issues.push(`Catalog shard contract mismatch ${logical}`);
       }
+      if (logical === 'profileBaselines') {
+        const document = JSON.parse(json.toString('utf8'));
+        validateProfileBaselineDocument(document, {
+          sourceId: attempt.source.id,
+          branch: attempt.branch,
+          commit: attempt.upstreamCommit || '',
+          contract,
+        });
+      }
     } catch (error) {
       issues.push(`Catalog shard cannot be decoded ${logical}:${error.message}`);
     }
   }
   if (Number(meta?.schema || 0) >= 6 && (!meta.assets?.core || !meta.assets?.graph || !meta.assets?.menu ||
-      !meta.assets?.hidden || !meta.assets?.help)) {
-    issues.push('Catalog schema 6 lacks required split assets');
+      !meta.assets?.hidden || !meta.assets?.help || !meta.assets?.profileBaselines)) {
+    issues.push('Catalog schema 6 lacks required split/Profile baseline assets');
   }
   let fresh = false;
   if (!issues.length) {
@@ -249,6 +259,9 @@ if (!dataAssets.length) fatalErrors.push('没有本次成功数据或历史 last
 const complete = attempts.length > 0 && branches.length === attempts.length &&
   branches.every((item) => item.attemptStatus === 'success' &&
     item.publishState === 'fresh' && item.issues.length === 0) && warnings.length === 0;
+if (/^fix-[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(String(process.env.GITHUB_REF_NAME || '')) && !complete) {
+  fatalErrors.push('Fix Catalog snapshot is incomplete; isolated runtime publication is fail-closed');
+}
 const manifest = {
   schema: 2,
   collectedAt: new Date().toISOString(),
@@ -271,7 +284,7 @@ writeFileSync(join(diagnosticsDir, 'publish-inputs.json'), JSON.stringify(manife
 if (process.env.GITHUB_OUTPUT) {
   appendFileSync(process.env.GITHUB_OUTPUT, `complete=${complete}\n`);
   appendFileSync(process.env.GITHUB_OUTPUT, `fresh=${manifest.fresh}\n`);
-  appendFileSync(process.env.GITHUB_OUTPUT, `last-good=${manifest.lastGood}\n`);
+  appendFileSync(process.env.GITHUB_OUTPUT, `lastGood=${manifest.lastGood}\n`);
 }
 if (fatalErrors.length) throw new Error(`Artifact 收集无法继续:\n- ${fatalErrors.join('\n- ')}`);
 if (warnings.length) console.warn(`Artifact 分支级警告:\n- ${warnings.join('\n- ')}`);

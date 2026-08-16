@@ -58,21 +58,32 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 新增规则前先查上游源码和真实证据；确认一个范围后横向检查同 Source/Branch 机制。Source/Branch 新版本若已被 glob 覆盖，无需增加 JSON 项，但首次真实探测仍应记录证据。上游修复后及时删减，禁止 zombie rule。
 
-Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 有四个递进深度：`package-compile` 只编译软件包与依赖闭包；`rootfs-integration` 继续安装到 RootFS，以发现 APK/OPKG 文件归属和同装冲突；`firmware-integration` 在相同 Source/Branch/Target 下构建基础固件与加入软件包的固件作 A/B 对照；实验性的 `boot-smoke`（界面译为“启动自检”）只对 Catalog 允许的通用可启动目标验证启动标志，不加入插件专属运行判断。
+### 探针深度边界
 
-请求可包含 1–8 个 Catalog 应用 ID 或 package ID，并选择全部、当前或指定 Source/Branch，以及自动目标、当前 Target/Profile 或全部代表目标。控制器只读取当前代码频道对应数据分支的 `index.json`、`applications.json.gz` 与匹配 Branch 的 `core` 分片，校验 SHA-256 后动态生成 Matrix。自动目标优先 x86/64，并可在同一 Job 内依次尝试 Catalog 合法后备目标；全部目标受 256 Job 上限约束。只有某软件包在全部合法环境中均由软件包原因失败，才能标记为“完全不兼容”；部分 Target 失败只是带覆盖率的证据，基础固件失败、下载失败、磁盘不足和超时归为基础设施或不确定结果。
+Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe V3 协议，并把“配置事实”和“构建调度”分给各自权威：Catalog Kconfig 负责 Baseline、用户直接 Intent 与 Final `PACKAGE_*` 状态；进入真实上游源码后，软件包依赖、构建顺序、stamp 与增量构建由该 Source 自己的 Make 系统负责。
 
-网页直接把 Advanced menuconfig 已解析的 `PACKAGE_*` 状态与探测参数压缩后预填到专用 GitHub Issue 表单；不生成或上传独立请求文件。Issue 网关校验状态 token、SHA-256、Issue 身份与提交者权限，再把执行 Workflow 派发到对应代码通道；worker 会从同一 Issue 重新读取状态并核对哈希。
+- **L1 软件包编译（`package-compile`）**：把用户在本次 Probe 中直接启用的软件包当作 Root。Runner 读取上游 `tmp/.packageinfo` 的 `Source-Makefile`，把 Binary Package 映射为真实源码构建目标；多个 Root 共用一个 Source 时自动去重，并用一次 Make 调用进入上游依赖图。WeiG 不逐个调度 Final 状态中的依赖包，也不维护 Binary→Source 或 dependency 数据库。L1 不执行 `package/install` 或固件镜像生成。
+- **L2 根文件系统集成（`rootfs-integration`）**：完整执行 L1 后，再运行上游 `package/install`，使用完整 Final 软件包状态发现 APK/OPKG 文件归属、路径覆盖与共同安装冲突。
+- **L3 固件集成（`firmware-integration`）**：在同一 Source/Branch/Target 环境中先构建 Probe 打开时真实 Baseline，再构建用户操作后的 Final。Baseline 本身失败只能记为 `inconclusive`；只有 Baseline 成功而 Final 失败时，才形成软件包引入的固件集成失败证据。
+- **L4 启动自检（`boot-smoke`）**：L3 Final 成功后，仅对 Catalog 允许的通用可启动环境执行 QEMU 启动标志检查。它不是插件服务运行测试，也不是实体硬件功能测试。
 
-代码 `main` 与正式数据 `catalog-data` 是两条独立生命周期：Builder 的 `main` 只写 `catalog-candidate`，而运行时/探针的 `main` 仍读取 `catalog-data`。`catalog-data` 只能由手动 Production Gate 写入；Gate 校验候选的 `main` 代码 SHA、完整性和所有索引资产合同后原样晋级，不在生产阶段重新构建。翻译定时任务只写候选，尺寸定时任务只提交 `dev`，因此普通 Push、schedule 和实验探针都不能旁路 Production Gate。
+`Defconfig` 与 L1–L4 正交，是默认开启但可关闭的独立开关。开启时运行所选 Source 自己的 `make defconfig`，并只强制验证用户直接启用的 Probe Root 在上游规范化后仍保持请求的 `m/y` 状态；自动依赖允许上游重新结算。关闭时不主动运行 `make defconfig`，L1 只为读取上游 package metadata 执行 `prepare-tmpinfo`。
 
-仓库所有者可使用完整计划并发；有写权限的协作者强制最多 3；普通访客可查看界面和公开 Run，但不能启动 Matrix。请求者本人或具有 write/maintain/admin 权限的协作者可在同一 Issue 准确回复 `/cancel`：先普通取消，Run 仍活动时才强制取消；重复取消、排队期取消和派发竞态均按同一 Issue 身份幂等收口。`workflow_dispatch` 保留为管理员回退入口。规范化证据保留 60 天，完整日志保留 30 天；plan-only 明确表示没有执行编译，不能产生兼容性结论。取消、超时或基础设施问题保留为 `inconclusive`，汇总 Job 不会把它伪装成新的软件包失败。
+Probe V3 的浏览器状态包含 Baseline、直接 `packageIntent`、唯一 Final `packageConfig`、Defconfig、五维环境约束和覆盖策略。不会传递 dependency list、build order 或第二个 packages/roots 权威；服务端从经过校验的直接 Intent 派生 Root。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝，用户需要从当前 AutoBuild 页面重新提交。
 
-多个软件包共同失败时，Runner 只在所有已计划目标均表现为软件包阶段失败后，按 `.github/automation-policy.json` 的分模式预算执行通用 delta 缩减；结果标为“有限缩减候选”，不是自动规则。依赖安装、精确克隆、feeds、构建与启动输出合并进完整探针日志。真正耗时的 tools/toolchain、软件包、RootFS 和固件目标先按 Runner 可用 CPU 数加一并行执行，失败后才以 `-j1 V=s` 串行详细复核；`defconfig`、`clean`、`dirclean` 等配置或清理目标保持单线程。并行失败而串行成功只能记录为恢复，不能生成不兼容结论。
+环境范围由 Catalog 的真实结构动态解析，五个维度均可独立使用通配或精确值：**Source / Branch / Target System / Subtarget / Target Profile**。Target System、Subtarget 与 Profile 直接读取 Catalog core 已有的结构化字段，不从 `x86/64` 之类字符串反向猜测。通配保存的是规则而不是当前叶子快照，因此以后自动发现的新 Branch/Target/Profile 会自然进入匹配范围；不存在的组合记为不适用，不记为不兼容。
 
-GitHub Hosted Runner 不能真正无限运行。四种探测深度均使用平台允许的最大 360 分钟 Job 时限，并由 `.github/automation-policy.json` 统一声明；达到平台硬上限或出现超时只能得出 `inconclusive`，不得当作软件包失败证据。
+覆盖有两种模式。**Auto** 在管理员预算内做可复现的分层最大覆盖：候选不超过预算时全部执行，超过预算时只在未被用户固定的维度上优先覆盖不同 Source、Branch、Target System、Subtarget 和 Profile；抽样 seed 进入证据，新 Run 可以轮换样本。默认预算由 `.github/automation-policy.json` 管理：L1=200、L2=100、L3=30、L4=10，单批不超过 256。**全部遍历**覆盖所有真实候选；超过 256 时固定同一 Catalog data commit 与 sampling seed，按最多 256 个环境顺序续批，不一次制造数千个并发 Job。
 
-Source/Branch 组合完全来自 Catalog index。`ImmortalWrt`、`OpenWrt`、`lede` 的 `openwrt-*` 新分支会在下一次自动发现后自然进入全量探测，不在探针中维护版本清单。探针结果按 Source/Branch/Target/Profile 和归一化错误指纹聚合；证据只用于人工审查，不自动改写 `compatibility.json`。schema 2 当前没有 Target/Profile 过滤字段，因此局部机型失败不得错误扩大成全 Source/Branch 规则。
+抽样与全量结论严格分开：样本全部成功/失败只能记为 `sampled-compatible` / `sampled-incompatible`；完整覆盖后才允许 `fully-compatible` / `fully-incompatible`；同一范围内成功与失败并存为 `partially-compatible`。下载、磁盘、Runner、metadata 解析、Baseline 构建、取消与超时等不能归因到插件的情况统一保持 `inconclusive`。结果按 Source → Branch → Target System → Subtarget → Target Profile 聚合，因此可把问题收缩到具体源码、分支或目标范围，但证据不会自动宣称是某上游 Bug，也不会自动改写 `compatibility.json`。
+
+Issue 网关仍以真实 Issue 作者和仓库权限作为权限事实，校验 V3 state token、SHA-256 与 Issue 身份后派发相同代码通道；后续批次继续固定第一次解析的 Catalog data commit。仓库 owner/admin 可使用管理员并发预算，write/maintain 协作者仍受 3 并发上限；普通访客不能启动 Matrix。请求者或具有 write/maintain/admin 权限的协作者可在同一 Issue 回复精确 `/cancel`，取消标记会同时停止当前 Run 并阻止后续批次。规范化证据保留 60 天，完整日志保留 30 天。
+
+失败后的诊断遵循上游增量构建：耗时目标先按 Runner 可用 CPU 数加一执行；失败后对**同一批上游 Root targets**以 `-j1 V=s BUILD_LOG=1` 串行复核，复用同一工作树和 stamp。旧的“Final PACKAGE 全量逐包 compile”、fallback Target 循环和 `reduceFailureSet()`/`reductionMaxAttempts` 已不再属于 Probe 架构，Runner 不自行拆 dependency closure 或搜索最小失败集合。
+
+代码 `main` 与正式数据 `catalog-data` 仍是独立生命周期：Builder `main` 只写 `catalog-candidate`，运行时/探针 `main` 读取 `catalog-data`；生产数据只能经手动 Production Gate 晋级。普通 Push、schedule 和 Probe 实验不能旁路 Production Gate。
+
+GitHub Hosted Runner 仍受平台 Job 时限约束；各 Probe 深度的 timeout 由 `.github/automation-policy.json` 统一声明。达到超时只得到 `inconclusive`，不得当作软件包失败证据。
 
 新增插件或规则前的硬顺序是：复用现有 Catalog 数据 → 横向审计同数据类型、执行路径和风险类别 → 先运行包级探针 → 再以真实证据维护通用规则。AutoBuild 不得写插件名或专用执行器。
 

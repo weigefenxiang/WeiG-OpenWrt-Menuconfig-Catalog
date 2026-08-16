@@ -1,182 +1,185 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  createProbePlan,
-  normalizePackageConfig,
-  normalizeProbeMode,
-  normalizeProbeRequest,
-  probeTargetConfig,
-  probeTargetConfigs,
+  attachProbeTargets, createProbePlan, normalizePackageConfig, normalizeProbeMode, normalizeProbeRequest,
+  probePlanSummary, probeTargetConfig, resolveProbeTargetConfigs, selectProbeCoverage,
 } from './package-probe-controller.mjs';
 import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import { parseProbeStateToken, PROBE_STATE_PREFIX } from './package-probe-state.mjs';
-import { aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
-  requestedPackageStates } from './write-package-probe-evidence.mjs';
+import { isProbeIssue, normalizeGatewayRequest, probeCancellationAuthorized, probeCancellationRequested,
+  probeIssueCommand, probeRunMarkers } from './package-probe-gateway.mjs';
+import { createEvidence, parseProbeLog } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const policy = JSON.parse(readFileSync(resolve(ROOT, '.github', 'automation-policy.json'), 'utf8'));
 const config = JSON.parse(readFileSync(resolve(ROOT, 'catalog.config.json'), 'utf8'));
 const workflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe.yml'), 'utf8');
+const gatewayWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe-request.yml'), 'utf8');
+const issueForm = readFileSync(resolve(ROOT, '.github', 'ISSUE_TEMPLATE', 'package-probe.yml'), 'utf8');
 const catalogWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 const controller = readFileSync(resolve(ROOT, 'scripts', 'package-probe-controller.mjs'), 'utf8');
+const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-gateway.mjs'), 'utf8');
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
+const evidenceWriter = readFileSync(resolve(ROOT, 'scripts', 'write-package-probe-evidence.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
 
+const baselinePackageConfig = 'CONFIG_PACKAGE_oscam=y\n';
 const packageConfig = [
-  'CONFIG_PACKAGE_luci-app-oscam=y',
   'CONFIG_PACKAGE_oscam=y',
+  'CONFIG_PACKAGE_luci-app-oscam=y',
   'CONFIG_PACKAGE_libexample=m',
 ].join('\n') + '\n';
 const baseRequest = {
-  schema: 2, channel: 'dev', mode: 'firmware-integration', packageConfig,
-  scope: { mode: 'pairs', pairs: [['ImmortalWrt', 'master']] },
-  targetPolicy: { mode: 'auto' }, maxParallel: 0, execute: true,
+  schema: 3, channel: 'dev', mode: 'package-compile', useDefconfig: true,
+  baselinePackageConfig, packageConfig,
+  packageIntent: [{ package: 'luci-app-oscam', before: 'n', after: 'y' }],
+  environmentScope: { sources: ['*'], branches: ['*'], targetSystems: ['*'], subtargets: ['*'], profiles: ['*'] },
+  coverage: { mode: 'auto', limit: 8 }, maxParallel: 0, execute: true,
 };
-const index = {
-  schema: 2,
-  sources: [{ id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'example/immortal', branches: [
-    { branch: 'master', commit: 'a'.repeat(40), state: 'fresh' },
-    { branch: 'openwrt-30.01', commit: 'b'.repeat(40), state: 'fresh' },
-    { branch: 'openwrt-29.12', commit: 'c'.repeat(40), state: 'stale' },
-    { branch: 'broken', commit: 'd'.repeat(40), state: 'unavailable' },
-  ] }],
-};
+const index = { schema: 2, sources: [
+  { id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'example/immortal', branches: [
+    { branch: 'master', commit: 'a'.repeat(40), state: 'fresh', assets: { core: { asset: 'imm-master.core.json.gz', hash: 'a'.repeat(64) } } },
+    { branch: 'openwrt-30.01', commit: 'b'.repeat(40), state: 'fresh', assets: { core: { asset: 'imm-30.core.json.gz', hash: 'b'.repeat(64) } } },
+    { branch: 'broken', commit: 'c'.repeat(40), state: 'unavailable' },
+  ] },
+  { id: 'OpenWrt', label: 'OpenWrt', repo: 'example/openwrt', branches: [
+    { branch: 'main', commit: 'd'.repeat(40), state: 'fresh', assets: { core: { asset: 'ow-main.core.json.gz', hash: 'd'.repeat(64) } } },
+  ] },
+] };
 
-assert.equal(runtimeDataBranchForChannel('main'), 'catalog-data');
 assert.equal(runtimeDataBranchForChannel('dev'), 'catalog-dev');
-assert.equal(runtimeDataBranchForChannel('staging'), 'catalog-staging');
 assert.equal(runtimeDataBranchForChannel('fix/probe'), 'catalog-fix');
 assert.equal(normalizeProbeMode('compile'), 'package-compile');
 assert.equal(normalizeProbeMode('co-install'), 'rootfs-integration');
 assert.throws(() => normalizeProbeMode('plugin-special-case'), /unsupported probe mode/);
 
-const normalizedState = normalizePackageConfig(packageConfig);
-assert.equal(normalizedState.packageConfig, packageConfig);
-assert.deepEqual(normalizedState.packages, ['luci-app-oscam', 'oscam', 'libexample']);
-assert.equal(normalizedState.states.get('libexample'), 'm');
+const finalState = normalizePackageConfig(packageConfig);
+assert.deepEqual(finalState.packages, ['oscam', 'luci-app-oscam', 'libexample']);
+assert.equal(normalizePackageConfig('', 131072, { allowEmpty: true }).packages.length, 0);
 assert.throws(() => normalizePackageConfig('CONFIG_PACKAGE_bad=z\n'), /invalid packageConfig/);
 assert.throws(() => normalizePackageConfig('CONFIG_PACKAGE_alpha=m\nCONFIG_PACKAGE_alpha=y\n'), /conflicting package state/);
-const manyPackages = Array.from({ length: 24 }, (_, i) => `CONFIG_PACKAGE_pkg-${i}=y`).join('\n') + '\n';
-assert.equal(normalizePackageConfig(manyPackages).packages.length, 24, 'Probe must not retain the old 8-package cap');
 
 const request = normalizeProbeRequest(baseRequest);
-assert.equal(request.schema, 2);
-assert.equal(request.packageConfig, packageConfig);
-assert.deepEqual(request.packages, ['luci-app-oscam', 'oscam', 'libexample']);
-assert.throws(() => normalizeProbeRequest({ ...baseRequest, schema: 1 }), /schema 2/);
-assert.throws(() => normalizeProbeRequest({ ...baseRequest, unknown: true }), /unknown keys/);
-assert.throws(() => normalizeProbeRequest({ ...baseRequest, packages: ['oscam'] }), /unknown keys: packages/);
-assert.equal(normalizeProbeRequest({ ...baseRequest, channel: 'fix/source-compatibility' }).channel,
-  'fix/source-compatibility');
-assert.deepEqual(normalizeProbeRequest({ ...baseRequest, targetPolicy: { mode: 'all' } }).targetPolicy, { mode: 'all' });
-assert.deepEqual(normalizeProbeRequest({ ...baseRequest, targetPolicy: {
-  mode: 'selected', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }],
-} }).targetPolicy, { mode: 'selected', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] });
+assert.equal(request.schema, 3);
+assert.deepEqual(request.roots, ['luci-app-oscam']);
+assert.equal(request.packages.length, 3);
+assert.equal(request.useDefconfig, true);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, schema: 2 }), /schema 3/);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, scope: {} }), /unknown keys: scope/);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, packageIntent: [{ package: 'oscam', before: 'n', after: 'y' }] }), /baseline mismatch/);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, environmentScope: { ...baseRequest.environmentScope, sources: ['*', 'OpenWrt'] } }), /wildcard cannot be mixed/);
+assert.deepEqual(normalizeProbeRequest({ ...baseRequest, coverage: { mode: 'all' } }).coverage, { mode: 'all' });
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, coverage: { mode: 'auto', limit: 257 } }), /1 to 256/);
+
+const gatewayRequest = normalizeGatewayRequest(baseRequest);
+assert.deepEqual(gatewayRequest.roots, ['luci-app-oscam']);
+assert.equal(gatewayRequest.finalPackageCount, 3);
+assert.equal(gatewayRequest.useDefconfig, true);
 
 const token = PROBE_STATE_PREFIX + gzipSync(Buffer.from(JSON.stringify(baseRequest))).toString('base64url');
-const parsedState = parseProbeStateToken(`### Generated probe state\n\n${token}\n`);
-assert.deepEqual(parsedState.raw, baseRequest);
-assert.match(parsedState.sha256, /^[a-f0-9]{64}$/);
-assert.throws(() => parseProbeStateToken('no generated state'), /exactly one/);
+const parsed = parseProbeStateToken(`state\n${token}\n`);
+assert.deepEqual(parsed.raw, baseRequest);
+assert.match(parsed.sha256, /^[a-f0-9]{64}$/);
+assert.throws(() => parseProbeStateToken('WEIG_PACKAGE_PROBE_STATE_V2:abc'), /schema has changed/);
 assert.throws(() => parseProbeStateToken(`${token}\n${token}`), /exactly one/);
-assert.throws(() => parseProbeStateToken(`${PROBE_STATE_PREFIX}${Buffer.from('not gzip').toString('base64url')}`), /gzip/);
 
-const selectableTarget = (id, selector, profile = '') => ({ id, targetSelector: selector,
-  contract: { selectable: true, boardSelector: selector.split('_').slice(0, 2).join('_') },
-  profiles: profile ? [{ id: profile, selector: `${selector}_${profile}`, targetSelector: selector,
-    boardSelector: selector.split('_').slice(0, 2).join('_'), selectable: true }] : [] });
-const core = { schema: 6, targets: [selectableTarget('other/default', 'TARGET_other_default', 'Default'),
-  selectableTarget('x86/64', 'TARGET_x86_64', 'DEVICE_generic')] };
-const preferredTarget = probeTargetConfig(core);
-assert.equal(preferredTarget.target, 'x86/64');
-assert.equal(preferredTarget.profile, 'DEVICE_generic');
-assert(preferredTarget.config.includes('CONFIG_TARGET_x86_64_DEVICE_generic=y'));
-assert.equal(probeTargetConfigs(core, { mode: 'boot-smoke', bootTargetPatterns: ['x86/64'] }).length, 1);
+assert(isProbeIssue({ title: '[probe] package' }));
+assert.equal(probeIssueCommand(' /CANCEL\n'), 'cancel');
+assert(probeCancellationAuthorized({ requester: 'Author', commenter: 'author', permission: 'read' }));
+assert(probeCancellationAuthorized({ requester: 'author', commenter: 'helper', permission: 'write' }));
+assert(!probeCancellationAuthorized({ requester: 'author', commenter: 'reader', permission: 'read' }));
+const marker = `<!-- WEIG_PACKAGE_PROBE_RUN_V3 run=123 sha=${'a'.repeat(64)} batch=2 -->`;
+assert.deepEqual(probeRunMarkers([{ body: marker }, { body: marker }]), [{ runId: 123, sha256: 'a'.repeat(64), batchIndex: 2 }]);
+assert(probeCancellationRequested([{ body: '<!-- WEIG_PACKAGE_PROBE_CANCEL_V1 -->' }]));
 
-assert.throws(() => createProbePlan({ index, policy, request: baseRequest,
-  env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } }),
-/createProbePlan requires a normalized probe request/);
-const ownerPlan = createProbePlan({ index, policy, request: normalizeProbeRequest({
-  ...baseRequest, mode: 'package-compile', scope: { mode: 'all' }, targetPolicy: { mode: 'auto' },
-}), env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin' } });
-assert.equal(ownerPlan.matrix.include.length, 3);
-assert.equal(ownerPlan.maxParallel, 3);
-assert.equal(ownerPlan.mode, 'package-compile');
-assert.equal(ownerPlan.evidenceLevel, 1);
-assert.equal(ownerPlan.timeoutMinutes, 360);
-assert.deepEqual(ownerPlan.resolvedPackages, ['luci-app-oscam', 'oscam', 'libexample']);
-assert.equal(ownerPlan.packageConfig, packageConfig);
-assert.deepEqual(ownerPlan.mappings, []);
-assert(ownerPlan.matrix.include.every((row) => row.packages === 'luci-app-oscam,oscam,libexample'));
-assert(!ownerPlan.matrix.include.some((row) => row.branch === 'broken'));
-
-const collaboratorPlan = createProbePlan({ index, policy, request: normalizeProbeRequest({
-  ...baseRequest, mode: 'rootfs-integration', scope: { mode: 'patterns', source: 'Immortal*', branch: 'openwrt-*' },
-  maxParallel: 20,
-}), env: { REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'writer', PROBE_AUTHORIZATION: 'write' } });
-assert.equal(collaboratorPlan.matrix.include.length, 2);
-assert.equal(collaboratorPlan.maxParallel, 2);
-
-const envPlan = createProbePlan({ index, policy, env: {
-  REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin', CODE_REF: 'dev',
-  PROBE_MODE: 'package-compile', PROBE_PACKAGE_CONFIG: packageConfig, SOURCE_PATTERN: 'ImmortalWrt',
-  BRANCH_PATTERN: 'master', TARGET_POLICY: 'auto', MAX_PARALLEL: '0', DRY_RUN: 'true',
+function target(id, board, subtarget, profileId = 'DEVICE_generic') {
+  const selectorStem = `TARGET_${board}_${subtarget}`;
+  return { id, board, systemName: board, subtarget, subtargetLabel: subtarget, targetSelector: selectorStem,
+    contract: { selectable: true, boardSelector: `TARGET_${board}`, targetSelector: selectorStem },
+    profiles: [{ id: profileId, name: profileId === 'DEVICE_generic' ? 'Generic' : profileId,
+      selector: `${selectorStem}_${profileId}`, boardSelector: `TARGET_${board}`, targetSelector: selectorStem, selectable: true }] };
+}
+const core = { schema: 6, targets: [target('x86/64', 'x86', '64'), target('mediatek/filogic', 'mediatek', 'filogic', 'DEVICE_router')] };
+const preferred = probeTargetConfig(core);
+assert.equal(preferred.target, 'x86/64');
+assert.equal(preferred.profile, 'DEVICE_generic');
+assert(preferred.config.includes('CONFIG_TARGET_x86_64_DEVICE_generic=y'));
+const filtered = resolveProbeTargetConfigs(core, { mode: 'package-compile', environmentScope: {
+  sources: ['*'], branches: ['*'], targetSystems: ['mediatek'], subtargets: ['filogic'], profiles: ['*'],
 } });
-assert.equal(envPlan.matrix.include.length, 1);
-assert.equal(envPlan.execute, false);
-assert.deepEqual(envPlan.resolvedPackages, ['luci-app-oscam', 'oscam', 'libexample']);
+assert.equal(filtered.rows.length, 1);
+assert.equal(filtered.rows[0].targetSystem, 'mediatek');
+assert.equal(filtered.rows[0].subtarget, 'filogic');
+assert.equal(resolveProbeTargetConfigs(core, { mode: 'boot-smoke', bootTargetPatterns: ['x86/64'], environmentScope: baseRequest.environmentScope }).rows.length, 1);
 
-const apkIssues = parseProbeLog(
-  'ERROR: luci-app-openvpn-server-3.0-r0: trying to overwrite etc/config/openvpn owned by openvpn-openssl-2.7.4-r3.\n' +
-  'ERROR: package/feeds/packages/ovpn-dco failed to build.\n' +
-  'ERROR: requested package states did not survive make defconfig: missing=y');
-assert(apkIssues.some((row) => row.type === 'rootfs-conflict' && row.manager === 'apk' && row.path === '/etc/config/openvpn'));
-assert(apkIssues.some((row) => row.type === 'package-build-failure'));
-assert(apkIssues.some((row) => row.type === 'kconfig-unsatisfied'));
-assert.deepEqual(requestedPackageStates('CONFIG_PACKAGE_alpha=m\nCONFIG_PACKAGE_beta=y\n# CONFIG_PACKAGE_gamma is not set\n',
-  ['alpha', 'beta', 'gamma', 'missing']), { alpha: 'm', beta: 'y', gamma: 'n', missing: 'missing' });
-const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'fully-incompatible', attempts: [] },
-  env: { PROBE_PACKAGES: 'alpha', PROBE_CONCLUSION: 'failure' } });
-assert.equal(infrastructure.conclusion, 'infrastructure-failure');
-const recovered = createEvidence({ log: '', runtime: { conclusion: 'sampled-compatible',
-  attempts: [{ result: 'success', stages: { packageCompile: 'success' }, serialRetries: [{ label: 'package:alpha', result: 'recovered' }] }] },
-  env: { PROBE_PACKAGES: 'alpha', PROBE_CONCLUSION: 'success' } });
-assert(evidenceSummaryLines(recovered).some((line) => line.includes('Serial recovery / 串行复核恢复')));
-const coverageRow = (target, result, issue = { type: 'package-build-failure' }) => ({
-  source: 'Source', branch: 'branch', target, mode: 'package-compile', packages: ['package'],
-  coverage: { requested: 2, attempted: 1 }, attempts: [{ target, result, stages: { packageCompile: result } }], issues: issue ? [issue] : [],
-});
-assert.equal(aggregateScopeConclusions([coverageRow('target/a', 'failure'), coverageRow('target/b', 'failure')])[0].conclusion, 'fully-incompatible');
-assert.equal(aggregateScopeConclusions([coverageRow('target/a', 'success', null), coverageRow('target/b', 'failure')])[0].conclusion, 'partially-compatible');
+const legacy = { schema: 6, targets: [target('x86/64', 'x86', '64', 'Generic')] };
+const mapped = resolveProbeTargetConfigs(legacy, { mode: 'package-compile', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] });
+assert.equal(mapped.rows[0].profile, 'Generic');
+assert.equal(mapped.mappings[0].reason, 'unique-selectable-profile');
+
+const preliminary = createProbePlan({ index, policy, request, env: {
+  REPOSITORY_OWNER: 'owner', GITHUB_ACTOR: 'owner', PROBE_AUTHORIZATION: 'admin', PROBE_AUTHORIZED: 'true', PROBE_BATCH_INDEX: '0',
+} });
+assert.equal(preliminary.matrix.include.length, 3);
+assert.deepEqual(preliminary.requested, ['luci-app-oscam']);
+assert.equal(preliminary.useDefconfig, true);
+const cores = new Map([['master', core], ['openwrt-30.01', core], ['main', core]]);
+const plan = await attachProbeTargets(preliminary, { policy, dataRef: 'f'.repeat(40), runId: '100', loadCore: async (row) => cores.get(row.branch) });
+assert.equal(plan.coverage.total, 6);
+assert.equal(plan.coverage.planned, 6, 'Auto must run all candidates when total <= limit');
+assert.equal(plan.coverage.sampled, false);
+assert.equal(plan.matrix.include.length, 6);
+assert.equal(plan.dataCommit, 'f'.repeat(40));
+assert.match(probePlanSummary(plan), /Defconfig: `on`/);
+
+const manyRows = [];
+for (const source of ['A', 'B', 'C', 'D']) for (let branch = 0; branch < 5; branch++) for (let profile = 0; profile < 5; profile++) {
+  manyRows.push({ source, branch: `b${branch}`, targetSystem: profile % 2 ? 'x86' : 'mediatek', subtarget: profile % 2 ? '64' : 'filogic', profile: `p${profile}`, target: `t${profile}` });
+}
+const scopeAll = { sources: ['*'], branches: ['*'], targetSystems: ['*'], subtargets: ['*'], profiles: ['*'] };
+const sampleA = selectProbeCoverage(manyRows, { coverage: { mode: 'auto', limit: 20 }, environmentScope: scopeAll, samplingSeed: 'seed-a' });
+const sampleAgain = selectProbeCoverage(manyRows, { coverage: { mode: 'auto', limit: 20 }, environmentScope: scopeAll, samplingSeed: 'seed-a' });
+const sampleB = selectProbeCoverage(manyRows, { coverage: { mode: 'auto', limit: 20 }, environmentScope: scopeAll, samplingSeed: 'seed-b' });
+assert.equal(sampleA.length, 20);
+assert.deepEqual(sampleA, sampleAgain, 'same seed must reproduce the same Auto sample');
+assert.notDeepEqual(sampleA, sampleB, 'new run seed should rotate the sample');
+assert.equal(new Set(sampleA.map((row) => row.source)).size, 4, 'Auto must preserve Source breadth before filling the budget');
+
+const apkIssues = parseProbeLog('ERROR: luci-app-openvpn-server-3.0-r0: trying to overwrite etc/config/openvpn owned by openvpn-openssl-2.7.4-r3.\n' +
+  'ERROR: Final package-enabled firmware failed after Baseline success\n');
+assert(apkIssues.some((row) => row.type === 'rootfs-conflict' && row.path === '/etc/config/openvpn'));
+assert(apkIssues.some((row) => row.type === 'package-firmware-failure'));
+const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'incompatible', attempts: [] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_CONCLUSION: 'failure' } });
+assert.equal(infrastructure.conclusion, 'inconclusive');
 
 const lede = config.sources.find((source) => source.id === 'lede');
-assert(sourceAllowsBranch(lede, 'master'));
-for (const version of ['openwrt-27.01', 'openwrt-28.12', 'openwrt-29.10', 'openwrt-30.01']) {
-  assert(sourceAllowsBranch(lede, version), `lede future branch was not discovered: ${version}`);
-}
+for (const version of ['master', 'openwrt-27.01', 'openwrt-30.01']) assert(sourceAllowsBranch(lede, version));
 
-assert(workflow.includes('package_config:') && workflow.includes('state_sha256:') && workflow.includes('PROBE_PACKAGE_CONFIG'));
-assert(!workflow.includes('inputs.packages') && !workflow.includes('inputs.request') && !workflow.includes('PROBE_REQUEST_SHA256'));
-assert(workflow.includes('timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout_minutes) }}'));
-assert(controller.includes('normalizePackageConfig') && controller.includes('parseProbeStateToken'));
-assert(controller.includes('requireNormalizedProbeRequest'));
-assert(!controller.includes('applications.json.gz') && !controller.includes('resolveProbePackages') && !controller.includes('maxPackages'));
-assert(runner.includes('const state = PACKAGE_STATES.get(packageName)') && runner.includes('states[name] === PACKAGE_STATES.get(name)') && !runner.includes("PACKAGE_STATES.get(packageName) || 'n'"));
-assert(runner.includes('writeConfig(candidate, [])'), 'firmware baseline must exclude the shared package state');
-assert(workflow.includes('node scripts/run-package-probe.mjs') && runner.includes('package/install'));
-assert(workflow.includes('retention-days: 60') && workflow.includes('retention-days: 30'));
-assert.equal(policy.probe.collaboratorMaxParallel, 3);
+assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-gateway.mjs'));
+assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && issueForm.includes('`/cancel`'));
+for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
+assert(workflow.includes('actions: write') && workflow.includes('WEIG_PACKAGE_PROBE_BATCH_V3'));
+assert(controller.includes('environmentScope') && controller.includes('selectProbeCoverage') && !controller.includes('maxAutoTargetAttempts'));
+assert(!issueGateway.includes('WEIG_PACKAGE_PROBE_RUN_V2') && issueGateway.includes('WEIG_PACKAGE_PROBE_RUN_V3'));
+assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')));
+assert(runner.includes('Source-Makefile:') || runner.includes('Source-Makefile'));
+assert(runner.includes('tmp/.packageinfo') || runner.includes("'tmp', '.packageinfo'"));
+assert(runner.includes('const compiled = await makeWithSerialRetry(resolved.targets'));
+assert(!runner.includes('for (const packageName of activePackages)'));
+assert(!runner.includes('reduceFailureSet') && !runner.includes('PROBE_REDUCTION_BUDGET') && !runner.includes('PROBE_FALLBACK_TARGETS'));
+assert(runner.includes("['package/install']"));
+assert(runner.includes("prepareConfig(BASELINE_STATES") && runner.includes("prepareConfig(FINAL_STATES"));
+assert(runner.includes('BUILD_LOG=1'));
+assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.includes('fully-incompatible') && evidenceWriter.includes('partially-compatible'));
 assert.equal(policy.probe.maxMatrixJobs, 256);
-assert.equal(policy.probe.maxPackageConfigBytes, 131072);
-assert.equal(policy.probe.normalizedEvidenceDays, 60);
-assert.equal(policy.probe.fullLogDays, 30);
-assert(!('maxPackages' in policy.probe));
+assert.deepEqual(policy.probe.autoCoverageLimits, { 'package-compile': 200, 'rootfs-integration': 100, 'firmware-integration': 30, 'boot-smoke': 10 });
+assert(!('maxAutoTargetAttempts' in policy.probe) && !('reductionMaxAttempts' in policy.probe));
 for (const key of ['howTo', 'submittedState', 'stateInstruction', 'invalid']) assert(probeUi.strings[key]?.en && probeUi.strings[key]?.['zh-CN']);
-assert(!probeUi.strings.downloadedRequest && !probeUi.strings.uploadInstruction);
-assert(catalogWorkflow.includes('!scripts/run-package-probe.mjs') && catalogWorkflow.includes('!scripts/package-probe-*.mjs'));
+assert(catalogWorkflow.includes('scripts/catalog-change-impact.mjs'));
 
-console.log('Package probe shared-state checks passed.');
+console.log('Package Probe V3 contracts passed.');
