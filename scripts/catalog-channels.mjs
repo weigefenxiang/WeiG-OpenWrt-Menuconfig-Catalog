@@ -89,6 +89,31 @@ export function defaultReuseSourceForCodeRef(codeRef) {
   return null;
 }
 
+function configuredReuseMarker(cwd = process.cwd()) {
+  try {
+    return String(readFileSync(resolve(cwd, '.catalog-reuse-source'), 'utf8') || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+export function configuredReuseSourceForCodeRef(codeRef, { cwd = process.cwd() } = {}) {
+  const ref = String(codeRef || '').trim();
+  const marker = configuredReuseMarker(cwd);
+  // A canonical fix may seed from another validated fix snapshot, and dev may inherit
+  // the exact validated fix snapshot it is promoting. Higher channels keep their fixed
+  // predecessor edges (dev -> staging -> candidate) rather than skipping layers.
+  if (marker && (Boolean(canonicalFixDataBranch(ref)) || ref === 'dev')) {
+    try {
+      const validated = validatePromotionSource(ref, marker);
+      return { codeRef: validated.sourceCodeRef, dataBranch: validated.sourceDataBranch };
+    } catch {
+      // Invalid or stale markers never weaken the canonical fallback promotion edge.
+    }
+  }
+  return defaultReuseSourceForCodeRef(ref);
+}
+
 export function validatePromotionSource(targetCodeRef, sourceDataBranch) {
   const target = String(targetCodeRef || '').trim();
   const source = String(sourceDataBranch || '').trim();
@@ -166,7 +191,7 @@ function printResult(mode, value, extra = '') {
     return;
   }
   if (mode === 'reuse-source') {
-    const source = defaultReuseSourceForCodeRef(value);
+    const source = configuredReuseSourceForCodeRef(value);
     if (!source) throw new Error(`unsupported Catalog reuse code ref: ${value}`);
     process.stdout.write(`source_code_ref=${source.codeRef}\nsource_data_branch=${source.dataBranch}\n`);
     return;
