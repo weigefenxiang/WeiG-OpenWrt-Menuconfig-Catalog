@@ -5,9 +5,10 @@ import { resolve } from 'node:path';
 import {
   catalogChangeImpact,
   catalogImpactRegistryCoverage,
+  catalogPromotionImpact,
   classifyCatalogPath,
 } from './catalog-change-impact.mjs';
-import { pushBeforeSha } from './catalog-channels.mjs';
+import { configuredReuseSourceForCodeRef, pushBeforeSha } from './catalog-channels.mjs';
 
 assert.equal(classifyCatalogPath('.github/workflows/catalog.yml'), 'none');
 assert.equal(classifyCatalogPath('.github/workflows/catalog-reuse.yml'), 'none');
@@ -28,6 +29,13 @@ assert.equal(classifyCatalogPath('docs/COMPATIBILITY.md'), 'none');
 assert.equal(pushBeforeSha({ before: 'A'.repeat(40) }), 'a'.repeat(40));
 assert.equal(pushBeforeSha({ before: '0'.repeat(40) }), '');
 assert.equal(pushBeforeSha({ before: 'bad' }), '');
+
+assert.deepEqual(configuredReuseSourceForCodeRef('dev'), {
+  codeRef: 'fix-F', dataBranch: 'catalog-fix-F',
+}, 'dev promotion must prefer the validated fix snapshot declared by .catalog-reuse-source');
+assert.deepEqual(configuredReuseSourceForCodeRef('staging'), {
+  codeRef: 'dev', dataBranch: 'catalog-dev',
+}, 'staging promotion must preserve the canonical catalog-dev predecessor');
 
 assert.deepEqual(catalogChangeImpact([
   'scripts/package-probe-controller.mjs',
@@ -54,6 +62,18 @@ assert.equal(catalogChangeImpact([
 assert.equal(catalogChangeImpact([
   'scripts/build-index.mjs',
 ]).mode, 'full');
+
+const pushFull = catalogChangeImpact(['scripts/profile-config-contract.mjs']);
+const snapshotSame = catalogChangeImpact([]);
+const promoted = catalogPromotionImpact(pushFull, snapshotSame, {
+  dataBranch: 'catalog-fix-F', baseSha: 'a'.repeat(40),
+});
+assert.equal(promoted.mode, 'none', 'matching snapshot Data Surface must suppress duplicate 17-way generation');
+assert.equal(promoted.reuseSource, 'catalog-fix-F');
+assert.equal(promoted.snapshotBaseSha, 'a'.repeat(40));
+assert.equal(catalogPromotionImpact(pushFull,
+  catalogChangeImpact(['scripts/profile-config-contract.mjs'])).mode, 'full',
+'changed snapshot Data Surface must keep full generation enabled');
 
 assert.deepEqual(catalogChangeImpact([
   'translations/probe-ui.json',
