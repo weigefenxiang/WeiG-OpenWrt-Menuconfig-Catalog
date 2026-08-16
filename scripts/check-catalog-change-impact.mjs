@@ -17,7 +17,8 @@ assert.equal(classifyCatalogPath('translations/probe-ui.json'), 'applications');
 assert.equal(classifyCatalogPath('compatibility.json'), 'compatibility');
 assert.equal(classifyCatalogPath('scripts/generate-catalog.mjs'), 'full');
 assert.equal(classifyCatalogPath('scripts/build-index.mjs'), 'full');
-assert.equal(classifyCatalogPath('scripts/generate-profile-config-groups.mjs'), 'none');
+assert.equal(classifyCatalogPath('scripts/generate-profile-config-groups.mjs'), 'full');
+assert.equal(classifyCatalogPath('scripts/profile-config-contract.mjs'), 'full');
 assert.equal(classifyCatalogPath('scripts/catalog-change-impact.mjs'), 'none');
 assert.equal(classifyCatalogPath('scripts/stamp-catalog-snapshot.mjs'), 'none');
 assert.equal(classifyCatalogPath('scripts/check-profile-config-groups.mjs'), 'none');
@@ -42,7 +43,10 @@ assert.equal(catalogChangeImpact([
 assert.equal(catalogChangeImpact([
   'scripts/generate-profile-config-groups.mjs',
   'scripts/check-profile-config-groups.mjs',
-]).mode, 'none');
+]).mode, 'full');
+assert.equal(catalogChangeImpact([
+  'scripts/profile-config-contract.mjs',
+]).mode, 'full');
 assert.equal(catalogChangeImpact([
   'scripts/stamp-catalog-snapshot.mjs',
   'scripts/check-catalog-snapshot.mjs',
@@ -74,7 +78,8 @@ const catalogWorkflow = readFileSync(resolve('.github/workflows/catalog.yml'), '
 assert(!catalogWorkflow.includes('- "scripts/**"'), 'Menuconfig Catalog push must not watch every script');
 assert(!catalogWorkflow.includes('- ".github/workflows/catalog.yml"'), 'Menuconfig Catalog push must not self-trigger on control changes');
 for (const required of [
-  'scripts/generate-catalog.mjs', 'scripts/build-index.mjs', 'catalog.config.json',
+  'scripts/generate-catalog.mjs', 'scripts/generate-profile-config-groups.mjs',
+  'scripts/profile-config-contract.mjs', 'scripts/build-index.mjs', 'catalog.config.json',
   'translations/menu-i18n.json', 'translations/zh-CN.json', 'compatibility.json', 'curated-sizes.json',
 ]) {
   assert(catalogWorkflow.includes(`- "${required}"`), `Catalog runtime input missing from push.paths: ${required}`);
