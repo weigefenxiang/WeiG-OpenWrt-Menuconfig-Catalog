@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       source_data_branch:
-        description: "Optional validated source snapshot (for example catalog-fix-F when promoting to dev)"
+        description: "Optional validated source snapshot (for example catalog-fix-F when seeding fix-F1)"
         required: false
         default: ""
 
@@ -48,6 +48,9 @@ jobs:
             if [[ "$GITHUB_REF_NAME" == fix-* ]] &&
                git ls-remote --exit-code --heads origin "refs/heads/$target_data_branch" >/dev/null 2>&1; then
               source_data_branch="$target_data_branch"
+            elif [[ "$GITHUB_REF_NAME" == fix-* && -f .catalog-reuse-source ]]; then
+              source_data_branch="$(tr -d '[:space:]' < .catalog-reuse-source)"
+              [[ -n "$source_data_branch" ]] || { echo ".catalog-reuse-source is empty"; exit 1; }
             else
               eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
             fi
@@ -195,7 +198,7 @@ jobs:
           )
           for run_id in "${stale_runs[@]}"; do
             echo "Cancel stale Catalog run: $run_id"
-            gh api --method POST "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel" || true
+            gh api --method POST "/repos/${GITHUB_REPOSITORY}/actions/runs/$run_id/cancel" || true
           done
 
       - name: Promote exact reusable snapshot / 晋级精确可复用快照
