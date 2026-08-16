@@ -1,0 +1,58 @@
+name: one-shot seed catalog-fix-F3
+on:
+  push:
+    branches: [fix-F3]
+    paths:
+      - '.github/workflows/one-shot-seed-catalog-fix-f3.yml'
+permissions:
+  contents: write
+jobs:
+  seed:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix-F3
+          fetch-depth: 0
+      - name: Verify and seed immutable snapshot
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+          git clone --depth 1 --single-branch --branch catalog-fix-F "$remote" source
+          node scripts/sync-index-assets.mjs source --check
+          readarray -t identity < <(node --input-type=module - <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { verifyReusableCatalogSnapshot } from './scripts/stamp-catalog-snapshot.mjs';
+          const index = JSON.parse(readFileSync('source/index.json', 'utf8'));
+          const baseSha = String(index?.provenance?.codeSha || '').trim().toLowerCase();
+          const reusable = verifyReusableCatalogSnapshot(index, {
+            repository: process.env.GITHUB_REPOSITORY || '',
+            codeRef: 'fix-F',
+            previousCodeSha: baseSha,
+          });
+          if (reusable.complete !== true) throw new Error('Catalog seed requires a complete source snapshot');
+          console.log(reusable.assetRef);
+          console.log(baseSha);
+          NODE
+          )
+          asset_ref="${identity[0]}"
+          base_sha="${identity[1]}"
+          git cat-file -e "$base_sha^{commit}"
+          git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA"
+          mapfile -t changed < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
+          node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/impact.out"
+          [[ "$(sed -n 's/^mode=//p' "$RUNNER_TEMP/impact.out")" == none ]]
+          git -C source fetch --depth 1 origin "$asset_ref"
+          git -C source cat-file -e "${asset_ref}^{commit}"
+          git clone --depth 1 --single-branch --branch catalog-fix-F3 "$remote" target
+          rsync -a --delete --exclude=.git source/ target/
+          node scripts/stamp-catalog-snapshot.mjs target/index.json "$asset_ref" fix-F3 "$GITHUB_SHA" true
+          node scripts/sync-index-assets.mjs target --check
+          git -C target config user.name github-actions[bot]
+          git -C target config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C target add -A
+          git -C target commit -m 'data: seed fix-F3 from validated immutable snapshot'
+          git -C target push origin HEAD:catalog-fix-F3
