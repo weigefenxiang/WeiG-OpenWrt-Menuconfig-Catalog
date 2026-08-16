@@ -247,9 +247,9 @@ jobs:
       CATALOG_DATA_BRANCH: ${{ needs.mode.outputs.data_branch }}
       FAST_ASSETS: ${{ needs.mode.outputs.fast_assets }}
     steps:
+      - uses: actions/checkout@v7
       - name: Validate non-production publish channel
         run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
-      - uses: actions/checkout@v7
       - name: Fetch current root-asset contracts
         run: |
           IFS=',' read -ra assets <<< "$FAST_ASSETS"
@@ -322,9 +322,9 @@ jobs:
       CATALOG_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       CATALOG_ARTIFACT_NAME: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
     steps:
+      - uses: actions/checkout@v7
       - name: Validate non-production publish channel
         run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
-      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           pattern: "*-catalog-*"
