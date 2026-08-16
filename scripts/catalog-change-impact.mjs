@@ -58,6 +58,7 @@ const REGISTRY = Object.freeze({
     'scripts/check-profile-config-contract.mjs',
     'scripts/check-profile-config-groups.mjs',
     'scripts/check-profile-wire-format-benchmark.mjs',
+    'scripts/check-public-terminology.mjs',
     'scripts/check-release-publication.mjs',
     'scripts/check-translation-assets.mjs',
     'scripts/check-translation-plan.mjs',
