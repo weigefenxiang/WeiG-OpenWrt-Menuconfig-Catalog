@@ -7,13 +7,27 @@ on:
     - cron: "17 19 * * 6"
   push:
     branches: [main, dev, staging, "fix-*", "fix/**"]
-    # Broad managed scopes route through scripts/catalog-change-impact.mjs.
-    # The registry is the single authority for none/root-asset/full impact.
+    # Only inputs that can change browser/build runtime Catalog data start this heavy workflow.
+    # Control-plane/test/performance changes are covered by Probe contracts + catalog-reuse.
     paths:
-      - "scripts/**"
-      - "translations/**"
-      - "*.json"
-      - ".github/workflows/catalog.yml"
+      - "catalog.config.json"
+      - "compatibility.json"
+      - "curated-sizes.json"
+      - "translations/menu-i18n.json"
+      - "translations/zh-CN.json"
+      - "translations/probe-ui.json"
+      - "scripts/build-index.mjs"
+      - "scripts/clone-upstream.sh"
+      - "scripts/compact-relations.mjs"
+      - "scripts/compatibility-rules.mjs"
+      - "scripts/curated-applications.mjs"
+      - "scripts/discover.mjs"
+      - "scripts/generate-catalog.mjs"
+      - "scripts/index-contract.mjs"
+      - "scripts/kconfig-relations.mjs"
+      - "scripts/lib.mjs"
+      - "scripts/prepare-metadata.sh"
+      - "scripts/source-policy.mjs"
 
 permissions:
   contents: write
@@ -165,7 +179,7 @@ jobs:
             --out dist
       - name: Generate E Native Profile Config Groups / 生成 E 原生 Profile 配置组
         id: experiment
-        if: steps.kconfig_contract.outcome == 'success' && (github.ref_name == 'fix-E' || github.ref_name == 'dev')
+        if: steps.kconfig_contract.outcome == 'success'
         timeout-minutes: 45
         run: |
           bash scripts/run-stage.sh profile-config-groups node scripts/generate-profile-config-groups.mjs \
@@ -198,7 +212,7 @@ jobs:
           METADATA_OUTCOME: ${{ steps.metadata.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
           KCONFIG_CONTRACT_OUTCOME: ${{ steps.kconfig_contract.outcome }}
-          EXPERIMENT_STAGE: ${{ (github.ref_name == 'fix-E' || github.ref_name == 'dev') && 'profile-config-groups' || '' }}
+          EXPERIMENT_STAGE: ${{ steps.kconfig_contract.outcome == 'success' && 'profile-config-groups' || '' }}
           EXPERIMENT_OUTCOME: ${{ steps.experiment.outcome }}
         run: node scripts/write-attempt.mjs
       - name: Upload branch result
@@ -232,11 +246,7 @@ jobs:
       FAST_ASSETS: ${{ needs.mode.outputs.fast_assets }}
     steps:
       - name: Validate non-production publish channel
-        run: |
-          case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-fix-[ABC]|catalog-fix-E|catalog-dev|catalog-staging|catalog-candidate) ;;
-            *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
-          esac
+        run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
       - uses: actions/checkout@v7
       - name: Fetch current root-asset contracts
         run: |
@@ -250,9 +260,15 @@ jobs:
             esac
             sparse+=("/$asset.json.gz")
           done
-          git clone --filter=blob:none --no-checkout --single-branch \
-            --branch "$CATALOG_DATA_BRANCH" \
-            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" previous
+          remote="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          if git ls-remote --exit-code --heads "$remote" "refs/heads/$CATALOG_DATA_BRANCH" >/dev/null 2>&1; then
+            git clone --filter=blob:none --no-checkout --single-branch --branch "$CATALOG_DATA_BRANCH" "$remote" previous
+          else
+            eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+            node scripts/catalog-channels.mjs validate-promotion "$GITHUB_REF_NAME" "$source_data_branch" >/dev/null
+            git clone --filter=blob:none --no-checkout --single-branch --branch "$source_data_branch" "$remote" previous
+            git -C previous checkout -b "$CATALOG_DATA_BRANCH"
+          fi
           git -C previous sparse-checkout init --no-cone
           git -C previous sparse-checkout set "${sparse[@]}"
           git -C previous checkout "$CATALOG_DATA_BRANCH"
@@ -305,11 +321,7 @@ jobs:
       CATALOG_ARTIFACT_NAME: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
     steps:
       - name: Validate non-production publish channel
-        run: |
-          case "$CATALOG_DATA_BRANCH" in
-            catalog-fix|catalog-fix-[ABC]|catalog-fix-E|catalog-dev|catalog-staging|catalog-candidate) ;;
-            *) echo "unsupported or production Catalog data branch: $CATALOG_DATA_BRANCH"; exit 1 ;;
-          esac
+        run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:

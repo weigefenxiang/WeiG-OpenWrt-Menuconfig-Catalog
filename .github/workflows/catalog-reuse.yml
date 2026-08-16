@@ -1,9 +1,15 @@
-name: Reuse Catalog Dev Snapshot
-run-name: Catalog dev reuse · ${{ github.event_name }} · run ${{ github.run_number }}
+name: Reuse and Promote Catalog Snapshot
+run-name: Catalog snapshot reuse · ${{ github.event_name }} · ${{ github.ref_name }} · run ${{ github.run_number }}
 
 on:
   push:
-    branches: [dev]
+    branches: [main, dev, staging, "fix-*"]
+  workflow_dispatch:
+    inputs:
+      source_data_branch:
+        description: "Optional validated source snapshot (for example catalog-fix-F when promoting to dev)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -11,67 +17,85 @@ permissions:
 
 jobs:
   preflight:
-    name: Verify reusable catalog-dev snapshot / 验证 catalog-dev 可复用快照
+    name: Verify reusable Catalog snapshot / 验证可复用 Catalog 快照
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 12
     concurrency:
-      group: catalog-reuse-preflight-dev
+      group: catalog-reuse-preflight-${{ github.ref_name }}
       cancel-in-progress: true
     outputs:
       mode: ${{ steps.impact.outputs.mode }}
       reuse: ${{ steps.verify.outputs.reuse }}
       asset_ref: ${{ steps.verify.outputs.asset_ref }}
       base_sha: ${{ steps.verify.outputs.base_sha }}
+      source_code_ref: ${{ steps.channel.outputs.source_code_ref }}
+      source_data_branch: ${{ steps.channel.outputs.source_data_branch }}
+      target_data_branch: ${{ steps.channel.outputs.target_data_branch }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
+      - id: channel
+        name: Resolve promotion edge / 解析晋级边
+        env:
+          SOURCE_OVERRIDE: ${{ inputs.source_data_branch || '' }}
+        run: |
+          set -euo pipefail
+          source_data_branch="$SOURCE_OVERRIDE"
+          if [[ -z "$source_data_branch" ]]; then
+            eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+          fi
+          node scripts/catalog-channels.mjs validate-promotion "$GITHUB_REF_NAME" "$source_data_branch" | tee "$RUNNER_TEMP/promotion.outputs"
+          cat "$RUNNER_TEMP/promotion.outputs" >> "$GITHUB_OUTPUT"
+
       - id: impact
-        name: Classify current dev push / 判定当前 dev 推送影响
+        name: Classify code delta / 判定代码差异是否改变运行数据
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          mode=full
-          if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
+          mode=none
+          if [[ "$GITHUB_EVENT_NAME" == push && "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
                 "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]]; then
             if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
               git fetch --no-tags --depth=1 origin "$BEFORE_SHA"
             fi
-            git cat-file -e "$BEFORE_SHA^{commit}"
             mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
             node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"
             mode="$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
-            [[ -n "$mode" ]]
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch current catalog-dev snapshot / 获取当前 catalog-dev 快照
+      - name: Fetch source snapshot / 获取来源快照
         if: steps.impact.outputs.mode == 'none'
         env:
           GH_TOKEN: ${{ github.token }}
+          SOURCE_DATA_BRANCH: ${{ steps.channel.outputs.source_data_branch }}
         run: |
           set -euo pipefail
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
-          git clone --depth 1 --single-branch --branch catalog-dev "$remote" reusable
+          git clone --depth 1 --single-branch --branch "$SOURCE_DATA_BRANCH" "$remote" source
 
       - id: verify
         name: Verify cumulative reuse safety / 验证累计复用安全性
         if: steps.impact.outputs.mode == 'none'
+        env:
+          SOURCE_CODE_REF: ${{ steps.channel.outputs.source_code_ref }}
         run: |
           set -euo pipefail
-          node scripts/sync-index-assets.mjs reusable --check
+          node scripts/sync-index-assets.mjs source --check
           readarray -t snapshot < <(node --input-type=module - <<'NODE'
           import { readFileSync } from 'node:fs';
           import { verifyReusableCatalogSnapshot } from './scripts/stamp-catalog-snapshot.mjs';
-          const index = JSON.parse(readFileSync('reusable/index.json', 'utf8'));
+          const index = JSON.parse(readFileSync('source/index.json', 'utf8'));
           const baseSha = String(index?.provenance?.codeSha || '').trim().toLowerCase();
           const reusable = verifyReusableCatalogSnapshot(index, {
             repository: process.env.GITHUB_REPOSITORY || '',
-            codeRef: 'dev',
+            codeRef: process.env.SOURCE_CODE_REF || '',
             previousCodeSha: baseSha,
           });
+          if (reusable.complete !== true) throw new Error('Catalog promotion requires a complete source snapshot');
           console.log(reusable.assetRef);
           console.log(baseSha);
           NODE
@@ -85,12 +109,12 @@ jobs:
               break
             fi
             [[ "$(git rev-parse --is-shallow-repository)" == true ]] || break
-            git fetch --no-tags --deepen="$deepen" origin dev
+            git fetch --no-tags --deepen="$deepen" origin "$GITHUB_REF_NAME"
           done
           if ! git cat-file -e "$base_sha^{commit}" 2>/dev/null ||
              ! git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" 2>/dev/null; then
             if [[ "$(git rev-parse --is-shallow-repository)" == true ]]; then
-              git fetch --no-tags --unshallow origin dev
+              git fetch --no-tags --unshallow origin "$GITHUB_REF_NAME"
             fi
           fi
           git cat-file -e "$base_sha^{commit}"
@@ -100,8 +124,8 @@ jobs:
           node scripts/catalog-change-impact.mjs "${since_snapshot[@]}" | tee "$RUNNER_TEMP/catalog-reuse-impact.outputs"
           [[ "$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-reuse-impact.outputs")" == none ]]
 
-          git -C reusable fetch --depth 1 origin "$asset_ref"
-          git -C reusable cat-file -e "${asset_ref}^{commit}"
+          git -C source fetch --depth 1 origin "$asset_ref"
+          git -C source cat-file -e "${asset_ref}^{commit}"
           echo "reuse=true" >> "$GITHUB_OUTPUT"
           echo "asset_ref=$asset_ref" >> "$GITHUB_OUTPUT"
           echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
@@ -111,52 +135,56 @@ jobs:
         env:
           MODE: ${{ steps.impact.outputs.mode }}
           REUSE: ${{ steps.verify.outputs.reuse }}
+          SOURCE: ${{ steps.channel.outputs.source_data_branch }}
+          TARGET: ${{ steps.channel.outputs.target_data_branch }}
           BASE_SHA: ${{ steps.verify.outputs.base_sha }}
         run: |
           {
-            echo "## Catalog dev reuse preflight"
+            echo "## Catalog snapshot reuse preflight"
             echo
-            echo "- Push impact: \`${MODE:-unknown}\`"
-            echo "- Cumulative reusable: \`${REUSE:-false}\`"
-            echo "- Published code base: \`${BASE_SHA:-n/a}\`"
-            echo "- Current dev: \`${GITHUB_SHA}\`"
+            echo "- Code impact: \`${MODE:-unknown}\`"
+            echo "- Reusable: \`${REUSE:-false}\`"
+            echo "- Source: \`${SOURCE:-n/a}\`"
+            echo "- Target: \`${TARGET:-n/a}\`"
+            echo "- Source provenance: \`${BASE_SHA:-n/a}\`"
+            echo "- Target code: \`${GITHUB_SHA}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
   publish:
-    name: Advance catalog-dev provenance / 推进 catalog-dev 来源身份
+    name: Promote immutable Catalog snapshot / 晋级不可变 Catalog 快照
     needs: preflight
     if: needs.preflight.outputs.reuse == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 10
     concurrency:
-      group: catalog-write-catalog-dev
+      group: catalog-write-${{ needs.preflight.outputs.target_data_branch }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
-      - name: Ensure this is still the latest dev / 确认仍为最新 dev
+      - name: Ensure this is still the latest code ref / 确认仍为最新代码
         id: latest
         run: |
           set -euo pipefail
-          current_sha="$(git ls-remote origin refs/heads/dev | awk '{print $1}')"
+          current_sha="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
           [[ "$current_sha" =~ ^[0-9a-f]{40}$ ]]
           if [[ "$current_sha" == "$GITHUB_SHA" ]]; then
             echo "latest=true" >> "$GITHUB_OUTPUT"
           else
             echo "latest=false" >> "$GITHUB_OUTPUT"
-            echo "A newer dev push exists; skip stale reuse publish."
+            echo "A newer code push exists; skip stale snapshot promotion."
           fi
 
-      - name: Cancel stale Catalog builds / 取消过期 Catalog 构建
-        if: steps.latest.outputs.latest == 'true'
+      - name: Cancel stale heavy Catalog builds / 取消过期重型 Catalog 构建
+        if: steps.latest.outputs.latest == 'true' && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mapfile -t stale_runs < <(
-            gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/catalog.yml/runs?branch=dev&per_page=50" \
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/catalog.yml/runs?branch=${GITHUB_REF_NAME}&per_page=50" \
               --jq ".workflow_runs[] | select(.head_sha != \"${GITHUB_SHA}\") | select(.status != \"completed\") | .id"
           )
           for run_id in "${stale_runs[@]}"; do
@@ -164,68 +192,62 @@ jobs:
             gh api --method POST "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel" || true
           done
 
-      - name: Publish provenance-only reuse / 发布仅来源身份复用
+      - name: Promote exact reusable snapshot / 晋级精确可复用快照
         if: steps.latest.outputs.latest == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          SOURCE_DATA_BRANCH: ${{ needs.preflight.outputs.source_data_branch }}
+          TARGET_DATA_BRANCH: ${{ needs.preflight.outputs.target_data_branch }}
+          SOURCE_CODE_REF: ${{ needs.preflight.outputs.source_code_ref }}
           EXPECTED_ASSET_REF: ${{ needs.preflight.outputs.asset_ref }}
           EXPECTED_BASE_SHA: ${{ needs.preflight.outputs.base_sha }}
         run: |
           set -euo pipefail
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
-          git clone --depth 1 --single-branch --branch catalog-dev "$remote" reusable
-          node scripts/sync-index-assets.mjs reusable --check
-
-          readarray -t current < <(node - <<'NODE'
-          const i = require('./reusable/index.json');
+          git clone --depth 1 --single-branch --branch "$SOURCE_DATA_BRANCH" "$remote" source
+          node scripts/sync-index-assets.mjs source --check
+          readarray -t source_identity < <(node - <<'NODE'
+          const i = require('./source/index.json');
           console.log(String(i.assetRef || '').trim().toLowerCase());
           console.log(String(i.provenance?.codeSha || '').trim().toLowerCase());
           NODE
           )
-          current_asset_ref="${current[0]}"
-          current_base_sha="${current[1]}"
-          if [[ "$current_base_sha" == "$GITHUB_SHA" ]]; then
-            echo "catalog-dev provenance already points at current dev."
-            exit 0
+          [[ "${source_identity[0]}" == "$EXPECTED_ASSET_REF" ]] || { echo "source assetRef changed after preflight"; exit 1; }
+          [[ "${source_identity[1]}" == "$EXPECTED_BASE_SHA" ]] || { echo "source provenance changed after preflight"; exit 1; }
+
+          if git ls-remote --exit-code --heads "$remote" "refs/heads/$TARGET_DATA_BRANCH" >/dev/null 2>&1; then
+            git clone --depth 1 --single-branch --branch "$TARGET_DATA_BRANCH" "$remote" target
+          else
+            git clone --depth 1 --single-branch --branch "$SOURCE_DATA_BRANCH" "$remote" target
+            git -C target checkout -b "$TARGET_DATA_BRANCH"
           fi
-          [[ "$current_asset_ref" == "$EXPECTED_ASSET_REF" ]] || {
-            echo "catalog-dev assetRef changed after preflight; refuse stale reuse."; exit 1;
-          }
-          [[ "$current_base_sha" == "$EXPECTED_BASE_SHA" ]] || {
-            echo "catalog-dev provenance changed after preflight; refuse stale reuse."; exit 1;
-          }
-
-          node scripts/stamp-catalog-snapshot.mjs \
-            reusable/index.json \
-            "$current_asset_ref" \
-            dev \
-            "$GITHUB_SHA" \
-            "" \
-            "$current_base_sha"
-          node scripts/sync-index-assets.mjs reusable --check
-
-          git -C reusable config user.name github-actions[bot]
-          git -C reusable config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git -C reusable add index.json
-          changed="$(git -C reusable diff --cached --name-only)"
-          [[ "$changed" == "index.json" ]] || {
-            echo "unexpected reusable snapshot changes: $changed"; exit 1;
-          }
-          git -C reusable commit -m "data: reuse catalog-dev snapshot"
-          git -C reusable push origin HEAD:catalog-dev
+          rsync -a --delete --exclude=.git source/ target/
+          node scripts/stamp-catalog-snapshot.mjs target/index.json "$EXPECTED_ASSET_REF" "$GITHUB_REF_NAME" "$GITHUB_SHA" true
+          node scripts/sync-index-assets.mjs target --check
+          git -C target config user.name github-actions[bot]
+          git -C target config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C target add -A
+          if git -C target diff --cached --quiet; then
+            echo "$TARGET_DATA_BRANCH already matches the verified snapshot and provenance."
+          else
+            git -C target commit -m "data: promote reusable Catalog snapshot"
+            git -C target push origin "HEAD:$TARGET_DATA_BRANCH"
+          fi
 
       - name: Publish summary / 发布摘要
         if: always()
         env:
           LATEST: ${{ steps.latest.outputs.latest }}
-          BASE_SHA: ${{ needs.preflight.outputs.base_sha }}
+          SOURCE: ${{ needs.preflight.outputs.source_data_branch }}
+          TARGET: ${{ needs.preflight.outputs.target_data_branch }}
           ASSET_REF: ${{ needs.preflight.outputs.asset_ref }}
         run: |
           {
-            echo "## Catalog dev reuse publish"
+            echo "## Catalog snapshot promotion"
             echo
-            echo "- Latest dev: \`${LATEST:-false}\`"
-            echo "- Previous provenance: \`${BASE_SHA:-n/a}\`"
+            echo "- Latest code: \`${LATEST:-false}\`"
+            echo "- Source: \`${SOURCE:-n/a}\`"
+            echo "- Target: \`${TARGET:-n/a}\`"
             echo "- Preserved assetRef: \`${ASSET_REF:-n/a}\`"
-            echo "- Current dev: \`${GITHUB_SHA}\`"
+            echo "- Code: \`${GITHUB_SHA}\`"
           } >> "$GITHUB_STEP_SUMMARY"
