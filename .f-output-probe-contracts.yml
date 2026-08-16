@@ -1,0 +1,74 @@
+name: Probe contracts
+
+on:
+  push:
+    branches: [main, dev, staging, "fix-*", "fix/**"]
+    paths:
+      - "scripts/package-probe-*.mjs"
+      - "scripts/run-package-probe.mjs"
+      - "scripts/write-package-probe-evidence*.mjs"
+      - "scripts/check-package-probe*.mjs"
+      - "scripts/check-probe-authorization.mjs"
+      - "scripts/profile-config-contract.mjs"
+      - "scripts/check-profile-config-contract.mjs"
+      - "scripts/benchmark-profile-config-groups.mjs"
+      - "scripts/generate-profile-config-groups.mjs"
+      - "scripts/check-profile-config-groups.mjs"
+      - "scripts/collect-results.mjs"
+      - "scripts/check-collector.mjs"
+      - "scripts/verify-target-contracts.mjs"
+      - "scripts/catalog-channels.mjs"
+      - "scripts/catalog-change-impact.mjs"
+      - "scripts/check-catalog-change-impact.mjs"
+      - "scripts/check-production-boundary.mjs"
+      - "scripts/stamp-catalog-snapshot.mjs"
+      - "scripts/check-catalog-snapshot.mjs"
+      - "package.json"
+      - ".github/workflows/catalog.yml"
+      - ".github/workflows/catalog-production.yml"
+      - ".github/workflows/catalog-reuse.yml"
+      - ".github/workflows/package-probe*.yml"
+      - ".github/workflows/probe-contracts.yml"
+  pull_request:
+    paths:
+      - "scripts/package-probe-*.mjs"
+      - "scripts/run-package-probe.mjs"
+      - "scripts/write-package-probe-evidence*.mjs"
+      - "scripts/check-package-probe*.mjs"
+      - "scripts/check-probe-authorization.mjs"
+      - "scripts/profile-config-contract.mjs"
+      - "scripts/check-profile-config-contract.mjs"
+      - "scripts/benchmark-profile-config-groups.mjs"
+      - "scripts/generate-profile-config-groups.mjs"
+      - "scripts/check-profile-config-groups.mjs"
+      - "scripts/collect-results.mjs"
+      - "scripts/check-collector.mjs"
+      - "scripts/verify-target-contracts.mjs"
+      - "scripts/catalog-channels.mjs"
+      - "scripts/catalog-change-impact.mjs"
+      - "scripts/check-catalog-change-impact.mjs"
+      - "scripts/check-production-boundary.mjs"
+      - "scripts/stamp-catalog-snapshot.mjs"
+      - "scripts/check-catalog-snapshot.mjs"
+      - "package.json"
+      - ".github/workflows/catalog.yml"
+      - ".github/workflows/catalog-production.yml"
+      - ".github/workflows/catalog-reuse.yml"
+      - ".github/workflows/package-probe*.yml"
+      - ".github/workflows/probe-contracts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Probe contracts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check Probe runner syntax
+        run: node --check scripts/run-package-probe.mjs
+      - name: Check Catalog impact registry
+        run: node scripts/catalog-change-impact.mjs --check-registry
+      - name: Run project contract tests
+        run: npm test

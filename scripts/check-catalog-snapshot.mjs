@@ -44,9 +44,9 @@ if (stamped.hash !== contract.hash || stamped.bytes !== contract.bytes) {
 }
 const restamped = stampCatalogSnapshot(stamped, ref, { codeRef: 'main', codeSha, complete: true });
 if (JSON.stringify(restamped) !== JSON.stringify(stamped)) throw new Error('identical snapshot stamp was not deterministic');
-const eStamped = stampCatalogSnapshot(input, ref, { codeRef: 'fix-E', codeSha, complete: true });
-if (eStamped.provenance?.codeRef !== 'fix-E' || eStamped.provenance?.complete !== true) {
-  throw new Error('E snapshot provenance was not accepted');
+const fStamped = stampCatalogSnapshot(input, ref, { codeRef: 'fix-F', codeSha, complete: true });
+if (fStamped.provenance?.codeRef !== 'fix-F' || fStamped.provenance?.complete !== true) {
+  throw new Error('generic fix snapshot provenance was not accepted');
 }
 for (const invalid of [
   () => stampCatalogSnapshot(input, 'catalog-data'),
@@ -69,16 +69,16 @@ const reuse = verifyReusableCatalogSnapshot(reusable, {
 if (reuse.assetRef !== ref || reuse.complete !== true) {
   throw new Error('reusable snapshot verification changed immutable identity');
 }
-const reusableE = stampCatalogSnapshot(input, ref, {
-  codeRef: 'fix-E', codeSha: previousCodeSha, complete: true,
+const reusableF = stampCatalogSnapshot(input, ref, {
+  codeRef: 'fix-F', codeSha: previousCodeSha, complete: true,
 });
-const reuseE = verifyReusableCatalogSnapshot(reusableE, {
+const reuseF = verifyReusableCatalogSnapshot(reusableF, {
   repository: 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog',
-  codeRef: 'fix-E',
+  codeRef: 'fix-F',
   previousCodeSha,
 });
-if (reuseE.assetRef !== ref || reuseE.complete !== true) {
-  throw new Error('E reusable snapshot verification changed immutable identity');
+if (reuseF.assetRef !== ref || reuseF.complete !== true) {
+  throw new Error('generic fix reusable snapshot verification changed immutable identity');
 }
 for (const invalidReuse of [
   () => verifyReusableCatalogSnapshot(reusable, { repository: 'other/repo', codeRef: 'dev', previousCodeSha }),
@@ -98,7 +98,7 @@ try {
     fileURLToPath(new URL('./stamp-catalog-snapshot.mjs', import.meta.url)),
     file,
     ref,
-    'fix-E',
+    'fix-F',
     codeSha,
     'true',
   ], { encoding: 'utf8' });
@@ -106,17 +106,17 @@ try {
     throw new Error(`snapshot CLI failed: ${result.stderr || result.stdout}`);
   }
   const cli = JSON.parse(readFileSync(file, 'utf8'));
-  if (cli.assetRef !== ref || cli.hash !== indexContract(cli).hash || cli.provenance?.codeRef !== 'fix-E' ||
+  if (cli.assetRef !== ref || cli.hash !== indexContract(cli).hash || cli.provenance?.codeRef !== 'fix-F' ||
       cli.provenance?.codeSha !== codeSha) {
-    throw new Error('snapshot CLI wrote an invalid E index contract');
+    throw new Error('snapshot CLI wrote an invalid generic fix index contract');
   }
 
-  writeFileSync(file, JSON.stringify(reusableE, null, 2) + '\n');
+  writeFileSync(file, JSON.stringify(reusableF, null, 2) + '\n');
   const reuseResult = spawnSync(process.execPath, [
     fileURLToPath(new URL('./stamp-catalog-snapshot.mjs', import.meta.url)),
     file,
     ref,
-    'fix-E',
+    'fix-F',
     codeSha,
     '',
     previousCodeSha,
@@ -128,9 +128,9 @@ try {
     throw new Error(`snapshot reuse CLI failed: ${reuseResult.stderr || reuseResult.stdout}`);
   }
   const promoted = JSON.parse(readFileSync(file, 'utf8'));
-  if (promoted.assetRef !== ref || promoted.provenance?.codeRef !== 'fix-E' ||
+  if (promoted.assetRef !== ref || promoted.provenance?.codeRef !== 'fix-F' ||
       promoted.provenance?.codeSha !== codeSha || promoted.provenance?.complete !== true) {
-    throw new Error('snapshot reuse CLI did not preserve E assets while advancing provenance');
+    throw new Error('snapshot reuse CLI did not preserve generic fix assets while advancing provenance');
   }
 } finally {
   rmSync(temp, { recursive: true, force: true });

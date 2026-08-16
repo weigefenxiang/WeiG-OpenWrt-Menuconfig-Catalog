@@ -16,27 +16,30 @@ const REGISTRY = Object.freeze({
     'scripts/compatibility-rules.mjs',
   ]),
   full: Object.freeze([
-    '.github/workflows/catalog.yml',
     'catalog.config.json',
     'translations/menu-i18n.json',
     'translations/zh-CN.json',
     'scripts/build-index.mjs',
-    'scripts/catalog-change-impact.mjs',
     'scripts/clone-upstream.sh',
-    'scripts/collect-results.mjs',
     'scripts/compact-relations.mjs',
     'scripts/discover.mjs',
     'scripts/generate-catalog.mjs',
-    'scripts/generate-profile-config-groups.mjs',
     'scripts/index-contract.mjs',
     'scripts/kconfig-relations.mjs',
     'scripts/lib.mjs',
     'scripts/prepare-metadata.sh',
     'scripts/source-policy.mjs',
-    'scripts/stamp-catalog-snapshot.mjs',
   ]),
   none: Object.freeze([
+    '.github/workflows/catalog-production.yml',
+    '.github/workflows/catalog-reuse.yml',
+    '.github/workflows/catalog.yml',
+    '.github/workflows/probe-contracts.yml',
     'package.json',
+    'scripts/catalog-change-impact.mjs',
+    'scripts/collect-results.mjs',
+    'scripts/generate-profile-config-groups.mjs',
+    'scripts/stamp-catalog-snapshot.mjs',
     'scripts/benchmark-profile-config-groups.mjs',
     'scripts/benchmark-profile-wire-format.mjs',
     'scripts/catalog-channels.mjs',
@@ -105,9 +108,16 @@ function normalizePath(path) {
   return String(path || '').trim().replaceAll('\\', '/').replace(/^\.\//, '');
 }
 
+const MANAGED_WORKFLOWS = new Set([
+  '.github/workflows/catalog-production.yml',
+  '.github/workflows/catalog-reuse.yml',
+  '.github/workflows/catalog.yml',
+  '.github/workflows/probe-contracts.yml',
+]);
+
 function isManagedPath(path) {
   return path.startsWith('scripts/') || path.startsWith('translations/') ||
-    path === '.github/workflows/catalog.yml' || (!path.includes('/') && path.endsWith('.json'));
+    MANAGED_WORKFLOWS.has(path) || (!path.includes('/') && path.endsWith('.json'));
 }
 
 export function classifyCatalogPath(input) {
@@ -138,7 +148,7 @@ export function catalogImpactRegistryCoverage(root = ROOT) {
     ...readdirSync(resolve(root, 'scripts')).map((name) => `scripts/${name}`),
     ...readdirSync(resolve(root, 'translations')).map((name) => `translations/${name}`),
     ...readdirSync(root).filter((name) => name.endsWith('.json')),
-    '.github/workflows/catalog.yml',
+    ...MANAGED_WORKFLOWS,
   ].sort();
   const missing = managed.filter((path) => !CLASS_BY_PATH.has(path));
   const stale = [...CLASS_BY_PATH.keys()].filter((path) => isManagedPath(path) && !managed.includes(path)).sort();

@@ -3,7 +3,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildDataBranchForCodeRef, runtimeDataBranchForChannel, translationChannel } from './catalog-channels.mjs';
+import {
+  buildDataBranchForCodeRef,
+  runtimeDataBranchForChannel,
+  translationChannel,
+  validatePromotionSource,
+} from './catalog-channels.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const workflowDir = join(ROOT, '.github', 'workflows');
@@ -13,6 +18,7 @@ const workflows = new Map(readdirSync(workflowDir)
 const productionName = 'catalog-production.yml';
 const production = workflows.get(productionName) || '';
 const catalog = workflows.get('catalog.yml') || '';
+const reuse = workflows.get('catalog-reuse.yml') || '';
 const translation = workflows.get('translate.yml') || '';
 const sizes = workflows.get('curated-sizes.yml') || '';
 const failures = [];
@@ -20,30 +26,32 @@ const channelContracts = [
   [buildDataBranchForCodeRef('main'), 'catalog-candidate', 'build main'],
   [buildDataBranchForCodeRef('dev'), 'catalog-dev', 'build dev'],
   [buildDataBranchForCodeRef('staging'), 'catalog-staging', 'build staging'],
-  [buildDataBranchForCodeRef('fix-E'), 'catalog-fix-E', 'build fix E'],
-  [buildDataBranchForCodeRef('fix/demo'), 'catalog-fix', 'build legacy fix'],
-  [buildDataBranchForCodeRef('fix/demo-A'), 'catalog-fix-A', 'build fix A'],
-  [buildDataBranchForCodeRef('fix/demo-B'), 'catalog-fix-B', 'build fix B'],
-  [buildDataBranchForCodeRef('fix/demo-C'), 'catalog-fix-C', 'build fix C'],
-  [buildDataBranchForCodeRef('fix/demo-a'), 'catalog-fix-A', 'build lowercase fix A'],
-  [runtimeDataBranchForChannel('main'), 'catalog-data', 'runtime main'],
+  [buildDataBranchForCodeRef('fix-F'), 'catalog-fix-F', 'build fix F'],
+  [buildDataBranchForCodeRef('fix-next.test'), 'catalog-fix-next.test', 'build generic fix'],
+  [buildDataBranchForCodeRef('fix/DB'), 'catalog-DB', 'build frozen DB compatibility'],
+  [runtimeDataBranchForChannel('main'), 'catalog-main', 'runtime main'],
   [runtimeDataBranchForChannel('dev'), 'catalog-dev', 'runtime dev'],
   [runtimeDataBranchForChannel('staging'), 'catalog-staging', 'runtime staging'],
-  [runtimeDataBranchForChannel('fix-E'), 'catalog-fix-E', 'runtime fix E'],
-  [runtimeDataBranchForChannel('fix/demo'), 'catalog-fix', 'runtime legacy fix'],
-  [runtimeDataBranchForChannel('fix/demo-A'), 'catalog-fix-A', 'runtime fix A'],
-  [runtimeDataBranchForChannel('fix/demo-B'), 'catalog-fix-B', 'runtime fix B'],
-  [runtimeDataBranchForChannel('fix/demo-C'), 'catalog-fix-C', 'runtime fix C'],
+  [runtimeDataBranchForChannel('fix-F'), 'catalog-fix-F', 'runtime fix F'],
   [translationChannel('candidate')?.codeRef, 'main', 'translation candidate code'],
   [translationChannel('candidate')?.dataBranch, 'catalog-candidate', 'translation candidate data'],
-  [translationChannel('fix-E')?.codeRef, 'fix-E', 'translation fix E code'],
-  [translationChannel('fix-E')?.dataBranch, 'catalog-fix-E', 'translation fix E data'],
-  [translationChannel('fix/demo-A')?.dataBranch, 'catalog-fix-A', 'translation fix A data'],
-  [translationChannel('fix/demo-B')?.dataBranch, 'catalog-fix-B', 'translation fix B data'],
-  [translationChannel('fix/demo-C')?.dataBranch, 'catalog-fix-C', 'translation fix C data'],
+  [translationChannel('fix-F')?.codeRef, 'fix-F', 'translation fix F code'],
+  [translationChannel('fix-F')?.dataBranch, 'catalog-fix-F', 'translation fix F data'],
+  [validatePromotionSource('fix-F', 'catalog-dev').targetDataBranch, 'catalog-fix-F', 'seed fix F'],
+  [validatePromotionSource('dev', 'catalog-fix-F').targetDataBranch, 'catalog-dev', 'promote fix F to dev'],
+  [validatePromotionSource('staging', 'catalog-dev').targetDataBranch, 'catalog-staging', 'promote dev to staging'],
+  [validatePromotionSource('main', 'catalog-staging').targetDataBranch, 'catalog-candidate', 'promote staging to candidate'],
 ];
 for (const [actual, expected, label] of channelContracts) {
   if (actual !== expected) failures.push(`${label}: ${actual || '(empty)'} != ${expected}`);
+}
+for (const invalid of [
+  () => validatePromotionSource('dev', 'catalog-staging'),
+  () => validatePromotionSource('staging', 'catalog-fix-F'),
+  () => validatePromotionSource('main', 'catalog-dev'),
+  () => validatePromotionSource('fix-F', 'catalog-candidate'),
+]) {
+  try { invalid(); failures.push('invalid Catalog promotion edge was accepted'); } catch {}
 }
 
 const requireText = (text, needle, label) => { if (!text.includes(needle)) failures.push(label); };
@@ -53,29 +61,40 @@ requireText(production, 'workflow_dispatch:', 'production must be manual');
 forbidText(production, 'schedule:', 'production must not be scheduled');
 forbidText(production, 'push:', 'production must not run on push');
 requireText(production, "if: github.ref_name == 'main'", 'production must be pinned to main code');
-requireText(production, 'group: catalog-write-catalog-data', 'production must own the production writer lock');
+requireText(production, 'group: catalog-write-catalog-main', 'production must own the catalog-main writer lock');
 requireText(production, 'scripts/verify-production-candidate.mjs', 'production must verify candidate provenance');
-requireText(production, 'HEAD:catalog-data', 'production must be the catalog-data writer');
+requireText(production, 'HEAD:catalog-main', 'production must be the catalog-main writer');
 requireText(production, 'scripts/publish-release.sh', 'production must own the complete Release alias');
+forbidText(production, 'catalog-data', 'production workflow must not retain the retired catalog-data name');
 
 for (const [name, text] of workflows) {
   if (/^\s*queue\s*:/m.test(text)) failures.push(`${name} contains unsupported concurrency queue syntax`);
-  if (name === productionName) continue;
-  if (/HEAD:catalog-data|HEAD:\$\{?[^\n]*catalog-data/.test(text)) failures.push(`${name} writes catalog-data outside Production Gate`);
-  if (text.includes('scripts/publish-release.sh')) failures.push(`${name} publishes the complete Release outside Production Gate`);
+  if (name !== productionName && /HEAD:catalog-main|HEAD:\$\{?[^\n]*catalog-main/.test(text)) {
+    failures.push(`${name} writes catalog-main outside Production Gate`);
+  }
+  if (name !== productionName && text.includes('scripts/publish-release.sh')) {
+    failures.push(`${name} publishes the complete Release outside Production Gate`);
+  }
+  if (text.includes('catalog-data')) failures.push(`${name} still references retired catalog-data`);
 }
 
 requireText(catalog, 'scripts/catalog-channels.mjs build', 'catalog build must use centralized channel mapping');
-requireText(catalog, 'catalog-candidate', 'main build must support catalog-candidate');
-requireText(catalog, 'catalog-fix-[ABC]', 'Catalog experiment lanes must be explicitly bounded to A/B/C');
-requireText(catalog, 'catalog-fix-E', 'Catalog E must publish only to catalog-fix-E');
-forbidText(catalog, "github.ref_name == 'main' && 'catalog-data'", 'catalog main must not map directly to catalog-data');
+requireText(catalog, 'scripts/catalog-channels.mjs validate-non-production', 'catalog writers must use centralized non-production guard');
+forbidText(catalog, 'catalog-fix-[ABC]', 'Catalog workflow must not hard-code A/B/C lanes');
+forbidText(catalog, 'catalog-fix-E', 'Catalog workflow must not hard-code E lane');
+forbidText(catalog, '- "scripts/**"', 'Catalog heavy push must not watch every script');
+forbidText(catalog, '- ".github/workflows/catalog.yml"', 'Catalog heavy push must not self-trigger');
 forbidText(catalog, 'Publish complete catalog Release', 'catalog build must not publish production Release');
+
+requireText(reuse, 'branches: [main, dev, staging, "fix-*"]', 'reuse workflow must cover canonical fix/dev/staging/main');
+requireText(reuse, 'scripts/catalog-channels.mjs validate-promotion', 'reuse workflow must validate promotion edges centrally');
+requireText(reuse, 'scripts/catalog-change-impact.mjs', 'reuse workflow must gate on data impact');
+requireText(reuse, 'EXPECTED_ASSET_REF', 'reuse workflow must pin immutable asset identity');
 
 requireText(translation, 'default: candidate', 'translation default must be candidate');
 requireText(translation, 'options: [candidate, dev, staging]', 'translation channels must be bounded');
 requireText(translation, 'scripts/catalog-channels.mjs translation', 'translation must use centralized channel mapping');
-forbidText(translation, 'catalog-data', 'translation must not write or select production data');
+forbidText(translation, 'catalog-main', 'translation must not write or select production data');
 forbidText(translation, 'data_channel:', 'translation must not expose a free data-channel selector');
 forbidText(translation, 'code_channel:', 'translation must not expose a free code-channel selector');
 
@@ -92,8 +111,8 @@ for (const [name, text] of scan) {
   if (/git\s+(?:-C\s+\S+\s+)?push[^\n]*(?:--force|-f\b)/.test(text)) failures.push(`${name} contains a force push`);
 }
 
-const productionWriters = [...workflows].filter(([, text]) => text.includes('HEAD:catalog-data')).map(([name]) => name);
-if (productionWriters.join(',') !== productionName) failures.push(`catalog-data writer set is ${productionWriters.join(',') || '(none)'}`);
+const productionWriters = [...workflows].filter(([, text]) => text.includes('HEAD:catalog-main')).map(([name]) => name);
+if (productionWriters.join(',') !== productionName) failures.push(`catalog-main writer set is ${productionWriters.join(',') || '(none)'}`);
 
 if (failures.length) throw new Error(`production boundary check failed:\n- ${failures.join('\n- ')}`);
 console.log(`production boundary checks passed: writer=${productionName}, workflows=${workflows.size}`);

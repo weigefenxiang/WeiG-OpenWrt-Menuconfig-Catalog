@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { indexBody, stampIndex } from './index-contract.mjs';
 
 export const GIT_COMMIT_RE = /^[0-9a-f]{40}$/;
-const CODE_REF_RE = /^(?:main|dev|staging|fix-E|fix\/[A-Za-z0-9._/-]+)$/;
+const CODE_REF_RE = /^(?:main|dev|staging|fix-[A-Za-z0-9][A-Za-z0-9._-]{0,95}|fix\/[A-Za-z0-9._/-]+)$/;
 
 function normalizeComplete(value, fallback) {
   if (value === undefined || value === null || value === '') return fallback;

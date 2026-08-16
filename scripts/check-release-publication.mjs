@@ -10,19 +10,25 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const catalog = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
 
 for (const needle of [
-  '- "scripts/**"',
-  '- "translations/**"',
-  '- "*.json"',
-  '- ".github/workflows/catalog.yml"',
+  '- "catalog.config.json"',
+  '- "compatibility.json"',
+  '- "curated-sizes.json"',
+  '- "translations/menu-i18n.json"',
+  '- "translations/zh-CN.json"',
+  '- "translations/probe-ui.json"',
+  '- "scripts/generate-catalog.mjs"',
+  '- "scripts/build-index.mjs"',
   'node scripts/catalog-change-impact.mjs',
   "needs.mode.outputs.mode == 'full'",
   "needs.mode.outputs.mode == 'root-assets'",
 ]) {
-  assert(catalog.includes(needle), `catalog trigger/router contract missing: ${needle}`);
+  assert(catalog.includes(needle), `catalog runtime trigger/router contract missing: ${needle}`);
 }
-for (const legacy of ['!scripts/package-probe-*.mjs', '!scripts/run-package-probe.mjs',
-  '!scripts/write-package-probe-evidence.mjs']) {
-  assert(!catalog.includes(legacy), `legacy trigger blacklist returned: ${legacy}`);
+for (const forbidden of [
+  '- "scripts/**"', '- "translations/**"', '- "*.json"', '- ".github/workflows/catalog.yml"',
+  '!scripts/package-probe-*.mjs', '!scripts/run-package-probe.mjs', '!scripts/write-package-probe-evidence.mjs',
+]) {
+  assert(!catalog.includes(forbidden), `non-runtime Catalog trigger returned: ${forbidden}`);
 }
 
 const publishScript = resolve(ROOT, 'scripts', 'publish-release.sh');

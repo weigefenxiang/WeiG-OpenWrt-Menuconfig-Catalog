@@ -1,0 +1,417 @@
+name: Build Menuconfig Catalog
+run-name: Menuconfig catalog · ${{ github.event_name }} · run ${{ github.run_number }}
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 19 * * 6"
+  push:
+    branches: [main, dev, staging, "fix-*", "fix/**"]
+    # Only inputs that can change browser/build runtime Catalog data start this heavy workflow.
+    # Control-plane/test/performance changes are covered by Probe contracts + catalog-reuse.
+    paths:
+      - "catalog.config.json"
+      - "compatibility.json"
+      - "curated-sizes.json"
+      - "translations/menu-i18n.json"
+      - "translations/zh-CN.json"
+      - "translations/probe-ui.json"
+      - "scripts/build-index.mjs"
+      - "scripts/clone-upstream.sh"
+      - "scripts/compact-relations.mjs"
+      - "scripts/compatibility-rules.mjs"
+      - "scripts/curated-applications.mjs"
+      - "scripts/discover.mjs"
+      - "scripts/generate-catalog.mjs"
+      - "scripts/index-contract.mjs"
+      - "scripts/kconfig-relations.mjs"
+      - "scripts/lib.mjs"
+      - "scripts/prepare-metadata.sh"
+      - "scripts/source-policy.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: catalog-build-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  mode:
+    name: 00 · Select publish mode / 选择发布模式
+    runs-on: ubuntu-24.04
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+      fast_assets: ${{ steps.mode.outputs.fast_assets }}
+      data_branch: ${{ steps.channel.outputs.data_branch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - id: channel
+        name: Resolve isolated data channel / 解析隔离数据通道
+        run: echo "data_branch=$(node scripts/catalog-channels.mjs build "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+      - id: mode
+        name: Classify Catalog change impact / 判定 Catalog 变更影响
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          mode=full
+          fast_assets=
+          if [[ "$GITHUB_EVENT_NAME" == push && "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
+                "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]] &&
+             git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
+            node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"
+            mode="$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
+            fast_assets="$(sed -n 's/^fast_assets=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
+            test -n "$mode"
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "fast_assets=$fast_assets" >> "$GITHUB_OUTPUT"
+
+  discover:
+    name: 01 · Discover / 发现源码分支
+    needs: mode
+    if: needs.mode.outputs.mode == 'full'
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      publish-order: ${{ steps.matrix.outputs.publish-order }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: matrix
+        name: Discover branches and assign numbers
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p diagnostics
+          if node scripts/discover.mjs > "$RUNNER_TEMP/discover.outputs" 2> diagnostics/01-discover.log; then
+            cat "$RUNNER_TEMP/discover.outputs" >> "$GITHUB_OUTPUT"
+            rm -f diagnostics/01-discover.log
+          else
+            rc=$?
+            {
+              echo "WeiG Menuconfig Catalog discovery summary"
+              echo "Final status: failure"
+              echo "Run ID: $GITHUB_RUN_ID"
+              echo "Run attempt: $GITHUB_RUN_ATTEMPT"
+              echo "Run URL: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            } > diagnostics/01-discover--SUMMARY.txt
+            tail -n 80 diagnostics/01-discover.log
+            exit "$rc"
+          fi
+      - name: Upload 01 discovery diagnostic
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: 01-discover-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: diagnostics/
+          retention-days: 60
+          if-no-files-found: error
+
+  generate:
+    name: ${{ matrix.jobName }}
+    needs: discover
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CATALOG_SOURCE_ID: ${{ matrix.source }}
+      CATALOG_SOURCE_LABEL: ${{ matrix.label }}
+      CATALOG_REPO: ${{ matrix.repo }}
+      CATALOG_BRANCH: ${{ matrix.branch }}
+      CATALOG_VERSION: ${{ matrix.version }}
+      CATALOG_COMPAT: ${{ matrix.metadataCompat }}
+      CATALOG_JOB_KEY: ${{ matrix.jobKey }}
+      CATALOG_ORDER: ${{ matrix.orderText }}
+      CATALOG_JOB_NAME: ${{ matrix.jobName }}
+      CATALOG_RUN_ID: ${{ github.run_id }}
+      CATALOG_RUN_ATTEMPT: ${{ github.run_attempt }}
+      CATALOG_JOB_INDEX: ${{ strategy.job-index }}
+      CATALOG_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      CATALOG_ARTIFACT_NAME: ${{ matrix.artifactPrefix }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify runner tools
+        id: tools
+        timeout-minutes: 2
+        run: |
+          bash scripts/run-stage.sh tools bash -c \
+            'for tool in git make gcc g++ perl python3 rsync; do command -v "$tool" || { echo "missing runner tool: $tool"; exit 1; }; done'
+      - name: Clone ${{ matrix.repo }} @ ${{ matrix.branch }}
+        id: clone
+        timeout-minutes: 10
+        run: bash scripts/run-stage.sh clone bash scripts/clone-upstream.sh "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
+      - name: Prepare feeds
+        id: feeds
+        timeout-minutes: 25
+        working-directory: work/upstream
+        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" feeds bash -c './scripts/feeds update -a && ./scripts/feeds install -a'
+      - name: Generate upstream metadata
+        id: metadata
+        timeout-minutes: 15
+        working-directory: work/upstream
+        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" metadata bash "$GITHUB_WORKSPACE/scripts/prepare-metadata.sh" "${{ matrix.metadataCompat }}"
+      - name: Extract catalog
+        id: extract
+        timeout-minutes: 5
+        run: |
+          bash scripts/run-stage.sh extract node scripts/generate-catalog.mjs \
+            --source-id "${{ matrix.source }}" \
+            --label "${{ matrix.label }}" \
+            --repo "${{ matrix.repo }}" \
+            --branch "${{ matrix.branch }}" \
+            --legacy "${{ matrix.legacy }}" \
+            --tree work/upstream \
+            --out dist
+      - name: Verify Target/Profile Kconfig contracts
+        id: kconfig_contract
+        if: steps.extract.outcome == 'success'
+        timeout-minutes: 12
+        run: |
+          bash scripts/run-stage.sh kconfig-contract node scripts/verify-target-contracts.mjs \
+            --tree work/upstream \
+            --source-id "${{ matrix.source }}" \
+            --branch "${{ matrix.branch }}" \
+            --out dist
+      - name: Generate E Native Profile Config Groups / 生成 E 原生 Profile 配置组
+        id: experiment
+        if: steps.kconfig_contract.outcome == 'success'
+        timeout-minutes: 45
+        run: |
+          bash scripts/run-stage.sh profile-config-groups node scripts/generate-profile-config-groups.mjs \
+            --tree work/upstream \
+            --source-id "${{ matrix.source }}" \
+            --branch "${{ matrix.branch }}" \
+            --out dist
+      - name: Record branch attempt
+        if: always()
+        env:
+          SOURCE_ID: ${{ matrix.source }}
+          SOURCE_LABEL: ${{ matrix.label }}
+          SOURCE_REPO: ${{ matrix.repo }}
+          SOURCE_BRANCH: ${{ matrix.branch }}
+          SOURCE_VERSION: ${{ matrix.version }}
+          SOURCE_LEGACY: ${{ matrix.legacy }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          JOB_INDEX: ${{ strategy.job-index }}
+          CATALOG_ORDER: ${{ matrix.orderText }}
+          CATALOG_JOB_NAME: ${{ matrix.jobName }}
+          CATALOG_JOB_KEY: ${{ matrix.jobKey }}
+          CATALOG_ARTIFACT_NAME: ${{ matrix.artifactPrefix }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          METADATA_COMPAT: ${{ matrix.metadataCompat }}
+          JOB_STATUS: ${{ job.status }}
+          TOOLS_OUTCOME: ${{ steps.tools.outcome }}
+          CLONE_OUTCOME: ${{ steps.clone.outcome }}
+          FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
+          METADATA_OUTCOME: ${{ steps.metadata.outcome }}
+          EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
+          KCONFIG_CONTRACT_OUTCOME: ${{ steps.kconfig_contract.outcome }}
+          EXPERIMENT_STAGE: ${{ steps.kconfig_contract.outcome == 'success' && 'profile-config-groups' || '' }}
+          EXPERIMENT_OUTCOME: ${{ steps.experiment.outcome }}
+        run: node scripts/write-attempt.mjs
+      - name: Upload branch result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifactPrefix }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            dist/*.json.gz
+            dist/*.meta.json
+            dist/*.contract.json
+            dist/*.translations.json
+            dist/*.duplicates.json
+            dist/*.curated-candidates.json
+            attempts/*.attempt.json
+            attempts/*--SUMMARY.txt
+            failure-logs/*.log
+          retention-days: 60
+          if-no-files-found: error
+
+  publish-root-asset:
+    name: 02 · Publish root assets only / 仅发布根资产
+    needs: mode
+    if: needs.mode.outputs.mode == 'root-assets'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: catalog-write-${{ needs.mode.outputs.data_branch }}
+      cancel-in-progress: false
+    env:
+      CATALOG_DATA_BRANCH: ${{ needs.mode.outputs.data_branch }}
+      FAST_ASSETS: ${{ needs.mode.outputs.fast_assets }}
+    steps:
+      - name: Validate non-production publish channel
+        run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
+      - uses: actions/checkout@v7
+      - name: Fetch current root-asset contracts
+        run: |
+          IFS=',' read -ra assets <<< "$FAST_ASSETS"
+          test "${#assets[@]}" -gt 0
+          sparse=(/index.json)
+          for asset in "${assets[@]}"; do
+            case "$asset" in
+              compatibility|applications) ;;
+              *) echo "unsupported fast asset: $asset"; exit 1 ;;
+            esac
+            sparse+=("/$asset.json.gz")
+          done
+          remote="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          if git ls-remote --exit-code --heads "$remote" "refs/heads/$CATALOG_DATA_BRANCH" >/dev/null 2>&1; then
+            git clone --filter=blob:none --no-checkout --single-branch --branch "$CATALOG_DATA_BRANCH" "$remote" previous
+          else
+            eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+            node scripts/catalog-channels.mjs validate-promotion "$GITHUB_REF_NAME" "$source_data_branch" >/dev/null
+            git clone --filter=blob:none --no-checkout --single-branch --branch "$source_data_branch" "$remote" previous
+            git -C previous checkout -b "$CATALOG_DATA_BRANCH"
+          fi
+          git -C previous sparse-checkout init --no-cone
+          git -C previous sparse-checkout set "${sparse[@]}"
+          git -C previous checkout "$CATALOG_DATA_BRANCH"
+          test -f previous/index.json
+          for asset in "${assets[@]}"; do test -f "previous/$asset.json.gz"; done
+      - name: Rebuild root-asset contracts
+        run: |
+          IFS=',' read -ra assets <<< "$FAST_ASSETS"
+          for asset in "${assets[@]}"; do
+            node scripts/build-index.mjs "--$asset-only" previous/index.json previous/index.json
+          done
+      - name: Publish root-asset contracts
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra assets <<< "$FAST_ASSETS"
+          git -C previous config user.name github-actions[bot]
+          git -C previous config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          add=(index.json)
+          for asset in "${assets[@]}"; do add+=("$asset.json.gz"); done
+          git -C previous add --sparse "${add[@]}"
+          if git -C previous diff --cached --quiet; then
+            echo "Root asset contracts are unchanged; nothing to publish."
+            exit 0
+          fi
+          git -C previous commit -m "data: refresh Catalog root assets"
+          asset_commit="$(git -C previous rev-parse HEAD)"
+          node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA"
+          git -C previous add --sparse index.json
+          if ! git -C previous diff --cached --quiet; then
+            git -C previous commit -m "data: pin Catalog root assets"
+          fi
+          git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"
+
+  publish:
+    name: ${{ needs.discover.outputs.publish-order }} · Publish / 发布目录与 Release
+    needs: [mode, discover, generate]
+    if: always() && needs.discover.result == 'success'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: catalog-write-${{ needs.mode.outputs.data_branch }}
+      cancel-in-progress: false
+    env:
+      CATALOG_DATA_BRANCH: ${{ needs.mode.outputs.data_branch }}
+      CATALOG_ORDER: ${{ needs.discover.outputs.publish-order }}
+      CATALOG_JOB_KEY: publish
+      CATALOG_JOB_NAME: ${{ needs.discover.outputs.publish-order }} · Publish / 发布目录与 Release
+      CATALOG_RUN_ID: ${{ github.run_id }}
+      CATALOG_RUN_ATTEMPT: ${{ github.run_attempt }}
+      CATALOG_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      CATALOG_ARTIFACT_NAME: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+    steps:
+      - name: Validate non-production publish channel
+        run: node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: "*-catalog-*"
+          path: current
+      - name: Keep last successful branch entries
+        id: collect
+        continue-on-error: true
+        run: |
+          git clone --branch "$CATALOG_DATA_BRANCH" --depth 1 --single-branch --no-tags --filter=blob:none \
+            "https://github.com/${{ github.repository }}" previous || true
+          bash scripts/run-stage.sh collect node scripts/collect-results.mjs \
+            current previous dist current-attempts publish-diagnostics
+      - name: Build catalog index
+        id: index
+        if: steps.collect.outcome == 'success'
+        continue-on-error: true
+        run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts
+      - name: Publish Catalog data branch
+        id: data
+        if: steps.collect.outcome == 'success' && steps.index.outcome == 'success'
+        continue-on-error: true
+        run: |
+          bash scripts/run-stage.sh publish-data bash -c '
+            set -euo pipefail
+            if [[ ! -d previous/.git ]]; then
+              rm -rf previous
+              git init previous
+              git -C previous checkout -b "$CATALOG_DATA_BRANCH"
+            fi
+            git -C previous config user.name github-actions[bot]
+            git -C previous config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git -C previous remote remove origin 2>/dev/null || true
+            git -C previous remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+            find previous -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
+            cp -a dist/. previous/
+            rm -f -- previous/*.meta.json
+            git -C previous add -A
+            if ! git -C previous diff --cached --quiet; then
+              git -C previous commit -m "data: refresh menuconfig catalog"
+            fi
+            asset_commit="$(git -C previous rev-parse HEAD)"
+            node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA" "${{ steps.collect.outputs.complete }}"
+            node scripts/sync-index-assets.mjs previous --check
+            git -C previous add index.json
+            if ! git -C previous diff --cached --quiet; then
+              git -C previous commit -m "data: pin menuconfig catalog assets"
+            fi
+            git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"
+            cp previous/index.json dist/index.json
+          '
+      - name: Catalog health summary
+        if: always()
+        env:
+          MATRIX_RESULT: ${{ needs.generate.result }}
+          COLLECT_COMPLETE: ${{ steps.collect.outputs.complete }}
+          COLLECT_OUTCOME: ${{ steps.collect.outcome }}
+          TRANSLATE_OUTCOME: skipped
+          INDEX_OUTCOME: ${{ steps.index.outcome }}
+          DATA_OUTCOME: ${{ steps.data.outcome }}
+          RELEASE_OUTCOME: skipped
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node scripts/write-publish-summary.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Upload publish diagnostic
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.discover.outputs.publish-order }}-publish-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            publish-diagnostics/
+            failure-logs/
+            current-attempts/
+            dist/index.json
+            dist/translation-summary.json
+            dist/translation-state.json
+          retention-days: 60
+          if-no-files-found: error
+      - name: Fail incomplete publish
+        if: always()
+        env:
+          MATRIX_RESULT: ${{ needs.generate.result }}
+          COLLECT_COMPLETE: ${{ steps.collect.outputs.complete }}
+          COLLECT_OUTCOME: ${{ steps.collect.outcome }}
+          INDEX_OUTCOME: ${{ steps.index.outcome }}
+          DATA_OUTCOME: ${{ steps.data.outcome }}
+          RELEASE_OUTCOME: skipped
+        run: |
+          test "$COLLECT_OUTCOME" = success
+          test "$INDEX_OUTCOME" = success
+          test "$DATA_OUTCOME" = success
