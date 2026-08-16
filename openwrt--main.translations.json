@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-14T19:45:06.396Z",
+  "generatedAt": "2026-08-16T02:08:53.963Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 9975,
+  "options": 9980,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -6908,6 +6908,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ipq-wifi-tplink_eap620-hd-v2",
+      "promptEn": "board-2.bin Overrides for TP-Link EAP620 HD v2",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ipq-wifi-tplink_eap620-hd-v3",
       "promptEn": "board-2.bin Overrides for TP-Link EAP620 HD v3",
       "path": [
@@ -6950,6 +6958,14 @@
     {
       "symbol": "PACKAGE_ipq-wifi-tplink_tl-wa1201-v2",
       "promptEn": "board-2.bin Overrides for TP-Link TL-WA1201 V2",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ipq-wifi-ubnt_utr",
+      "promptEn": "board-2.bin Overrides for Ubiquiti UniFi Travel Router",
       "path": [
         "Firmware",
         "ath10k Board-Specific Overrides"
@@ -8239,6 +8255,13 @@
     {
       "symbol": "PACKAGE_midisport-firmware",
       "promptEn": "M-Audio USB MIDI Firmware",
+      "path": [
+        "Firmware"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_mipi-dbi-ubnt-utr",
+      "promptEn": "MIPI DBI LCD init sequence for Ubiquiti UniFi Travel Router",
       "path": [
         "Firmware"
       ]
@@ -18348,6 +18371,14 @@
       "path": [
         "Kernel modules",
         "USB Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-backlight-gpio",
+      "promptEn": "GPIO Backlight support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
       ]
     },
     {
@@ -42836,6 +42867,14 @@
     {
       "symbol": "COOVACHILLI_OPENSSL",
       "promptEn": "OpenSSL",
+      "path": [
+        "Network",
+        "Captive Portals"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_nodogsplash",
+      "promptEn": "Open public network gateway daemon",
       "path": [
         "Network",
         "Captive Portals"
