@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-import { readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { configuredReuseSourceForCodeRef } from './catalog-channels.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const GIT_SHA_RE = /^[0-9a-f]{40}$/i;
 
 const REGISTRY = Object.freeze({
   applications: Object.freeze([
@@ -144,6 +147,87 @@ export function catalogChangeImpact(inputs) {
   return { mode: fastAssets.length ? 'root-assets' : 'none', fastAssets, classified };
 }
 
+export function catalogPromotionImpact(pushImpact, snapshotImpact, identity = {}) {
+  if (snapshotImpact?.mode !== 'none') return pushImpact;
+  return {
+    ...pushImpact,
+    mode: 'none',
+    fastAssets: [],
+    reuseSource: String(identity.dataBranch || ''),
+    snapshotBaseSha: String(identity.baseSha || ''),
+  };
+}
+
+function gitText(args, cwd = ROOT, stdio = ['ignore', 'pipe', 'pipe']) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8', stdio }).trim();
+}
+
+function ensureCommitAvailable(sha, cwd = ROOT) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd, stdio: 'ignore' });
+  } catch {
+    execFileSync('git', ['fetch', '--no-tags', '--depth=1', 'origin', sha], { cwd, stdio: 'ignore' });
+    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd, stdio: 'ignore' });
+  }
+}
+
+function readRemoteSnapshot(dataBranch, cwd = ROOT) {
+  const remoteRef = `refs/remotes/origin/${dataBranch}`;
+  execFileSync('git', [
+    'fetch', '--no-tags', '--depth=1', 'origin',
+    `refs/heads/${dataBranch}:${remoteRef}`,
+  ], { cwd, stdio: 'ignore' });
+  return JSON.parse(gitText(['show', `${remoteRef}:index.json`], cwd));
+}
+
+export function catalogImpactBetweenCommits(baseSha, targetSha, { cwd = ROOT } = {}) {
+  const base = String(baseSha || '').trim().toLowerCase();
+  const target = String(targetSha || '').trim().toLowerCase();
+  if (!GIT_SHA_RE.test(base) || !GIT_SHA_RE.test(target)) throw new Error('Catalog snapshot comparison requires full Git SHAs');
+  ensureCommitAvailable(base, cwd);
+  ensureCommitAvailable(target, cwd);
+  execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
+  const output = gitText(['diff', '--name-only', base, target], cwd);
+  const changed = output ? output.split(/\r?\n/).filter(Boolean) : [];
+  return catalogChangeImpact(changed);
+}
+
+export function promotionAwareCatalogChangeImpact(inputs, {
+  eventName = process.env.GITHUB_EVENT_NAME || '',
+  codeRef = process.env.GITHUB_REF_NAME || '',
+  targetSha = process.env.GITHUB_SHA || '',
+  cwd = ROOT,
+  warn = (message) => process.stderr.write(`${message}\n`),
+} = {}) {
+  const pushImpact = catalogChangeImpact(inputs);
+  if (eventName !== 'push' || !codeRef || !GIT_SHA_RE.test(String(targetSha || '').trim())) return pushImpact;
+  const source = configuredReuseSourceForCodeRef(codeRef, { cwd });
+  if (!source?.dataBranch || !source?.codeRef) return pushImpact;
+
+  try {
+    const index = readRemoteSnapshot(source.dataBranch, cwd);
+    const provenance = index?.provenance || {};
+    const baseSha = String(provenance.codeSha || '').trim().toLowerCase();
+    const assetRef = String(index?.assetRef || '').trim().toLowerCase();
+    if (provenance.complete !== true || provenance.codeRef !== source.codeRef ||
+        !GIT_SHA_RE.test(baseSha) || !GIT_SHA_RE.test(assetRef)) {
+      return pushImpact;
+    }
+    const snapshotImpact = catalogImpactBetweenCommits(baseSha, targetSha, { cwd });
+    const result = catalogPromotionImpact(pushImpact, snapshotImpact, {
+      dataBranch: source.dataBranch,
+      baseSha,
+    });
+    if (result.mode === 'none' && pushImpact.mode !== 'none') {
+      warn(`Reusable Catalog snapshot ${source.dataBranch}@${assetRef} already covers the target Data Surface; skip duplicate generation.`);
+    }
+    return result;
+  } catch (error) {
+    warn(`Catalog snapshot reuse precheck unavailable; keep conservative ${pushImpact.mode} mode: ${error.message}`);
+    return pushImpact;
+  }
+}
+
 export function catalogImpactRegistryCoverage(root = ROOT) {
   const managed = [
     ...readdirSync(resolve(root, 'scripts')).map((name) => `scripts/${name}`),
@@ -157,10 +241,12 @@ export function catalogImpactRegistryCoverage(root = ROOT) {
 }
 
 function printResult(paths) {
-  const result = catalogChangeImpact(paths);
+  const result = promotionAwareCatalogChangeImpact(paths);
   process.stdout.write(`mode=${result.mode}\n`);
   process.stdout.write(`fast_assets=${result.fastAssets.join(',')}\n`);
   process.stdout.write(`classified=${JSON.stringify(result.classified)}\n`);
+  if (result.reuseSource) process.stdout.write(`reuse_source=${result.reuseSource}\n`);
+  if (result.snapshotBaseSha) process.stdout.write(`snapshot_base_sha=${result.snapshotBaseSha}\n`);
 }
 
 const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
