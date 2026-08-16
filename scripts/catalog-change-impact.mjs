@@ -188,17 +188,37 @@ function ensureCommitAvailable(sha, cwd = ROOT) {
   }
 }
 
-function ensureAncestorAvailable(base, target, cwd = ROOT) {
+function isAncestor(base, target, cwd = ROOT) {
   try {
     execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
-    return;
-  } catch (initialError) {
-    const shallow = gitText(['rev-parse', '--is-shallow-repository'], cwd);
-    if (shallow !== 'true') throw initialError;
-    execFileSync('git', ['fetch', '--no-tags', '--unshallow', 'origin'], { cwd, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensureAncestorAvailable(base, target, cwd = ROOT) {
+  if (isAncestor(base, target, cwd)) return;
+  if (gitText(['rev-parse', '--is-shallow-repository'], cwd) !== 'true') {
+    throw new Error(`Catalog snapshot provenance ${base} is not an ancestor of target ${target}`);
+  }
+
+  const branch = gitText(['rev-parse', '--abbrev-ref', 'HEAD'], cwd);
+  for (const deepen of [16, 32, 64, 128, 256]) {
+    execFileSync('git', ['fetch', '--no-tags', `--deepen=${deepen}`, 'origin', branch], { cwd, stdio: 'ignore' });
     ensureCommitAvailable(base, cwd);
     ensureCommitAvailable(target, cwd);
-    execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
+    if (isAncestor(base, target, cwd)) return;
+    if (gitText(['rev-parse', '--is-shallow-repository'], cwd) !== 'true') break;
+  }
+
+  if (gitText(['rev-parse', '--is-shallow-repository'], cwd) === 'true') {
+    execFileSync('git', ['fetch', '--no-tags', '--unshallow', 'origin', branch], { cwd, stdio: 'ignore' });
+  }
+  ensureCommitAvailable(base, cwd);
+  ensureCommitAvailable(target, cwd);
+  if (!isAncestor(base, target, cwd)) {
+    throw new Error(`Catalog snapshot provenance ${base} is not an ancestor of target ${target}`);
   }
 }
 
