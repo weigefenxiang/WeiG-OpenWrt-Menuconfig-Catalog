@@ -284,7 +284,7 @@ writeFileSync(join(diagnosticsDir, 'publish-inputs.json'), JSON.stringify(manife
 if (process.env.GITHUB_OUTPUT) {
   appendFileSync(process.env.GITHUB_OUTPUT, `complete=${complete}\n`);
   appendFileSync(process.env.GITHUB_OUTPUT, `fresh=${manifest.fresh}\n`);
-  appendFileSync(process.env.GITHUB_OUTPUT, `last_good=${manifest.lastGood}\n`);
+  appendFileSync(process.env.GITHUB_OUTPUT, `lastGood=${manifest.lastGood}\n`);
 }
 if (fatalErrors.length) throw new Error(`Artifact 收集无法继续:\n- ${fatalErrors.join('\n- ')}`);
 if (warnings.length) console.warn(`Artifact 分支级警告:\n- ${warnings.join('\n- ')}`);
