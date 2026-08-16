@@ -1,0 +1,100 @@
+name: Recover Catalog publish
+run-name: Recover Catalog publish · run 198 artifacts
+
+on:
+  push:
+    branches: [fix-F]
+    paths:
+      - ".github/workflows/catalog-publish-recovery.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: catalog-write-catalog-fix-F
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    name: Recover catalog-fix-F from run 198
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_RUN_ID: "31927453131"
+      SOURCE_RUN_SHA: "7c7db0e3d0cdf8013f85f763689991ebcf36d0a7"
+      CATALOG_DATA_BRANCH: catalog-fix-F
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate recovery channel
+        run: |
+          test "$(node scripts/catalog-channels.mjs build "$GITHUB_REF_NAME")" = "$CATALOG_DATA_BRANCH"
+          node scripts/catalog-channels.mjs validate-non-production "$CATALOG_DATA_BRANCH" >/dev/null
+      - name: Download verified branch artifacts from run 198
+        uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+          pattern: "*-catalog-*"
+          path: current
+      - name: Collect complete runtime surface
+        id: collect
+        run: |
+          git clone --branch "$CATALOG_DATA_BRANCH" --depth 1 --single-branch --no-tags --filter=blob:none \
+            "https://github.com/${{ github.repository }}" previous || true
+          bash scripts/run-stage.sh collect node scripts/collect-results.mjs \
+            current previous dist current-attempts publish-diagnostics
+          test "${{ steps.collect.outputs.complete }}" = "true"
+      - name: Build catalog index
+        run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts
+      - name: Publish immutable Catalog snapshot
+        run: |
+          set -euo pipefail
+          if [[ ! -d previous/.git ]]; then
+            rm -rf previous
+            git init previous
+            git -C previous checkout -b "$CATALOG_DATA_BRANCH"
+          fi
+          git -C previous config user.name github-actions[bot]
+          git -C previous config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C previous remote remove origin 2>/dev/null || true
+          git -C previous remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          find previous -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
+          cp -a dist/. previous/
+          rm -f -- previous/*.meta.json
+          git -C previous add -A
+          if ! git -C previous diff --cached --quiet; then
+            git -C previous commit -m "data: refresh menuconfig catalog"
+          fi
+          asset_commit="$(git -C previous rev-parse HEAD)"
+          node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$SOURCE_RUN_SHA" true
+          node scripts/sync-index-assets.mjs previous --check
+          git -C previous add index.json
+          if ! git -C previous diff --cached --quiet; then
+            git -C previous commit -m "data: pin menuconfig catalog assets"
+          fi
+          git -C previous push origin "HEAD:$CATALOG_DATA_BRANCH"
+          cp previous/index.json dist/index.json
+      - name: Verify published index locally
+        run: |
+          node scripts/sync-index-assets.mjs previous --check
+          node -e '
+            const fs=require("fs");
+            const x=JSON.parse(fs.readFileSync("previous/index.json","utf8"));
+            if (!x.provenance?.complete || !/^[a-f0-9]{40}$/.test(String(x.assetRef||""))) process.exit(1);
+            const rows=(x.sources||[]).flatMap(s=>(s.branches||[]).filter(b=>b.state==="fresh").map(b=>({source:s.id,branch:b.branch,asset:b.assets?.profileBaselines?.asset})));
+            if (!rows.length || rows.some(r=>!r.asset)) process.exit(1);
+            console.log(`assetRef=${x.assetRef} fresh=${rows.length}`);
+          '
+      - name: Upload recovery diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: catalog-fix-F-publish-recovery-${{ github.run_id }}
+          path: |
+            publish-diagnostics/
+            failure-logs/
+            current-attempts/
+            dist/index.json
+          retention-days: 7
+          if-no-files-found: warn
