@@ -99,7 +99,7 @@ export function validatePromotionSource(targetCodeRef, sourceDataBranch) {
   }
   const canonicalTargetFix = Boolean(canonicalFixDataBranch(target));
   const canonicalSourceFix = Boolean(CANONICAL_FIX_DATA_RE.test(source));
-  const allowed = canonicalTargetFix ? source === 'catalog-dev'
+  const allowed = canonicalTargetFix ? (source === 'catalog-dev' || source === targetDataBranch)
     : target === 'dev' ? (source === 'catalog-dev' || canonicalSourceFix)
       : target === 'staging' ? source === 'catalog-dev'
         : target === 'main' ? source === 'catalog-staging'
