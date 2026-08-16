@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-12T23:42:31.973Z",
+  "generatedAt": "2026-08-16T04:49:41.859Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 9953,
+  "options": 9980,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -6908,6 +6908,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ipq-wifi-tplink_eap620-hd-v2",
+      "promptEn": "board-2.bin Overrides for TP-Link EAP620 HD v2",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ipq-wifi-tplink_eap620-hd-v3",
       "promptEn": "board-2.bin Overrides for TP-Link EAP620 HD v3",
       "path": [
@@ -6950,6 +6958,14 @@
     {
       "symbol": "PACKAGE_ipq-wifi-tplink_tl-wa1201-v2",
       "promptEn": "board-2.bin Overrides for TP-Link TL-WA1201 V2",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ipq-wifi-ubnt_utr",
+      "promptEn": "board-2.bin Overrides for Ubiquiti UniFi Travel Router",
       "path": [
         "Firmware",
         "ath10k Board-Specific Overrides"
@@ -8239,6 +8255,13 @@
     {
       "symbol": "PACKAGE_midisport-firmware",
       "promptEn": "M-Audio USB MIDI Firmware",
+      "path": [
+        "Firmware"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_mipi-dbi-ubnt-utr",
+      "promptEn": "MIPI DBI LCD init sequence for Ubiquiti UniFi Travel Router",
       "path": [
         "Firmware"
       ]
@@ -16053,6 +16076,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-rp1-pio-uart",
+      "promptEn": "RP1 PIO-based UART support",
+      "path": [
+        "Kernel modules",
+        "Other modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-rtc-ac100",
       "promptEn": "X-Powers AC100 RTC support",
       "path": [
@@ -18340,6 +18371,14 @@
       "path": [
         "Kernel modules",
         "USB Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-backlight-gpio",
+      "promptEn": "GPIO Backlight support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
       ]
     },
     {
@@ -42834,6 +42873,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_nodogsplash",
+      "promptEn": "Open public network gateway daemon",
+      "path": [
+        "Network",
+        "Captive Portals"
+      ]
+    },
+    {
       "symbol": "PACKAGE_simple-captive-portal",
       "promptEn": "Simple captive portal",
       "path": [
@@ -47830,6 +47877,174 @@
     {
       "symbol": "PACKAGE_nstat",
       "promptEn": "Network statistics utility",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd",
+      "promptEn": "OLSR (Optimized Link State Routing) daemon",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-arprefresh",
+      "promptEn": "Kernel ARP cache refresh plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-bmf",
+      "promptEn": "Basic multicast forwarding plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-dot-draw",
+      "promptEn": "Dot topology information plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-dyn-gw",
+      "promptEn": "Dynamic internet gateway plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-dyn-gw-plain",
+      "promptEn": "Dynamic internet gateway plain plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-filtergw",
+      "promptEn": "Filter Gateway plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-httpinfo",
+      "promptEn": "Small informative web server plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-jsoninfo",
+      "promptEn": "Small informative plugin with JSON output",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-mdns",
+      "promptEn": "MDNS/Zeroconf/Bonjour packet distribution",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-nameservice",
+      "promptEn": "Lightweight hostname resolver plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-netjson",
+      "promptEn": "netjson plugin with JSON output",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-p2pd",
+      "promptEn": "Peer to Peer Discovery plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-pgraph",
+      "promptEn": "output network topology for pgraph",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-pud",
+      "promptEn": "Position Update Distribution plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-quagga",
+      "promptEn": "Quagga plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-secure",
+      "promptEn": "Message signing plugin to secure routing domain",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-sgwdynspeed",
+      "promptEn": "Smart Gateway dynamic speed plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-txtinfo",
+      "promptEn": "Small informative web server plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-mod-watchdog",
+      "promptEn": "Watchdog plugin",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_olsrd-utils",
+      "promptEn": "Utils for OLSRD",
       "path": [
         "Network",
         "Routing and Redirection"
