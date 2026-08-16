@@ -99,7 +99,10 @@ export function validatePromotionSource(targetCodeRef, sourceDataBranch) {
   }
   const canonicalTargetFix = Boolean(canonicalFixDataBranch(target));
   const canonicalSourceFix = Boolean(CANONICAL_FIX_DATA_RE.test(source));
-  const allowed = canonicalTargetFix ? (source === 'catalog-dev' || source === targetDataBranch)
+  // Canonical fix branches may seed from dev, self-reuse, or explicitly reuse another
+  // canonical fix snapshot. The workflow still requires complete provenance, immutable
+  // asset identity, source-code ancestry, and a cumulative Data Surface impact of none.
+  const allowed = canonicalTargetFix ? (source === 'catalog-dev' || canonicalSourceFix)
     : target === 'dev' ? (source === 'catalog-dev' || canonicalSourceFix)
       : target === 'staging' ? source === 'catalog-dev'
         : target === 'main' ? source === 'catalog-staging'
@@ -165,7 +168,7 @@ function printResult(mode, value, extra = '') {
   if (mode === 'reuse-source') {
     const source = defaultReuseSourceForCodeRef(value);
     if (!source) throw new Error(`unsupported Catalog reuse code ref: ${value}`);
-    process.stdout.write(`source_code_ref=${source.codeRef}\nsource_data_branch=${source.dataBranch}\n`);
+    process.stdout.write(`source_code_ref=${source.codeRef}\ndata_branch=${source.dataBranch}\n`);
     return;
   }
   if (mode === 'validate-promotion') {
