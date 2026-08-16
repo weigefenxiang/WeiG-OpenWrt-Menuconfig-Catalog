@@ -14,6 +14,8 @@ assert.equal(classifyCatalogPath('translations/probe-ui.json'), 'applications');
 assert.equal(classifyCatalogPath('compatibility.json'), 'compatibility');
 assert.equal(classifyCatalogPath('scripts/generate-catalog.mjs'), 'full');
 assert.equal(classifyCatalogPath('scripts/generate-profile-config-groups.mjs'), 'full');
+assert.equal(classifyCatalogPath('scripts/catalog-change-impact.mjs'), 'full');
+assert.equal(classifyCatalogPath('scripts/stamp-catalog-snapshot.mjs'), 'full');
 assert.equal(classifyCatalogPath('scripts/check-profile-config-groups.mjs'), 'none');
 assert.equal(classifyCatalogPath('scripts/benchmark-profile-config-groups.mjs'), 'none');
 assert.equal(classifyCatalogPath('docs/COMPATIBILITY.md'), 'none');
@@ -36,6 +38,13 @@ assert.equal(catalogChangeImpact([
 assert.equal(catalogChangeImpact([
   'scripts/generate-profile-config-groups.mjs',
   'scripts/check-profile-config-groups.mjs',
+]).mode, 'full');
+assert.equal(catalogChangeImpact([
+  'scripts/stamp-catalog-snapshot.mjs',
+  'scripts/check-catalog-snapshot.mjs',
+]).mode, 'full');
+assert.equal(catalogChangeImpact([
+  'scripts/catalog-change-impact.mjs',
 ]).mode, 'full');
 
 assert.deepEqual(catalogChangeImpact([
