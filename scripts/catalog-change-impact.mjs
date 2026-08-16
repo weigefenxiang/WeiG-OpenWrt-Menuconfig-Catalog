@@ -188,6 +188,40 @@ function ensureCommitAvailable(sha, cwd = ROOT) {
   }
 }
 
+function isAncestor(base, target, cwd = ROOT) {
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensureAncestorAvailable(base, target, cwd = ROOT) {
+  if (isAncestor(base, target, cwd)) return;
+  if (gitText(['rev-parse', '--is-shallow-repository'], cwd) !== 'true') {
+    throw new Error(`Catalog snapshot provenance ${base} is not an ancestor of target ${target}`);
+  }
+
+  const branch = gitText(['rev-parse', '--abbrev-ref', 'HEAD'], cwd);
+  for (const deepen of [16, 32, 64, 128, 256]) {
+    execFileSync('git', ['fetch', '--no-tags', `--deepen=${deepen}`, 'origin', branch], { cwd, stdio: 'ignore' });
+    ensureCommitAvailable(base, cwd);
+    ensureCommitAvailable(target, cwd);
+    if (isAncestor(base, target, cwd)) return;
+    if (gitText(['rev-parse', '--is-shallow-repository'], cwd) !== 'true') break;
+  }
+
+  if (gitText(['rev-parse', '--is-shallow-repository'], cwd) === 'true') {
+    execFileSync('git', ['fetch', '--no-tags', '--unshallow', 'origin', branch], { cwd, stdio: 'ignore' });
+  }
+  ensureCommitAvailable(base, cwd);
+  ensureCommitAvailable(target, cwd);
+  if (!isAncestor(base, target, cwd)) {
+    throw new Error(`Catalog snapshot provenance ${base} is not an ancestor of target ${target}`);
+  }
+}
+
 function readRemoteSnapshot(dataBranch, cwd = ROOT) {
   const remoteRef = `refs/remotes/origin/${dataBranch}`;
   execFileSync('git', [
@@ -203,7 +237,7 @@ export function catalogImpactBetweenCommits(baseSha, targetSha, { cwd = ROOT } =
   if (!GIT_SHA_RE.test(base) || !GIT_SHA_RE.test(target)) throw new Error('Catalog snapshot comparison requires full Git SHAs');
   ensureCommitAvailable(base, cwd);
   ensureCommitAvailable(target, cwd);
-  execFileSync('git', ['merge-base', '--is-ancestor', base, target], { cwd, stdio: 'ignore' });
+  ensureAncestorAvailable(base, target, cwd);
   const output = gitText(['diff', '--name-only', base, target], cwd);
   const changed = output ? output.split(/\r?\n/).filter(Boolean) : [];
   return catalogChangeImpact(changed);
