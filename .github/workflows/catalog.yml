@@ -23,10 +23,12 @@ on:
       - "scripts/curated-applications.mjs"
       - "scripts/discover.mjs"
       - "scripts/generate-catalog.mjs"
+      - "scripts/generate-profile-config-groups.mjs"
       - "scripts/index-contract.mjs"
       - "scripts/kconfig-relations.mjs"
       - "scripts/lib.mjs"
       - "scripts/prepare-metadata.sh"
+      - "scripts/profile-config-contract.mjs"
       - "scripts/source-policy.mjs"
 
 permissions:
