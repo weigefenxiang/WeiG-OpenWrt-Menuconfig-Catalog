@@ -165,7 +165,7 @@ jobs:
             --out dist
       - name: Generate E Native Profile Config Groups / 生成 E 原生 Profile 配置组
         id: experiment
-        if: steps.kconfig_contract.outcome == 'success' && github.ref_name == 'fix-E'
+        if: steps.kconfig_contract.outcome == 'success' && (github.ref_name == 'fix-E' || github.ref_name == 'dev')
         timeout-minutes: 45
         run: |
           bash scripts/run-stage.sh profile-config-groups node scripts/generate-profile-config-groups.mjs \
@@ -198,7 +198,7 @@ jobs:
           METADATA_OUTCOME: ${{ steps.metadata.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
           KCONFIG_CONTRACT_OUTCOME: ${{ steps.kconfig_contract.outcome }}
-          EXPERIMENT_STAGE: ${{ github.ref_name == 'fix-E' && 'profile-config-groups' || '' }}
+          EXPERIMENT_STAGE: ${{ (github.ref_name == 'fix-E' || github.ref_name == 'dev') && 'profile-config-groups' || '' }}
           EXPERIMENT_OUTCOME: ${{ steps.experiment.outcome }}
         run: node scripts/write-attempt.mjs
       - name: Upload branch result
