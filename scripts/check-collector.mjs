@@ -10,11 +10,11 @@ import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const script = join(ROOT, 'scripts', 'collect-results.mjs');
+const script = join(ROOT, 'scripts/collect-results.mjs');
 const temp = mkdtempSync(join(tmpdir(), 'weig-catalog-collector-'));
 
 function addArtifact(root, order, branchName, status = 'success', {
-  translation = true, contract = true, relations = true, duplicates = true,
+  translation = true, contract = true, relations = true, duplicates = true, profileBaselines = true,
 } = {}) {
   const orderText = String(order).padStart(2, '0');
   const artifact = `${orderText}-catalog-openwrt-${branchName}-run-1-attempt-1`;
@@ -36,10 +36,25 @@ function addArtifact(root, order, branchName, status = 'success', {
       menu: { schema: 1, kind: 'menu', options: [] },
       hidden: { schema: 1, kind: 'hidden', options: [] },
       help: { schema: 1, kind: 'help', options: [] },
+      profileBaselines: {
+        schema: 3,
+        kind: 'profile-baselines',
+        encoding: 'branch-common-plus-exact-config-groups-v1',
+        source: { id: 'OpenWrt', branch: branchName },
+        profileFields: ['target', 'board', 'subtarget', 'profile', 'name', 'boardSelector', 'selector', 'targetSelector', 'nativeHash', 'symbolCount', 'groupId'],
+        stateGroups: ['n', 'm', 'y', 'otherIndexValue'],
+        identity: { mode: 'catalog-target-tree-v1', fixed: [], targetOverrides: [], aliases: [], overrides: [] },
+        symbols: ['FEATURE'],
+        common: [[], [], [], []],
+        groups: [[[], [], [0], []]],
+        profiles: [['demo', 'demo', '', 'Default', 'Default', 'TARGET_demo', 'TARGET_demo_Default', 'TARGET_demo', 'a'.repeat(64), 1, 0]],
+        metrics: { reconstructionMismatches: 0 },
+      },
     };
+    if (!profileBaselines) delete shardValues.profileBaselines;
     const assets = {};
     for (const [logical, value] of Object.entries(shardValues)) {
-      const filename = `openwrt--${branchName}.${logical}.json.gz`;
+      const filename = `openwrt--${branchName}.${logical === 'profileBaselines' ? 'profiles' : logical}.json.gz`;
       const body = Buffer.from(JSON.stringify(value));
       const data = gzipSync(body);
       writeFileSync(join(dist, filename), data);
@@ -49,6 +64,12 @@ function addArtifact(root, order, branchName, status = 'success', {
         bytes: data.byteLength,
         sha256: createHash('sha256').update(body).digest('hex'),
         jsonBytes: body.byteLength,
+        ...(logical === 'profileBaselines' ? {
+          schema: value.schema,
+          encoding: value.encoding,
+          profiles: value.profiles.length,
+          configGroups: value.groups.length,
+        } : {}),
       };
     }
     writeFileSync(join(dist, `openwrt--${branchName}.meta.json`), JSON.stringify({
@@ -143,13 +164,13 @@ try {
   if (!validManifest.complete || validManifest.fresh !== 1 ||
       validJson.generation !== 'current') throw new Error('valid current result was not published');
 
-  const eValid = fixture('e-valid', (root, previous) => {
+  const fixValid = fixture('fix-valid', (root, previous) => {
     addPrevious(previous, 'main');
     addArtifact(root, 2, 'main');
   });
-  const eValidManifest = run(eValid, true, 'fix-E');
-  if (!eValidManifest.complete || eValidManifest.fatalErrors.length) {
-    throw new Error('complete E snapshot was unexpectedly rejected');
+  const fixValidManifest = run(fixValid, true, 'fix-F');
+  if (!fixValidManifest.complete || fixValidManifest.fatalErrors.length) {
+    throw new Error('complete fix snapshot was unexpectedly rejected');
   }
 
   const mixed = fixture('mixed', (root, previous) => {
@@ -166,15 +187,25 @@ try {
     throw new Error('partial success did not publish fresh plus last-good');
   }
 
-  const eMixed = fixture('e-mixed', (root, previous) => {
+  const fixMixed = fixture('fix-mixed', (root, previous) => {
     addPrevious(previous, 'main');
     addPrevious(previous, 'openwrt-24.10');
     addArtifact(root, 2, 'main');
     addArtifact(root, 3, 'openwrt-24.10', 'failure');
   });
-  const eMixedManifest = run(eMixed, false, 'fix-E');
-  if (!eMixedManifest.fatalErrors.some((item) => item.includes('fail-closed'))) {
-    throw new Error('incomplete E snapshot was not fail-closed');
+  const fixMixedManifest = run(fixMixed, false, 'fix-F');
+  if (!fixMixedManifest.fatalErrors.some((item) => item.includes('fail-closed'))) {
+    throw new Error('incomplete fix snapshot was not fail-closed');
+  }
+
+  const profileless = fixture('profileless', (root, previous) => {
+    addPrevious(previous, 'main');
+    addArtifact(root, 2, 'main', 'success', { profileBaselines: false });
+  });
+  const profilelessManifest = run(profileless);
+  if (profilelessManifest.complete || profilelessManifest.fresh !== 0 ||
+      !profilelessManifest.branches[0]?.issues.some((item) => item.includes('Profile baseline'))) {
+    throw new Error('missing Native Profile baseline was not quarantined');
   }
 
   const quarantined = fixture('quarantined', (root, previous) => {
@@ -211,7 +242,7 @@ try {
     mkdirSync(join(root, 'current'), { recursive: true });
   });
   run(fatal, false);
-  console.log('catalog collector checks passed: fresh, partial, E fail-closed, quarantine, contract, relations, last-good, fatal');
+  console.log('catalog collector checks passed: fresh, partial, fix fail-closed, Profile baseline, quarantine, contract, relations, last-good, fatal');
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }
