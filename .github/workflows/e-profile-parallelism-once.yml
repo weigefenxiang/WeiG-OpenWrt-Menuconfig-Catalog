@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: e-profile-parallelism-once
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   apply:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: fix-E
-          fetch-depth: 0
+          fetch-depth: 1
       - name: Apply Profile parallelism optimization
         run: python3 .e-profile-parallelism-once.py
       - name: Remove one-shot controls
