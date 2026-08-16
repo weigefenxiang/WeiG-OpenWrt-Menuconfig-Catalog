@@ -44,7 +44,7 @@ jobs:
             "https://github.com/${{ github.repository }}" previous || true
           bash scripts/run-stage.sh collect node scripts/collect-results.mjs \
             current previous dist current-attempts publish-diagnostics
-          test "${{ steps.collect.outputs.complete }}" = "true"
+          grep -qx 'complete=true' "$GITHUB_OUTPUT"
       - name: Build catalog index
         run: bash scripts/run-stage.sh index node scripts/build-index.mjs dist dist/index.json previous/index.json current-attempts
       - name: Publish immutable Catalog snapshot
