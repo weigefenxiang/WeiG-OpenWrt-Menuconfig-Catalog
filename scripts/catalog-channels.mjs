@@ -168,7 +168,7 @@ function printResult(mode, value, extra = '') {
   if (mode === 'reuse-source') {
     const source = defaultReuseSourceForCodeRef(value);
     if (!source) throw new Error(`unsupported Catalog reuse code ref: ${value}`);
-    process.stdout.write(`source_code_ref=${source.codeRef}\ndata_branch=${source.dataBranch}\n`);
+    process.stdout.write(`source_code_ref=${source.codeRef}\nsource_data_branch=${source.dataBranch}\n`);
     return;
   }
   if (mode === 'validate-promotion') {
