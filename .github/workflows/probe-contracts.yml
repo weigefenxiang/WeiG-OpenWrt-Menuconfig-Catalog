@@ -2,7 +2,7 @@ name: Probe contracts
 
 on:
   push:
-    branches: [main, dev, staging, "fix-*", "fix/**"]
+    branches: [main, dev, staging, "fix-*"]
     paths:
       - "scripts/package-probe-*.mjs"
       - "scripts/run-package-probe.mjs"
