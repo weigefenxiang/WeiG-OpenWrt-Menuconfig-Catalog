@@ -74,7 +74,7 @@ export function defaultReuseSourceForCodeRef(codeRef) {
   if (canonicalFixDataBranch(ref)) return { codeRef: 'dev', dataBranch: 'catalog-dev' };
   if (ref === 'dev') return { codeRef: 'dev', dataBranch: 'catalog-dev' };
   if (ref === 'staging') return { codeRef: 'dev', dataBranch: 'catalog-dev' };
-  if (ref === 'main') return { codeRef: 'staging', dataBranch: 'catalog-staging' };
+  if (ref === 'main') return { codeRef: 'main', dataBranch: PRODUCTION_DATA_BRANCH };
   return null;
 }
 
@@ -90,8 +90,8 @@ export function configuredReuseSourceForCodeRef(codeRef, { cwd = process.cwd() }
   const ref = String(codeRef || '').trim();
   const marker = configuredReuseMarker(cwd);
   // A canonical fix may seed from another validated fix snapshot, and dev may inherit
-  // the exact validated fix snapshot it is promoting. Higher channels keep their fixed
-  // predecessor edges (dev -> staging -> candidate) rather than skipping layers.
+  // the exact validated fix snapshot it is promoting. Staging keeps the validated dev
+  // predecessor, while main preserves the current production snapshot before revalidation.
   if (marker && (Boolean(canonicalFixDataBranch(ref)) || ref === 'dev')) {
     try {
       const validated = validatePromotionSource(ref, marker);
@@ -119,7 +119,7 @@ export function validatePromotionSource(targetCodeRef, sourceDataBranch) {
   const allowed = canonicalTargetFix ? (source === 'catalog-dev' || canonicalSourceFix)
     : target === 'dev' ? (source === 'catalog-dev' || canonicalSourceFix)
       : target === 'staging' ? source === 'catalog-dev'
-        : target === 'main' ? source === 'catalog-staging'
+        : target === 'main' ? source === PRODUCTION_DATA_BRANCH
           : false;
   if (!allowed) throw new Error(`Catalog promotion edge is not allowed: ${source} -> ${targetDataBranch}`);
   return { sourceCodeRef, sourceDataBranch: source, targetDataBranch };
