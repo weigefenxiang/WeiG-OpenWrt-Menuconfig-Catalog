@@ -44,7 +44,9 @@ const channelContracts = [
   [validatePromotionSource('fix-F1', 'catalog-fix-F').targetDataBranch, 'catalog-fix-F1', 'reuse sibling fix target data'],
   [validatePromotionSource('dev', 'catalog-fix-F').targetDataBranch, 'catalog-dev', 'promote fix F to dev'],
   [validatePromotionSource('staging', 'catalog-dev').targetDataBranch, 'catalog-staging', 'promote dev to staging'],
-  [validatePromotionSource('main', 'catalog-staging').targetDataBranch, 'catalog-candidate', 'promote staging to candidate'],
+  [validatePromotionSource('main', 'catalog-main').sourceCodeRef, 'main', 'reuse production source code for main'],
+  [validatePromotionSource('main', 'catalog-main').sourceDataBranch, 'catalog-main', 'reuse production source data for main'],
+  [validatePromotionSource('main', 'catalog-main').targetDataBranch, 'catalog-candidate', 'promote production snapshot to candidate'],
 ];
 for (const [actual, expected, label] of channelContracts) {
   if (actual !== expected) failures.push(`${label}: ${actual || '(empty)'} != ${expected}`);
@@ -53,6 +55,7 @@ for (const invalid of [
   () => validatePromotionSource('dev', 'catalog-staging'),
   () => validatePromotionSource('staging', 'catalog-fix-F'),
   () => validatePromotionSource('main', 'catalog-dev'),
+  () => validatePromotionSource('main', 'catalog-staging'),
   () => validatePromotionSource('fix-F', 'catalog-staging'),
   () => validatePromotionSource('fix-F', 'catalog-candidate'),
 ]) {
