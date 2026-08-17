@@ -27,18 +27,9 @@ function canonicalFixDataBranch(ref) {
   return suffix ? `catalog-fix-${suffix}` : '';
 }
 
-// Frozen compatibility for historical slash-style experiment branches.
-function legacyFixDataBranch(ref) {
-  if (!ref.startsWith('fix/')) return '';
-  const dMatch = /^fix\/(DA|DB)$/i.exec(ref);
-  if (dMatch) return `catalog-${dMatch[1].toUpperCase()}`;
-  const lane = /-([ABC])$/i.exec(ref)?.[1]?.toUpperCase() || '';
-  return lane ? `catalog-fix-${lane}` : 'catalog-fix';
-}
-
 export function fixDataBranchForCodeRef(codeRef) {
   const ref = String(codeRef || '').trim();
-  return canonicalFixDataBranch(ref) || legacyFixDataBranch(ref);
+  return canonicalFixDataBranch(ref);
 }
 
 export function buildDataBranchForCodeRef(codeRef) {
@@ -69,15 +60,13 @@ export function codeRefForDataBranch(dataBranch) {
   if (branch === PRODUCTION_CANDIDATE_BRANCH || branch === PRODUCTION_DATA_BRANCH) return 'main';
   const canonical = CANONICAL_FIX_DATA_RE.exec(branch)?.[1] || '';
   if (canonical) return `fix-${canonical}`;
-  if (branch === 'catalog-DA') return 'fix/DA';
-  if (branch === 'catalog-DB') return 'fix/DB';
   return '';
 }
 
 export function isWritableNonProductionDataBranch(dataBranch) {
   const branch = String(dataBranch || '').trim();
   return branch === 'catalog-dev' || branch === 'catalog-staging' || branch === PRODUCTION_CANDIDATE_BRANCH ||
-    branch === 'catalog-fix' || CANONICAL_FIX_DATA_RE.test(branch) || branch === 'catalog-DA' || branch === 'catalog-DB';
+    CANONICAL_FIX_DATA_RE.test(branch);
 }
 
 export function defaultReuseSourceForCodeRef(codeRef) {

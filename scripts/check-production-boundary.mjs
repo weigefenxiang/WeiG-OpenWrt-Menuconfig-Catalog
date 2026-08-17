@@ -28,7 +28,6 @@ const channelContracts = [
   [buildDataBranchForCodeRef('staging'), 'catalog-staging', 'build staging'],
   [buildDataBranchForCodeRef('fix-F'), 'catalog-fix-F', 'build fix F'],
   [buildDataBranchForCodeRef('fix-next.test'), 'catalog-fix-next.test', 'build generic fix'],
-  [buildDataBranchForCodeRef('fix/DB'), 'catalog-DB', 'build frozen DB compatibility'],
   [runtimeDataBranchForChannel('main'), 'catalog-main', 'runtime main'],
   [runtimeDataBranchForChannel('dev'), 'catalog-dev', 'runtime dev'],
   [runtimeDataBranchForChannel('staging'), 'catalog-staging', 'runtime staging'],

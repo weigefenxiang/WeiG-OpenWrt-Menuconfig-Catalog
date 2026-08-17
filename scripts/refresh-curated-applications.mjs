@@ -113,9 +113,9 @@ async function menuPackages(repository, dataRef, contract, languageContract) {
 const config = readJson(CONFIG_FILE);
 const translations = readJson(TRANSLATION_FILE);
 const channelInput = String(args.get('channel') || PRODUCTION_DATA_BRANCH);
-const alias = channelInput === 'fix' ? 'fix/manual' : channelInput;
-const channel = buildDataBranchForCodeRef(alias) || channelInput;
-if (![PRODUCTION_DATA_BRANCH, 'catalog-candidate', 'catalog-dev', 'catalog-staging', 'catalog-fix'].includes(channel)) {
+const channel = buildDataBranchForCodeRef(channelInput) || channelInput;
+const canonicalFixData = /^catalog-fix-[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(channel);
+if (![PRODUCTION_DATA_BRANCH, 'catalog-candidate', 'catalog-dev', 'catalog-staging'].includes(channel) && !canonicalFixData) {
   throw new Error(`unsupported Catalog channel: ${channel}`);
 }
 const repository = String(args.get('repository') || process.env.GITHUB_REPOSITORY || 'weigefenxiang/WeiG-OpenWrt-Menuconfig-Catalog');

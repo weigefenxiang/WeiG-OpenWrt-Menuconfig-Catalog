@@ -56,11 +56,8 @@ assert.equal(changed.equal, false);
 assert.deepEqual(changed.differences, [{ symbol: 'BETA', left: 'm', right: 'y' }]);
 assert.throws(() => parseConfigSymbols('CONFIG_DUP=y\n# CONFIG_DUP is not set\n'), /conflicting Kconfig value/);
 
-assert.equal(fixDataBranchForCodeRef('fix/DA'), 'catalog-DA');
-assert.equal(fixDataBranchForCodeRef('fix/DB'), 'catalog-DB');
-assert.equal(buildDataBranchForCodeRef('fix/DA'), 'catalog-DA');
-assert.equal(runtimeDataBranchForChannel('fix/DB'), 'catalog-DB');
-assert.equal(fixDataBranchForCodeRef('fix/probe-A'), 'catalog-fix-A');
-assert.equal(fixDataBranchForCodeRef('fix/common'), 'catalog-fix');
+assert.equal(fixDataBranchForCodeRef('fix-profile-contract'), 'catalog-fix-profile-contract');
+assert.equal(buildDataBranchForCodeRef('fix-profile-contract'), 'catalog-fix-profile-contract');
+assert.equal(runtimeDataBranchForChannel('fix-profile-contract'), 'catalog-fix-profile-contract');
 
 console.log('D profile config contract checks passed.');

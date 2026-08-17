@@ -52,7 +52,7 @@ const index = { schema: 2, sources: [
 ] };
 
 assert.equal(runtimeDataBranchForChannel('dev'), 'catalog-dev');
-assert.equal(runtimeDataBranchForChannel('fix/probe'), 'catalog-fix');
+assert.equal(runtimeDataBranchForChannel('fix-probe'), 'catalog-fix-probe');
 assert.equal(normalizeProbeMode('compile'), 'package-compile');
 assert.equal(normalizeProbeMode('co-install'), 'rootfs-integration');
 assert.throws(() => normalizeProbeMode('plugin-special-case'), /unsupported probe mode/);
