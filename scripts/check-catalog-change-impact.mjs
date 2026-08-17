@@ -39,15 +39,15 @@ assert.deepEqual(configuredReuseSourceForCodeRef('staging'), {
   codeRef: 'dev', dataBranch: 'catalog-dev',
 }, 'staging promotion must preserve the canonical catalog-dev predecessor');
 assert.deepEqual(configuredReuseSourceForCodeRef('main'), {
-  codeRef: 'staging', dataBranch: 'catalog-staging',
-}, 'main promotion must preserve the canonical catalog-staging predecessor');
+  codeRef: 'main', dataBranch: 'catalog-main',
+}, 'main promotion must preserve the current production catalog-main snapshot');
 
 for (const ref of ['dev', 'staging', 'main']) {
   assert.equal(isPromotionOnlyPush(ref, 'push'), true, `${ref} push must be promotion-only`);
   assert.equal(assertPromotionPushReusesSnapshot({
     eventName: 'push',
     codeRef: ref,
-    source: { codeRef: ref === 'dev' ? 'dev' : ref === 'staging' ? 'dev' : 'staging', dataBranch: 'catalog-source' },
+    source: { codeRef: ref === 'dev' ? 'dev' : ref === 'staging' ? 'dev' : 'main', dataBranch: 'catalog-source' },
     snapshotImpact: { mode: 'none' },
   }), true, `${ref} promotion must accept an unchanged validated snapshot`);
   assert.throws(() => assertPromotionPushReusesSnapshot({
