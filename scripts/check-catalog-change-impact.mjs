@@ -33,8 +33,8 @@ assert.equal(pushBeforeSha({ before: '0'.repeat(40) }), '');
 assert.equal(pushBeforeSha({ before: 'bad' }), '');
 
 assert.deepEqual(configuredReuseSourceForCodeRef('dev'), {
-  codeRef: 'fix-F', dataBranch: 'catalog-fix-F',
-}, 'dev promotion must prefer the validated fix snapshot declared by .catalog-reuse-source');
+  codeRef: 'dev', dataBranch: 'catalog-dev',
+}, 'dev promotion must use the canonical catalog-dev fallback when no explicit reuse marker exists');
 assert.deepEqual(configuredReuseSourceForCodeRef('staging'), {
   codeRef: 'dev', dataBranch: 'catalog-dev',
 }, 'staging promotion must preserve the canonical catalog-dev predecessor');
@@ -47,7 +47,7 @@ for (const ref of ['dev', 'staging', 'main']) {
   assert.equal(assertPromotionPushReusesSnapshot({
     eventName: 'push',
     codeRef: ref,
-    source: { codeRef: ref === 'dev' ? 'fix-F' : ref === 'staging' ? 'dev' : 'staging', dataBranch: 'catalog-source' },
+    source: { codeRef: ref === 'dev' ? 'dev' : ref === 'staging' ? 'dev' : 'staging', dataBranch: 'catalog-source' },
     snapshotImpact: { mode: 'none' },
   }), true, `${ref} promotion must accept an unchanged validated snapshot`);
   assert.throws(() => assertPromotionPushReusesSnapshot({
