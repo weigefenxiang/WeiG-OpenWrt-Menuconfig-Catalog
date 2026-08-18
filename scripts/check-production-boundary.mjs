@@ -5,6 +5,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildDataBranchForCodeRef,
+  defaultReuseSourceForCodeRef,
   runtimeDataBranchForChannel,
   translationChannel,
   validatePromotionSource,
@@ -36,6 +37,8 @@ const channelContracts = [
   [translationChannel('candidate')?.dataBranch, 'catalog-candidate', 'translation candidate data'],
   [translationChannel('fix-F')?.codeRef, 'fix-F', 'translation fix F code'],
   [translationChannel('fix-F')?.dataBranch, 'catalog-fix-F', 'translation fix F data'],
+  [defaultReuseSourceForCodeRef('main')?.codeRef, 'staging', 'main default reuse source code'],
+  [defaultReuseSourceForCodeRef('main')?.dataBranch, 'catalog-staging', 'main default reuse source data'],
   [validatePromotionSource('fix-F', 'catalog-dev').targetDataBranch, 'catalog-fix-F', 'seed fix F'],
   [validatePromotionSource('fix-F', 'catalog-fix-F').sourceCodeRef, 'fix-F', 'reuse fix F code'],
   [validatePromotionSource('fix-F', 'catalog-fix-F').targetDataBranch, 'catalog-fix-F', 'reuse fix F data'],
@@ -44,9 +47,9 @@ const channelContracts = [
   [validatePromotionSource('fix-F1', 'catalog-fix-F').targetDataBranch, 'catalog-fix-F1', 'reuse sibling fix target data'],
   [validatePromotionSource('dev', 'catalog-fix-F').targetDataBranch, 'catalog-dev', 'promote fix F to dev'],
   [validatePromotionSource('staging', 'catalog-dev').targetDataBranch, 'catalog-staging', 'promote dev to staging'],
-  [validatePromotionSource('main', 'catalog-main').sourceCodeRef, 'main', 'reuse production source code for main'],
-  [validatePromotionSource('main', 'catalog-main').sourceDataBranch, 'catalog-main', 'reuse production source data for main'],
-  [validatePromotionSource('main', 'catalog-main').targetDataBranch, 'catalog-candidate', 'promote production snapshot to candidate'],
+  [validatePromotionSource('main', 'catalog-staging').sourceCodeRef, 'staging', 'reuse staging source code for main'],
+  [validatePromotionSource('main', 'catalog-staging').sourceDataBranch, 'catalog-staging', 'reuse staging source data for main'],
+  [validatePromotionSource('main', 'catalog-staging').targetDataBranch, 'catalog-candidate', 'promote staging snapshot to candidate'],
 ];
 for (const [actual, expected, label] of channelContracts) {
   if (actual !== expected) failures.push(`${label}: ${actual || '(empty)'} != ${expected}`);
@@ -55,7 +58,7 @@ for (const invalid of [
   () => validatePromotionSource('dev', 'catalog-staging'),
   () => validatePromotionSource('staging', 'catalog-fix-F'),
   () => validatePromotionSource('main', 'catalog-dev'),
-  () => validatePromotionSource('main', 'catalog-staging'),
+  () => validatePromotionSource('main', 'catalog-main'),
   () => validatePromotionSource('fix-F', 'catalog-staging'),
   () => validatePromotionSource('fix-F', 'catalog-candidate'),
 ]) {
@@ -108,7 +111,7 @@ requireText(translation, 'options: [candidate, dev, staging]', 'translation chan
 requireText(translation, 'scripts/catalog-channels.mjs translation', 'translation must use centralized channel mapping');
 forbidText(translation, 'catalog-main', 'translation must not write or select production data');
 forbidText(translation, 'data_channel:', 'translation must not expose a free data-channel selector');
-forbidText(translation, 'code_channel:', 'translation must not expose a free code-channel selector');
+forbidText(translation, 'code_channel:', 'translation must not expose a free data-channel selector');
 
 requireText(sizes, 'ref: dev', 'curated size automation must check out dev');
 requireText(sizes, 'git push origin HEAD:dev', 'curated size automation must write dev');
