@@ -123,6 +123,16 @@ assert.equal(catalogChangeImpact([
 assert.throws(() => classifyCatalogPath('scripts/new-catalog-output.mjs'), /Unclassified Catalog-impact file/);
 assert.throws(() => classifyCatalogPath('translations/new-runtime-ui.json'), /Unclassified Catalog-impact file/);
 
+const impactScript = readFileSync(resolve('scripts/catalog-change-impact.mjs'), 'utf8');
+assert(impactScript.includes('const remoteHead = `refs/heads/${dataBranch}`;'),
+  'remote snapshot reads must address the source branch without updating a local tracking ref');
+assert(impactScript.includes("'fetch', '--no-tags', '--depth=1', 'origin', remoteHead"),
+  'remote snapshot reads must stay shallow while refreshing FETCH_HEAD');
+assert(impactScript.includes("gitText(['show', 'FETCH_HEAD:index.json']"),
+  'remote snapshot reads must inspect the freshly fetched snapshot through FETCH_HEAD');
+assert(!impactScript.includes('refs/remotes/origin/${dataBranch}'),
+  'remote snapshot reads must not race on shallow origin/catalog-* tracking refs');
+
 const catalogWorkflow = readFileSync(resolve('.github/workflows/catalog.yml'), 'utf8');
 assert.match(catalogWorkflow, /push:\s*\n\s*branches: \["fix-\*"\]/,
   'automatic Menuconfig Catalog generation must only run on fix-* source-lane pushes');
