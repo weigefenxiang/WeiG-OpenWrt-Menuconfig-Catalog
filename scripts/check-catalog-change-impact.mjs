@@ -47,7 +47,7 @@ for (const ref of ['dev', 'staging', 'main']) {
   assert.equal(assertPromotionPushReusesSnapshot({
     eventName: 'push',
     codeRef: ref,
-    source: { codeRef: ref === 'dev' ? 'dev' : ref === 'staging' ? 'dev' : 'main', dataBranch: 'catalog-source' },
+    source: { codeRef: ref === 'dev' ? 'dev' : ref === 'staging' ? 'dev' : 'staging', dataBranch: 'catalog-source' },
     snapshotImpact: { mode: 'none' },
   }), true, `${ref} promotion must accept an unchanged validated snapshot`);
   assert.throws(() => assertPromotionPushReusesSnapshot({
