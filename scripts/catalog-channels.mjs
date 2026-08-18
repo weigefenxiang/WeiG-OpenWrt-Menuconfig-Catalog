@@ -74,6 +74,7 @@ export function defaultReuseSourceForCodeRef(codeRef) {
   if (canonicalFixDataBranch(ref)) return { codeRef: 'dev', dataBranch: 'catalog-dev' };
   if (ref === 'dev') return { codeRef: 'dev', dataBranch: 'catalog-dev' };
   if (ref === 'staging') return { codeRef: 'dev', dataBranch: 'catalog-dev' };
+  // Production candidates inherit only the validated staging runtime snapshot.
   if (ref === 'main') return { codeRef: 'staging', dataBranch: 'catalog-staging' };
   return null;
 }
