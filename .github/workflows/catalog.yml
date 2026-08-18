@@ -3,10 +3,15 @@ run-name: Menuconfig catalog · ${{ github.event_name }} · run ${{ github.run_n
 
 on:
   workflow_dispatch:
+    inputs:
+      impact_base_ref:
+        description: "Optional ancestor ref for classifying a manual source-lane rebuild; blank keeps full generation"
+        required: false
+        default: ""
   schedule:
     - cron: "17 19 * * 6"
   push:
-    branches: [main, dev, staging, "fix-*"]
+    branches: ["fix-*"]
     # Only inputs that can change browser/build runtime Catalog data start this heavy workflow.
     # Control-plane/test/performance changes are covered by Probe contracts + catalog-reuse.
     paths:
@@ -57,18 +62,50 @@ jobs:
         name: Classify Catalog change impact / 判定 Catalog 变更影响
         env:
           BEFORE_SHA: ${{ github.event.before }}
+          IMPACT_BASE_REF: ${{ inputs.impact_base_ref || '' }}
         run: |
+          set -euo pipefail
           mode=full
           fast_assets=
-          if [[ "$GITHUB_EVENT_NAME" == push && "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
-                "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]] &&
-             git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
+          base_sha=
+
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            [[ "$GITHUB_REF_NAME" == fix-* ]] || {
+              echo "Automatic Catalog generation is restricted to fix-* source lanes."
+              exit 1
+            }
+
+            if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
+                  "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]]; then
+              if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+                git fetch --no-tags --depth=1 origin "$BEFORE_SHA"
+              fi
+              base_sha="$BEFORE_SHA"
+            else
+              git fetch --no-tags --depth=128 origin dev
+              base_sha="$(git merge-base "$GITHUB_SHA" origin/dev)"
+            fi
+          elif [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "$IMPACT_BASE_REF" ]]; then
+            [[ "$GITHUB_REF_NAME" == fix-* ]] || {
+              echo "impact_base_ref is only allowed on fix-* source lanes."
+              exit 1
+            }
+            git fetch --no-tags --depth=1 origin "$IMPACT_BASE_REF"
+            base_sha="$(git rev-parse FETCH_HEAD)"
+            git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" || {
+              echo "impact_base_ref must resolve to an ancestor of the selected fix-* ref."
+              exit 1
+            }
+          fi
+
+          if [[ -n "$base_sha" ]]; then
+            mapfile -t changed < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
             node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"
             mode="$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
             fast_assets="$(sed -n 's/^fast_assets=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
             test -n "$mode"
           fi
+
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
           echo "fast_assets=$fast_assets" >> "$GITHUB_OUTPUT"
 

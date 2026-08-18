@@ -124,6 +124,18 @@ assert.throws(() => classifyCatalogPath('scripts/new-catalog-output.mjs'), /Uncl
 assert.throws(() => classifyCatalogPath('translations/new-runtime-ui.json'), /Unclassified Catalog-impact file/);
 
 const catalogWorkflow = readFileSync(resolve('.github/workflows/catalog.yml'), 'utf8');
+assert.match(catalogWorkflow, /push:\s*\n\s*branches: \["fix-\*"\]/,
+  'automatic Menuconfig Catalog generation must only run on fix-* source-lane pushes');
+for (const promotionRef of ['dev', 'staging', 'main']) {
+  assert(!catalogWorkflow.includes(`branches: [${promotionRef}`),
+    `${promotionRef} must not be an automatic Menuconfig Catalog generation branch`);
+}
+assert.match(catalogWorkflow, /impact_base_ref:/,
+  'manual source-lane rebuilds must expose an explicit impact base ref');
+assert.match(catalogWorkflow, /impact_base_ref is only allowed on fix-\* source lanes/,
+  'manual impact-base classification must be restricted to fix-* source lanes');
+assert.match(catalogWorkflow, /git merge-base "\$GITHUB_SHA" origin\/dev/,
+  'new fix-* branch pushes must classify against their dev merge-base instead of defaulting to full');
 assert(!catalogWorkflow.includes('- "scripts/**"'), 'Menuconfig Catalog push must not watch every script');
 assert(!catalogWorkflow.includes('- ".github/workflows/catalog.yml"'), 'Menuconfig Catalog push must not self-trigger on control changes');
 assert.match(catalogWorkflow, /node scripts\/catalog-change-impact\.mjs/, 'heavy workflow must pass through the promotion-aware Data Surface gate');
@@ -137,6 +149,8 @@ for (const required of [
 }
 
 const reuseWorkflow = readFileSync(resolve('.github/workflows/catalog-reuse.yml'), 'utf8');
+assert.match(reuseWorkflow, /push:\s*\n\s*branches: \[main, dev, staging, "fix-\*"\]/,
+  'snapshot reuse must remain enabled on dev/staging/main and fix-* promotion lanes');
 assert.match(reuseWorkflow, /node scripts\/catalog-change-impact\.mjs/, 'snapshot reuse must use the same promotion-aware Data Surface gate');
 assert.match(reuseWorkflow, /needs\.preflight\.outputs\.reuse == 'true'/, 'snapshot promotion must require verified reusable identity');
 
