@@ -126,8 +126,8 @@ assert.throws(() => classifyCatalogPath('translations/new-runtime-ui.json'), /Un
 const impactScript = readFileSync(resolve('scripts/catalog-change-impact.mjs'), 'utf8');
 assert(impactScript.includes('const remoteHead = `refs/heads/${dataBranch}`;'),
   'remote snapshot reads must address the source branch without updating a local tracking ref');
-assert(impactScript.includes("'fetch', '--no-tags', '--depth=1', 'origin', remoteHead"),
-  'remote snapshot reads must stay shallow while refreshing FETCH_HEAD');
+assert(impactScript.includes("'fetch', '--no-tags', '--depth=1', '--refmap=', 'origin', remoteHead"),
+  'remote snapshot reads must stay shallow and disable remote-tracking ref updates');
 assert(impactScript.includes("gitText(['show', 'FETCH_HEAD:index.json']"),
   'remote snapshot reads must inspect the freshly fetched snapshot through FETCH_HEAD');
 assert(!impactScript.includes('refs/remotes/origin/${dataBranch}'),
