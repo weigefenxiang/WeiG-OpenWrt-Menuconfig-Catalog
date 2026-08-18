@@ -111,7 +111,7 @@ requireText(translation, 'options: [candidate, dev, staging]', 'translation chan
 requireText(translation, 'scripts/catalog-channels.mjs translation', 'translation must use centralized channel mapping');
 forbidText(translation, 'catalog-main', 'translation must not write or select production data');
 forbidText(translation, 'data_channel:', 'translation must not expose a free data-channel selector');
-forbidText(translation, 'code_channel:', 'translation must not expose a free data-channel selector');
+forbidText(translation, 'code_channel:', 'translation must not expose a free code-channel selector');
 
 requireText(sizes, 'ref: dev', 'curated size automation must check out dev');
 requireText(sizes, 'git push origin HEAD:dev', 'curated size automation must write dev');
