@@ -34,7 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
-          git clone --single-branch --branch catalog-candidate "$remote" candidate
+          git clone --depth 1 --single-branch --branch catalog-candidate "$remote" candidate
           candidate_sha="$(git -C candidate rev-parse HEAD)"
           if [[ -n "$EXPECTED_CANDIDATE_SHA" ]]; then
             [[ "$EXPECTED_CANDIDATE_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "candidate_sha must be a full Git SHA"; exit 1; }
@@ -47,8 +47,11 @@ jobs:
           set -euo pipefail
           node scripts/verify-production-candidate.mjs candidate "$GITHUB_REPOSITORY" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
           asset_ref="$(node -e "const i=require('./candidate/index.json'); process.stdout.write(i.assetRef)")"
+          # assetRef may live on an isolated source-lane data history rather than being
+          # an ancestor of catalog-candidate. Verify that the immutable commit exists;
+          # candidate file hashes and provenance are verified independently above.
+          git -C candidate fetch --no-tags --depth=1 origin "$asset_ref"
           git -C candidate cat-file -e "${asset_ref}^{commit}"
-          git -C candidate merge-base --is-ancestor "$asset_ref" "${{ steps.candidate.outputs.candidate_sha }}"
       - name: Promote exact snapshot to catalog-main
         id: data
         env:
