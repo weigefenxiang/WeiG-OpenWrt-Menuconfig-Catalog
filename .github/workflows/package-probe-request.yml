@@ -28,8 +28,38 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v7
+      - name: Bootstrap default-branch Probe router / 引导默认分支探针路由
+        uses: actions/checkout@v7
         with:
+          persist-credentials: false
+      - id: route
+        name: Resolve requested Probe channel / 解析请求探针通道
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          import { parseProbeStateToken } from './scripts/package-probe-state.mjs';
+
+          const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+          let channel = 'main';
+          try {
+            const parsed = parseProbeStateToken(event.issue?.body || '');
+            const candidate = String(parsed.raw?.channel || '').trim();
+            if (/^(?:dev|staging|main|fix-[A-Za-z0-9][A-Za-z0-9._-]{0,95})$/.test(candidate)) {
+              channel = candidate;
+            }
+          } catch (error) {
+            // Keep the default-branch gateway for malformed/legacy requests so it can
+            // preserve the normal rejection or cancellation behavior.
+            console.log(`Probe channel bootstrap fallback: ${error?.message || error}`);
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `channel=${channel}\n`);
+          console.log(`Probe gateway code ref: ${channel}`);
+          NODE
+      - name: Checkout requested Probe channel / 检出请求探针通道
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.route.outputs.channel }}
           persist-credentials: false
       - name: Process the Issue request / 处理 Issue 请求
         env:
