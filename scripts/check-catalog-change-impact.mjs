@@ -134,6 +134,10 @@ assert.match(catalogWorkflow, /impact_base_ref:/,
   'manual source-lane rebuilds must expose an explicit impact base ref');
 assert.match(catalogWorkflow, /impact_base_ref is only allowed on fix-\* source lanes/,
   'manual impact-base classification must be restricted to fix-* source lanes');
+assert.match(catalogWorkflow, /git rev-parse --is-shallow-repository/,
+  'manual impact-base ancestry checks must detect shallow checkout history');
+assert.match(catalogWorkflow, /git fetch --no-tags --unshallow origin "\$GITHUB_REF_NAME"/,
+  'manual impact-base ancestry checks must recover full source-lane history before rejecting a valid ancestor');
 assert.match(catalogWorkflow, /git merge-base "\$GITHUB_SHA" origin\/dev/,
   'new fix-* branch pushes must classify against their dev merge-base instead of defaulting to full');
 assert(!catalogWorkflow.includes('- "scripts/**"'), 'Menuconfig Catalog push must not watch every script');
