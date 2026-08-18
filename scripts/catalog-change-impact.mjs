@@ -223,12 +223,11 @@ function ensureAncestorAvailable(base, target, cwd = ROOT) {
 }
 
 function readRemoteSnapshot(dataBranch, cwd = ROOT) {
-  const remoteRef = `refs/remotes/origin/${dataBranch}`;
+  const remoteHead = `refs/heads/${dataBranch}`;
   execFileSync('git', [
-    'fetch', '--no-tags', '--depth=1', 'origin',
-    `refs/heads/${dataBranch}:${remoteRef}`,
+    'fetch', '--no-tags', '--depth=1', 'origin', remoteHead,
   ], { cwd, stdio: 'ignore' });
-  return JSON.parse(gitText(['show', `${remoteRef}:index.json`], cwd));
+  return JSON.parse(gitText(['show', 'FETCH_HEAD:index.json'], cwd));
 }
 
 export function catalogImpactBetweenCommits(baseSha, targetSha, { cwd = ROOT } = {}) {
