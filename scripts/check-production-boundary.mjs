@@ -76,6 +76,8 @@ requireText(production, 'group: catalog-write-catalog-main', 'production must ow
 requireText(production, 'scripts/verify-production-candidate.mjs', 'production must verify candidate provenance');
 requireText(production, 'git clone --depth 1 --single-branch --branch catalog-candidate',
   'production candidate fetch must be shallow and pinned to the candidate branch');
+forbidText(production, 'git clone --single-branch --branch catalog-candidate',
+  'production must not regress to an unbounded candidate clone');
 requireText(production, 'git -C candidate fetch --no-tags --depth=1 origin "$asset_ref"',
   'production must fetch the immutable assetRef even when it lives on an isolated data history');
 requireText(production, 'git -C candidate cat-file -e "${asset_ref}^{commit}"',
