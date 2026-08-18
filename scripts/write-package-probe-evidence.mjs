@@ -66,42 +66,51 @@ function normalizedRuntimeConclusion(runtime, issues, fallback) {
   if (issues.some((row) => ['timeout', 'infrastructure-failure', 'package-download-failure', 'metadata-unresolved', 'baseline-failure'].includes(row.type))) {
     return 'inconclusive';
   }
-  if (runtime?.conclusion === 'compatible' || runtime?.conclusion === 'incompatible' || runtime?.conclusion === 'inconclusive') {
-    return runtime.conclusion;
-  }
+  if (['compatible', 'incompatible', 'inconclusive', 'skipped'].includes(runtime?.conclusion)) return runtime.conclusion;
   return fallback === 'success' ? 'compatible' : 'inconclusive';
 }
 
-export function createEvidence({ log, config = '', runtime = null, env = {} }) {
+export function createEvidence({ log, config = '', runtime = null, env = {}, attempt: selectedAttempt = null }) {
   const roots = String(env.PROBE_ROOTS || '').split(',').map((row) => row.trim()).filter(Boolean);
+  const attempt = selectedAttempt || runtime?.attempts?.[0] || {};
   const errors = normalizedErrors(log);
   const issues = parseProbeLog(log);
-  const conclusion = normalizedRuntimeConclusion(runtime, issues, env.PROBE_CONCLUSION || 'unknown');
-  const attempt = runtime?.attempts?.[0] || {};
+  if (['root-absent-source', 'root-not-applicable'].includes(attempt.reason)) {
+    issues.push({ type: 'not-applicable', roots: attempt.unavailableRoots || [] });
+  } else if (attempt.reason === 'root-combination-rejected') {
+    issues.push({ type: 'kconfig-combination-rejected', roots: attempt.rejectedRoots || [] });
+  }
+  const runtimeView = selectedAttempt ? { ...runtime, conclusion: attempt.result, reason: attempt.reason, attempts: [attempt] } : runtime;
+  const conclusion = normalizedRuntimeConclusion(runtimeView, issues, env.PROBE_CONCLUSION || 'unknown');
   return {
-    schema: 4,
+    schema: 5,
     generatedAt: new Date().toISOString(),
-    source: env.PROBE_SOURCE || runtime?.environment?.source || '', repo: env.PROBE_REPO || '', branch: env.PROBE_BRANCH || runtime?.environment?.branch || '',
-    upstreamCommit: env.PROBE_UPSTREAM_COMMIT || '', targetSystem: env.PROBE_TARGET_SYSTEM || runtime?.environment?.targetSystem || '',
-    subtarget: env.PROBE_SUBTARGET || runtime?.environment?.subtarget || '', target: env.PROBE_TARGET || runtime?.environment?.target || '',
-    profile: env.PROBE_PROFILE || runtime?.environment?.profile || '', profileLabel: env.PROBE_PROFILE_LABEL || '', mode: env.PROBE_MODE || runtime?.mode || '',
+    source: attempt.source || env.PROBE_SOURCE || runtime?.environment?.source || '', repo: env.PROBE_REPO || '',
+    branch: attempt.branch || env.PROBE_BRANCH || runtime?.environment?.branch || '', upstreamCommit: env.PROBE_UPSTREAM_COMMIT || '',
+    targetSystem: attempt.targetSystem || env.PROBE_TARGET_SYSTEM || runtime?.environment?.targetSystem || '',
+    subtarget: attempt.subtarget || env.PROBE_SUBTARGET || runtime?.environment?.subtarget || '',
+    target: attempt.target || env.PROBE_TARGET || runtime?.environment?.target || '',
+    profile: attempt.profile || env.PROBE_PROFILE || runtime?.environment?.profile || '',
+    profileLabel: attempt.profileLabel || env.PROBE_PROFILE_LABEL || '', mode: env.PROBE_MODE || runtime?.mode || '',
     evidenceLevel: Number(env.PROBE_EVIDENCE_LEVEL || 0), useDefconfig: runtime?.useDefconfig ?? String(env.PROBE_USE_DEFCONFIG || 'true') !== 'false',
     roots: runtime?.roots || roots, rootMappings: attempt.rootMappings || [], rootTargets: attempt.rootTargets || [],
     baselinePackageCount: Number(runtime?.baselinePackageCount || env.PROBE_BASELINE_PACKAGE_COUNT || 0),
     finalPackageCount: Number(runtime?.finalPackageCount || env.PROBE_FINAL_PACKAGE_COUNT || 0),
     rootStates: attempt.rootStates || requestedPackageStates(config, runtime?.roots || roots),
+    unavailableRoots: attempt.unavailableRoots || [], rejectedRoots: attempt.rejectedRoots || [], reason: attempt.reason || runtime?.reason || '',
     conclusion,
     coverage: {
       mode: String(env.PROBE_COVERAGE_MODE || 'auto'), total: Number(env.PROBE_COVERAGE_TOTAL || 1), planned: Number(env.PROBE_COVERAGE_PLANNED || 1),
       sampled: String(env.PROBE_COVERAGE_SAMPLED || 'false') === 'true', batchIndex: Number(env.PROBE_BATCH_INDEX || 0), batchCount: Number(env.PROBE_BATCH_COUNT || 1),
     },
-    attempts: runtime?.attempts || [], issues, errors, fingerprint: evidenceFingerprint(issues, errors),
+    attempts: [attempt], issues: [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()], errors,
+    fingerprint: evidenceFingerprint(issues, errors),
     run: `run:${env.GITHUB_RUN_ID || ''}`,
     runUrl: `${env.GITHUB_SERVER_URL || ''}/${env.GITHUB_REPOSITORY || ''}/actions/runs/${env.GITHUB_RUN_ID || ''}`,
   };
 }
 
-function issueText(issue) { return issue.path || issue.target || issue.dependency || issue.reason || issue.type; }
+function issueText(issue) { return issue.path || issue.target || issue.dependency || issue.reason || (issue.roots || []).join(', ') || issue.type; }
 
 export function evidenceSummaryLines(evidence) {
   const serialRecoveries = evidence.attempts.flatMap((attempt) => (attempt.serialRetries || []).filter((row) => row.result === 'recovered').map((row) => row.label));
@@ -113,7 +122,7 @@ export function evidenceSummaryLines(evidence) {
     `- Mode / 探测方式: \`${evidence.mode}\` (L${evidence.evidenceLevel})`,
     `- Defconfig: \`${evidence.useDefconfig ? 'on' : 'off'}\``,
     `- Probe roots / 测试入口: ${evidence.roots.map((row) => `\`${row}\``).join(', ') || '-'}`,
-    `- Baseline / Final packages: ${evidence.baselinePackageCount} / ${evidence.finalPackageCount}`,
+    ...(evidence.mode === 'config-resolve' ? [] : [`- Baseline / Final packages: ${evidence.baselinePackageCount} / ${evidence.finalPackageCount}`]),
     `- Conclusion / 结论: **${evidence.conclusion}**`,
     ...(serialRecoveries.length ? [`- Serial recovery / 串行复核恢复: ${[...new Set(serialRecoveries)].map((row) => `\`${row}\``).join(', ')}`] : []),
     `- Fingerprint / 错误指纹: \`${evidence.fingerprint.slice(0, 16)}\``,
@@ -140,9 +149,10 @@ function environmentKey(row, depth = 5) {
 function conclusionStats(rows) {
   const compatible = rows.filter((row) => row.conclusion === 'compatible').length;
   const incompatible = rows.filter((row) => row.conclusion === 'incompatible').length;
-  const inconclusive = rows.length - compatible - incompatible;
+  const skipped = rows.filter((row) => row.conclusion === 'skipped').length;
+  const inconclusive = rows.filter((row) => row.conclusion === 'inconclusive').length;
   const conclusive = compatible + incompatible;
-  return { attempted: rows.length, compatible, incompatible, inconclusive, conclusive,
+  return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, conclusive,
     compatibilityRate: conclusive ? compatible / conclusive : null };
 }
 
@@ -244,6 +254,7 @@ export function aggregateEvidence(directory, env = {}) {
   const runStatus = aggregateRunStatus(env, evidence.length);
   const lines = ['## Package compatibility probe result / 软件包兼容探针结果', '',
     `- Observed compatibility / 已测兼容率: **${formatCompatibilityRate(overallStats)}** (${overallStats.compatible}/${overallStats.conclusive} conclusive / 明确结果)`,
+    `- Skipped / 跳过: ${overallStats.skipped}`,
     `- Inconclusive / 未定: ${overallStats.inconclusive}`,
     `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
     `- Coverage / 覆盖: ${env.COVERAGE_PLANNED || evidence.length}/${env.COVERAGE_TOTAL || evidence.length}${exhaustive ? ' (complete)' : ' (sampled)'}`,
@@ -255,9 +266,9 @@ export function aggregateEvidence(directory, env = {}) {
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
     lines.push('### Source/Branch compatibility / 源码分支兼容率', '',
-      '| Source | Branch | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Inconclusive / 未定 |',
-      '|---|---|---:|---:|---:|',
-      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.branch || '—'} | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.inconclusive} |`), '',
+      '| Source | Branch | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Skipped / 跳过 | Inconclusive / 未定 |',
+      '|---|---|---:|---:|---:|---:|',
+      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.branch || '—'} | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} |`), '',
       '<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',
       '| Source/Branch | Target System/Subtarget/Profile | Conclusion / 结论 | Issues / 问题 |', '|---|---|---|---|',
       ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.targetSystem || '-'}/${row.subtarget || '-'}/${row.profile || '-'} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || '-'} |`), '',
@@ -283,8 +294,30 @@ export function main(env = process.env) {
   const configPath = env.PROBE_CONFIG || 'work/upstream/.config';
   const config = existsSync(configPath) ? readFileSync(configPath, 'utf8') : '';
   const runtime = existsSync('probe-runtime.json') ? JSON.parse(readFileSync('probe-runtime.json', 'utf8')) : null;
-  const evidence = createEvidence({ log, config, runtime, env });
   mkdirSync('probe-evidence', { recursive: true });
+  if (runtime?.mode === 'config-resolve' && Array.isArray(runtime.attempts)) {
+    const evidence = runtime.attempts.map((attempt, index) => createEvidence({ log, config, runtime, env, attempt }));
+    evidence.forEach((row, index) => {
+      const directory = join('probe-evidence', String(index + 1).padStart(3, '0'));
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(join(directory, 'evidence.json'), JSON.stringify(row, null, 2) + '\n');
+    });
+    const stats = conclusionStats(evidence);
+    const lines = [
+      '## Package compatibility probe evidence / 软件包兼容探针证据', '',
+      `- Source/Branch / 源码分支: \`${env.PROBE_SOURCE || runtime?.environment?.source || ''}/${env.PROBE_BRANCH || runtime?.environment?.branch || ''}\``,
+      `- Mode / 探测方式: \`config-resolve\` (L1)`,
+      `- Environments / 环境: ${evidence.length}`,
+      `- Compatible / 通过: ${stats.compatible}`,
+      `- Skipped / 跳过: ${stats.skipped}`,
+      `- Incompatible / 冲突: ${stats.incompatible}`,
+      `- Inconclusive / 未定: ${stats.inconclusive}`, '',
+    ];
+    writeFileSync('probe-evidence/SUMMARY.md', lines.join('\n'));
+    if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, lines.join('\n'));
+    return evidence;
+  }
+  const evidence = createEvidence({ log, config, runtime, env });
   writeFileSync('probe-evidence/evidence.json', JSON.stringify(evidence, null, 2) + '\n');
   writeFileSync('probe-evidence/SUMMARY.md', evidenceSummaryLines(evidence).join('\n'));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, evidenceSummaryLines(evidence).join('\n'));

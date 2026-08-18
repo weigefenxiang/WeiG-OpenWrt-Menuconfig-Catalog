@@ -53,4 +53,11 @@ try {
 
 const missing = resolve(import.meta.dirname, '.package-probe-evidence-test-missing');
 assert.equal(aggregateEvidence(missing, { PLAN_RESULT: 'failure', PROBE_RESULT: 'skipped' }).runStatus.state, 'plan-failure');
+const skippedEvidence = createEvidence({ log: '', runtime: { mode: 'config-resolve', conclusion: 'skipped', roots: ['alpha'], attempts: [{
+  source: 'OpenWrt', branch: 'main', targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_generic',
+  result: 'skipped', reason: 'root-not-applicable', unavailableRoots: ['alpha'], rootStates: { alpha: 'n' },
+}] }, env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'config-resolve' } });
+assert.equal(skippedEvidence.conclusion, 'skipped');
+assert(skippedEvidence.issues.some((row) => row.type === 'not-applicable'));
+
 console.log('Package Probe V3 evidence checks passed.');

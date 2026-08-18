@@ -12,9 +12,9 @@ import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
-const MODES = new Set(['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke']);
+const MODES = new Set(['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke']);
 const MODE_ALIASES = { compile: 'package-compile', 'co-install': 'rootfs-integration' };
-const MODES_LIST = ['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke'];
+const MODES_LIST = ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke'];
 const REQUEST_KEYS = new Set([
   'schema', 'channel', 'mode', 'useDefconfig', 'baselinePackageConfig', 'packageConfig', 'packageIntent',
   'environmentScope', 'coverage', 'maxParallel', 'execute',
@@ -38,7 +38,7 @@ function rejectUnknownKeys(value, allowed, label) {
 }
 
 export function normalizeProbeMode(value) {
-  const mode = MODE_ALIASES[String(value || '')] || String(value || 'package-compile');
+  const mode = MODE_ALIASES[String(value || '')] || String(value || 'config-resolve');
   if (!MODES.has(mode)) throw new Error(`unsupported probe mode: ${value}`);
   return mode;
 }
@@ -98,6 +98,13 @@ function normalizePackageIntent(value, baselineStates, finalStates) {
   return rows.sort((a, b) => a.package.localeCompare(b.package));
 }
 
+function packageConfigFromIntent(rows, stateKey) {
+  const selected = rows.filter((row) => row && ['m', 'y'].includes(row[stateKey]));
+  return selected.length
+    ? selected.map((row) => `CONFIG_PACKAGE_${row.package}=${row[stateKey]}`).join('\n') + '\n'
+    : '';
+}
+
 function normalizeScopeValues(value, label, options = {}) {
   if (!Array.isArray(value) || !value.length || value.length > 256) {
     throw new Error(`${label} must contain 1-256 values`);
@@ -147,16 +154,18 @@ export function normalizeProbeRequest(raw, maximumBytes = 131072) {
   const finalState = normalizePackageConfig(raw.packageConfig, maximumBytes, { label: 'packageConfig' });
   const packageIntent = normalizePackageIntent(raw.packageIntent, baselineState.states, finalState.states);
   const roots = packageIntent.filter((row) => row.after === 'm' || row.after === 'y').map((row) => row.package);
+  const mode = normalizeProbeMode(raw.mode);
+  const l1 = mode === 'config-resolve';
   return {
     schema: 3,
     channel,
-    mode: normalizeProbeMode(raw.mode),
-    useDefconfig: raw.useDefconfig !== false,
-    baselinePackageConfig: baselineState.packageConfig,
-    packageConfig: finalState.packageConfig,
+    mode,
+    useDefconfig: l1 ? true : raw.useDefconfig !== false,
+    baselinePackageConfig: l1 ? packageConfigFromIntent(packageIntent, 'before') : baselineState.packageConfig,
+    packageConfig: l1 ? packageConfigFromIntent(packageIntent, 'after') : finalState.packageConfig,
     packageIntent,
     roots,
-    packages: finalState.packages,
+    packages: l1 ? [...roots] : finalState.packages,
     environmentScope: normalizeEnvironmentScope(raw.environmentScope),
     coverage: normalizeProbeCoverage(raw.coverage),
     maxParallel: raw.maxParallel === undefined ? 0 : Number(raw.maxParallel),
@@ -320,7 +329,8 @@ export function createProbePlan({ index, env = {}, policy, request: normalizedRe
   const maximumBytes = Number(probePolicy.maxPackageConfigBytes || 131072);
   if (!normalizedRequest) throw new Error('createProbePlan requires a normalized Probe V3 request');
   const request = requireNormalizedProbeRequest(normalizedRequest);
-  const include = index.sources.flatMap((source) => (source.branches || [])
+  const include = index.sources.filter((source) => String(source?.id || '').toLowerCase() !== 'hanwckf')
+    .flatMap((source) => (source.branches || [])
     .filter((branch) => branch.state !== 'unavailable' &&
       branchScopeMatches(request.environmentScope, String(source.id || ''), String(branch.branch || '')))
     .map((branch) => ({
@@ -491,9 +501,29 @@ export async function attachProbeTargets(plan, { repository, dataRef, token, pol
   const batchSize = Math.max(1, Math.min(256, Number(probePolicy.maxMatrixJobs || 256)));
   const batchCount = Math.max(1, Math.ceil(planned.length / batchSize));
   if (plan.batchIndex >= batchCount) throw new Error(`Probe batch ${plan.batchIndex} is outside 0-${batchCount - 1}`);
-  const batchRows = planned.slice(plan.batchIndex * batchSize, (plan.batchIndex + 1) * batchSize).map((row) => ({
+  const selectedRows = planned.slice(plan.batchIndex * batchSize, (plan.batchIndex + 1) * batchSize).map((row) => ({
     ...row, coverageTotal: candidates.length, coveragePlanned: planned.length,
   }));
+  let batchRows = selectedRows;
+  if (plan.mode === 'config-resolve') {
+    const groups = new Map();
+    for (const row of selectedRows) {
+      const groupKey = `${row.source}\0${row.branch}`;
+      let group = groups.get(groupKey);
+      if (!group) {
+        group = { ...row, key: safeKey(`${row.source}-${row.branch}-l1-${plan.batchIndex}`), environments: [] };
+        delete group.targetSystem; delete group.targetSystemLabel; delete group.subtarget; delete group.subtargetLabel;
+        delete group.target; delete group.profile; delete group.profileLabel; delete group.targetConfig;
+        groups.set(groupKey, group);
+      }
+      group.environments.push({
+        targetSystem: row.targetSystem, targetSystemLabel: row.targetSystemLabel,
+        subtarget: row.subtarget, subtargetLabel: row.subtargetLabel,
+        target: row.target, profile: row.profile, profileLabel: row.profileLabel, targetConfig: row.targetConfig,
+      });
+    }
+    batchRows = [...groups.values()].map((row) => ({ ...row, environmentCount: row.environments.length }));
+  }
   const requestedParallel = plan.requestedMaxParallel === 0 ? batchRows.length : plan.requestedMaxParallel;
   const maxParallel = Math.max(1, Math.min(batchRows.length,
     plan.authorizationElevatedParallel ? requestedParallel : Math.min(plan.collaboratorCap, requestedParallel)));
@@ -540,18 +570,23 @@ export function probePlanSummary(plan) {
     `- Mode / 探测方式: \`${plan.mode}\``,
     `- Defconfig: \`${plan.useDefconfig ? 'on' : 'off'}\``,
     `- Probe roots / 测试入口: ${plan.requested.map((row) => `\`${row}\``).join(', ') || '-'}`,
-    `- Final enabled packages / 最终启用软件包: ${plan.resolvedPackages.length}`,
+    ...(plan.mode === 'config-resolve' ? [] : [`- Final enabled packages / 最终启用软件包: ${plan.resolvedPackages.length}`]),
     `- Coverage / 覆盖: \`${plan.coverage?.mode || plan.coverageRequest?.mode}\` ${plan.coverage ? `${plan.coverage.planned}/${plan.coverage.total}` : '-'}`,
     `- Batch / 批次: ${(plan.batchIndex || 0) + 1}/${plan.batchCount || 1}`,
     `- Maximum parallel jobs / 最大并发任务: ${plan.maxParallel}`,
-    `- Execute compilation / 执行编译: ${plan.execute}`, '',
+    `- Execute / 执行: ${plan.execute ? (plan.mode === 'config-resolve' ? 'official Kconfig resolve' : 'build probe') : 'plan only'}`, '',
   ];
   if (!plan.authorized) rows.push('> Permission denied; no probe Matrix will be created. / 权限不足；不会创建探针 Matrix。', '');
   else if (!plan.execute) rows.push('> Plan only; no compilation was executed. / 仅生成计划；未执行编译。', '');
-  if (plan.matrix.include.length) rows.push(
-    '| Source | Branch | Target System | Subtarget | Profile | Upstream commit |',
-    '|---|---|---|---|---|---|',
-    ...plan.matrix.include.map((row) => `| ${markdownCell(row.source)} | ${markdownCell(row.branch)} | ${markdownCell(row.targetSystem || '-')} | ${markdownCell(row.subtarget || '-')} | ${markdownCell(row.profile || '-')} | \`${row.upstreamCommit || 'unknown'}\` |`), '');
+  if (plan.matrix.include.length) {
+    if (plan.mode === 'config-resolve') rows.push(
+      '| Source | Branch | L1 environments | Upstream commit |', '|---|---|---:|---|',
+      ...plan.matrix.include.map((row) => `| ${markdownCell(row.source)} | ${markdownCell(row.branch)} | ${Number(row.environmentCount || 0)} | \`${row.upstreamCommit || 'unknown'}\` |`), '');
+    else rows.push(
+      '| Source | Branch | Target System | Subtarget | Profile | Upstream commit |',
+      '|---|---|---|---|---|---|',
+      ...plan.matrix.include.map((row) => `| ${markdownCell(row.source)} | ${markdownCell(row.branch)} | ${markdownCell(row.targetSystem || '-')} | ${markdownCell(row.subtarget || '-')} | ${markdownCell(row.profile || '-')} | \`${row.upstreamCommit || 'unknown'}\` |`), '');
+  }
   if (plan.skipped?.length) rows.push(`- Skipped environment records / 跳过环境记录: ${plan.skipped.length}`, '');
   return rows.join('\n');
 }
@@ -578,7 +613,7 @@ function manualRequest(env, maximumBytes, policy) {
   const intent = roots.map((packageName) => ({ package: packageName,
     before: normalizedState(baseline.states, packageName), after: normalizedState(final.states, packageName) }));
   return normalizeProbeRequest({
-    schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode: env.PROBE_MODE || 'package-compile',
+    schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode: env.PROBE_MODE || 'config-resolve',
     useDefconfig: String(env.PROBE_USE_DEFCONFIG || 'true') !== 'false', baselinePackageConfig: baseline.packageConfig,
     packageConfig: final.packageConfig, packageIntent: intent,
     environmentScope: {
@@ -586,7 +621,7 @@ function manualRequest(env, maximumBytes, policy) {
       targetSystems: [env.TARGET_SYSTEM || '*'], subtargets: [env.SUBTARGET || '*'], profiles: [env.TARGET_PROFILE || '*'],
     },
     coverage: { mode: env.COVERAGE_MODE || 'auto', ...(env.COVERAGE_MODE === 'all' ? {} : {
-      limit: Number(env.COVERAGE_LIMIT || policy?.probe?.autoCoverageLimits?.[env.PROBE_MODE || 'package-compile'] || 50),
+      limit: Number(env.COVERAGE_LIMIT || policy?.probe?.autoCoverageLimits?.[env.PROBE_MODE || 'config-resolve'] || 40),
     }) },
     maxParallel: Number(env.MAX_PARALLEL || 0), execute: String(env.DRY_RUN || 'false') !== 'true',
   }, maximumBytes);

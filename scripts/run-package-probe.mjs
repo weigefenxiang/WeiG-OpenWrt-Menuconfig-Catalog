@@ -12,13 +12,16 @@ const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
 const WORKDIR = resolve(process.env.PROBE_WORKDIR || join(ROOT, 'work', 'upstream'));
 const LOG_FILE = resolve(process.env.PROBE_LOG || join(ROOT, 'probe.log'));
 const RUNTIME_FILE = resolve(process.env.PROBE_RUNTIME || join(ROOT, 'probe-runtime.json'));
-const MODE = String(process.env.PROBE_MODE || 'package-compile');
+const MODE = String(process.env.PROBE_MODE || 'config-resolve');
 const USE_DEFCONFIG = String(process.env.PROBE_USE_DEFCONFIG || 'true') !== 'false';
 const TARGET = String(process.env.PROBE_TARGET || '');
 const PROFILE = String(process.env.PROBE_PROFILE || '');
 const TARGET_SYSTEM = String(process.env.PROBE_TARGET_SYSTEM || '');
 const SUBTARGET = String(process.env.PROBE_SUBTARGET || '');
 const TARGET_CONFIG = String(process.env.PROBE_TARGET_CONFIG || '');
+const SOURCE = String(process.env.PROBE_SOURCE || '');
+const BRANCH = String(process.env.PROBE_BRANCH || '');
+const TARGET_BATCH = parseTargetBatch(process.env.PROBE_TARGET_BATCH || '');
 const FINAL_PACKAGE_CONFIG = Buffer.from(String(process.env.PROBE_PACKAGE_CONFIG || ''), 'base64url').toString('utf8');
 const BASELINE_PACKAGE_CONFIG = Buffer.from(String(process.env.PROBE_BASELINE_PACKAGE_CONFIG || ''), 'base64url').toString('utf8');
 const INTENT_JSON = Buffer.from(String(process.env.PROBE_PACKAGE_INTENT || 'W10'), 'base64url').toString('utf8');
@@ -29,10 +32,13 @@ const ROOTS = String(process.env.PROBE_ROOTS || '').split(',').map((row) => row.
 const requestedJobs = Number(process.env.PROBE_JOBS || 0);
 const JOBS = Number.isSafeInteger(requestedJobs) && requestedJobs > 0 ? requestedJobs : Math.max(1, availableParallelism() + 1);
 
-if (!['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke'].includes(MODE)) {
+if (!['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke'].includes(MODE)) {
   throw new Error(`unsupported probe mode: ${MODE}`);
 }
-if (!TARGET || !TARGET_CONFIG) throw new Error('Probe Target config is required');
+if (SOURCE.toLowerCase() === 'hanwckf') throw new Error('hanwckf is excluded from Package Probe');
+if (MODE === 'config-resolve') {
+  if (!TARGET_BATCH.length) throw new Error('L1 Probe environment batch is required');
+} else if (!TARGET || !TARGET_CONFIG) throw new Error('Probe Target config is required');
 if (!ROOTS.length || ROOTS.some((name) => !PACKAGE_RE.test(name))) throw new Error('invalid PROBE_ROOTS');
 for (const root of ROOTS) {
   if (!['m', 'y'].includes(FINAL_STATES.get(root))) throw new Error(`Probe root is not enabled in Final state: ${root}`);
@@ -61,6 +67,25 @@ function parseIntent(text) {
   catch { throw new Error('PROBE_PACKAGE_INTENT is invalid JSON'); }
   if (!Array.isArray(rows)) throw new Error('PROBE_PACKAGE_INTENT must be an array');
   return rows;
+}
+
+function parseTargetBatch(text) {
+  if (!String(text || '').trim()) return [];
+  let rows;
+  try { rows = JSON.parse(text); }
+  catch { throw new Error('PROBE_TARGET_BATCH is invalid JSON'); }
+  if (!Array.isArray(rows) || rows.length > 256) throw new Error('PROBE_TARGET_BATCH must contain up to 256 environments');
+  return rows.map((row, index) => {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error(`invalid L1 environment at index ${index}`);
+    const target = String(row.target || '');
+    const targetConfig = String(row.targetConfig || '');
+    if (!target || !targetConfig) throw new Error(`L1 environment ${index} is missing Target config`);
+    return {
+      targetSystem: String(row.targetSystem || ''), targetSystemLabel: String(row.targetSystemLabel || ''),
+      subtarget: String(row.subtarget || ''), subtargetLabel: String(row.subtargetLabel || ''),
+      target, profile: String(row.profile || ''), profileLabel: String(row.profileLabel || ''), targetConfig,
+    };
+  });
 }
 
 function log(line = '') {
@@ -153,6 +178,122 @@ async function prepareConfig(states, attempt, { roots = false, metadata = false,
     return { ok: true, states: after };
   }
   return { ok: true, states: actual };
+}
+
+
+function safeSlug(value) {
+  return String(value || 'default').replace(/[^A-Za-z0-9_.-]/g, '-').replace(/-+/g, '-').slice(0, 120) || 'default';
+}
+
+function packageStateFromText(text, packageName) {
+  const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(text || '').match(new RegExp(`^CONFIG_PACKAGE_${escaped}=([my])$`, 'm'))?.[1] || 'n';
+}
+
+function rootRequestedStates() {
+  const direct = new Map(INTENT.filter((row) => ROOTS.includes(String(row?.package || '')))
+    .map((row) => [String(row.package), String(row.after || 'y')]));
+  return new Map(ROOTS.map((root) => [root, ['m', 'y'].includes(direct.get(root)) ? direct.get(root) : (FINAL_STATES.get(root) || 'y')]));
+}
+
+function l1ConfigText(environment, roots) {
+  const lines = ['CONFIG_HAVE_DOT_CONFIG=y', String(environment.targetConfig || '').trim()];
+  for (const [packageName, state] of roots) lines.push(`CONFIG_PACKAGE_${packageName}=${state}`);
+  return `${lines.filter(Boolean).join('\n')}\n`;
+}
+
+async function solveL1Config(environment, roots, suffix, attempt) {
+  const directory = join(WORKDIR, '.probe-configs');
+  mkdirSync(directory, { recursive: true });
+  const file = join(directory, `${safeSlug(environment.target)}--${safeSlug(environment.profile)}--${safeSlug(suffix)}.config`);
+  writeFileSync(file, l1ConfigText(environment, roots));
+  const result = await command(join(WORKDIR, 'scripts', 'config', 'conf'), [`--defconfig=${file}`, '-w', file, 'Config.in']);
+  if (!result.ok) return { ok: false, states: {}, config: file };
+  const text = readFileSync(file, 'utf8');
+  const states = Object.fromEntries(ROOTS.map((root) => [root, packageStateFromText(text, root)]));
+  if (attempt) attempt.configPath = file;
+  return { ok: true, states, config: file };
+}
+
+function packageNamesFromInfo(text) {
+  return new Set([...String(text || '').matchAll(/^Package:\s*(\S+)$/gm)].map((match) => match[1]));
+}
+
+function newL1Attempt(environment) {
+  return {
+    source: SOURCE, branch: BRANCH,
+    targetSystem: environment.targetSystem, subtarget: environment.subtarget,
+    target: environment.target, profile: environment.profile, profileLabel: environment.profileLabel,
+    stages: {}, rootStates: {}, unavailableRoots: [], rejectedRoots: [], serialRetries: [],
+  };
+}
+
+async function configResolve() {
+  log(`L1 environment batch / L1 环境批次: ${TARGET_BATCH.length}`);
+  const resolver = await make(['scripts/config/conf'], false);
+  if (!resolver.ok) {
+    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'kconfig-resolver-failure',
+      stages: { resolver: 'failure' } }));
+  }
+  const metadata = await make(['prepare-tmpinfo'], false);
+  if (!metadata.ok) {
+    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-failure',
+      stages: { resolver: 'success', metadata: 'failure' } }));
+  }
+  const packageInfoPath = join(WORKDIR, 'tmp', '.packageinfo');
+  if (!existsSync(packageInfoPath)) {
+    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-unresolved',
+      stages: { resolver: 'success', metadata: 'failure' } }));
+  }
+  const packageNames = packageNamesFromInfo(readFileSync(packageInfoPath, 'utf8'));
+  if (!packageNames.size) {
+    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-unresolved',
+      stages: { resolver: 'success', metadata: 'failure' } }));
+  }
+  const globallyAbsent = ROOTS.filter((root) => !packageNames.has(root));
+  const requested = rootRequestedStates();
+  const attempts = [];
+  for (const environment of TARGET_BATCH) {
+    const attempt = newL1Attempt(environment);
+    attempt.stages = { resolver: 'success', metadata: 'success' };
+    if (globallyAbsent.length) {
+      attempt.result = 'skipped'; attempt.reason = 'root-absent-source'; attempt.unavailableRoots = [...globallyAbsent];
+      attempt.rootStates = Object.fromEntries(ROOTS.map((root) => [root, globallyAbsent.includes(root) ? 'missing' : 'unknown']));
+      attempts.push(attempt); continue;
+    }
+    log(`\nL1 Profile / 配置环境: ${SOURCE}/${BRANCH}/${environment.targetSystem}/${environment.subtarget}/${environment.profile}`);
+    const combined = await solveL1Config(environment, requested, 'combined', attempt);
+    attempt.stages.kconfig = combined.ok ? 'success' : 'failure';
+    if (!combined.ok) {
+      attempt.result = 'inconclusive'; attempt.reason = 'defconfig-failure'; attempts.push(attempt); continue;
+    }
+    attempt.rootStates = combined.states;
+    const rejected = ROOTS.filter((root) => !['m', 'y'].includes(combined.states[root]));
+    attempt.rejectedRoots = [...rejected];
+    if (!rejected.length) {
+      attempt.result = 'compatible'; attempt.reason = ''; attempts.push(attempt); continue;
+    }
+    const unavailable = [];
+    for (const root of rejected) {
+      const single = await solveL1Config(environment, new Map([[root, requested.get(root) || 'y']]), `single-${root}`);
+      if (!single.ok) {
+        attempt.result = 'inconclusive'; attempt.reason = 'single-root-defconfig-failure';
+        attempt.stages.singleRoot = 'failure'; break;
+      }
+      if (!['m', 'y'].includes(single.states[root])) unavailable.push(root);
+    }
+    if (attempt.result === 'inconclusive') { attempts.push(attempt); continue; }
+    attempt.stages.singleRoot = 'success';
+    attempt.unavailableRoots = unavailable;
+    if (unavailable.length) {
+      attempt.result = 'skipped'; attempt.reason = 'root-not-applicable';
+    } else {
+      attempt.result = 'incompatible'; attempt.reason = 'root-combination-rejected';
+      log(`ERROR: L1 root combination rejected by upstream Kconfig: ${rejected.join(', ')}`);
+    }
+    attempts.push(attempt);
+  }
+  return attempts;
 }
 
 export function parseUpstreamPackageInfo(text) {
@@ -277,33 +418,46 @@ async function firmwareIntegration(attempt, boot) {
   return { result: 'compatible', stages, reason: '' };
 }
 
-const attempt = {
-  source: String(process.env.PROBE_SOURCE || ''), branch: String(process.env.PROBE_BRANCH || ''),
-  targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE,
-  stages: {}, rootStates: {}, rootMappings: [], sourceMakefiles: [], rootTargets: [], serialRetries: [],
-};
-let result;
-if (MODE === 'package-compile') result = await packageCompile(attempt);
-else if (MODE === 'rootfs-integration') result = await rootfsIntegration(attempt);
-else result = await firmwareIntegration(attempt, MODE === 'boot-smoke');
-attempt.result = result.result;
-attempt.reason = result.reason;
-attempt.stages = result.stages;
+let attempts;
+let overallResult;
+let overallReason = '';
+if (MODE === 'config-resolve') {
+  attempts = await configResolve();
+  const results = attempts.map((row) => row.result);
+  if (results.includes('incompatible')) overallResult = 'incompatible';
+  else if (results.includes('inconclusive')) overallResult = 'inconclusive';
+  else if (results.includes('compatible')) overallResult = 'compatible';
+  else overallResult = 'skipped';
+  overallReason = attempts.find((row) => row.result === overallResult)?.reason || '';
+} else {
+  const attempt = {
+    source: SOURCE, branch: BRANCH,
+    targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE,
+    stages: {}, rootStates: {}, rootMappings: [], sourceMakefiles: [], rootTargets: [], serialRetries: [],
+  };
+  let result;
+  if (MODE === 'package-compile') result = await packageCompile(attempt);
+  else if (MODE === 'rootfs-integration') result = await rootfsIntegration(attempt);
+  else result = await firmwareIntegration(attempt, MODE === 'boot-smoke');
+  attempt.result = result.result; attempt.reason = result.reason; attempt.stages = result.stages;
+  attempts = [attempt]; overallResult = result.result; overallReason = result.reason;
+}
 
 const runtime = {
-  schema: 2,
+  schema: 3,
   generatedAt: new Date().toISOString(),
   mode: MODE,
-  useDefconfig: USE_DEFCONFIG,
+  useDefconfig: MODE === 'config-resolve' ? true : USE_DEFCONFIG,
   roots: ROOTS,
   packageIntent: INTENT,
   baselinePackageCount: BASELINE_STATES.size,
   finalPackageCount: FINAL_STATES.size,
-  environment: { source: attempt.source, branch: attempt.branch, targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE },
-  attempts: [attempt],
-  conclusion: result.result,
-  reason: result.reason,
+  environment: { source: SOURCE, branch: BRANCH, targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE },
+  attempts,
+  conclusion: overallResult,
+  reason: overallReason,
 };
 writeFileSync(RUNTIME_FILE, JSON.stringify(runtime, null, 2) + '\n');
 log(`Probe conclusion / 探针结论: ${runtime.conclusion}`);
-process.exitCode = runtime.conclusion === 'compatible' ? 0 : 1;
+process.exitCode = ['compatible', 'skipped'].includes(runtime.conclusion) ? 0 : 1;
+

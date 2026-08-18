@@ -26,6 +26,9 @@ const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-gatewa
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
 const evidenceWriter = readFileSync(resolve(ROOT, 'scripts', 'write-package-probe-evidence.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
+assert.equal(probeUi.strings?.configResolve?.['zh-CN'], '官方配置求解');
+assert.equal(probeUi.strings?.environmentLimit?.en, 'Probe environments');
+assert.match(probeUi.strings?.sourceExcluded?.en || '', /hanwckf/);
 
 const baselinePackageConfig = 'CONFIG_PACKAGE_oscam=y\n';
 const packageConfig = [
@@ -34,11 +37,11 @@ const packageConfig = [
   'CONFIG_PACKAGE_libexample=m',
 ].join('\n') + '\n';
 const baseRequest = {
-  schema: 3, channel: 'dev', mode: 'package-compile', useDefconfig: true,
+  schema: 3, channel: 'dev', mode: 'config-resolve', useDefconfig: true,
   baselinePackageConfig, packageConfig,
   packageIntent: [{ package: 'luci-app-oscam', before: 'n', after: 'y' }],
   environmentScope: { sources: ['*'], branches: ['*'], targetSystems: ['*'], subtargets: ['*'], profiles: ['*'] },
-  coverage: { mode: 'auto', limit: 8 }, maxParallel: 0, execute: true,
+  coverage: { mode: 'auto', limit: 40 }, maxParallel: 0, execute: true,
 };
 const index = { schema: 2, sources: [
   { id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'example/immortal', branches: [
@@ -49,10 +52,14 @@ const index = { schema: 2, sources: [
   { id: 'OpenWrt', label: 'OpenWrt', repo: 'example/openwrt', branches: [
     { branch: 'main', commit: 'd'.repeat(40), state: 'fresh', assets: { core: { asset: 'ow-main.core.json.gz', hash: 'd'.repeat(64) } } },
   ] },
+  { id: 'hanwckf', label: 'hanwckf mt798x', repo: 'example/hanwckf', branches: [
+    { branch: 'master', commit: 'e'.repeat(40), state: 'fresh', assets: { core: { asset: 'hanwckf.core.json.gz', hash: 'e'.repeat(64) } } },
+  ] },
 ] };
 
 assert.equal(runtimeDataBranchForChannel('dev'), 'catalog-dev');
 assert.equal(runtimeDataBranchForChannel('fix-probe'), 'catalog-fix-probe');
+assert.equal(normalizeProbeMode('config-resolve'), 'config-resolve');
 assert.equal(normalizeProbeMode('compile'), 'package-compile');
 assert.equal(normalizeProbeMode('co-install'), 'rootfs-integration');
 assert.throws(() => normalizeProbeMode('plugin-special-case'), /unsupported probe mode/);
@@ -66,8 +73,11 @@ assert.throws(() => normalizePackageConfig('CONFIG_PACKAGE_alpha=m\nCONFIG_PACKA
 const request = normalizeProbeRequest(baseRequest);
 assert.equal(request.schema, 3);
 assert.deepEqual(request.roots, ['luci-app-oscam']);
-assert.equal(request.packages.length, 3);
+assert.equal(request.packages.length, 1);
+assert.equal(request.packageConfig, 'CONFIG_PACKAGE_luci-app-oscam=y\n');
+assert.equal(request.baselinePackageConfig, '');
 assert.equal(request.useDefconfig, true);
+assert.equal(normalizeProbeRequest({ ...baseRequest, useDefconfig: false }).useDefconfig, true);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, schema: 2 }), /schema 3/);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, scope: {} }), /unknown keys: scope/);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, packageIntent: [{ package: 'oscam', before: 'n', after: 'y' }] }), /baseline mismatch/);
@@ -77,7 +87,7 @@ assert.throws(() => normalizeProbeRequest({ ...baseRequest, coverage: { mode: 'a
 
 const gatewayRequest = normalizeGatewayRequest(baseRequest);
 assert.deepEqual(gatewayRequest.roots, ['luci-app-oscam']);
-assert.equal(gatewayRequest.finalPackageCount, 3);
+assert.equal(gatewayRequest.finalPackageCount, 1);
 assert.equal(gatewayRequest.useDefconfig, true);
 
 const token = PROBE_STATE_PREFIX + gzipSync(Buffer.from(JSON.stringify(baseRequest))).toString('base64url');
@@ -108,7 +118,7 @@ const preferred = probeTargetConfig(core);
 assert.equal(preferred.target, 'x86/64');
 assert.equal(preferred.profile, 'DEVICE_generic');
 assert(preferred.config.includes('CONFIG_TARGET_x86_64_DEVICE_generic=y'));
-const filtered = resolveProbeTargetConfigs(core, { mode: 'package-compile', environmentScope: {
+const filtered = resolveProbeTargetConfigs(core, { mode: 'config-resolve', environmentScope: {
   sources: ['*'], branches: ['*'], targetSystems: ['mediatek'], subtargets: ['filogic'], profiles: ['*'],
 } });
 assert.equal(filtered.rows.length, 1);
@@ -117,7 +127,7 @@ assert.equal(filtered.rows[0].subtarget, 'filogic');
 assert.equal(resolveProbeTargetConfigs(core, { mode: 'boot-smoke', bootTargetPatterns: ['x86/64'], environmentScope: baseRequest.environmentScope }).rows.length, 1);
 
 const legacy = { schema: 6, targets: [target('x86/64', 'x86', '64', 'Generic')] };
-const mapped = resolveProbeTargetConfigs(legacy, { mode: 'package-compile', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] });
+const mapped = resolveProbeTargetConfigs(legacy, { mode: 'config-resolve', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] });
 assert.equal(mapped.rows[0].profile, 'Generic');
 assert.equal(mapped.mappings[0].reason, 'unique-selectable-profile');
 
@@ -132,7 +142,8 @@ const plan = await attachProbeTargets(preliminary, { policy, dataRef: 'f'.repeat
 assert.equal(plan.coverage.total, 6);
 assert.equal(plan.coverage.planned, 6, 'Auto must run all candidates when total <= limit');
 assert.equal(plan.coverage.sampled, false);
-assert.equal(plan.matrix.include.length, 6);
+assert.equal(plan.matrix.include.length, 3, 'L1 groups environments by Source/Branch to reuse checkout and feeds');
+assert.equal(plan.matrix.include.reduce((sum, row) => sum + row.environmentCount, 0), 6);
 assert.equal(plan.dataCommit, 'f'.repeat(40));
 assert.match(probePlanSummary(plan), /Defconfig: `on`/);
 
@@ -164,6 +175,9 @@ assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n
 assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && issueForm.includes('`/cancel`'));
 for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
 assert(workflow.includes('actions: write') && workflow.includes('WEIG_PACKAGE_PROBE_BATCH_V3'));
+assert(workflow.includes('PROBE_TARGET_BATCH') && workflow.includes('config-resolve'));
+assert(controller.includes("toLowerCase() !== 'hanwckf'"));
+assert(runner.includes("SOURCE.toLowerCase() === 'hanwckf'") && runner.includes("make(['scripts/config/conf']") && runner.includes("make(['prepare-tmpinfo']"));
 assert(controller.includes('environmentScope') && controller.includes('selectProbeCoverage') && !controller.includes('maxAutoTargetAttempts'));
 assert(!issueGateway.includes('WEIG_PACKAGE_PROBE_RUN_V2') && issueGateway.includes('WEIG_PACKAGE_PROBE_RUN_V3'));
 assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')));
@@ -177,7 +191,7 @@ assert(runner.includes("prepareConfig(BASELINE_STATES") && runner.includes("prep
 assert(runner.includes('BUILD_LOG=1'));
 assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.includes('fully-incompatible') && evidenceWriter.includes('partially-compatible'));
 assert.equal(policy.probe.maxMatrixJobs, 256);
-assert.deepEqual(policy.probe.autoCoverageLimits, { 'package-compile': 200, 'rootfs-integration': 100, 'firmware-integration': 30, 'boot-smoke': 10 });
+assert.deepEqual(policy.probe.autoCoverageLimits, { 'package-compile': 200, 'rootfs-integration': 100, 'firmware-integration': 30, 'boot-smoke': 10, 'config-resolve': 40 });
 assert(!('maxAutoTargetAttempts' in policy.probe) && !('reductionMaxAttempts' in policy.probe));
 for (const key of ['howTo', 'submittedState', 'stateInstruction', 'invalid']) assert(probeUi.strings[key]?.en && probeUi.strings[key]?.['zh-CN']);
 assert(catalogWorkflow.includes('scripts/catalog-change-impact.mjs'));

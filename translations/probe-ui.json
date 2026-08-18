@@ -330,6 +330,51 @@
       "en": "No matching environment",
       "zh-CN": "无匹配环境",
       "zh-TW": "無匹配環境"
+    },
+    "level1": {
+      "en": "L1",
+      "zh-CN": "L1",
+      "zh-TW": "L1"
+    },
+    "l1Intro": {
+      "en": "Choose packages already loaded for the current Target Profile and run L1 official configuration resolution. Cross-environment requests send only direct package roots; Catalog and each upstream Kconfig resolve Profiles and dependencies on the backend.",
+      "zh-CN": "选择当前 Target Profile 已加载的软件包进行 L1 官方配置求解；跨环境只提交直接选择的软件包，Profile 与依赖由 Catalog 和对应上游 Kconfig 在后台解析。",
+      "zh-TW": "選擇目前 Target Profile 已載入的套件進行 L1 官方設定求解；跨環境只提交直接選擇的套件，Profile 與相依關係由 Catalog 和對應上游 Kconfig 在後端解析。"
+    },
+    "l1HowTo": {
+      "en": "L1 reuses the package, dependency, and description data already loaded by Advanced menuconfig and does not load a second package database. The backend expands environments from Catalog and runs the selected upstream Kconfig resolver with Defconfig semantics; no packages are compiled.",
+      "zh-CN": "L1 复用当前 Advanced menuconfig 已加载的软件包、依赖和说明，不加载第二套软件包数据库。后台按 Catalog 展开环境，并使用对应源码自己的 Kconfig resolver 执行 Defconfig 语义；不编译软件包。",
+      "zh-TW": "L1 複用目前 Advanced menuconfig 已載入的套件、相依關係與說明，不載入第二套套件資料庫。後端依 Catalog 展開環境，並使用對應原始碼自己的 Kconfig resolver 執行 Defconfig 語義；不編譯套件。"
+    },
+    "configResolve": {
+      "en": "Official config resolve",
+      "zh-CN": "官方配置求解",
+      "zh-TW": "官方設定求解"
+    },
+    "configResolveHelp": {
+      "en": "L1 only runs the official Kconfig/Defconfig configuration resolution for each Source/Branch/Profile. Packages that are absent or not applicable are skipped; package download, prepare, configure, and compile are not run.",
+      "zh-CN": "L1：只执行当前 Source/Branch/Profile 对应的官方 Kconfig/Defconfig 配置求解。软件包不存在或不适用于目标环境时跳过；不下载、Prepare、Configure 或编译软件包。",
+      "zh-TW": "L1：只執行目前 Source/Branch/Profile 對應的官方 Kconfig/Defconfig 設定求解。套件不存在或不適用於目標環境時跳過；不下載、Prepare、Configure 或編譯套件。"
+    },
+    "environmentLimit": {
+      "en": "Probe environments",
+      "zh-CN": "探测环境",
+      "zh-TW": "探測環境"
+    },
+    "sourceExcluded": {
+      "en": "Package Compatibility Probe excludes the hanwckf Source. Switch to an OpenWrt, ImmortalWrt, or Lean LEDE Target Profile.",
+      "zh-CN": "插件兼容探针不包含 hanwckf Source，请切换到 OpenWrt、ImmortalWrt 或 Lean LEDE 的 Target Profile。",
+      "zh-TW": "套件相容性探針不包含 hanwckf Source，請切換到 OpenWrt、ImmortalWrt 或 Lean LEDE 的 Target Profile。"
+    },
+    "l1StateInstruction": {
+      "en": "Only direct package roots, environment scope, and the environment limit are submitted. Dependencies auto-selected for the current Profile are display-only; each target Profile resolves its own dependencies with its upstream Kconfig.",
+      "zh-CN": "只提交直接选择的软件包、环境范围和环境上限。当前 Profile 自动补出的依赖仅用于页面显示；目标 Profile 的依赖由其对应源码自己的 Kconfig 重新求解。",
+      "zh-TW": "只提交直接選擇的套件、環境範圍與環境上限。目前 Profile 自動補出的相依關係僅用於頁面顯示；目標 Profile 的相依關係由其對應原始碼自己的 Kconfig 重新求解。"
+    },
+    "l1Submitted": {
+      "en": "The probe request was carried into the GitHub Issue.",
+      "zh-CN": "探针请求已带入 GitHub Issue。",
+      "zh-TW": "探針請求已帶入 GitHub Issue。"
     }
   }
 }

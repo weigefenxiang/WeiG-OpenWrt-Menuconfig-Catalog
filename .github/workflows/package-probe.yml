@@ -24,8 +24,8 @@ on:
         description: "Probe depth / 探测深度"
         required: true
         type: choice
-        options: [package-compile, rootfs-integration, firmware-integration, boot-smoke]
-        default: package-compile
+        options: [config-resolve, package-compile, rootfs-integration, firmware-integration, boot-smoke]
+        default: config-resolve
       use_defconfig:
         description: "Run the selected upstream make defconfig / 使用所选上游 make defconfig"
         required: true
@@ -58,7 +58,7 @@ on:
         options: [auto, all]
         default: auto
       coverage_limit:
-        description: "Auto environment limit 1-256; empty uses the mode default / Auto 环境上限 1-256；留空使用深度默认值"
+        description: "Auto environment limit 1-256; L1 defaults to 40 / Auto 环境上限 1-256；L1 默认 40"
         required: false
         default: ""
       max_parallel:
@@ -171,7 +171,7 @@ jobs:
           if-no-files-found: warn
 
   probe:
-    name: Probe · ${{ matrix.source }} · ${{ matrix.branch }} · ${{ matrix.targetSystem }}/${{ matrix.subtarget }} · ${{ matrix.profile }}
+    name: Probe · ${{ matrix.source }} · ${{ matrix.branch }} · ${{ matrix.environmentCount || format('{0}/{1}/{2}', matrix.targetSystem, matrix.subtarget, matrix.profile) }}
     needs: plan
     if: needs.plan.outputs.relevant == 'true' && needs.plan.outputs.authorized == 'true' && needs.plan.outputs.execute == 'true'
     runs-on: ubuntu-24.04
@@ -193,6 +193,7 @@ jobs:
       PROBE_PROFILE: ${{ matrix.profile }}
       PROBE_PROFILE_LABEL: ${{ matrix.profileLabel }}
       PROBE_TARGET_CONFIG: ${{ matrix.targetConfig }}
+      PROBE_TARGET_BATCH: ${{ toJSON(matrix.environments) }}
       PROBE_ROOTS: ${{ needs.plan.outputs.roots }}
       PROBE_PACKAGE_CONFIG: ${{ needs.plan.outputs.package_config }}
       PROBE_BASELINE_PACKAGE_CONFIG: ${{ needs.plan.outputs.baseline_package_config }}
@@ -219,8 +220,12 @@ jobs:
           set -o pipefail
           {
             sudo -E apt-get -qq update
-            sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
-              gettext git libncurses5-dev libssl-dev python3 python3-setuptools rsync unzip zlib1g-dev file wget
+            if [[ "$PROBE_MODE" == config-resolve ]]; then
+              sudo -E apt-get -qq install build-essential flex bison gawk gettext git libncurses-dev python3 rsync unzip zlib1g-dev file wget
+            else
+              sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+                gettext git libncurses5-dev libssl-dev python3 python3-setuptools rsync unzip zlib1g-dev file wget
+            fi
           } 2>&1 | tee -a "$PROBE_LOG"
           if [[ "$PROBE_MODE" == boot-smoke ]]; then sudo -E apt-get -qq install qemu-system-x86 2>&1 | tee -a "$PROBE_LOG"; fi
       - name: Clone exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
