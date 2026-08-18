@@ -39,8 +39,8 @@ assert.deepEqual(configuredReuseSourceForCodeRef('staging'), {
   codeRef: 'dev', dataBranch: 'catalog-dev',
 }, 'staging promotion must preserve the canonical catalog-dev predecessor');
 assert.deepEqual(configuredReuseSourceForCodeRef('main'), {
-  codeRef: 'main', dataBranch: 'catalog-main',
-}, 'main promotion must preserve the current production catalog-main snapshot');
+  codeRef: 'staging', dataBranch: 'catalog-staging',
+}, 'main promotion must inherit the validated catalog-staging snapshot into catalog-candidate');
 
 for (const ref of ['dev', 'staging', 'main']) {
   assert.equal(isPromotionOnlyPush(ref, 'push'), true, `${ref} push must be promotion-only`);
