@@ -74,6 +74,8 @@ forbidText(production, 'push:', 'production must not run on push');
 requireText(production, "if: github.ref_name == 'main'", 'production must be pinned to main code');
 requireText(production, 'group: catalog-write-catalog-main', 'production must own the catalog-main writer lock');
 requireText(production, 'scripts/verify-production-candidate.mjs', 'production must verify candidate provenance');
+requireText(production, 'catalog-candidate moved: expected $EXPECTED_CANDIDATE_SHA, got $candidate_sha',
+  'production must reject a candidate that moved after manual selection');
 requireText(production, 'git clone --depth 1 --single-branch --branch catalog-candidate',
   'production candidate fetch must be shallow and pinned to the candidate branch');
 forbidText(production, 'git clone --single-branch --branch catalog-candidate',
