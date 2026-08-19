@@ -83,6 +83,19 @@ assert(workflow.includes('PROBE_FEEDS_OUTCOME: ${{ steps.feeds.outcome }}'), 'no
 assert(workflow.includes('probe-feeds-runtime.json'), 'Probe log artifacts must retain normalized feed identity metadata');
 assert(feedInstaller.includes('PROBE_FEED_MAX_ATTEMPTS:-3'), 'feed updates must default to three total attempts');
 assert(feedInstaller.includes('PROBE_FEED_TIMEOUT_SECONDS:-180'), 'each feed update attempt must have a bounded timeout');
+assert(feedInstaller.includes('./scripts/feeds list -sf | awk -v name="$feed"'),
+  'feed URI lookup must request source URLs from the upstream feeds parser before the first update attempt');
+assert(!feedInstaller.includes('./scripts/feeds list -f | awk -v name="$feed"'),
+  'feed URI lookup must never call list -f without -s because that omits source URLs');
+const feedListingFixture = [
+  'src-git packages https://git.openwrt.org/feed/packages.git',
+  'src-git luci https://git.openwrt.org/project/luci.git',
+].join('\n');
+const packagesFeedUriFixture = feedListingFixture.split(/\n/)
+  .map((line) => line.trim().split(/\s+/))
+  .find((fields) => fields[1] === 'packages')?.[2] || '';
+assert.equal(packagesFeedUriFixture, 'https://git.openwrt.org/feed/packages.git',
+  'canonical feeds list output must resolve the packages feed URI before retries are counted');
 assert(feedInstaller.includes('https://github.com/openwrt/packages.git') && feedInstaller.includes('https://github.com/openwrt/luci.git') &&
   feedInstaller.includes('https://github.com/openwrt/routing.git') && feedInstaller.includes('https://github.com/openwrt/telephony.git'),
 'network recovery must stay on official OpenWrt GitHub mirrors');
