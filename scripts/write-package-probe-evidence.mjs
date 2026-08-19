@@ -333,13 +333,11 @@ export function main(env = process.env) {
       `- Inconclusive / 未定: ${stats.inconclusive}`, '',
     ];
     writeFileSync('probe-evidence/SUMMARY.md', lines.join('\n'));
-    if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, lines.join('\n'));
     return evidence;
   }
   const evidence = createEvidence({ log, config, runtime, env });
   writeFileSync('probe-evidence/evidence.json', JSON.stringify(evidence, null, 2) + '\n');
   writeFileSync('probe-evidence/SUMMARY.md', evidenceSummaryLines(evidence).join('\n'));
-  if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, evidenceSummaryLines(evidence).join('\n'));
   return evidence;
 }
 

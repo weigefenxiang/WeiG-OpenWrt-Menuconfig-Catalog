@@ -26,6 +26,21 @@ assert(workflow.includes("format('[probe] {0} · #{1} · {2} · {3}'"), 'Issue-t
 assert(workflow.includes("inputs.batch_index != '0'"), 'batch suffix must be omitted for the first batch and retained for continuations');
 assert(!workflow.includes('Package probe issue #{0} · batch {1}'), 'legacy opaque Issue run name must not return');
 
+const dependencyInstaller = readFileSync(resolve(import.meta.dirname, './install-probe-dependencies.sh'), 'utf8');
+assert(workflow.includes('bash scripts/install-probe-dependencies.sh'), 'Probe jobs must use the bounded dependency bootstrap helper');
+assert(dependencyInstaller.includes('PROBE_APT_MAX_ATTEMPTS:-3'), 'dependency bootstrap must default to three total attempts');
+assert(dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS:-480'), 'each dependency attempt must have a bounded timeout');
+assert(dependencyInstaller.includes('Acquire::Retries=3'), 'apt must retain its own transport retry protection');
+assert(dependencyInstaller.includes('Acquire::http::Timeout=${APT_IO_TIMEOUT_SECONDS}'), 'apt HTTP reads must have a bounded timeout');
+assert(dependencyInstaller.includes('Acquire::https::Timeout=${APT_IO_TIMEOUT_SECONDS}'), 'apt HTTPS reads must have a bounded timeout');
+assert(dependencyInstaller.includes('dpkg --configure -a'), 'interrupted package installation must recover dpkg state before retry');
+assert(!dependencyInstaller.includes('/var/lib/dpkg/lock'), 'dependency recovery must never delete dpkg lock files');
+assert(!dependencyInstaller.includes('make defconfig'), 'infrastructure retries must not wrap Kconfig business conclusions');
+
+const evidenceWriter = readFileSync(resolve(import.meta.dirname, './write-package-probe-evidence.mjs'), 'utf8');
+assert.equal((evidenceWriter.match(/appendFileSync\(env\.GITHUB_STEP_SUMMARY/g) || []).length, 1,
+  'only the aggregate job may write the GitHub Step Summary');
+
 const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'incompatible', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
 assert.equal(infrastructure.conclusion, 'inconclusive');
 
