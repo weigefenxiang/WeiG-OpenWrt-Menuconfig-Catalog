@@ -80,6 +80,9 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
   const sharedLogIsRelevant = !selectedAttempt || attemptResult === 'inconclusive';
   const errors = sharedLogIsRelevant ? normalizedErrors(log) : [];
   const issues = sharedLogIsRelevant ? parseProbeLog(log) : [];
+  if (String(env.PROBE_BOOTSTRAP_OUTCOME || '').toLowerCase() === 'failure') {
+    issues.push({ type: 'infrastructure-failure', reason: 'dependency-bootstrap' });
+  }
   if (['root-absent-source', 'root-not-applicable'].includes(attempt.reason)) {
     issues.push({ type: 'not-applicable', roots: attempt.unavailableRoots || [] });
   } else if (attempt.reason === 'root-combination-rejected') {
@@ -158,14 +161,17 @@ function conclusionStats(rows) {
   const incompatible = rows.filter((row) => row.conclusion === 'incompatible').length;
   const skipped = rows.filter((row) => row.conclusion === 'skipped').length;
   const inconclusive = rows.filter((row) => row.conclusion === 'inconclusive').length;
+  const infrastructureTypes = new Set(['timeout', 'infrastructure-failure', 'package-download-failure']);
+  const infraInconclusive = rows.filter((row) => row.conclusion === 'inconclusive' &&
+    (row.issues || []).some((issue) => infrastructureTypes.has(issue.type))).length;
   const conclusive = compatible + incompatible;
-  return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, conclusive,
+  return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, infraInconclusive, conclusive,
     compatibilityRate: conclusive ? compatible / conclusive : null };
 }
 
 function conclusionForRows(rows, exhaustive) {
-  const { compatible, incompatible, inconclusive } = conclusionStats(rows);
-  if (inconclusive) return 'inconclusive';
+  const { compatible, incompatible, skipped, inconclusive } = conclusionStats(rows);
+  if (inconclusive) return compatible || incompatible || skipped ? 'incomplete' : 'inconclusive';
   if (!compatible && !incompatible) return 'inconclusive';
   if (compatible && incompatible) return 'partially-compatible';
   if (compatible) return exhaustive ? 'fully-compatible' : 'sampled-compatible';
@@ -184,6 +190,7 @@ export function aggregateScopeConclusions(evidence, options = {}) {
     path, source: rows[0]?.source || '', branch: depth >= 2 ? rows[0]?.branch || '' : '',
     ...conclusionStats(rows), conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
     reasons: [...new Set(rows.map((row) => row.reason).filter(Boolean))],
+    issueTypes: [...new Set(rows.flatMap((row) => (row.issues || []).map((issue) => issue.type)))],
     unavailableRoots: [...new Set(rows.flatMap((row) => row.unavailableRoots || []))],
   })).sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
 }
@@ -193,7 +200,10 @@ function formatCompatibilityRate(scope) {
 }
 
 function scopeResultLabel(scope, exhaustive) {
-  if (scope.inconclusive > 0) return 'ERROR';
+  if (scope.inconclusive > 0) {
+    if (scope.conclusive > 0 || scope.skipped > 0) return 'INCOMPLETE';
+    return scope.infraInconclusive === scope.inconclusive ? 'INFRA ERROR' : 'ERROR';
+  }
   if (scope.conclusive === 0 && scope.skipped > 0) return 'SKIP';
   if (scope.compatible > 0 && scope.incompatible > 0) return 'MIXED';
   if (scope.compatible > 0) return exhaustive ? 'PASS' : 'PASS (sampled)';
@@ -206,16 +216,29 @@ function sourceNeedsBranchBreakdown(scope) {
 }
 
 function scopeNote(scope) {
-  if (!scope.skipped) return '—';
-  const roots = (scope.unavailableRoots || []).map((row) => `\`${row}\``).join(', ');
-  const suffix = roots ? ` (${roots})` : '';
-  if ((scope.reasons || []).includes('root-absent-source')) {
-    return `Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件${suffix}`;
+  const notes = [];
+  if (scope.inconclusive > 0) {
+    if (scope.infraInconclusive === scope.inconclusive) {
+      const kind = (scope.issueTypes || []).includes('timeout') ? 'timeout' : 'bootstrap/network';
+      notes.push(`Infrastructure incomplete / 基础设施未完成: ${scope.inconclusive} (${kind})`);
+    } else if (scope.infraInconclusive > 0) {
+      notes.push(`Undetermined / 未定: ${scope.inconclusive} (infrastructure ${scope.infraInconclusive})`);
+    } else {
+      notes.push(`Undetermined / 未定: ${scope.inconclusive}`);
+    }
   }
-  if ((scope.reasons || []).includes('root-not-applicable')) {
-    return `Skipped: plugin not applicable to target / 跳过：插件不适用于目标${suffix}`;
+  if (scope.skipped > 0) {
+    const roots = (scope.unavailableRoots || []).map((row) => `\`${row}\``).join(', ');
+    const suffix = roots ? ` (${roots})` : '';
+    if ((scope.reasons || []).includes('root-absent-source')) {
+      notes.push(`Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件${suffix}`);
+    } else if ((scope.reasons || []).includes('root-not-applicable')) {
+      notes.push(`Skipped: plugin not applicable to target / 跳过：插件不适用于目标${suffix}`);
+    } else {
+      notes.push(`Skipped / 跳过: ${scope.skipped}`);
+    }
   }
-  return `Skipped / 跳过: ${scope.skipped}`;
+  return notes.join('; ') || '—';
 }
 
 function branchBreakdowns(sourceScopes, branchScopes) {
@@ -287,7 +310,7 @@ export function aggregateEvidence(directory, env = {}) {
     `- Conclusive compatibility / 明确结果兼容率: **${formatCompatibilityRate(overallStats)}** (${overallStats.compatible}/${overallStats.conclusive} conclusive / 明确结果)`,
     `- Coverage / 覆盖: ${env.COVERAGE_PLANNED || evidence.length}/${env.COVERAGE_TOTAL || evidence.length}${exhaustive ? ' (complete)' : ' (sampled)'}`,
     `- Skipped / 跳过: ${overallStats.skipped}`,
-    `- ERROR / 未定: ${overallStats.inconclusive}`,
+    `- INFRA / 未定: ${overallStats.inconclusive}`,
     `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
     `- Batch / 批次: ${Number(env.BATCH_INDEX || 0) + 1}/${env.BATCH_COUNT || 1}`,
     `- Collected evidence / 已收集证据: ${evidence.length}`,
@@ -296,12 +319,12 @@ export function aggregateEvidence(directory, env = {}) {
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
     lines.push('### Source summary / 源码总览', '',
-      '| Source | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 | Notes / 备注 |',
+      '| Source | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | INFRA / 未定 | Notes / 备注 |',
       '|---|---|---:|---:|---:|---:|---|',
       ...summaryScopes.map((scope) => `| ${scope.source || '-'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} | ${scopeNote(scope)} |`), '');
     for (const breakdown of breakdowns) {
       lines.push('<details>', `<summary>${breakdown.source || '-'} · Branch breakdown / 分支明细</summary>`, '',
-        '| Branch | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 | Notes / 备注 |',
+        '| Branch | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | INFRA / 未定 | Notes / 备注 |',
         '|---|---|---:|---:|---:|---:|---|',
         ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} | ${scopeNote(scope)} |`), '',
         '</details>', '');

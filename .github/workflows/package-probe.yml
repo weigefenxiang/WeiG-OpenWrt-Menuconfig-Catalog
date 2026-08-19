@@ -226,11 +226,14 @@ jobs:
       PROBE_RUNTIME: ${{ github.workspace }}/probe-runtime.json
     steps:
       - uses: actions/checkout@v7
-      - name: Install build dependencies / 安装构建依赖
+      - id: bootstrap
+        name: Install build dependencies / 安装构建依赖
+        continue-on-error: true
         env:
           DEBIAN_FRONTEND: noninteractive
         run: bash scripts/install-probe-dependencies.sh
       - name: Clone exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
+        if: steps.bootstrap.outcome == 'success'
         run: |
           set -o pipefail
           {
@@ -244,18 +247,21 @@ jobs:
             fi
           } 2>&1 | tee -a "$PROBE_LOG"
       - name: Install feeds / 安装 Feeds
+        if: steps.bootstrap.outcome == 'success'
         working-directory: work/upstream
         run: |
           set -o pipefail
           { ./scripts/feeds update -a && ./scripts/feeds install -a; } 2>&1 | tee -a "$PROBE_LOG"
       - id: build
         name: Run selected Probe depth / 执行所选探测深度
+        if: steps.bootstrap.outcome == 'success'
         continue-on-error: true
         run: node scripts/run-package-probe.mjs
       - name: Write normalized evidence / 生成规范化证据
         if: always()
         env:
-          PROBE_CONCLUSION: ${{ steps.build.outcome }}
+          PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}
+          PROBE_CONCLUSION: ${{ steps.bootstrap.outcome == 'success' && steps.build.outcome || steps.bootstrap.outcome }}
         run: node scripts/write-package-probe-evidence.mjs
       - name: Upload normalized evidence / 上传规范化证据
         if: always()
@@ -277,7 +283,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
       - name: Finalize Probe environment result / 确认单环境结果
-        if: steps.build.outcome != 'success'
+        if: steps.bootstrap.outcome == 'success' && steps.build.outcome != 'success'
         run: exit 1
 
   summary:

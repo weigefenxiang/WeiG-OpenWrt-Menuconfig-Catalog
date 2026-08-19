@@ -11,6 +11,8 @@ UPDATE_TIMEOUT_SECONDS="${PROBE_APT_UPDATE_TIMEOUT_SECONDS:-240}"
 INSTALL_TIMEOUT_SECONDS="${PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300}"
 APT_IO_TIMEOUT_SECONDS="${PROBE_APT_IO_TIMEOUT_SECONDS:-30}"
 ATTEMPT_LOG_TAIL_LINES=80
+APT_MIRROR_LIST_PATH="/etc/apt/apt-mirrors.txt"
+UBUNTU_MIRROR_INDEX_URL="http://mirrors.ubuntu.com/mirrors.txt"
 
 if [[ ! "$MAX_ATTEMPTS" =~ ^[1-3]$ ]]; then
   echo "ERROR: PROBE_APT_MAX_ATTEMPTS must be 1, 2, or 3." | tee -a "$PROBE_LOG"
@@ -38,6 +40,66 @@ run_apt_once() {
 recover_dpkg() {
   echo "Probe bootstrap: recovering interrupted dpkg state before retry." | tee -a "$PROBE_LOG"
   sudo -E timeout --signal=TERM --kill-after=15s 120s dpkg --configure -a 2>&1 | tee -a "$PROBE_LOG"
+}
+
+uses_runner_ubuntu_mirror_list() {
+  [[ -f "$APT_MIRROR_LIST_PATH" ]] &&
+    grep -RqsF "mirror+file:${APT_MIRROR_LIST_PATH}" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null
+}
+
+write_direct_ubuntu_mirrors() {
+  printf '%s\tpriority:1\n%s\tpriority:2\n' \
+    'https://archive.ubuntu.com/ubuntu/' \
+    'https://security.ubuntu.com/ubuntu/' | sudo tee "$APT_MIRROR_LIST_PATH" >/dev/null
+}
+
+write_geo_ubuntu_mirrors() {
+  local index_log status mirror_count
+  index_log="$(mktemp)"
+  set +e
+  curl --fail --silent --show-error --location --connect-timeout 5 --max-time 15 \
+    "$UBUNTU_MIRROR_INDEX_URL" >"$index_log"
+  status=$?
+  set -e
+  if ((status != 0)); then
+    echo "WARNING: Ubuntu mirror index request failed with exit code ${status}; using direct Ubuntu archive fallback." | tee -a "$PROBE_LOG"
+    rm -f "$index_log"
+    write_direct_ubuntu_mirrors
+    return 0
+  fi
+
+  mirror_count="$(awk '/^https?:\/\/[^[:space:]]+\/?$/ { if (!seen[$0]++) count++ } END { print count + 0 }' "$index_log")"
+  if ((mirror_count == 0)); then
+    echo "WARNING: Ubuntu mirror index returned no usable mirrors; using direct Ubuntu archive fallback." | tee -a "$PROBE_LOG"
+    rm -f "$index_log"
+    write_direct_ubuntu_mirrors
+    return 0
+  fi
+
+  {
+    awk '/^https?:\/\/[^[:space:]]+\/?$/ { if (!seen[$0]++) print $0 "\tpriority:10" }' "$index_log"
+    printf '%s\tpriority:100\n%s\tpriority:101\n' \
+      'https://archive.ubuntu.com/ubuntu/' \
+      'https://security.ubuntu.com/ubuntu/'
+  } | sudo tee "$APT_MIRROR_LIST_PATH" >/dev/null
+  rm -f "$index_log"
+  echo "Probe bootstrap: loaded ${mirror_count} official geo Ubuntu mirror(s) with direct archive fallback." | tee -a "$PROBE_LOG"
+}
+
+prepare_update_retry_source() {
+  local next_attempt="$1"
+  if ! uses_runner_ubuntu_mirror_list; then
+    echo "WARNING: GitHub Runner Ubuntu mirror list is unavailable; keeping the existing apt sources for attempt ${next_attempt}/${MAX_ATTEMPTS}." | tee -a "$PROBE_LOG"
+    return 0
+  fi
+
+  if ((next_attempt == 2)); then
+    echo "Probe bootstrap: switching Ubuntu apt source to the official geo mirror index before attempt ${next_attempt}/${MAX_ATTEMPTS}." | tee -a "$PROBE_LOG"
+    write_geo_ubuntu_mirrors
+  else
+    echo "Probe bootstrap: switching Ubuntu apt source to direct archive/security fallback before attempt ${next_attempt}/${MAX_ATTEMPTS}." | tee -a "$PROBE_LOG"
+    write_direct_ubuntu_mirrors
+  fi
 }
 
 print_attempt_tail() {
@@ -104,6 +166,8 @@ retry_apt() {
       if ((recovery_status != 0)); then
         echo "WARNING: dpkg recovery exited with ${recovery_status}; the next apt attempt will re-check package state." | tee -a "$PROBE_LOG"
       fi
+    elif [[ "$apt_command" == "update" ]]; then
+      prepare_update_retry_source "$((attempt + 1))"
     fi
 
     delay=$((attempt * 15))

@@ -18,8 +18,8 @@ const row = (source, branch, conclusion) => ({ schema: 4, source, branch, target
 assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A', 'main', 'compatible')], { exhaustive: true })[0].conclusion, 'fully-compatible');
 assert.equal(aggregateScopeConclusions([row('A', 'main', 'incompatible')], { exhaustive: false })[0].conclusion, 'sampled-incompatible');
 assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A', 'main', 'incompatible')], { exhaustive: true })[0].conclusion, 'partially-compatible');
-assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A', 'main', 'incompatible'), row('A', 'main', 'inconclusive')], { exhaustive: true })[0].conclusion, 'inconclusive',
-  'infrastructure uncertainty must dominate mixed business compatibility results');
+assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A', 'main', 'incompatible'), row('A', 'main', 'inconclusive')], { exhaustive: true })[0].conclusion, 'incomplete',
+  'infrastructure uncertainty must mark mixed business compatibility results incomplete without erasing them');
 
 const workflow = readFileSync(resolve(import.meta.dirname, '../.github/workflows/package-probe.yml'), 'utf8');
 assert(workflow.includes("format('[probe · {0}] {1} · #{2} · {3}'"), 'Issue-triggered run name must expose Probe level, roots, Issue, and channel without repeating the mode');
@@ -48,6 +48,16 @@ assert(dependencyInstaller.includes('Acquire::https::Timeout=${APT_IO_TIMEOUT_SE
 assert(dependencyInstaller.includes('dpkg --configure -a'), 'interrupted package installation must recover dpkg state before retry');
 assert(!dependencyInstaller.includes('/var/lib/dpkg/lock'), 'dependency recovery must never delete dpkg lock files');
 assert(!dependencyInstaller.includes('make defconfig'), 'infrastructure retries must not wrap Kconfig business conclusions');
+assert(dependencyInstaller.includes('UBUNTU_MIRROR_INDEX_URL="http://mirrors.ubuntu.com/mirrors.txt"'), 'apt update failover must use the official Ubuntu geo mirror index');
+assert(dependencyInstaller.includes('prepare_update_retry_source "$((attempt + 1))"'), 'apt update retries must change mirror strategy after a failed attempt');
+assert(dependencyInstaller.includes('official geo mirror index before attempt'), 'the second apt update attempt must expose its geo-mirror failover');
+assert(dependencyInstaller.includes('direct archive/security fallback before attempt'), 'the final apt update attempt must expose its direct Ubuntu fallback');
+assert(dependencyInstaller.includes('https://archive.ubuntu.com/ubuntu/') && dependencyInstaller.includes('https://security.ubuntu.com/ubuntu/'), 'direct failover must stay on official Ubuntu archives');
+assert(!dependencyInstaller.includes('apt-get clean') && !dependencyInstaller.includes('rm -rf /var/lib/apt/lists'), 'mirror failover must preserve apt state rather than clearing caches or lists');
+assert(workflow.includes('id: bootstrap') && workflow.includes('continue-on-error: true'), 'dependency bootstrap must be recorded without automatically failing the matrix job');
+assert(workflow.includes("if: steps.bootstrap.outcome == 'success'"), 'Probe business steps must run only after dependency bootstrap succeeds');
+assert(workflow.includes("if: steps.bootstrap.outcome == 'success' && steps.build.outcome != 'success'"), 'only an executed Probe business failure may fail the environment job');
+assert(workflow.includes('PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}'), 'normalized evidence must explicitly record dependency bootstrap outcome');
 
 const evidenceWriter = readFileSync(resolve(import.meta.dirname, './write-package-probe-evidence.mjs'), 'utf8');
 assert.equal((evidenceWriter.match(/appendFileSync\(env\.GITHUB_STEP_SUMMARY/g) || []).length, 1,
@@ -55,6 +65,10 @@ assert.equal((evidenceWriter.match(/appendFileSync\(env\.GITHUB_STEP_SUMMARY/g) 
 
 const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'incompatible', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
 assert.equal(infrastructure.conclusion, 'inconclusive');
+
+const bootstrapInfrastructure = createEvidence({ log: '', runtime: null, env: { PROBE_ROOTS: 'alpha', PROBE_BOOTSTRAP_OUTCOME: 'failure', PROBE_CONCLUSION: 'failure' } });
+assert.equal(bootstrapInfrastructure.conclusion, 'inconclusive');
+assert(bootstrapInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'dependency-bootstrap'));
 
 const hostPrerequisite = createEvidence({
   log: "Checking 'python'... failed.\nBuild dependency: Please install Python 2.x\nPrerequisite check failed. Use FORCE=1 to override.\n",
@@ -144,14 +158,40 @@ try {
   assert(!mixed.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'uniform source must stay compact');
 
   const errorDir = join(dir, 'error'); mkdirSync(errorDir);
-  for (const [i, evidence] of [row('OpenWrt', 'main', 'compatible'), row('OpenWrt', 'openwrt-18.06', 'inconclusive')].entries()) {
+  for (const [i, evidence] of [row('OpenWrt', 'main', 'compatible'), { ...row('OpenWrt', 'openwrt-18.06', 'inconclusive'), issues: [{ type: 'timeout' }] }].entries()) {
     const sub = join(errorDir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
   }
   const error = aggregateEvidence(errorDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert.equal(error.overallResult, 'ERROR');
-  assert(error.lines.some((line) => line.includes('| OpenWrt | **ERROR** | **100%** | 1/1 | 0 | 1 | — |')), 'infrastructure uncertainty must be visually distinct from business FAIL');
+  assert.equal(error.overallResult, 'INCOMPLETE');
+  assert.equal(error.overallConclusion, 'incomplete');
+  assert(error.lines.some((line) => line.includes('| OpenWrt | **INCOMPLETE** | **100%** | 1/1 | 0 | 1 | Infrastructure incomplete / 基础设施未完成: 1 (timeout) |')), 'one infrastructure failure must mark a mixed source incomplete without erasing a valid result');
   assert(error.lines.some((line) => line.includes('Conclusive compatibility / 明确结果兼容率')), 'compatibility percentage must be labeled as conclusive-only');
+
+  const infraOnlyDir = join(dir, 'infra-only'); mkdirSync(infraOnlyDir);
+  { const sub = join(infraOnlyDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({ ...row('OpenWrt', 'main', 'inconclusive'), issues: [{ type: 'timeout' }] })); }
+  const infraOnly = aggregateEvidence(infraOnlyDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(infraOnly.overallResult, 'INFRA ERROR');
+  assert.equal(infraOnly.overallConclusion, 'inconclusive');
+
+  const unknownOnlyDir = join(dir, 'unknown-only'); mkdirSync(unknownOnlyDir);
+  { const sub = join(unknownOnlyDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(row('OpenWrt', 'main', 'inconclusive'))); }
+  const unknownOnly = aggregateEvidence(unknownOnlyDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(unknownOnly.overallResult, 'ERROR', 'non-infrastructure inconclusive evidence must not be mislabeled as infrastructure');
+
+  const skipInfraDir = join(dir, 'skip-infra'); mkdirSync(skipInfraDir);
+  const skipInfraRows = [{ ...row('OpenWrt', 'openwrt-18.06', 'skipped'), reason: 'root-absent-source', unavailableRoots: ['luci-app-test'],
+    issues: [{ type: 'not-applicable', roots: ['luci-app-test'] }] }, { ...row('OpenWrt', 'main', 'inconclusive'), issues: [{ type: 'timeout' }] }];
+  for (const [i, evidence] of skipInfraRows.entries()) {
+    const sub = join(skipInfraDir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
+  }
+  const skipInfra = aggregateEvidence(skipInfraDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(skipInfra.overallResult, 'INCOMPLETE');
+  assert(skipInfra.lines.some((line) => line.includes('| OpenWrt | **INCOMPLETE** | **—** | 0/0 | 1 | 1 | Infrastructure incomplete / 基础设施未完成: 1 (timeout); Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+    'skipped environments plus one infrastructure failure must be INCOMPLETE rather than ERROR');
 
   const skippedDir = join(dir, 'skipped-source'); mkdirSync(skippedDir);
   const absent = (branch) => ({ ...row('OpenWrt', branch, 'skipped'), reason: 'root-absent-source', unavailableRoots: ['luci-app-test'],
