@@ -82,7 +82,7 @@ ensure_runtime_feeds_config() {
 
 feed_uri() {
   local feed="$1"
-  ./scripts/feeds list -f | awk -v name="$feed" '$2 == name { print $3; exit }'
+  ./scripts/feeds list -sf | awk -v name="$feed" '$2 == name { print $3; exit }'
 }
 
 replace_feed_uri() {
