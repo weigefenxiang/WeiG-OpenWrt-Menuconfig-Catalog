@@ -260,7 +260,8 @@ for feed in "${FEEDS[@]}"; do
 
   if [[ "$feed_succeeded" != true ]]; then
     echo "Probe feeds: ${feed} exhausted ${provider_count} provider(s) after ${total_attempts} total attempts."
-    fail_stage "$last_reason" "$feed" "$total_attempts" "$uri"
+    reason="$last_reason"
+    fail_stage "$reason" "$feed" "$total_attempts" "$uri"
   fi
 done
 
