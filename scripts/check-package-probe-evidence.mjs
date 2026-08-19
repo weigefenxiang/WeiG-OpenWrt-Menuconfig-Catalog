@@ -42,6 +42,14 @@ assert(dependencyInstaller.includes('ATTEMPT_LOG_TAIL_LINES=80'), 'failed depend
 assert(dependencyInstaller.includes('tail -n "$ATTEMPT_LOG_TAIL_LINES" "$attempt_log"'), 'failed dependency attempts must print their captured output tail');
 assert(dependencyInstaller.includes('status == 124 || status == 137'), 'timeout-related dependency exits must be diagnosed explicitly');
 assert(dependencyInstaller.includes('completed in ${elapsed}s'), 'dependency attempts must expose elapsed time');
+assert(dependencyInstaller.includes('[TIMING] stage=${stage}'), 'dependency bootstrap must emit machine-readable stage timing records');
+assert(dependencyInstaller.includes("record_timing 'mirror-switch'"), 'mirror failover preparation must expose elapsed time');
+assert(dependencyInstaller.includes("record_timing 'dpkg-recovery'"), 'dpkg recovery must expose elapsed time');
+assert(dependencyInstaller.includes("record_timing 'backoff'"), 'retry backoff must expose its actual elapsed time');
+assert(dependencyInstaller.includes("record_timing 'bootstrap-total'"), 'dependency bootstrap must expose total elapsed time on exit');
+assert(dependencyInstaller.includes('Probe bootstrap timing summary:'), 'dependency bootstrap must print a human-readable timing summary');
+assert(!dependencyInstaller.includes('echo "$machine" | tee -a "$PROBE_LOG"'), 'timing telemetry must stay out of the shared Probe evidence log');
+assert(!dependencyInstaller.includes('cat "$TIMING_SUMMARY_FILE" | tee -a "$PROBE_LOG"'), 'timing summary must not contaminate shared Probe evidence');
 assert(dependencyInstaller.includes('Acquire::Retries=3'), 'apt must retain its own transport retry protection');
 assert(dependencyInstaller.includes('Acquire::http::Timeout=${APT_IO_TIMEOUT_SECONDS}'), 'apt HTTP reads must have a bounded timeout');
 assert(dependencyInstaller.includes('Acquire::https::Timeout=${APT_IO_TIMEOUT_SECONDS}'), 'apt HTTPS reads must have a bounded timeout');

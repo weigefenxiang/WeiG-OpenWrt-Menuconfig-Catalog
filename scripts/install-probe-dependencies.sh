@@ -30,6 +30,59 @@ APT_OPTIONS=(
   -o "Acquire::https::Timeout=${APT_IO_TIMEOUT_SECONDS}"
 )
 
+BOOTSTRAP_STARTED_AT="$(date +%s)"
+TIMING_SUMMARY_FILE="$(mktemp)"
+
+timing_result_from_status() {
+  local status="$1"
+  if ((status == 0)); then
+    printf '%s' 'ok'
+  elif ((status == 124 || status == 137)); then
+    printf '%s' 'timeout'
+  else
+    printf '%s' 'failure'
+  fi
+}
+
+record_timing() {
+  local stage="$1"
+  local result="$2"
+  local elapsed="$3"
+  shift 3
+  local details="$*"
+  local machine="[TIMING] stage=${stage}"
+  local summary_label="$stage"
+
+  if [[ -n "$details" ]]; then
+    machine+=" ${details}"
+    summary_label+=" ${details}"
+  fi
+  machine+=" result=${result} elapsed=${elapsed}s"
+  echo "$machine"
+  printf '  %-52s %4ss  %s\n' "$summary_label" "$elapsed" "$result" >>"$TIMING_SUMMARY_FILE"
+}
+
+finish_timing() {
+  local status="$1"
+  local finished_at elapsed result
+  trap - EXIT
+  set +e
+  finished_at="$(date +%s)"
+  elapsed=$((finished_at - BOOTSTRAP_STARTED_AT))
+  if ((status == 0)); then
+    result='ok'
+  else
+    result='failure'
+  fi
+  record_timing 'bootstrap-total' "$result" "$elapsed" || true
+  echo 'Probe bootstrap timing summary:' || true
+  cat "$TIMING_SUMMARY_FILE" || true
+  rm -f "$TIMING_SUMMARY_FILE" || true
+  exit "$status"
+}
+
+trap 'finish_timing "$?"' EXIT
+
 run_apt_once() {
   local timeout_seconds="$1"
   shift
@@ -38,8 +91,23 @@ run_apt_once() {
 }
 
 recover_dpkg() {
+  local previous_attempt="${1:-0}"
+  local install_label="${2:-build-dependencies}"
+  local timing_label="${install_label// /-}"
+  local started_at finished_at elapsed status result
+
   echo "Probe bootstrap: recovering interrupted dpkg state before retry." | tee -a "$PROBE_LOG"
-  sudo -E timeout --signal=TERM --kill-after=15s 120s dpkg --configure -a 2>&1 | tee -a "$PROBE_LOG"
+  started_at="$(date +%s)"
+  if sudo -E timeout --signal=TERM --kill-after=15s 120s dpkg --configure -a 2>&1 | tee -a "$PROBE_LOG"; then
+    status=0
+  else
+    status=$?
+  fi
+  finished_at="$(date +%s)"
+  elapsed=$((finished_at - started_at))
+  result="$(timing_result_from_status "$status")"
+  record_timing 'dpkg-recovery' "$result" "$elapsed" "after-attempt=${previous_attempt} label=${timing_label}"
+  return "$status"
 }
 
 uses_runner_ubuntu_mirror_list() {
@@ -88,18 +156,28 @@ write_geo_ubuntu_mirrors() {
 
 prepare_update_retry_source() {
   local next_attempt="$1"
+  local started_at finished_at elapsed target
+  started_at="$(date +%s)"
   if ! uses_runner_ubuntu_mirror_list; then
     echo "WARNING: GitHub Runner Ubuntu mirror list is unavailable; keeping the existing apt sources for attempt ${next_attempt}/${MAX_ATTEMPTS}." | tee -a "$PROBE_LOG"
+    finished_at="$(date +%s)"
+    elapsed=$((finished_at - started_at))
+    record_timing 'mirror-switch' 'ok' "$elapsed" "attempt=${next_attempt} target=unchanged"
     return 0
   fi
 
   if ((next_attempt == 2)); then
+    target='geo'
     echo "Probe bootstrap: switching Ubuntu apt source to the official geo mirror index before attempt ${next_attempt}/${MAX_ATTEMPTS}." | tee -a "$PROBE_LOG"
     write_geo_ubuntu_mirrors
   else
+    target='direct'
     echo "Probe bootstrap: switching Ubuntu apt source to direct archive/security fallback before attempt ${next_attempt}/${MAX_ATTEMPTS}." | tee -a "$PROBE_LOG"
     write_direct_ubuntu_mirrors
   fi
+  finished_at="$(date +%s)"
+  elapsed=$((finished_at - started_at))
+  record_timing 'mirror-switch' 'ok' "$elapsed" "attempt=${next_attempt} target=${target}"
 }
 
 print_attempt_tail() {
@@ -120,7 +198,15 @@ retry_apt() {
   local timeout_seconds="$2"
   shift 2
   local apt_command="${1:-}"
-  local attempt status recovery_status delay attempt_log started_at finished_at elapsed
+  local timing_stage timing_label timing_result
+  local attempt status recovery_status delay attempt_log started_at finished_at elapsed backoff_started_at backoff_finished_at backoff_elapsed
+
+  if [[ "$apt_command" == "update" ]]; then
+    timing_stage='apt-update'
+  else
+    timing_stage='apt-install'
+  fi
+  timing_label="${label// /-}"
 
   for ((attempt = 1; attempt <= MAX_ATTEMPTS; attempt++)); do
     attempt_log="$(mktemp)"
@@ -132,6 +218,8 @@ retry_apt() {
     set -e
     finished_at="$(date +%s)"
     elapsed=$((finished_at - started_at))
+    timing_result="$(timing_result_from_status "$status")"
+    record_timing "$timing_stage" "$timing_result" "$elapsed" "attempt=${attempt} label=${timing_label}"
 
     if ((status == 0)); then
       echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS} completed in ${elapsed}s." | tee -a "$PROBE_LOG"
@@ -160,7 +248,7 @@ retry_apt() {
 
     if [[ "$apt_command" == "install" ]]; then
       set +e
-      recover_dpkg
+      recover_dpkg "$attempt" "$label"
       recovery_status=$?
       set -e
       if ((recovery_status != 0)); then
@@ -172,7 +260,11 @@ retry_apt() {
 
     delay=$((attempt * 15))
     echo "Probe bootstrap: retrying ${label} in ${delay}s." | tee -a "$PROBE_LOG"
+    backoff_started_at="$(date +%s)"
     sleep "$delay"
+    backoff_finished_at="$(date +%s)"
+    backoff_elapsed=$((backoff_finished_at - backoff_started_at))
+    record_timing 'backoff' 'ok' "$backoff_elapsed" "attempt=${attempt} label=${timing_label}"
   done
 }
 
