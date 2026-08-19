@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 name: Package Compatibility Probe / 软件包兼容探针
 run-name: >-
-  ${{ inputs.issue_number != '' && inputs.batch_index != '0'
+  ${{ inputs.display_context != '' && inputs.batch_index != '0'
+      && format('[probe] {0} · b{1}', inputs.display_context, inputs.batch_index)
+      || inputs.display_context != ''
+      && format('[probe] {0}', inputs.display_context)
+      || inputs.issue_number != '' && inputs.batch_index != '0'
       && format('[probe] {0} · #{1} · {2} · {3} · b{4}', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.mode, inputs.batch_index)
       || inputs.issue_number != ''
       && format('[probe] {0} · #{1} · {2} · {3}', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.mode)
@@ -77,6 +81,10 @@ on:
         default: true
       issue_number:
         description: "Gateway Issue number / 网关 Issue 编号"
+        required: false
+        default: ""
+      display_context:
+        description: "Internal display-only Probe label; never authoritative / 内部仅显示探针标签；绝非业务权威"
         required: false
         default: ""
       state_sha256:
@@ -329,6 +337,7 @@ jobs:
         uses: actions/github-script@v8
         env:
           ISSUE_NUMBER: ${{ inputs.issue_number }}
+          DISPLAY_CONTEXT: ${{ inputs.display_context }}
           STATE_SHA256: ${{ inputs.state_sha256 }}
           ISSUE_CREATED_AT: ${{ inputs.issue_created_at }}
           BATCH_INDEX: ${{ needs.plan.outputs.batch_index }}
@@ -389,7 +398,7 @@ jobs:
                   target_system: process.env.MANUAL_TARGET_SYSTEM, subtarget: process.env.MANUAL_SUBTARGET, target_profile: process.env.MANUAL_TARGET_PROFILE,
                   coverage_mode: process.env.MANUAL_COVERAGE_MODE, coverage_limit: process.env.MANUAL_COVERAGE_LIMIT,
                   max_parallel: process.env.MANUAL_MAX_PARALLEL, plan_only: process.env.MANUAL_PLAN_ONLY,
-                  issue_number: String(issueNumber), state_sha256: stateSha, issue_created_at: process.env.ISSUE_CREATED_AT,
+                  issue_number: String(issueNumber), display_context: process.env.DISPLAY_CONTEXT, state_sha256: stateSha, issue_created_at: process.env.ISSUE_CREATED_AT,
                   batch_index: next, sampling_seed: process.env.SAMPLING_SEED, data_commit: process.env.DATA_COMMIT,
                 },
               });
@@ -400,7 +409,7 @@ jobs:
                   owner: context.repo.owner, repo: context.repo.repo, workflow_id: 'package-probe.yml', event: 'workflow_dispatch', branch: context.ref.replace('refs/heads/', ''), per_page: 50,
                 });
                 nextRun = data.workflow_runs.find((row) => new Date(row.created_at).getTime() >= started - 5000 &&
-                  String(row.display_title || '').includes(`issue #${issueNumber}`) && String(row.display_title || '').includes(`batch ${next}`));
+                  String(row.display_title || '').includes(`#${issueNumber}`) && String(row.display_title || '').includes(`b${next}`));
               }
               if (nextRun) {
                 await github.rest.issues.createComment({
@@ -433,9 +442,10 @@ jobs:
               owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
               body: `Final Probe V3 conclusion / 最终 Probe V3 结论: **${finalConclusion}** · batches ${batches.size}/${batchCount}`,
             });
-            if (finalConclusion !== 'inconclusive') {
-              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber, state: 'closed', state_reason: 'completed' });
-            }
+            await github.rest.issues.update({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+              state: 'closed', state_reason: 'completed',
+            });
       - name: Finalize controller result / 确认控制器结果
         shell: bash
         env:

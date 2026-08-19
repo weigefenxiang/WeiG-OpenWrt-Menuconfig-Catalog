@@ -10,7 +10,7 @@ import {
 import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import { parseProbeStateToken, PROBE_STATE_PREFIX } from './package-probe-state.mjs';
 import { isProbeIssue, normalizeGatewayRequest, probeCancellationAuthorized, probeCancellationRequested,
-  probeIssueCommand, probeRunMarkers } from './package-probe-gateway.mjs';
+  probeDisplayContext, probeIssueCommand, probeRunMarkers } from './package-probe-gateway.mjs';
 import { createEvidence, parseProbeLog } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
 
@@ -89,6 +89,8 @@ const gatewayRequest = normalizeGatewayRequest(baseRequest);
 assert.deepEqual(gatewayRequest.roots, ['luci-app-oscam']);
 assert.equal(gatewayRequest.finalPackageCount, 1);
 assert.equal(gatewayRequest.useDefconfig, true);
+assert.equal(probeDisplayContext(gatewayRequest, 33), 'luci-app-oscam · #33 · dev · config-resolve');
+assert.equal(probeDisplayContext({ ...gatewayRequest, roots: ['alpha', 'beta', 'gamma'] }, 34), 'alpha +2 · #34 · dev · config-resolve');
 
 const token = PROBE_STATE_PREFIX + gzipSync(Buffer.from(JSON.stringify(baseRequest))).toString('base64url');
 const parsed = parseProbeStateToken(`state\n${token}\n`);
@@ -173,7 +175,16 @@ for (const version of ['master', 'openwrt-27.01', 'openwrt-30.01']) assert(sourc
 
 assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-gateway.mjs'));
 assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && issueForm.includes('`/cancel`'));
-for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
+for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'display_context:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
+assert(workflow.includes("format('[probe] {0}', inputs.display_context)"), 'Issue run name must prefer the display-only context supplied by the Gateway');
+assert(workflow.includes('DISPLAY_CONTEXT: ${{ inputs.display_context }}') && workflow.includes('display_context: process.env.DISPLAY_CONTEXT'),
+  'display-only context must survive continuation batches');
+assert(workflow.includes("String(row.display_title || '').includes(`#${issueNumber}`)") && workflow.includes("String(row.display_title || '').includes(`b${next}`)"),
+  'continuation lookup must follow the current compact Probe run-name format');
+assert(!workflow.includes("finalConclusion !== 'inconclusive'"), 'completed Probe requests must not stay open only because evidence is inconclusive');
+assert(workflow.includes("state: 'closed', state_reason: 'completed'"), 'the final Probe batch must close the Issue after recording its conclusion');
+assert(issueGateway.includes('display_context: probeDisplayContext(request, issue.number)'), 'Gateway must supply a display-only run label from the validated request');
+assert(!controller.includes('display_context'), 'Controller must not consume display-only context as Probe authority');
 assert(workflow.includes('actions: write') && workflow.includes('WEIG_PACKAGE_PROBE_BATCH_V3'));
 assert(workflow.includes('PROBE_TARGET_BATCH') && workflow.includes('config-resolve'));
 assert(controller.includes("toLowerCase() !== 'hanwckf'"));

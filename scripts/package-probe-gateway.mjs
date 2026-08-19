@@ -28,6 +28,12 @@ export function normalizeGatewayRequest(raw) {
   };
 }
 
+export function probeDisplayContext(request, issueNumber) {
+  const roots = Array.isArray(request?.roots) ? request.roots : [];
+  const rootLabel = roots.length > 1 ? `${roots[0]} +${roots.length - 1}` : (roots[0] || 'package');
+  return `${rootLabel} · #${Number(issueNumber)} · ${request.channel} · ${request.mode}`;
+}
+
 
 export function probeIssueCommand(body) {
   return String(body || '').trim().toLowerCase() === '/cancel' ? 'cancel' : '';
@@ -127,7 +133,7 @@ async function closeIssue(api, owner, repo, number) {
 async function workerSupportsGateway(api, owner, repo, channel) {
   const data = await api(`/repos/${owner}/${repo}/contents/.github/workflows/package-probe.yml?ref=${encodeURIComponent(channel)}`);
   const text = Buffer.from(String(data?.content || '').replace(/\s+/g, ''), 'base64').toString('utf8');
-  return ['issue_number:', 'state_sha256:', 'issue_created_at:', 'batch_index:', 'sampling_seed:', 'data_commit:']
+  return ['issue_number:', 'display_context:', 'state_sha256:', 'issue_created_at:', 'batch_index:', 'sampling_seed:', 'data_commit:']
     .every((needle) => text.includes(needle));
 }
 
@@ -195,6 +201,7 @@ async function intake(env, event) {
       ref: request.channel,
       inputs: {
         issue_number: String(issue.number),
+        display_context: probeDisplayContext(request, issue.number),
         state_sha256: parsedState.sha256,
         issue_created_at: String(issue.created_at || ''),
         batch_index: '0',
