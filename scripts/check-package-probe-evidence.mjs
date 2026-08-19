@@ -32,9 +32,14 @@ const runtimeSetup = readFileSync(resolve(import.meta.dirname, './setup-probe-ru
 const gcc10Policy = runtimeSetup.match(/requires_gcc10\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
 assert(workflow.includes('bash scripts/install-probe-dependencies.sh'), 'Probe jobs must use the bounded dependency bootstrap helper');
 assert(dependencyInstaller.includes('PROBE_APT_MAX_ATTEMPTS:-3'), 'dependency bootstrap must default to three total attempts');
-assert(dependencyInstaller.includes('PROBE_APT_UPDATE_TIMEOUT_SECONDS:-240'), 'apt update attempts must default to the approved 240-second bound');
+assert(dependencyInstaller.includes('PROBE_APT_UPDATE_TIMEOUT_SECONDS:-60'), 'apt update attempts must default to the approved 60-second bound');
 assert(dependencyInstaller.includes('PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300'), 'apt install attempts must default to the approved 300-second bound');
 assert(!dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS'), 'the obsolete one-size-fits-all apt timeout must not return');
+assert(dependencyInstaller.includes('prepare_initial_ubuntu_source'), 'dependency bootstrap must prepare the Ubuntu source before the first update attempt');
+assert(dependencyInstaller.indexOf('prepare_initial_ubuntu_source\nretry_apt \"apt-get update\"') > dependencyInstaller.indexOf('prepare_initial_ubuntu_source() {'),
+  'the first apt update must run only after the initial Ubuntu source preparation call');
+assert(dependencyInstaller.includes('replacing the GitHub Runner Ubuntu mirror with direct archive/security sources before the first update attempt'),
+  'the first apt update must bypass the unstable Runner Azure mirror when the mirror list is available');
 assert(dependencyInstaller.includes('retry_apt "apt-get update" "$UPDATE_TIMEOUT_SECONDS" update'), 'apt update must use its own timeout stage');
 assert(dependencyInstaller.includes('retry_apt "config-resolve build dependencies" "$INSTALL_TIMEOUT_SECONDS" install'), 'dependency install must use its own timeout stage');
 assert.equal((dependencyInstaller.match(/retry_apt "apt-get update"/g) || []).length, 1, 'successful apt update must not be repeated by install retries');
