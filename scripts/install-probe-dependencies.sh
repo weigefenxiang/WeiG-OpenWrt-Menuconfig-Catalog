@@ -7,7 +7,7 @@ set -euo pipefail
 : "${PROBE_LOG:=probe.log}"
 
 MAX_ATTEMPTS="${PROBE_APT_MAX_ATTEMPTS:-3}"
-UPDATE_TIMEOUT_SECONDS="${PROBE_APT_UPDATE_TIMEOUT_SECONDS:-240}"
+UPDATE_TIMEOUT_SECONDS="${PROBE_APT_UPDATE_TIMEOUT_SECONDS:-60}"
 INSTALL_TIMEOUT_SECONDS="${PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300}"
 APT_IO_TIMEOUT_SECONDS="${PROBE_APT_IO_TIMEOUT_SECONDS:-30}"
 ATTEMPT_LOG_TAIL_LINES=80
@@ -119,6 +119,24 @@ write_direct_ubuntu_mirrors() {
   printf '%s\tpriority:1\n%s\tpriority:2\n' \
     'https://archive.ubuntu.com/ubuntu/' \
     'https://security.ubuntu.com/ubuntu/' | sudo tee "$APT_MIRROR_LIST_PATH" >/dev/null
+}
+
+prepare_initial_ubuntu_source() {
+  local started_at finished_at elapsed
+  started_at="$(date +%s)"
+  if ! uses_runner_ubuntu_mirror_list; then
+    echo "Probe bootstrap: GitHub Runner Ubuntu mirror list is unavailable; keeping the existing apt sources for the first update attempt." | tee -a "$PROBE_LOG"
+    finished_at="$(date +%s)"
+    elapsed=$((finished_at - started_at))
+    record_timing 'mirror-switch' 'ok' "$elapsed" 'attempt=1 target=unchanged'
+    return 0
+  fi
+
+  echo "Probe bootstrap: replacing the GitHub Runner Ubuntu mirror with direct archive/security sources before the first update attempt." | tee -a "$PROBE_LOG"
+  write_direct_ubuntu_mirrors
+  finished_at="$(date +%s)"
+  elapsed=$((finished_at - started_at))
+  record_timing 'mirror-switch' 'ok' "$elapsed" 'attempt=1 target=direct'
 }
 
 write_geo_ubuntu_mirrors() {
@@ -268,6 +286,7 @@ retry_apt() {
   done
 }
 
+prepare_initial_ubuntu_source
 retry_apt "apt-get update" "$UPDATE_TIMEOUT_SECONDS" update
 
 if [[ "$PROBE_MODE" == "config-resolve" ]]; then
