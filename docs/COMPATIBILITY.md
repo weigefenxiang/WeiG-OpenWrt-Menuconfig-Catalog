@@ -60,22 +60,25 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 ### 探针深度边界
 
-Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe V3 协议，并把“配置事实”和“构建调度”分给各自权威：Catalog Kconfig 负责 Baseline、用户直接 Intent 与 Final `PACKAGE_*` 状态；进入真实上游源码后，软件包依赖、构建顺序、stamp 与增量构建由该 Source 自己的 Make 系统负责。
+Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe V3 协议，并把“配置事实”和“构建调度”分给各自权威：Catalog Kconfig 负责用户直接 Intent 与唯一 Final `PACKAGE_*` 状态；进入真实上游源码后，软件包依赖、构建顺序、stamp 与增量构建由该 Source 自己的 Make 系统负责。
 
-- **L1 软件包编译（`package-compile`）**：把用户在本次 Probe 中直接启用的软件包当作 Root。Runner 读取上游 `tmp/.packageinfo` 的 `Source-Makefile`，把 Binary Package 映射为真实源码构建目标；多个 Root 共用一个 Source 时自动去重，并用一次 Make 调用进入上游依赖图。WeiG 不逐个调度 Final 状态中的依赖包，也不维护 Binary→Source 或 dependency 数据库。L1 不执行 `package/install` 或固件镜像生成。
-- **L2 根文件系统集成（`rootfs-integration`）**：完整执行 L1 后，再运行上游 `package/install`，使用完整 Final 软件包状态发现 APK/OPKG 文件归属、路径覆盖与共同安装冲突。
-- **L3 固件集成（`firmware-integration`）**：在同一 Source/Branch/Target 环境中先构建 Probe 打开时真实 Baseline，再构建用户操作后的 Final。Baseline 本身失败只能记为 `inconclusive`；只有 Baseline 成功而 Final 失败时，才形成软件包引入的固件集成失败证据。
-- **L4 启动自检（`boot-smoke`）**：L3 Final 成功后，仅对 Catalog 允许的通用可启动环境执行 QEMU 启动标志检查。它不是插件服务运行测试，也不是实体硬件功能测试。
+- **L1 插件（`config-resolve`）**：使用当前源码官方 Kconfig/Defconfig 求解 Final Root 组合；只证明配置能否成立，不执行软件包编译。
+- **L2 编译（`package-compile`）**：把用户直接启用的软件包当作 Root，读取上游 `tmp/.packageinfo` 的 `Source-Makefile`，把 Binary Package 映射为真实源码目标；共用 Source 的 Root 自动去重，并用一次 Make 调用进入上游依赖图。WeiG 不维护第二份 Binary→Source 或 dependency 数据库。
+- **L3 根系统（`rootfs-integration`）**：复用同一次 L2 结果，再运行上游 `package/install`，由当前 Source 自己处理 APK/OPKG、文件归属及 RootFS 集成。
+- **L4 集成（`firmware-integration`）**：只使用用户最终配置完成一次整机固件构建，不构建 Baseline，也不宣称单个插件相对 Baseline 导致失败。
+- **L5 启动（`boot-smoke`）**：L4 成功后优先调用当前源码自己的 `scripts/qemustart`，确认 Final 固件进入基本用户空间；不维护 Target/QEMU 参数表。
+- **L6 运行（`runtime-health`）**：在 L5 后通过可靠控制通道检查 init/procd、基础挂载、uptime、可用时的 ubus，以及 Final 中真正内置的 Root 软件包。无可靠控制能力时记为 `skipped`。
+- **L7 重启（`reboot-validation`）**：在 L6 后正常重启 Final 固件，等待第二次启动并再次执行相同健康检查；不执行真实 sysupgrade 刷写。
 
-`Defconfig` 与 L1–L4 正交，是默认开启但可关闭的独立开关。开启时运行所选 Source 自己的 `make defconfig`，并只强制验证用户直接启用的 Probe Root 在上游规范化后仍保持请求的 `m/y` 状态；自动依赖允许上游重新结算。关闭时不主动运行 `make defconfig`，L1 只为读取上游 package metadata 执行 `prepare-tmpinfo`。
+L2–L7 都只执行用户最终配置，逐级复用已经完成的 Stage，不做 Baseline/Final A/B，也不为增加深度而重复构建。成功表示当前 Final 配置在该环境达到所选深度；失败只描述该 Final 配置和具体 Stage，不自动宣称某一个插件具有单独因果关系。`Defconfig` 在 L1 固定使用；L2–L7 默认开启但可由请求明确关闭。开启时运行所选 Source 自己的 `make defconfig`，并只强制验证用户直接启用的 Probe Root 仍保持请求的 `m/y` 状态；关闭时不主动执行 `make defconfig`。
 
-Probe V3 的浏览器状态包含 Baseline、直接 `packageIntent`、唯一 Final `packageConfig`、Defconfig、五维环境约束和覆盖策略。不会传递 dependency list、build order 或第二个 packages/roots 权威；服务端从经过校验的直接 Intent 派生 Root。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝，用户需要从当前 AutoBuild 页面重新提交。
+Probe V3 的浏览器状态包含仅用于校验 Intent 前值的 Baseline、直接 `packageIntent`、唯一构建权威 Final `packageConfig`、Defconfig、五维环境约束和覆盖策略。Runner 不构建 Baseline，也不会传递 dependency list、build order 或第二个 packages/roots 权威；服务端从经过校验的直接 Intent 派生 Root。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝，用户需要从当前 AutoBuild 页面重新提交。
 
 环境范围由 Catalog 的真实结构动态解析，五个维度均可独立使用通配或精确值：**Source / Branch / Target System / Subtarget / Target Profile**。Target System、Subtarget 与 Profile 直接读取 Catalog core 已有的结构化字段，不从 `x86/64` 之类字符串反向猜测。通配保存的是规则而不是当前叶子快照，因此以后自动发现的新 Branch/Target/Profile 会自然进入匹配范围；不存在的组合记为不适用，不记为不兼容。
 
-覆盖有两种模式。**Auto** 在管理员预算内做可复现的分层最大覆盖：候选不超过预算时全部执行，超过预算时只在未被用户固定的维度上优先覆盖不同 Source、Branch、Target System、Subtarget 和 Profile；抽样 seed 进入证据，新 Run 可以轮换样本。默认预算由 `.github/automation-policy.json` 管理：L1=200、L2=100、L3=30、L4=10，单批不超过 256。**全部遍历**覆盖所有真实候选；超过 256 时固定同一 Catalog data commit 与 sampling seed，按最多 256 个环境顺序续批，不一次制造数千个并发 Job。
+覆盖有两种模式。**Auto** 在管理员预算内做可复现的分层最大覆盖：候选不超过预算时全部执行，超过预算时只在未被用户固定的维度上优先覆盖不同 Source、Branch、Target System、Subtarget 和 Profile；抽样 seed 进入证据，新 Run 可以轮换样本。默认预算由 `.github/automation-policy.json` 管理：L1=40、L2=200、L3=100、L4=30、L5=10，单批不超过 256；L6/L7 在完成真实耗时测量前必须明确填写上限。**全部遍历**覆盖所有真实候选；超过 256 时固定同一 Catalog data commit 与 sampling seed，按最多 256 个环境顺序续批，不一次制造数千个并发 Job。
 
-抽样与全量结论严格分开：样本全部成功/失败只能记为 `sampled-compatible` / `sampled-incompatible`；完整覆盖后才允许 `fully-compatible` / `fully-incompatible`；同一范围内成功与失败并存为 `partially-compatible`。下载、磁盘、Runner、metadata 解析、Baseline 构建、取消与超时等不能归因到插件的情况统一保持 `inconclusive`。结果按 Source → Branch → Target System → Subtarget → Target Profile 聚合，因此可把问题收缩到具体源码、分支或目标范围，但证据不会自动宣称是某上游 Bug，也不会自动改写 `compatibility.json`。
+抽样与全量结论严格分开：样本全部成功/失败只能记为 `sampled-compatible` / `sampled-incompatible`；完整覆盖后才允许 `fully-compatible` / `fully-incompatible`；同一范围内成功与失败并存为 `partially-compatible`。下载、磁盘、Runner、metadata 解析、取消与超时等基础设施问题统一保持 `inconclusive`。结果按 Source → Branch → Target System → Subtarget → Target Profile 聚合，因此可把问题收缩到具体源码、分支或目标范围，但证据不会自动宣称是某上游 Bug，也不会自动改写 `compatibility.json`。
 
 Issue 网关仍以真实 Issue 作者和仓库权限作为权限事实，校验 V3 state token、SHA-256 与 Issue 身份后派发相同代码通道；后续批次继续固定第一次解析的 Catalog data commit。仓库 owner/admin 可使用管理员并发预算，write/maintain 协作者仍受 3 并发上限；普通访客不能启动 Matrix。请求者或具有 write/maintain/admin 权限的协作者可在同一 Issue 回复精确 `/cancel`，取消标记会同时停止当前 Run 并阻止后续批次。规范化证据保留 60 天，完整日志保留 30 天。
 

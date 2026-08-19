@@ -298,6 +298,8 @@ else
     gettext git libncurses5-dev libssl-dev python3 python3-setuptools rsync unzip zlib1g-dev file wget
 fi
 
-if [[ "$PROBE_MODE" == "boot-smoke" ]]; then
-  retry_apt "boot-smoke QEMU dependency" "$INSTALL_TIMEOUT_SECONDS" install qemu-system-x86
-fi
+case "$PROBE_MODE" in
+  boot-smoke|runtime-health|reboot-validation)
+    retry_apt "virtual Probe QEMU dependency" "$INSTALL_TIMEOUT_SECONDS" install qemu-system-x86
+    ;;
+esac

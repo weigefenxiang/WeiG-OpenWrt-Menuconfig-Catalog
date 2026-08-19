@@ -3,16 +3,16 @@
 name: Package Compatibility Probe / 软件包兼容探针
 run-name: >-
   ${{ inputs.display_context != '' && inputs.batch_index != '0'
-      && format('[probe · {0}] {1} · b{2}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.display_context, inputs.batch_index)
+      && format('[probe · {0}] {1} · b{2}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || inputs.mode == 'runtime-health' && 'L6' || inputs.mode == 'reboot-validation' && 'L7' || 'L?', inputs.display_context, inputs.batch_index)
       || inputs.display_context != ''
-      && format('[probe · {0}] {1}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.display_context)
+      && format('[probe · {0}] {1}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || inputs.mode == 'runtime-health' && 'L6' || inputs.mode == 'reboot-validation' && 'L7' || 'L?', inputs.display_context)
       || inputs.issue_number != '' && inputs.batch_index != '0'
-      && format('[probe · {0}] {1} · #{2} · {3} · b{4}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.batch_index)
+      && format('[probe · {0}] {1} · #{2} · {3} · b{4}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || inputs.mode == 'runtime-health' && 'L6' || inputs.mode == 'reboot-validation' && 'L7' || 'L?', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.batch_index)
       || inputs.issue_number != ''
-      && format('[probe · {0}] {1} · #{2} · {3}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', inputs.issue_number, github.ref_name)
+      && format('[probe · {0}] {1} · #{2} · {3}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || inputs.mode == 'runtime-health' && 'L6' || inputs.mode == 'reboot-validation' && 'L7' || 'L?', inputs.roots || 'package', inputs.issue_number, github.ref_name)
       || inputs.batch_index != '0'
-      && format('[probe · {0}] {1} · {2} · b{3}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', github.ref_name, inputs.batch_index)
-      || format('[probe · {0}] {1} · {2}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', github.ref_name) }}
+      && format('[probe · {0}] {1} · {2} · b{3}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || inputs.mode == 'runtime-health' && 'L6' || inputs.mode == 'reboot-validation' && 'L7' || 'L?', inputs.roots || 'package', github.ref_name, inputs.batch_index)
+      || format('[probe · {0}] {1} · {2}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || inputs.mode == 'runtime-health' && 'L6' || inputs.mode == 'reboot-validation' && 'L7' || 'L?', inputs.roots || 'package', github.ref_name) }}
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ on:
         required: false
         default: ""
       baseline_package_config:
-        description: "Baseline CONFIG_PACKAGE_*=m/y state for manual runs / 手动运行的基线 PACKAGE 状态"
+        description: "Intent-validation state; L2-L7 build Final only / 仅用于意图校验；L2-L7 只构建 Final"
         required: false
         default: ""
       roots:
@@ -33,7 +33,7 @@ on:
         description: "Probe depth / 探测深度"
         required: true
         type: choice
-        options: [config-resolve, package-compile, rootfs-integration, firmware-integration, boot-smoke]
+        options: [config-resolve, package-compile, rootfs-integration, firmware-integration, boot-smoke, runtime-health, reboot-validation]
         default: config-resolve
       use_defconfig:
         description: "Run the selected upstream make defconfig / 使用所选上游 make defconfig"
@@ -67,7 +67,7 @@ on:
         options: [auto, all]
         default: auto
       coverage_limit:
-        description: "Auto environment limit 1-256; L1 defaults to 40 / Auto 环境上限 1-256；L1 默认 40"
+        description: "Auto environment limit 1-256; L6/L7 require an explicit limit / Auto 环境上限 1-256；L6/L7 必须明确填写"
         required: false
         default: ""
       max_parallel:
@@ -144,6 +144,9 @@ jobs:
       mode: ${{ steps.plan.outputs.mode }}
       evidence_level: ${{ steps.plan.outputs.evidence_level }}
       timeout_minutes: ${{ steps.plan.outputs.timeout_minutes }}
+      boot_timeout_seconds: ${{ steps.plan.outputs.boot_timeout_seconds }}
+      control_timeout_seconds: ${{ steps.plan.outputs.control_timeout_seconds }}
+      runtime_observation_seconds: ${{ steps.plan.outputs.runtime_observation_seconds }}
       issue_number: ${{ steps.plan.outputs.issue_number }}
     steps:
       - uses: actions/checkout@v7
@@ -224,6 +227,9 @@ jobs:
       PROBE_WORKDIR: work/upstream
       PROBE_LOG: ${{ github.workspace }}/probe.log
       PROBE_RUNTIME: ${{ github.workspace }}/probe-runtime.json
+      PROBE_BOOT_TIMEOUT_SECONDS: ${{ needs.plan.outputs.boot_timeout_seconds }}
+      PROBE_CONTROL_TIMEOUT_SECONDS: ${{ needs.plan.outputs.control_timeout_seconds }}
+      PROBE_RUNTIME_OBSERVATION_SECONDS: ${{ needs.plan.outputs.runtime_observation_seconds }}
     steps:
       - uses: actions/checkout@v7
       - id: bootstrap
@@ -290,7 +296,7 @@ jobs:
           name: package-probe-log-${{ matrix.key }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             probe.log
-            boot-smoke.log
+            probe-virtual.log
             probe-runtime.json
             probe-feeds-runtime.json
           retention-days: 30

@@ -16,6 +16,7 @@ assert.equal(classifyCatalogPath('.github/workflows/catalog.yml'), 'none');
 assert.equal(classifyCatalogPath('.github/workflows/catalog-reuse.yml'), 'none');
 assert.equal(classifyCatalogPath('.github/workflows/catalog-production.yml'), 'none');
 assert.equal(classifyCatalogPath('scripts/package-probe-controller.mjs'), 'none');
+assert.equal(classifyCatalogPath('scripts/run-boot-smoke.sh'), 'none', 'retired managed paths must remain classifiable during deletion');
 assert.equal(classifyCatalogPath('scripts/install-probe-dependencies.sh'), 'none');
 assert.equal(classifyCatalogPath('scripts/install-probe-feeds.sh'), 'none');
 assert.equal(classifyCatalogPath('scripts/setup-probe-runtime.sh'), 'none');

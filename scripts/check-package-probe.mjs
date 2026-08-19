@@ -62,6 +62,8 @@ assert.equal(runtimeDataBranchForChannel('fix-probe'), 'catalog-fix-probe');
 assert.equal(normalizeProbeMode('config-resolve'), 'config-resolve');
 assert.equal(normalizeProbeMode('compile'), 'package-compile');
 assert.equal(normalizeProbeMode('co-install'), 'rootfs-integration');
+assert.equal(normalizeProbeMode('runtime-health'), 'runtime-health');
+assert.equal(normalizeProbeMode('reboot-validation'), 'reboot-validation');
 assert.throws(() => normalizeProbeMode('plugin-special-case'), /unsupported probe mode/);
 
 const finalState = normalizePackageConfig(packageConfig);
@@ -127,6 +129,8 @@ assert.equal(filtered.rows.length, 1);
 assert.equal(filtered.rows[0].targetSystem, 'mediatek');
 assert.equal(filtered.rows[0].subtarget, 'filogic');
 assert.equal(resolveProbeTargetConfigs(core, { mode: 'boot-smoke', bootTargetPatterns: ['x86/64'], environmentScope: baseRequest.environmentScope }).rows.length, 1);
+assert.equal(resolveProbeTargetConfigs(core, { mode: 'runtime-health', bootTargetPatterns: ['x86/64'], environmentScope: baseRequest.environmentScope }).rows.length, 1);
+assert.equal(resolveProbeTargetConfigs(core, { mode: 'reboot-validation', bootTargetPatterns: ['x86/64'], environmentScope: baseRequest.environmentScope }).rows.length, 1);
 
 const legacy = { schema: 6, targets: [target('x86/64', 'x86', '64', 'Generic')] };
 const mapped = resolveProbeTargetConfigs(legacy, { mode: 'config-resolve', selections: [{ target: 'x86/64', profile: 'DEVICE_generic' }] });
@@ -163,7 +167,7 @@ assert.notDeepEqual(sampleA, sampleB, 'new run seed should rotate the sample');
 assert.equal(new Set(sampleA.map((row) => row.source)).size, 4, 'Auto must preserve Source breadth before filling the budget');
 
 const apkIssues = parseProbeLog('ERROR: luci-app-openvpn-server-3.0-r0: trying to overwrite etc/config/openvpn owned by openvpn-openssl-2.7.4-r3.\n' +
-  'ERROR: Final package-enabled firmware failed after Baseline success\n');
+  'ERROR: Final package-enabled firmware failed\n');
 assert(apkIssues.some((row) => row.type === 'rootfs-conflict' && row.path === '/etc/config/openvpn'));
 assert(apkIssues.some((row) => row.type === 'package-firmware-failure'));
 const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'incompatible', attempts: [] },
@@ -176,7 +180,7 @@ for (const version of ['master', 'openwrt-27.01', 'openwrt-30.01']) assert(sourc
 assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-gateway.mjs'));
 assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && issueForm.includes('`/cancel`'));
 for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'display_context:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
-for (const [mode, level] of [['config-resolve', 'L1'], ['package-compile', 'L2'], ['rootfs-integration', 'L3'], ['firmware-integration', 'L4'], ['boot-smoke', 'L5']]) {
+for (const [mode, level] of [['config-resolve', 'L1'], ['package-compile', 'L2'], ['rootfs-integration', 'L3'], ['firmware-integration', 'L4'], ['boot-smoke', 'L5'], ['runtime-health', 'L6'], ['reboot-validation', 'L7']]) {
   assert(workflow.includes(`inputs.mode == '${mode}' && '${level}'`), `run name must map ${mode} to ${level}`);
 }
 assert(workflow.includes("|| 'L?'"), 'run name must not silently label an unknown mode as a valid Probe level');
@@ -213,15 +217,23 @@ assert(!issueGateway.includes('WEIG_PACKAGE_PROBE_RUN_V2') && issueGateway.inclu
 assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')));
 assert(runner.includes('Source-Makefile:') || runner.includes('Source-Makefile'));
 assert(runner.includes('tmp/.packageinfo') || runner.includes("'tmp', '.packageinfo'"));
-assert(runner.includes('const compiled = await makeWithSerialRetry(resolved.targets'));
+assert(runner.includes('makeWithSerialRetry(resolved.targets'));
 assert(!runner.includes('for (const packageName of activePackages)'));
 assert(!runner.includes('reduceFailureSet') && !runner.includes('PROBE_REDUCTION_BUDGET') && !runner.includes('PROBE_FALLBACK_TARGETS'));
 assert(runner.includes("['package/install']"));
-assert(runner.includes("prepareConfig(BASELINE_STATES") && runner.includes("prepareConfig(FINAL_STATES"));
+assert(!runner.includes('BASELINE_STATES') && runner.includes('prepareConfig(FINAL_STATES'),
+  'L2-L7 must execute the Final state only');
+assert(runner.includes('runVirtualProbe') && !runner.includes('qemu-system-x86_64'),
+  'L5-L7 must use the upstream qemustart adapter instead of a Target-specific QEMU command');
+assert(runner.includes('deepestPassedLevel') && runner.includes('durationMs'),
+  'Probe runtime must preserve selected depth, deepest passed depth, and duration evidence');
 assert(runner.includes('BUILD_LOG=1'));
 assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.includes('fully-incompatible') && evidenceWriter.includes('partially-compatible'));
 assert.equal(policy.probe.maxMatrixJobs, 256);
 assert.deepEqual(policy.probe.autoCoverageLimits, { 'package-compile': 200, 'rootfs-integration': 100, 'firmware-integration': 30, 'boot-smoke': 10, 'config-resolve': 40 });
+assert(!('runtime-health' in policy.probe.autoCoverageLimits) && !('reboot-validation' in policy.probe.autoCoverageLimits),
+  'L6/L7 must not gain an unmeasured default coverage limit');
+assert(controller.includes('coverage limit is required for ${mode} until a measured default is approved'));
 assert(!('maxAutoTargetAttempts' in policy.probe) && !('reductionMaxAttempts' in policy.probe));
 for (const key of ['howTo', 'submittedState', 'stateInstruction', 'invalid']) assert(probeUi.strings[key]?.en && probeUi.strings[key]?.['zh-CN']);
 assert(catalogWorkflow.includes('scripts/catalog-change-impact.mjs'));

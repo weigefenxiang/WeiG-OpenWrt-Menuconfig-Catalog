@@ -8,6 +8,9 @@ import { configuredReuseSourceForCodeRef } from './catalog-channels.mjs';
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const GIT_SHA_RE = /^[0-9a-f]{40}$/i;
 const PROMOTION_ONLY_PUSH_REFS = new Set(['dev', 'staging', 'main']);
+const RETIRED_PATHS = new Map([
+  ['scripts/run-boot-smoke.sh', 'none'],
+]);
 
 const REGISTRY = Object.freeze({
   applications: Object.freeze([
@@ -56,7 +59,9 @@ const REGISTRY = Object.freeze({
     'scripts/check-index.mjs',
     'scripts/check-legacy-metadata.mjs',
     'scripts/check-package-probe-evidence.mjs',
+    'scripts/check-package-probe-runner.mjs',
     'scripts/check-package-probe.mjs',
+    'scripts/check-package-probe-virtual.mjs',
     'scripts/check-probe-authorization.mjs',
     'scripts/check-production-boundary.mjs',
     'scripts/check-production-promotion.mjs',
@@ -78,12 +83,12 @@ const REGISTRY = Object.freeze({
     'scripts/package-probe-controller.mjs',
     'scripts/package-probe-gateway.mjs',
     'scripts/package-probe-state.mjs',
+    'scripts/package-probe-virtual.mjs',
     'scripts/publish-release.sh',
     'scripts/refresh-curated-applications.mjs',
     'scripts/refresh-curated-sizes.mjs',
     'scripts/requirements-argos.txt',
     'scripts/resolve-translation-provider.mjs',
-    'scripts/run-boot-smoke.sh',
     'scripts/run-package-probe.mjs',
     'scripts/run-stage.sh',
     'scripts/sync-index-assets.mjs',
@@ -131,6 +136,7 @@ function isManagedPath(path) {
 export function classifyCatalogPath(input) {
   const path = normalizePath(input);
   if (!path) return 'none';
+  if (RETIRED_PATHS.has(path)) return RETIRED_PATHS.get(path);
   const impact = CLASS_BY_PATH.get(path);
   if (impact) return impact;
   if (isManagedPath(path)) {

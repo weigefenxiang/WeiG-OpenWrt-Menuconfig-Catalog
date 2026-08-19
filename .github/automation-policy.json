@@ -15,11 +15,16 @@
     "bootTargetPatterns": [
       "x86/64"
     ],
+    "bootTimeoutSeconds": 180,
+    "controlTimeoutSeconds": 30,
+    "runtimeObservationSeconds": 15,
     "modeTimeoutMinutes": {
       "package-compile": 360,
       "rootfs-integration": 360,
       "firmware-integration": 360,
       "boot-smoke": 360,
+      "runtime-health": 360,
+      "reboot-validation": 360,
       "config-resolve": 90
     },
     "maxPackageConfigBytes": 131072,
