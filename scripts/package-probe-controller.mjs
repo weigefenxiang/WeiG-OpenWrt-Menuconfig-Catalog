@@ -12,9 +12,12 @@ import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
-const MODES = new Set(['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke']);
+const MODES = new Set(['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke',
+  'runtime-health', 'reboot-validation']);
 const MODE_ALIASES = { compile: 'package-compile', 'co-install': 'rootfs-integration' };
-const MODES_LIST = ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke'];
+const MODES_LIST = ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke',
+  'runtime-health', 'reboot-validation'];
+const VIRTUAL_MODES = new Set(['boot-smoke', 'runtime-health', 'reboot-validation']);
 const REQUEST_KEYS = new Set([
   'schema', 'channel', 'mode', 'useDefconfig', 'baselinePackageConfig', 'packageConfig', 'packageIntent',
   'environmentScope', 'coverage', 'maxParallel', 'execute',
@@ -277,7 +280,7 @@ export function resolveProbeTargetConfigs(core, options = {}) {
     rows = rows.filter((row) => scopeIncludes(scope.targetSystems, row.targetSystem) &&
       scopeIncludes(scope.subtargets, row.subtarget) && scopeIncludes(scope.profiles, row.profile));
   }
-  if (options.mode === 'boot-smoke') {
+  if (VIRTUAL_MODES.has(options.mode)) {
     const bootPatterns = options.bootTargetPatterns || [];
     rows = rows.filter((row) => bootPatterns.some((pattern) => matchPattern(row.target, pattern)));
     if (!rows.length) resolved.skipped.push({ target: '', requestedProfile: '', reason: 'boot-target-not-supported' });
@@ -307,6 +310,19 @@ function branchScopeMatches(scope, source, branch) {
 function timeoutForMode(policy, mode) {
   const configured = Number(policy?.probe?.modeTimeoutMinutes?.[mode] || policy?.probe?.timeoutMinutes || 360);
   return Math.max(1, Math.min(360, configured));
+}
+
+function virtualTimingPolicy(policy) {
+  const probe = policy?.probe || {};
+  const seconds = (value, fallback, maximum) => {
+    const number = Number(value || fallback);
+    return Math.max(1, Math.min(maximum, Number.isFinite(number) ? Math.floor(number) : fallback));
+  };
+  return {
+    bootTimeoutSeconds: seconds(probe.bootTimeoutSeconds, 180, 600),
+    controlTimeoutSeconds: seconds(probe.controlTimeoutSeconds, 30, 120),
+    runtimeObservationSeconds: seconds(probe.runtimeObservationSeconds, 15, 120),
+  };
 }
 
 export function normalizeProbeAuthorization({ requester = '', repositoryOwner = '', permission = '' } = {}) {
@@ -360,7 +376,8 @@ export function createProbePlan({ index, env = {}, policy, request: normalizedRe
     environmentScope: request.environmentScope, coverageRequest: request.coverage, requestedMaxParallel: request.maxParallel,
     authorizationElevatedParallel: authorization.elevatedParallel, collaboratorCap,
     maxParallel: Math.max(1, Math.min(maxMatrixJobs, authorization.elevatedParallel ? requestedParallel : Math.min(collaboratorCap, requestedParallel))),
-    timeoutMinutes: timeoutForMode(policy, request.mode), matrix: { include }, mappings: [], skipped: [],
+    timeoutMinutes: timeoutForMode(policy, request.mode), virtualTiming: virtualTimingPolicy(policy),
+    matrix: { include }, mappings: [], skipped: [],
   };
 }
 
@@ -553,6 +570,9 @@ function writeOutputs(plan, extra = {}) {
     coverage_mode: String(plan.coverage?.mode || plan.coverageRequest?.mode || 'auto'),
     coverage_sampled: String(Boolean(plan.coverage?.sampled)),
     mode: plan.mode, evidence_level: String(plan.evidenceLevel), timeout_minutes: String(plan.timeoutMinutes),
+    boot_timeout_seconds: String(plan.virtualTiming?.bootTimeoutSeconds || 180),
+    control_timeout_seconds: String(plan.virtualTiming?.controlTimeoutSeconds || 30),
+    runtime_observation_seconds: String(plan.virtualTiming?.runtimeObservationSeconds || 15),
     issue_number: String(extra.issueNumber || ''),
   };
   appendFileSync(output, Object.entries(rows).map(([key, value]) => `${key}=${value}`).join('\n') + '\n');
@@ -612,16 +632,23 @@ function manualRequest(env, maximumBytes, policy) {
   const roots = requestedRoots.length ? requestedRoots : final.packages;
   const intent = roots.map((packageName) => ({ package: packageName,
     before: normalizedState(baseline.states, packageName), after: normalizedState(final.states, packageName) }));
+  const mode = env.PROBE_MODE || 'config-resolve';
+  const coverageMode = env.COVERAGE_MODE || 'auto';
+  const configuredLimit = policy?.probe?.autoCoverageLimits?.[mode];
+  const explicitLimit = String(env.COVERAGE_LIMIT || '').trim();
+  if (coverageMode === 'auto' && !explicitLimit && !Number.isInteger(Number(configuredLimit))) {
+    throw new Error(`coverage limit is required for ${mode} until a measured default is approved`);
+  }
   return normalizeProbeRequest({
-    schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode: env.PROBE_MODE || 'config-resolve',
+    schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode,
     useDefconfig: String(env.PROBE_USE_DEFCONFIG || 'true') !== 'false', baselinePackageConfig: baseline.packageConfig,
     packageConfig: final.packageConfig, packageIntent: intent,
     environmentScope: {
       sources: [env.SOURCE_PATTERN || '*'], branches: [env.BRANCH_PATTERN || '*'],
       targetSystems: [env.TARGET_SYSTEM || '*'], subtargets: [env.SUBTARGET || '*'], profiles: [env.TARGET_PROFILE || '*'],
     },
-    coverage: { mode: env.COVERAGE_MODE || 'auto', ...(env.COVERAGE_MODE === 'all' ? {} : {
-      limit: Number(env.COVERAGE_LIMIT || policy?.probe?.autoCoverageLimits?.[env.PROBE_MODE || 'config-resolve'] || 40),
+    coverage: { mode: coverageMode, ...(coverageMode === 'all' ? {} : {
+      limit: Number(explicitLimit || configuredLimit),
     }) },
     maxParallel: Number(env.MAX_PARALLEL || 0), execute: String(env.DRY_RUN || 'false') !== 'true',
   }, maximumBytes);
@@ -665,7 +692,8 @@ export async function main(env = process.env) {
       baselinePackageConfig: request.baselinePackageConfig, packageConfig: request.packageConfig,
       environmentScope: request.environmentScope, coverageRequest: request.coverage, coverage: null,
       batchIndex: normalizedBatchIndex(env.PROBE_BATCH_INDEX), batchCount: 1, hasNextBatch: false, nextBatchIndex: 0,
-      maxParallel: 1, timeoutMinutes: timeoutForMode(policy, request.mode), mappings: [], skipped: [], matrix: { include: [] },
+      maxParallel: 1, timeoutMinutes: timeoutForMode(policy, request.mode), virtualTiming: virtualTimingPolicy(policy),
+      mappings: [], skipped: [], matrix: { include: [] },
     };
   } else {
     const requestedDataRef = String(env.PROBE_DATA_COMMIT || dataBranch);

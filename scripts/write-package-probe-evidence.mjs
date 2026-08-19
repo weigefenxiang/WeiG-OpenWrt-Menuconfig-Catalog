@@ -23,7 +23,7 @@ export function parseProbeLog(log) {
   }
   if (/(?:FAIL|ERROR):\s+package compile failed for Probe roots:/i.test(text)) issues.push({ type: 'package-build-failure' });
   if (/(?:FAIL|ERROR):\s+RootFS integration failed after Probe-root compilation/i.test(text)) issues.push({ type: 'rootfs-integration-failure' });
-  if (/(?:FAIL|ERROR):\s+Final package-enabled firmware failed after Baseline success/i.test(text)) issues.push({ type: 'package-firmware-failure' });
+  if (/(?:FAIL|ERROR):\s+Final package-enabled firmware failed/i.test(text)) issues.push({ type: 'package-firmware-failure' });
   for (const match of text.matchAll(/(?:WARNING|ERROR):\s+Makefile ['"]?([^'"\s]+)['"]? has a dependency on ['"]?([^'"\s,]+)[,'"]? which does not exist/gi)) {
     issues.push({ type: 'missing-dependency', makefile: match[1], dependency: match[2] });
   }
@@ -32,7 +32,6 @@ export function parseProbeLog(log) {
   if (/upstream package metadata does not contain Probe root|ambiguous upstream Source-Makefile|tmp\/\.packageinfo is missing/i.test(text)) {
     issues.push({ type: 'metadata-unresolved' });
   }
-  if (/baseline firmware failed|baseline-kconfig-failure/i.test(text)) issues.push({ type: 'baseline-failure' });
   if (/Prerequisite check failed|Build dependency:\s+Please install (?:the GNU C(?:\+\+)? Compiler|Python 2\.x)|Please install Python 2\.x/i.test(text)) {
     issues.push({ type: 'infrastructure-failure', reason: 'host-prerequisite' });
   }
@@ -40,7 +39,7 @@ export function parseProbeLog(log) {
   if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(text)) issues.push({ type: 'timeout' });
   if (/Hash check failed|download failed|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(text)) issues.push({ type: 'package-download-failure' });
   if (/not enough space|image is too big|filesystem.*too large/i.test(text)) issues.push({ type: 'image-too-large' });
-  if (/Boot smoke did not reach/i.test(text)) issues.push({ type: 'boot-failure' });
+  if (/final-boot-failed|Kernel panic|not syncing/i.test(text)) issues.push({ type: 'boot-failure' });
   return [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()];
 }
 
@@ -99,6 +98,12 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     issues.push({ type: 'not-applicable', roots: attempt.unavailableRoots || [] });
   } else if (attempt.reason === 'root-combination-rejected') {
     issues.push({ type: 'kconfig-combination-rejected', roots: attempt.rejectedRoots || [] });
+  } else if (['virtual-boot-unsupported', 'runtime-control-unavailable', 'reboot-control-unavailable'].includes(attempt.reason)) {
+    issues.push({ type: 'capability-unavailable', reason: attempt.reason });
+  } else if (attempt.reason === 'runner-infrastructure') {
+    issues.push({ type: 'infrastructure-failure', reason: attempt.reason });
+  } else if (['final-boot-failed', 'final-runtime-failed', 'final-reboot-failed', 'final-reboot-health-failed'].includes(attempt.reason)) {
+    issues.push({ type: 'virtual-probe-failure', reason: attempt.reason });
   }
   const runtimeView = selectedAttempt ? { ...runtime, conclusion: attempt.result, reason: attempt.reason, attempts: [attempt] } : runtime;
   const stageFailed = bootstrapOutcome === 'failure' || runtimeSetupOutcome === 'failure' || feedsOutcome === 'failure';
@@ -107,6 +112,8 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     : selectedAttempt && attemptResult
       ? attemptResult
       : normalizedRuntimeConclusion(runtimeView, issues, env.PROBE_CONCLUSION || 'unknown');
+  const selectedLevel = Number(attempt.selectedLevel || runtime?.selectedLevel || env.PROBE_EVIDENCE_LEVEL || 0);
+  const deepestPassedLevel = Number(attempt.deepestPassedLevel || (attemptResult === 'compatible' ? selectedLevel : 0));
   return {
     schema: 5,
     generatedAt: new Date().toISOString(),
@@ -119,10 +126,13 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     profileLabel: attempt.profileLabel || env.PROBE_PROFILE_LABEL || '', mode: env.PROBE_MODE || runtime?.mode || '',
     evidenceLevel: Number(env.PROBE_EVIDENCE_LEVEL || 0), useDefconfig: runtime?.useDefconfig ?? String(env.PROBE_USE_DEFCONFIG || 'true') !== 'false',
     roots: runtime?.roots || roots, rootMappings: attempt.rootMappings || [], rootTargets: attempt.rootTargets || [],
-    baselinePackageCount: Number(runtime?.baselinePackageCount || env.PROBE_BASELINE_PACKAGE_COUNT || 0),
     finalPackageCount: Number(runtime?.finalPackageCount || env.PROBE_FINAL_PACKAGE_COUNT || 0),
     rootStates: attempt.rootStates || requestedPackageStates(config, runtime?.roots || roots),
     unavailableRoots: attempt.unavailableRoots || [], rejectedRoots: attempt.rejectedRoots || [], reason: attempt.reason || runtime?.reason || '',
+    selectedLevel,
+    deepestPassedLevel,
+    durationMs: Number(attempt.durationMs || runtime?.durationMs || 0),
+    stages: attempt.stages || {},
     conclusion,
     coverage: {
       mode: String(env.PROBE_COVERAGE_MODE || 'auto'), total: Number(env.PROBE_COVERAGE_TOTAL || 1), planned: Number(env.PROBE_COVERAGE_PLANNED || 1),
@@ -147,7 +157,9 @@ export function evidenceSummaryLines(evidence) {
     `- Mode / 探测方式: \`${evidence.mode}\` (L${evidence.evidenceLevel})`,
     `- Defconfig: \`${evidence.useDefconfig ? 'on' : 'off'}\``,
     `- Probe roots / 测试入口: ${evidence.roots.map((row) => `\`${row}\``).join(', ') || '-'}`,
-    ...(evidence.mode === 'config-resolve' ? [] : [`- Baseline / Final packages: ${evidence.baselinePackageCount} / ${evidence.finalPackageCount}`]),
+    ...(evidence.mode === 'config-resolve' ? [] : [`- Final enabled packages / 最终启用软件包: ${evidence.finalPackageCount}`]),
+    `- Selected/deepest level / 选择/最深通过: L${evidence.selectedLevel || evidence.evidenceLevel} / ${evidence.deepestPassedLevel ? `L${evidence.deepestPassedLevel}` : '-'}`,
+    `- Duration / 用时: ${(Number(evidence.durationMs || 0) / 1000).toFixed(1)}s`,
     `- Conclusion / 结论: **${evidence.conclusion}**`,
     ...(serialRecoveries.length ? [`- Serial recovery / 串行复核恢复: ${[...new Set(serialRecoveries)].map((row) => `\`${row}\``).join(', ')}`] : []),
     `- Fingerprint / 错误指纹: \`${evidence.fingerprint.slice(0, 16)}\``,

@@ -189,6 +189,31 @@ assert(selectedInconclusive.issues.some((issue) => issue.type === 'infrastructur
 const reasonOnly = createEvidence({ log: '', runtime: { conclusion: 'inconclusive', reason: 'metadata-unresolved', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
 assert(evidenceSummaryLines(reasonOnly).some((line) => line.includes('metadata-unresolved')), 'evidence summary must expose runtime reason when no normalized issue exists');
 
+const runtimeSkipped = createEvidence({ log: '', runtime: { mode: 'runtime-health', selectedLevel: 6, conclusion: 'skipped',
+  roots: ['alpha'], finalPackageCount: 1, durationMs: 1500, attempts: [{ result: 'skipped', reason: 'runtime-control-unavailable',
+    selectedLevel: 6, deepestPassedLevel: 5, durationMs: 1400, stages: { boot: { status: 'success', durationMs: 900 },
+      runtimeHealth: { status: 'skipped', durationMs: 500 } } }] }, env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'runtime-health', PROBE_EVIDENCE_LEVEL: '6' } });
+assert.equal(runtimeSkipped.conclusion, 'skipped');
+assert.equal(runtimeSkipped.selectedLevel, 6);
+assert.equal(runtimeSkipped.deepestPassedLevel, 5);
+assert.equal(runtimeSkipped.durationMs, 1400);
+assert(runtimeSkipped.issues.some((row) => row.type === 'capability-unavailable' && row.reason === 'runtime-control-unavailable'));
+assert(evidenceSummaryLines(runtimeSkipped).some((line) => line.includes('L6 / L5')));
+assert(!evidenceSummaryLines(runtimeSkipped).some((line) => line.includes('Baseline / Final')),
+  'Final-only Probe evidence must not present an A/B package comparison');
+
+const rebootFailure = createEvidence({ log: '', runtime: { mode: 'reboot-validation', selectedLevel: 7, conclusion: 'incompatible',
+  roots: ['alpha'], attempts: [{ result: 'incompatible', reason: 'final-reboot-failed', selectedLevel: 7,
+    deepestPassedLevel: 6, stages: {} }] }, env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'reboot-validation', PROBE_EVIDENCE_LEVEL: '7' } });
+assert.equal(rebootFailure.conclusion, 'incompatible');
+assert(rebootFailure.issues.some((row) => row.type === 'virtual-probe-failure' && row.reason === 'final-reboot-failed'));
+
+const virtualInfrastructure = createEvidence({ log: '', runtime: { mode: 'boot-smoke', conclusion: 'inconclusive', roots: ['alpha'],
+  attempts: [{ result: 'inconclusive', reason: 'runner-infrastructure', selectedLevel: 5, deepestPassedLevel: 4, stages: {} }] },
+env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'boot-smoke', PROBE_EVIDENCE_LEVEL: '5' } });
+assert.equal(virtualInfrastructure.conclusion, 'inconclusive');
+assert(virtualInfrastructure.issues.some((row) => row.type === 'infrastructure-failure' && row.reason === 'runner-infrastructure'));
+
 const timeoutPackageNames = parseProbeLog([
   'Package: python-async-timeout:',
   'Package: python3-async-timeout:',
