@@ -113,22 +113,19 @@ jobs:
           asset_ref="${snapshot[0]}"
           base_sha="${snapshot[1]}"
 
-          for deepen in 32 64 128 256; do
-            if git cat-file -e "$base_sha^{commit}" 2>/dev/null &&
+          for depth in 32 128 512; do
+            if GIT_NO_LAZY_FETCH=1 git cat-file -e "$base_sha^{commit}" 2>/dev/null &&
                git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" 2>/dev/null; then
               break
             fi
-            [[ "$(git rev-parse --is-shallow-repository)" == true ]] || break
-            git fetch --no-tags --filter=blob:none --deepen="$deepen" origin "$GITHUB_REF_NAME"
+            git fetch --no-tags --filter=blob:none --depth="$depth" origin \
+              "+refs/heads/$GITHUB_REF_NAME:refs/remotes/origin/$GITHUB_REF_NAME"
           done
-          if ! git cat-file -e "$base_sha^{commit}" 2>/dev/null ||
-             ! git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" 2>/dev/null; then
-            if [[ "$(git rev-parse --is-shallow-repository)" == true ]]; then
-              git fetch --no-tags --filter=blob:none --unshallow origin "$GITHUB_REF_NAME"
-            fi
-          fi
-          git cat-file -e "$base_sha^{commit}"
-          git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA"
+          GIT_NO_LAZY_FETCH=1 git cat-file -e "$base_sha^{commit}"
+          git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" || {
+            echo "Source snapshot provenance is not within the bounded blobless history of $GITHUB_REF_NAME."
+            exit 1
+          }
 
           mapfile -t since_snapshot < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
           node scripts/catalog-change-impact.mjs "${since_snapshot[@]}" | tee "$RUNNER_TEMP/catalog-reuse-impact.outputs"

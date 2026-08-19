@@ -148,10 +148,12 @@ assert.match(catalogWorkflow, /impact_base_ref:/,
   'manual source-lane rebuilds must expose an explicit impact base ref');
 assert.match(catalogWorkflow, /impact_base_ref is only allowed on fix-\* source lanes/,
   'manual impact-base classification must be restricted to fix-* source lanes');
-assert.match(catalogWorkflow, /git rev-parse --is-shallow-repository/,
-  'manual impact-base ancestry checks must detect shallow checkout history');
-assert.match(catalogWorkflow, /git fetch --no-tags --filter=blob:none --unshallow origin "\$GITHUB_REF_NAME"/,
-  'manual impact-base ancestry checks must recover blobless source-lane history before rejecting a valid ancestor');
+assert.match(catalogWorkflow, /GIT_NO_LAZY_FETCH=1 git cat-file -e "\$IMPACT_BASE_REF\^\{commit\}"/,
+  'manual impact-base checks must not materialize a disconnected promisor commit');
+assert.match(catalogWorkflow, /git fetch --no-tags --filter=blob:none --depth="\$depth" origin/,
+  'manual impact-base ancestry checks must fetch bounded blobless source-lane history');
+assert(!catalogWorkflow.includes('--unshallow'),
+  'manual impact-base ancestry checks must not fetch the complete Catalog history');
 assert.match(catalogWorkflow, /git merge-base "\$GITHUB_SHA" origin\/dev/,
   'new fix-* branch pushes must classify against their dev merge-base instead of defaulting to full');
 assert(!catalogWorkflow.includes('- "scripts/**"'), 'Menuconfig Catalog push must not watch every script');
@@ -172,10 +174,12 @@ assert.match(reuseWorkflow, /push:\s*\n\s*branches: \[main, dev, staging, "fix-\
 assert.match(reuseWorkflow, /node scripts\/catalog-change-impact\.mjs/, 'snapshot reuse must use the same promotion-aware Data Surface gate');
 assert.match(reuseWorkflow, /needs\.preflight\.outputs\.reuse == 'true'/, 'snapshot promotion must require verified reusable identity');
 assert.match(reuseWorkflow, /filter: blob:none/, 'snapshot reuse checkout must not download historical Catalog asset blobs');
-assert.match(reuseWorkflow, /git fetch --no-tags --filter=blob:none --deepen="\$deepen"/,
-  'snapshot reuse ancestry deepening must remain blobless');
-assert.match(reuseWorkflow, /git fetch --no-tags --filter=blob:none --unshallow origin "\$GITHUB_REF_NAME"/,
-  'snapshot reuse ancestry fallback must remain blobless');
+assert.match(reuseWorkflow, /GIT_NO_LAZY_FETCH=1 git cat-file -e "\$base_sha\^\{commit\}"/,
+  'snapshot reuse must not materialize a disconnected promisor commit');
+assert.match(reuseWorkflow, /git fetch --no-tags --filter=blob:none --depth="\$depth" origin/,
+  'snapshot reuse ancestry recovery must remain bounded and blobless');
+assert(!reuseWorkflow.includes('--unshallow'),
+  'snapshot reuse must not fetch the complete Catalog history');
 
 const coverage = catalogImpactRegistryCoverage();
 assert.deepEqual(coverage.missing, []);

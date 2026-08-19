@@ -91,14 +91,16 @@ jobs:
               echo "impact_base_ref is only allowed on fix-* source lanes."
               exit 1
             }
-            if ! git cat-file -e "$IMPACT_BASE_REF^{commit}" 2>/dev/null; then
+            if ! GIT_NO_LAZY_FETCH=1 git cat-file -e "$IMPACT_BASE_REF^{commit}" 2>/dev/null; then
               git fetch --no-tags --filter=blob:none origin "$IMPACT_BASE_REF"
             fi
             base_sha="$(git rev-parse "$IMPACT_BASE_REF^{commit}" 2>/dev/null || git rev-parse FETCH_HEAD)"
             if ! git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA"; then
-              if [[ "$(git rev-parse --is-shallow-repository)" == true ]]; then
-                git fetch --no-tags --filter=blob:none --unshallow origin "$GITHUB_REF_NAME"
-              fi
+              for depth in 32 128 512; do
+                git fetch --no-tags --filter=blob:none --depth="$depth" origin \
+                  "+refs/heads/$GITHUB_REF_NAME:refs/remotes/origin/$GITHUB_REF_NAME"
+                git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" && break
+              done
               git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" || {
                 echo "impact_base_ref must resolve to an ancestor of the selected fix-* ref."
                 exit 1
