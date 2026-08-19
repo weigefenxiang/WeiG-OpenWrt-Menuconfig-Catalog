@@ -64,7 +64,7 @@ Catalog's **Package Compatibility Probe / 软件包兼容探针** uses the Probe
 
 - **L1 Plugin (`config-resolve`)**: use the current source's official Kconfig/Defconfig resolver for the Final Root combination. This proves configuration viability only and does not compile packages.
 - **L2 Compile (`package-compile`)**: treat directly enabled packages as Roots, read upstream `tmp/.packageinfo` `Source-Makefile` records, deduplicate Roots produced by the same source, and enter the upstream dependency graph with one Make invocation. WeiG keeps no second Binary→Source or dependency database.
-- **L3 Root system (`rootfs-integration`)**: reuse the same L2 result, then run upstream `package/install`; the current Source owns APK/OPKG, file ownership, and RootFS integration behavior.
+- **L3 Root system (`rootfs-integration`)**: reuse the same L2 result, then run upstream `prepare`, the complete selected `package/compile`, and `package/install` in order. The current Source Make graph produces Target, base-package, kernel-version, and package-manager prerequisites; WeiG does not assemble APK/OPKG state itself.
 - **L4 Integration (`firmware-integration`)**: build one complete firmware from the user's Final configuration. No Baseline is built, and a failure does not claim that one plugin caused a difference from Baseline.
 - **L5 Boot (`boot-smoke`)**: after L4 succeeds, prefer the current source's own `scripts/qemustart` and require the Final firmware to reach basic userspace. No Target/QEMU parameter table is maintained.
 - **L6 Runtime (`runtime-health`)**: after L5, use a reliable control channel to check init/procd, basic mounts, uptime, ubus when available, and Roots actually built into Final. A missing reliable control channel is `skipped`.

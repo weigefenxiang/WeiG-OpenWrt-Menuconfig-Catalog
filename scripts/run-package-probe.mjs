@@ -420,6 +420,12 @@ async function packageCompile(attempt) {
 async function rootfsIntegration(attempt) {
   const compiled = await packageCompile(attempt);
   if (compiled.result !== 'compatible') return compiled;
+  const target = await runStage(attempt, 'rootfsTarget', () =>
+    makeWithSerialRetry(['prepare'], 'RootFS target prerequisites', attempt));
+  if (!target.ok) return { result: 'inconclusive', reason: 'build-environment-failure' };
+  const packages = await runStage(attempt, 'rootfsPackages', () =>
+    makeWithSerialRetry(['package/compile'], 'RootFS selected packages', attempt));
+  if (!packages.ok) return { result: 'incompatible', reason: 'rootfs-package-compile-failure' };
   const installed = await runStage(attempt, 'rootfsInstall', () =>
     makeWithSerialRetry(['package/install'], 'rootfs install', attempt));
   if (!installed.ok) log('FAIL: RootFS integration failed after Probe-root compilation');

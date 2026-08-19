@@ -106,7 +106,13 @@ assert.equal(l2.runtime.attempts[0].deepestPassedLevel, 2);
 const l3 = scenario('rootfs-integration');
 assert.equal(l3.calls.filter((args) => args.includes('package/network/alpha/compile')).length, 1,
   'L3 must reuse its single L2 compile rather than repeating it');
+assert.equal(l3.calls.filter((args) => args.includes('prepare')).length, 1,
+  'L3 must let upstream prepare Target prerequisites before RootFS installation');
+assert.equal(l3.calls.filter((args) => args.includes('package/compile')).length, 1,
+  'L3 must let upstream build the complete selected RootFS package set');
 assert.equal(l3.calls.filter((args) => args.includes('package/install')).length, 1);
+assert(l3.calls.findIndex((args) => args.includes('prepare')) < l3.calls.findIndex((args) => args.includes('package/compile')));
+assert(l3.calls.findIndex((args) => args.includes('package/compile')) < l3.calls.findIndex((args) => args.includes('package/install')));
 assert.equal(l3.runtime.attempts[0].deepestPassedLevel, 3);
 
 const l4 = scenario('firmware-integration');

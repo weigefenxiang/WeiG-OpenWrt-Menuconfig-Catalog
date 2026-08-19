@@ -64,7 +64,7 @@ Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe
 
 - **L1 插件（`config-resolve`）**：使用当前源码官方 Kconfig/Defconfig 求解 Final Root 组合；只证明配置能否成立，不执行软件包编译。
 - **L2 编译（`package-compile`）**：把用户直接启用的软件包当作 Root，读取上游 `tmp/.packageinfo` 的 `Source-Makefile`，把 Binary Package 映射为真实源码目标；共用 Source 的 Root 自动去重，并用一次 Make 调用进入上游依赖图。WeiG 不维护第二份 Binary→Source 或 dependency 数据库。
-- **L3 根系统（`rootfs-integration`）**：复用同一次 L2 结果，再运行上游 `package/install`，由当前 Source 自己处理 APK/OPKG、文件归属及 RootFS 集成。
+- **L3 根系统（`rootfs-integration`）**：复用同一次 L2 结果，再按上游顺序完成 `prepare`、完整已选 `package/compile` 与 `package/install`。Target、基础包及内核版本等 RootFS 前置事实全部由当前 Source 的 Make 图生成，WeiG 不自行拼装 APK/OPKG。
 - **L4 集成（`firmware-integration`）**：只使用用户最终配置完成一次整机固件构建，不构建 Baseline，也不宣称单个插件相对 Baseline 导致失败。
 - **L5 启动（`boot-smoke`）**：L4 成功后优先调用当前源码自己的 `scripts/qemustart`，确认 Final 固件进入基本用户空间；不维护 Target/QEMU 参数表。
 - **L6 运行（`runtime-health`）**：在 L5 后通过可靠控制通道检查 init/procd、基础挂载、uptime、可用时的 ubus，以及 Final 中真正内置的 Root 软件包。无可靠控制能力时记为 `skipped`。
