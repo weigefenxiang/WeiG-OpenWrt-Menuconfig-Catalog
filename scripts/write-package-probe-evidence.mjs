@@ -186,20 +186,24 @@ function formatCompatibilityRate(scope) {
   return scope.compatibilityRate === null ? '—' : `${Math.round(scope.compatibilityRate * 100)}%`;
 }
 
-function compactScopeConclusions(evidence, exhaustive) {
-  const sources = aggregateScopeConclusions(evidence, { depth: 1, exhaustive });
-  const branches = aggregateScopeConclusions(evidence, { depth: 2, exhaustive });
-  const rows = [];
-  for (const source of sources) {
-    const sourceBranches = branches.filter((row) => row.source === source.source);
-    const uniformConclusive = source.inconclusive === 0 && (
-      (source.compatible > 0 && source.incompatible === 0) ||
-      (source.incompatible > 0 && source.compatible === 0)
-    );
-    if (uniformConclusive || source.conclusive === 0) rows.push({ ...source, branch: '' });
-    else rows.push(...sourceBranches);
-  }
-  return rows.sort((a, b) => `${a.source}/${a.branch}`.localeCompare(`${b.source}/${b.branch}`, undefined, { numeric: true }));
+function scopeResultLabel(scope, exhaustive) {
+  if (scope.inconclusive > 0) return 'ERROR';
+  if (scope.conclusive === 0 && scope.skipped > 0) return 'SKIP';
+  if (scope.compatible > 0 && scope.incompatible > 0) return 'MIXED';
+  if (scope.compatible > 0) return exhaustive ? 'PASS' : 'PASS (sampled)';
+  if (scope.incompatible > 0) return exhaustive ? 'FAIL' : 'FAIL (sampled)';
+  return 'ERROR';
+}
+
+function sourceNeedsBranchBreakdown(scope) {
+  return scope.inconclusive > 0 || (scope.compatible > 0 && scope.incompatible > 0);
+}
+
+function branchBreakdowns(sourceScopes, branchScopes) {
+  return sourceScopes.filter(sourceNeedsBranchBreakdown).map((source) => ({
+    source: source.source,
+    branches: branchScopes.filter((row) => row.source === source.source),
+  }));
 }
 
 function optionalBoolean(value) {
@@ -251,34 +255,45 @@ export function aggregateEvidence(directory, env = {}) {
   const exhaustive = Number(env.BATCH_COUNT || 1) === 1 && String(env.COVERAGE_SAMPLED || 'false') !== 'true' &&
     Number(env.COVERAGE_PLANNED || evidence.length) === Number(env.COVERAGE_TOTAL || evidence.length);
   const scopes = aggregateScopeConclusions(evidence, { depth: 2, exhaustive });
-  const summaryScopes = compactScopeConclusions(evidence, exhaustive);
+  const summaryScopes = aggregateScopeConclusions(evidence, { depth: 1, exhaustive });
+  const breakdowns = branchBreakdowns(summaryScopes, scopes);
   const overallStats = conclusionStats(evidence);
   const overallConclusion = conclusionForRows(evidence, exhaustive);
+  const overallResult = scopeResultLabel(overallStats, exhaustive);
+  const roots = [...new Set(evidence.flatMap((row) => row.roots || []))];
   const runStatus = aggregateRunStatus(env, evidence.length);
   const lines = ['## Package compatibility probe result / 软件包兼容探针结果', '',
+    `- Probe roots / 测试入口: ${roots.map((row) => `\`${row}\``).join(', ') || '-'}`,
+    `- Overall / 总结果: **${evidence.length ? overallResult : 'ERROR'}** · \`${evidence.length ? overallConclusion : 'inconclusive'}\``,
     `- Observed compatibility / 已测兼容率: **${formatCompatibilityRate(overallStats)}** (${overallStats.compatible}/${overallStats.conclusive} conclusive / 明确结果)`,
-    `- Skipped / 跳过: ${overallStats.skipped}`,
-    `- Inconclusive / 未定: ${overallStats.inconclusive}`,
-    `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
     `- Coverage / 覆盖: ${env.COVERAGE_PLANNED || evidence.length}/${env.COVERAGE_TOTAL || evidence.length}${exhaustive ? ' (complete)' : ' (sampled)'}`,
+    `- Skipped / 跳过: ${overallStats.skipped}`,
+    `- ERROR / 未定: ${overallStats.inconclusive}`,
+    `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
     `- Batch / 批次: ${Number(env.BATCH_INDEX || 0) + 1}/${env.BATCH_COUNT || 1}`,
     `- Collected evidence / 已收集证据: ${evidence.length}`,
-    `- Conclusion / 结论: **${evidence.length ? overallConclusion : 'inconclusive'}**`,
     `- Run state / 运行状态: **${runStatus.state}**`,
     `- Run / 运行: ${env.GITHUB_SERVER_URL || ''}/${env.GITHUB_REPOSITORY || ''}/actions/runs/${env.GITHUB_RUN_ID || ''}`, ''];
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
-    lines.push('### Source/Branch compatibility / 源码分支兼容率', '',
-      '| Source | Branch | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Skipped / 跳过 | Inconclusive / 未定 |',
+    lines.push('### Source summary / 源码总览', '',
+      '| Source | Result / 结果 | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 |',
       '|---|---|---:|---:|---:|---:|',
-      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.branch || '—'} | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} |`), '',
-      '<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',
+      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} |`), '');
+    for (const breakdown of breakdowns) {
+      lines.push('<details>', `<summary>${breakdown.source || '-'} · Branch breakdown / 分支明细</summary>`, '',
+        '| Branch | Result / 结果 | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 |',
+        '|---|---|---:|---:|---:|---:|',
+        ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} |`), '',
+        '</details>', '');
+    }
+    lines.push('<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',
       '| Source/Branch | Target System/Subtarget/Profile | Conclusion / 结论 | Issues / 问题 |', '|---|---|---|---|',
       ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.targetSystem || '-'}/${row.subtarget || '-'}/${row.profile || '-'} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || row.reason || '-'} |`), '',
       '</details>', '');
   }
-  return { evidence, groups: [...grouped.values()], scopes, summaryScopes, overallStats,
-    overallConclusion: evidence.length ? overallConclusion : 'inconclusive', runStatus, lines };
+  return { evidence, groups: [...grouped.values()], scopes, summaryScopes, branchBreakdowns: breakdowns, overallStats,
+    overallConclusion: evidence.length ? overallConclusion : 'inconclusive', overallResult: evidence.length ? overallResult : 'ERROR', runStatus, lines };
 }
 
 export function main(env = process.env) {
@@ -289,7 +304,8 @@ export function main(env = process.env) {
     writeFileSync('probe-diagnostics/FINAL_SUMMARY.md', aggregate.lines.join('\n') + '\n');
     writeFileSync('probe-diagnostics/results.json', JSON.stringify({ schema: 2, generatedAt: new Date().toISOString(),
       runStatus: aggregate.runStatus, overallConclusion: aggregate.overallConclusion, overallStats: aggregate.overallStats,
-      evidence: aggregate.evidence, groups: aggregate.groups, scopes: aggregate.scopes, summaryScopes: aggregate.summaryScopes }, null, 2) + '\n');
+      evidence: aggregate.evidence, groups: aggregate.groups, scopes: aggregate.scopes, summaryScopes: aggregate.summaryScopes,
+      branchBreakdowns: aggregate.branchBreakdowns, overallResult: aggregate.overallResult }, null, 2) + '\n');
     if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, aggregate.lines.join('\n') + '\n');
     return aggregate;
   }

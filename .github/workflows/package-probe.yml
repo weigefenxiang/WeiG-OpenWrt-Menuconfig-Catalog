@@ -2,8 +2,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 name: Package Compatibility Probe / 软件包兼容探针
 run-name: >-
-  ${{ inputs.issue_number != '' && format('Package probe issue #{0} · batch {1}', inputs.issue_number, inputs.batch_index)
-      || format('Package probe · {0} · batch {1}', inputs.mode, inputs.batch_index) }}
+  ${{ inputs.issue_number != '' && inputs.batch_index != '0'
+      && format('[probe] {0} · #{1} · {2} · {3} · b{4}', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.mode, inputs.batch_index)
+      || inputs.issue_number != ''
+      && format('[probe] {0} · #{1} · {2} · {3}', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.mode)
+      || inputs.batch_index != '0'
+      && format('[probe] {0} · {1} · {2} · b{3}', inputs.roots || 'package', github.ref_name, inputs.mode, inputs.batch_index)
+      || format('[probe] {0} · {1} · {2}', inputs.roots || 'package', github.ref_name, inputs.mode) }}
 
 on:
   workflow_dispatch:
