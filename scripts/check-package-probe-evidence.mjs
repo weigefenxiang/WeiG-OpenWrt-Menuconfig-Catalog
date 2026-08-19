@@ -27,6 +27,9 @@ assert(workflow.includes("inputs.batch_index != '0'"), 'batch suffix must be omi
 assert(!workflow.includes('Package probe issue #{0} · batch {1}'), 'legacy opaque Issue run name must not return');
 
 const dependencyInstaller = readFileSync(resolve(import.meta.dirname, './install-probe-dependencies.sh'), 'utf8');
+const feedInstaller = readFileSync(resolve(import.meta.dirname, './install-probe-feeds.sh'), 'utf8');
+const runtimeSetup = readFileSync(resolve(import.meta.dirname, './setup-probe-runtime.sh'), 'utf8');
+const gcc10Policy = runtimeSetup.match(/requires_gcc10\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
 assert(workflow.includes('bash scripts/install-probe-dependencies.sh'), 'Probe jobs must use the bounded dependency bootstrap helper');
 assert(dependencyInstaller.includes('PROBE_APT_MAX_ATTEMPTS:-3'), 'dependency bootstrap must default to three total attempts');
 assert(dependencyInstaller.includes('PROBE_APT_UPDATE_TIMEOUT_SECONDS:-240'), 'apt update attempts must default to the approved 240-second bound');
@@ -64,8 +67,36 @@ assert(dependencyInstaller.includes('https://archive.ubuntu.com/ubuntu/') && dep
 assert(!dependencyInstaller.includes('apt-get clean') && !dependencyInstaller.includes('rm -rf /var/lib/apt/lists'), 'mirror failover must preserve apt state rather than clearing caches or lists');
 assert(workflow.includes('id: bootstrap') && workflow.includes('continue-on-error: true'), 'dependency bootstrap must be recorded without automatically failing the matrix job');
 assert(workflow.includes("if: steps.bootstrap.outcome == 'success'"), 'Probe business steps must run only after dependency bootstrap succeeds');
-assert(workflow.includes("if: steps.bootstrap.outcome == 'success' && steps.build.outcome != 'success'"), 'only an executed Probe business failure may fail the environment job');
+assert(workflow.includes("if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success' && steps.build.outcome != 'success'"), 'only an executed Probe business failure may fail the environment job');
 assert(workflow.includes('PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}'), 'normalized evidence must explicitly record dependency bootstrap outcome');
+assert(workflow.includes('id: runtime') && workflow.includes('bash scripts/setup-probe-runtime.sh'), 'Probe jobs must select the source runtime before touching feeds');
+assert(workflow.includes('id: feeds') && workflow.includes('bash "$GITHUB_WORKSPACE/scripts/install-probe-feeds.sh"'), 'Probe jobs must use the bounded feed installer');
+assert(workflow.includes("if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success'"),
+  'Probe business execution must require bootstrap, runtime, and feeds success');
+assert(workflow.includes('PROBE_RUNTIME_SETUP_OUTCOME: ${{ steps.runtime.outcome }}'), 'normalized evidence must record runtime setup outcome');
+assert(workflow.includes('PROBE_FEEDS_OUTCOME: ${{ steps.feeds.outcome }}'), 'normalized evidence must record feeds outcome');
+assert(workflow.includes('probe-feeds-runtime.json'), 'Probe log artifacts must retain normalized feed identity metadata');
+assert(feedInstaller.includes('PROBE_FEED_MAX_ATTEMPTS:-3'), 'feed updates must default to three total attempts');
+assert(feedInstaller.includes('PROBE_FEED_TIMEOUT_SECONDS:-180'), 'each feed update attempt must have a bounded timeout');
+assert(feedInstaller.includes('https://github.com/openwrt/packages.git') && feedInstaller.includes('https://github.com/openwrt/luci.git') &&
+  feedInstaller.includes('https://github.com/openwrt/routing.git') && feedInstaller.includes('https://github.com/openwrt/telephony.git'),
+'network recovery must stay on official OpenWrt GitHub mirrors');
+assert(feedInstaller.includes("reason='feed-network'") && feedInstaller.includes("reason='feed-timeout'"),
+  'feed retries must expose network and timeout reasons structurally');
+assert(feedInstaller.includes("fail_stage 'feed-config'") && feedInstaller.includes('fail_stage "$reason"'),
+  'deterministic or exhausted feed failures must stop the feed stage immediately');
+assert(feedInstaller.indexOf("./scripts/feeds install -a") > feedInstaller.indexOf('for feed in "${FEEDS[@]}"'),
+  'feed installation must start only after all feed updates complete');
+assert(runtimeSetup.includes('OpenWrt/openwrt-18.06|OpenWrt/openwrt-19.07'),
+  'only officially Python-2 OpenWrt branches may enter the legacy runtime by default');
+assert(gcc10Policy.includes('OpenWrt/openwrt-18.06') && !gcc10Policy.includes('openwrt-19.07') && runtimeSetup.includes('install gcc-10 g++-10'),
+  'only OpenWrt 18.06 may receive the upstream-compatible GCC 10 host compiler');
+assert(runtimeSetup.includes("printf '%s' 'python3'"), 'all other Probe branches must default to Python 3');
+assert(runtimeSetup.includes('Python-${PYTHON2_VERSION}.tar.xz') && runtimeSetup.includes('www.python.org/ftp/python'),
+  'legacy Python 2 must come from the official Python source release');
+assert(runtimeSetup.includes('b62c0e7937551d0cc02b8fd5cb0f544f9405bafc9a54d3808ed4594812edef43'),
+  'legacy Python 2 source must be checksum pinned');
+assert(!runtimeSetup.includes('FORCE=1'), 'legacy source prerequisites must be satisfied rather than bypassed with FORCE=1');
 
 const evidenceWriter = readFileSync(resolve(import.meta.dirname, './write-package-probe-evidence.mjs'), 'utf8');
 assert.equal((evidenceWriter.match(/appendFileSync\(env\.GITHUB_STEP_SUMMARY/g) || []).length, 1,
@@ -77,6 +108,26 @@ assert.equal(infrastructure.conclusion, 'inconclusive');
 const bootstrapInfrastructure = createEvidence({ log: '', runtime: null, env: { PROBE_ROOTS: 'alpha', PROBE_BOOTSTRAP_OUTCOME: 'failure', PROBE_CONCLUSION: 'failure' } });
 assert.equal(bootstrapInfrastructure.conclusion, 'inconclusive');
 assert(bootstrapInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'dependency-bootstrap'));
+
+const runtimeInfrastructure = createEvidence({ log: '', runtime: null, env: {
+  PROBE_ROOTS: 'alpha', PROBE_BOOTSTRAP_OUTCOME: 'success', PROBE_RUNTIME_SETUP_OUTCOME: 'failure', PROBE_RUNTIME_KIND: 'python2',
+} });
+assert.equal(runtimeInfrastructure.conclusion, 'inconclusive');
+assert(runtimeInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'runtime-setup' && issue.runtime === 'python2'));
+
+const feedInfrastructure = createEvidence({ log: `error: RPC failed; HTTP 504 curl 22\nfatal: expected packfile\n`, runtime: null, env: {
+  PROBE_ROOTS: 'alpha', PROBE_BOOTSTRAP_OUTCOME: 'success', PROBE_RUNTIME_SETUP_OUTCOME: 'success',
+  PROBE_FEEDS_OUTCOME: 'failure', PROBE_FEEDS_FAILURE_REASON: 'feed-network', PROBE_FEEDS_FAILURE_FEED: 'packages',
+} });
+assert.equal(feedInfrastructure.conclusion, 'inconclusive');
+assert(feedInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'feed-network' && issue.feed === 'packages'));
+assert(feedInfrastructure.issues.some((issue) => issue.type === 'package-download-failure'), 'HTTP 5xx/RPC feed failures must remain recognizable as network failures');
+
+const feedFallbackClassification = createEvidence({ log: `error: RPC failed; HTTP 504 curl 22\n`, runtime: null, env: {
+  PROBE_ROOTS: 'alpha', PROBE_FEEDS_OUTCOME: 'failure',
+} });
+assert(feedFallbackClassification.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'feed-network'),
+  'feeds failure must infer network infrastructure when structured feed outputs are missing');
 
 const hostPrerequisite = createEvidence({
   log: "Checking 'python'... failed.\nBuild dependency: Please install Python 2.x\nPrerequisite check failed. Use FORCE=1 to override.\n",
@@ -127,6 +178,11 @@ const timeoutPackageNames = parseProbeLog([
 ].join('\n'));
 assert(!timeoutPackageNames.some((issue) => issue.type === 'timeout'), 'package names containing timeout must not be classified as runner timeout');
 assert(parseProbeLog('ERROR: operation timed out after 300 seconds').some((issue) => issue.type === 'timeout'));
+assert(!parseProbeLog('Probe bootstrap: apt-get update attempt 1/3 (timeout 240s).').some((issue) => issue.type === 'timeout'),
+  'configured timeout limits must not be mistaken for actual timeout failures');
+const configuredTimeoutEvidence = createEvidence({ log: 'Probe bootstrap: apt-get update attempt 1/3 (timeout 240s).', runtime: null, env: { PROBE_ROOTS: 'alpha' } });
+assert.equal(configuredTimeoutEvidence.errors.length, 0, 'configured timeout limits must stay out of normalized errors');
+assert(parseProbeLog('error: RPC failed; HTTP 504 curl 22 The requested URL returned error: 504').some((issue) => issue.type === 'package-download-failure'));
 const packageNameEvidence = createEvidence({
   log: 'Package: python-async-timeout:\nPackage: cttimeout:\nERROR: package compile failed for Probe roots: alpha\n',
   runtime: { conclusion: 'incompatible', attempts: [] }, env: { PROBE_ROOTS: 'alpha' },

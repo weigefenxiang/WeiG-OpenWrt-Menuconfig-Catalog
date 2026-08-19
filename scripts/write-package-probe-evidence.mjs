@@ -37,8 +37,8 @@ export function parseProbeLog(log) {
     issues.push({ type: 'infrastructure-failure', reason: 'host-prerequisite' });
   }
   if (/No space left on device/i.test(text)) issues.push({ type: 'infrastructure-failure', reason: 'disk-full' });
-  if (/(?:^|[\s:])(?:timed?\s*out|timeout:)/i.test(text)) issues.push({ type: 'timeout' });
-  if (/Hash check failed|download failed|Connection timed out|Could not resolve host/i.test(text)) issues.push({ type: 'package-download-failure' });
+  if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(text)) issues.push({ type: 'timeout' });
+  if (/Hash check failed|download failed|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(text)) issues.push({ type: 'package-download-failure' });
   if (/not enough space|image is too big|filesystem.*too large/i.test(text)) issues.push({ type: 'image-too-large' });
   if (/Boot smoke did not reach/i.test(text)) issues.push({ type: 'boot-failure' });
   return [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()];
@@ -56,7 +56,7 @@ export function requestedPackageStates(config, packages) {
 
 function normalizedErrors(log) {
   return String(log || '').split(/\r?\n/)
-    .filter((line) => /(?:error:|failed|no rule to make target|does not exist|no space left|timed?\s*out)/i.test(line))
+    .filter((line) => /(?:error:|failed|no rule to make target|does not exist|no space left|timed\s*out|timeout:)/i.test(line))
     .map((line) => line.replace(/\b[0-9a-f]{40}\b/gi, '<commit>').replace(/\b\d+(?:\.\d+){1,3}\b/g, '<version>').trim())
     .filter(Boolean).slice(-100);
 }
@@ -80,8 +80,20 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
   const sharedLogIsRelevant = !selectedAttempt || attemptResult === 'inconclusive';
   const errors = sharedLogIsRelevant ? normalizedErrors(log) : [];
   const issues = sharedLogIsRelevant ? parseProbeLog(log) : [];
-  if (String(env.PROBE_BOOTSTRAP_OUTCOME || '').toLowerCase() === 'failure') {
+  const bootstrapOutcome = String(env.PROBE_BOOTSTRAP_OUTCOME || '').toLowerCase();
+  const runtimeSetupOutcome = String(env.PROBE_RUNTIME_SETUP_OUTCOME || '').toLowerCase();
+  const feedsOutcome = String(env.PROBE_FEEDS_OUTCOME || '').toLowerCase();
+  if (bootstrapOutcome === 'failure') {
     issues.push({ type: 'infrastructure-failure', reason: 'dependency-bootstrap' });
+  }
+  if (runtimeSetupOutcome === 'failure') {
+    issues.push({ type: 'infrastructure-failure', reason: 'runtime-setup', runtime: String(env.PROBE_RUNTIME_KIND || '') });
+  }
+  if (feedsOutcome === 'failure') {
+    const reason = String(env.PROBE_FEEDS_FAILURE_REASON || '').trim() ||
+      (/(?:RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection (?:timed out|reset)|Could not resolve host|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed))/i.test(String(log || ''))
+        ? 'feed-network' : 'feed-stage');
+    issues.push({ type: 'infrastructure-failure', reason, feed: String(env.PROBE_FEEDS_FAILURE_FEED || '') });
   }
   if (['root-absent-source', 'root-not-applicable'].includes(attempt.reason)) {
     issues.push({ type: 'not-applicable', roots: attempt.unavailableRoots || [] });
@@ -89,9 +101,12 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     issues.push({ type: 'kconfig-combination-rejected', roots: attempt.rejectedRoots || [] });
   }
   const runtimeView = selectedAttempt ? { ...runtime, conclusion: attempt.result, reason: attempt.reason, attempts: [attempt] } : runtime;
-  const conclusion = selectedAttempt && attemptResult
-    ? attemptResult
-    : normalizedRuntimeConclusion(runtimeView, issues, env.PROBE_CONCLUSION || 'unknown');
+  const stageFailed = bootstrapOutcome === 'failure' || runtimeSetupOutcome === 'failure' || feedsOutcome === 'failure';
+  const conclusion = stageFailed
+    ? 'inconclusive'
+    : selectedAttempt && attemptResult
+      ? attemptResult
+      : normalizedRuntimeConclusion(runtimeView, issues, env.PROBE_CONCLUSION || 'unknown');
   return {
     schema: 5,
     generatedAt: new Date().toISOString(),

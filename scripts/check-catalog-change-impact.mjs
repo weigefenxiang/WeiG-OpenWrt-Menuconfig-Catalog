@@ -17,6 +17,8 @@ assert.equal(classifyCatalogPath('.github/workflows/catalog-reuse.yml'), 'none')
 assert.equal(classifyCatalogPath('.github/workflows/catalog-production.yml'), 'none');
 assert.equal(classifyCatalogPath('scripts/package-probe-controller.mjs'), 'none');
 assert.equal(classifyCatalogPath('scripts/install-probe-dependencies.sh'), 'none');
+assert.equal(classifyCatalogPath('scripts/install-probe-feeds.sh'), 'none');
+assert.equal(classifyCatalogPath('scripts/setup-probe-runtime.sh'), 'none');
 assert.equal(classifyCatalogPath('translations/probe-ui.json'), 'applications');
 assert.equal(classifyCatalogPath('compatibility.json'), 'compatibility');
 assert.equal(classifyCatalogPath('scripts/generate-catalog.mjs'), 'full');

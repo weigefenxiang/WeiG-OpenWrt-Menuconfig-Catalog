@@ -232,8 +232,13 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: bash scripts/install-probe-dependencies.sh
-      - name: Clone exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
+      - id: runtime
+        name: Select source runtime / 选择源码运行环境
         if: steps.bootstrap.outcome == 'success'
+        continue-on-error: true
+        run: bash scripts/setup-probe-runtime.sh
+      - name: Clone exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
+        if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success'
         run: |
           set -o pipefail
           {
@@ -246,22 +251,29 @@ jobs:
               test "$(git -C work/upstream rev-parse HEAD)" = "${{ matrix.upstreamCommit }}"
             fi
           } 2>&1 | tee -a "$PROBE_LOG"
-      - name: Install feeds / 安装 Feeds
-        if: steps.bootstrap.outcome == 'success'
+      - id: feeds
+        name: Install feeds / 安装 Feeds
+        if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success'
+        continue-on-error: true
         working-directory: work/upstream
-        run: |
-          set -o pipefail
-          { ./scripts/feeds update -a && ./scripts/feeds install -a; } 2>&1 | tee -a "$PROBE_LOG"
+        env:
+          PROBE_FEEDS_RUNTIME: ${{ github.workspace }}/probe-feeds-runtime.json
+        run: bash "$GITHUB_WORKSPACE/scripts/install-probe-feeds.sh"
       - id: build
         name: Run selected Probe depth / 执行所选探测深度
-        if: steps.bootstrap.outcome == 'success'
+        if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success'
         continue-on-error: true
         run: node scripts/run-package-probe.mjs
       - name: Write normalized evidence / 生成规范化证据
         if: always()
         env:
           PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}
-          PROBE_CONCLUSION: ${{ steps.bootstrap.outcome == 'success' && steps.build.outcome || steps.bootstrap.outcome }}
+          PROBE_RUNTIME_SETUP_OUTCOME: ${{ steps.runtime.outcome }}
+          PROBE_RUNTIME_KIND: ${{ steps.runtime.outputs.runtime }}
+          PROBE_FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
+          PROBE_FEEDS_FAILURE_REASON: ${{ steps.feeds.outputs.failure_reason }}
+          PROBE_FEEDS_FAILURE_FEED: ${{ steps.feeds.outputs.failure_feed }}
+          PROBE_CONCLUSION: ${{ steps.build.outcome }}
         run: node scripts/write-package-probe-evidence.mjs
       - name: Upload normalized evidence / 上传规范化证据
         if: always()
@@ -280,10 +292,11 @@ jobs:
             probe.log
             boot-smoke.log
             probe-runtime.json
+            probe-feeds-runtime.json
           retention-days: 30
           if-no-files-found: warn
       - name: Finalize Probe environment result / 确认单环境结果
-        if: steps.bootstrap.outcome == 'success' && steps.build.outcome != 'success'
+        if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success' && steps.build.outcome != 'success'
         run: exit 1
 
   summary:
