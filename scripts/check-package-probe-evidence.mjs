@@ -22,14 +22,20 @@ assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A',
   'infrastructure uncertainty must dominate mixed business compatibility results');
 
 const workflow = readFileSync(resolve(import.meta.dirname, '../.github/workflows/package-probe.yml'), 'utf8');
-assert(workflow.includes("format('[probe] {0} · #{1} · {2} · {3}'"), 'Issue-triggered run name must expose Probe roots, Issue, channel, and mode');
+assert(workflow.includes("format('[probe · {0}] {1} · #{2} · {3}'"), 'Issue-triggered run name must expose Probe level, roots, Issue, and channel without repeating the mode');
 assert(workflow.includes("inputs.batch_index != '0'"), 'batch suffix must be omitted for the first batch and retained for continuations');
 assert(!workflow.includes('Package probe issue #{0} · batch {1}'), 'legacy opaque Issue run name must not return');
 
 const dependencyInstaller = readFileSync(resolve(import.meta.dirname, './install-probe-dependencies.sh'), 'utf8');
 assert(workflow.includes('bash scripts/install-probe-dependencies.sh'), 'Probe jobs must use the bounded dependency bootstrap helper');
 assert(dependencyInstaller.includes('PROBE_APT_MAX_ATTEMPTS:-3'), 'dependency bootstrap must default to three total attempts');
-assert(dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS:-200'), 'each dependency attempt must default to the approved 200-second bound');
+assert(dependencyInstaller.includes('PROBE_APT_UPDATE_TIMEOUT_SECONDS:-240'), 'apt update attempts must default to the approved 240-second bound');
+assert(dependencyInstaller.includes('PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300'), 'apt install attempts must default to the approved 300-second bound');
+assert(!dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS'), 'the obsolete one-size-fits-all apt timeout must not return');
+assert(dependencyInstaller.includes('retry_apt "apt-get update" "$UPDATE_TIMEOUT_SECONDS" update'), 'apt update must use its own timeout stage');
+assert(dependencyInstaller.includes('retry_apt "config-resolve build dependencies" "$INSTALL_TIMEOUT_SECONDS" install'), 'dependency install must use its own timeout stage');
+assert.equal((dependencyInstaller.match(/retry_apt "apt-get update"/g) || []).length, 1, 'successful apt update must not be repeated by install retries');
+assert(!dependencyInstaller.includes('apt-get clean') && !dependencyInstaller.includes('apt clean') && !dependencyInstaller.includes('/var/cache/apt/archives'), 'dependency retries must preserve apt download/cache state');
 assert(!dependencyInstaller.includes('  -qq\n'), 'dependency bootstrap must not suppress apt diagnostics with quiet level 2');
 assert(dependencyInstaller.includes('  -y\n'), 'dependency bootstrap must remain noninteractive after exposing apt output');
 assert(dependencyInstaller.includes('ATTEMPT_LOG_TAIL_LINES=80'), 'failed dependency attempts must retain a bounded diagnostic tail');

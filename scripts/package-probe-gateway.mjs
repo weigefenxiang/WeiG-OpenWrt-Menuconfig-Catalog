@@ -31,7 +31,7 @@ export function normalizeGatewayRequest(raw) {
 export function probeDisplayContext(request, issueNumber) {
   const roots = Array.isArray(request?.roots) ? request.roots : [];
   const rootLabel = roots.length > 1 ? `${roots[0]} +${roots.length - 1}` : (roots[0] || 'package');
-  return `${rootLabel} · #${Number(issueNumber)} · ${request.channel} · ${request.mode}`;
+  return `${rootLabel} · #${Number(issueNumber)} · ${request.channel}`;
 }
 
 
@@ -202,6 +202,7 @@ async function intake(env, event) {
       inputs: {
         issue_number: String(issue.number),
         display_context: probeDisplayContext(request, issue.number),
+        mode: request.mode,
         state_sha256: parsedState.sha256,
         issue_created_at: String(issue.created_at || ''),
         batch_index: '0',

@@ -3,16 +3,16 @@
 name: Package Compatibility Probe / 软件包兼容探针
 run-name: >-
   ${{ inputs.display_context != '' && inputs.batch_index != '0'
-      && format('[probe] {0} · b{1}', inputs.display_context, inputs.batch_index)
+      && format('[probe · {0}] {1} · b{2}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.display_context, inputs.batch_index)
       || inputs.display_context != ''
-      && format('[probe] {0}', inputs.display_context)
+      && format('[probe · {0}] {1}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.display_context)
       || inputs.issue_number != '' && inputs.batch_index != '0'
-      && format('[probe] {0} · #{1} · {2} · {3} · b{4}', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.mode, inputs.batch_index)
+      && format('[probe · {0}] {1} · #{2} · {3} · b{4}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.batch_index)
       || inputs.issue_number != ''
-      && format('[probe] {0} · #{1} · {2} · {3}', inputs.roots || 'package', inputs.issue_number, github.ref_name, inputs.mode)
+      && format('[probe · {0}] {1} · #{2} · {3}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', inputs.issue_number, github.ref_name)
       || inputs.batch_index != '0'
-      && format('[probe] {0} · {1} · {2} · b{3}', inputs.roots || 'package', github.ref_name, inputs.mode, inputs.batch_index)
-      || format('[probe] {0} · {1} · {2}', inputs.roots || 'package', github.ref_name, inputs.mode) }}
+      && format('[probe · {0}] {1} · {2} · b{3}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', github.ref_name, inputs.batch_index)
+      || format('[probe · {0}] {1} · {2}', inputs.mode == 'config-resolve' && 'L1' || inputs.mode == 'package-compile' && 'L2' || inputs.mode == 'rootfs-integration' && 'L3' || inputs.mode == 'firmware-integration' && 'L4' || inputs.mode == 'boot-smoke' && 'L5' || 'L?', inputs.roots || 'package', github.ref_name) }}
 
 on:
   workflow_dispatch:

@@ -89,8 +89,8 @@ const gatewayRequest = normalizeGatewayRequest(baseRequest);
 assert.deepEqual(gatewayRequest.roots, ['luci-app-oscam']);
 assert.equal(gatewayRequest.finalPackageCount, 1);
 assert.equal(gatewayRequest.useDefconfig, true);
-assert.equal(probeDisplayContext(gatewayRequest, 33), 'luci-app-oscam · #33 · dev · config-resolve');
-assert.equal(probeDisplayContext({ ...gatewayRequest, roots: ['alpha', 'beta', 'gamma'] }, 34), 'alpha +2 · #34 · dev · config-resolve');
+assert.equal(probeDisplayContext(gatewayRequest, 33), 'luci-app-oscam · #33 · dev');
+assert.equal(probeDisplayContext({ ...gatewayRequest, roots: ['alpha', 'beta', 'gamma'] }, 34), 'alpha +2 · #34 · dev');
 
 const token = PROBE_STATE_PREFIX + gzipSync(Buffer.from(JSON.stringify(baseRequest))).toString('base64url');
 const parsed = parseProbeStateToken(`state\n${token}\n`);
@@ -176,7 +176,12 @@ for (const version of ['master', 'openwrt-27.01', 'openwrt-30.01']) assert(sourc
 assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-gateway.mjs'));
 assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && issueForm.includes('`/cancel`'));
 for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'display_context:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
-assert(workflow.includes("format('[probe] {0}', inputs.display_context)"), 'Issue run name must prefer the display-only context supplied by the Gateway');
+for (const [mode, level] of [['config-resolve', 'L1'], ['package-compile', 'L2'], ['rootfs-integration', 'L3'], ['firmware-integration', 'L4'], ['boot-smoke', 'L5']]) {
+  assert(workflow.includes(`inputs.mode == '${mode}' && '${level}'`), `run name must map ${mode} to ${level}`);
+}
+assert(workflow.includes("|| 'L?'"), 'run name must not silently label an unknown mode as a valid Probe level');
+assert(workflow.includes("format('[probe · {0}] {1}',"), 'Issue run name must prefix the display-only Gateway context with the Probe level');
+assert(!workflow.includes("format('[probe] {0}', inputs.display_context)"), 'legacy run-name prefix must not return');
 assert(workflow.includes('DISPLAY_CONTEXT: ${{ inputs.display_context }}') && workflow.includes('display_context: process.env.DISPLAY_CONTEXT'),
   'display-only context must survive continuation batches');
 assert(workflow.includes("String(row.display_title || '').includes(`#${issueNumber}`)") && workflow.includes("String(row.display_title || '').includes(`b${next}`)"),
@@ -184,6 +189,7 @@ assert(workflow.includes("String(row.display_title || '').includes(`#${issueNumb
 assert(!workflow.includes("finalConclusion !== 'inconclusive'"), 'completed Probe requests must not stay open only because evidence is inconclusive');
 assert(workflow.includes("state: 'closed', state_reason: 'completed'"), 'the final Probe batch must close the Issue after recording its conclusion');
 assert(issueGateway.includes('display_context: probeDisplayContext(request, issue.number)'), 'Gateway must supply a display-only run label from the validated request');
+assert(issueGateway.includes('mode: request.mode'), 'Gateway dispatch must pass the validated Probe mode so the run-name level remains authoritative');
 assert(!controller.includes('display_context'), 'Controller must not consume display-only context as Probe authority');
 assert(workflow.includes('actions: write') && workflow.includes('WEIG_PACKAGE_PROBE_BATCH_V3'));
 assert(workflow.includes('PROBE_TARGET_BATCH') && workflow.includes('config-resolve'));

@@ -7,7 +7,8 @@ set -euo pipefail
 : "${PROBE_LOG:=probe.log}"
 
 MAX_ATTEMPTS="${PROBE_APT_MAX_ATTEMPTS:-3}"
-ATTEMPT_TIMEOUT_SECONDS="${PROBE_APT_ATTEMPT_TIMEOUT_SECONDS:-200}"
+UPDATE_TIMEOUT_SECONDS="${PROBE_APT_UPDATE_TIMEOUT_SECONDS:-240}"
+INSTALL_TIMEOUT_SECONDS="${PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300}"
 APT_IO_TIMEOUT_SECONDS="${PROBE_APT_IO_TIMEOUT_SECONDS:-30}"
 ATTEMPT_LOG_TAIL_LINES=80
 
@@ -15,7 +16,7 @@ if [[ ! "$MAX_ATTEMPTS" =~ ^[1-3]$ ]]; then
   echo "ERROR: PROBE_APT_MAX_ATTEMPTS must be 1, 2, or 3." | tee -a "$PROBE_LOG"
   exit 2
 fi
-if [[ ! "$ATTEMPT_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ || ! "$APT_IO_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
+if [[ ! "$UPDATE_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ || ! "$INSTALL_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ || ! "$APT_IO_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
   echo "ERROR: Probe apt timeout values must be positive integer seconds." | tee -a "$PROBE_LOG"
   exit 2
 fi
@@ -28,7 +29,9 @@ APT_OPTIONS=(
 )
 
 run_apt_once() {
-  sudo -E timeout --signal=TERM --kill-after=30s "${ATTEMPT_TIMEOUT_SECONDS}s" \
+  local timeout_seconds="$1"
+  shift
+  sudo -E timeout --signal=TERM --kill-after=30s "${timeout_seconds}s" \
     apt-get "${APT_OPTIONS[@]}" "$@"
 }
 
@@ -52,16 +55,17 @@ print_attempt_tail() {
 
 retry_apt() {
   local label="$1"
-  shift
+  local timeout_seconds="$2"
+  shift 2
   local apt_command="${1:-}"
   local attempt status recovery_status delay attempt_log started_at finished_at elapsed
 
   for ((attempt = 1; attempt <= MAX_ATTEMPTS; attempt++)); do
     attempt_log="$(mktemp)"
-    echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${ATTEMPT_TIMEOUT_SECONDS}s)." | tee -a "$PROBE_LOG"
+    echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${timeout_seconds}s)." | tee -a "$PROBE_LOG"
     started_at="$(date +%s)"
     set +e
-    run_apt_once "$@" 2>&1 | tee -a "$PROBE_LOG" "$attempt_log"
+    run_apt_once "$timeout_seconds" "$@" 2>&1 | tee -a "$PROBE_LOG" "$attempt_log"
     status="${PIPESTATUS[0]}"
     set -e
     finished_at="$(date +%s)"
@@ -75,7 +79,7 @@ retry_apt() {
 
     echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS} exited with ${status} after ${elapsed}s." | tee -a "$PROBE_LOG"
     if ((status == 124 || status == 137)); then
-      echo "TIMEOUT: ${label} attempt ${attempt}/${MAX_ATTEMPTS} exceeded ${ATTEMPT_TIMEOUT_SECONDS}s; showing captured output."
+      echo "TIMEOUT: ${label} attempt ${attempt}/${MAX_ATTEMPTS} exceeded ${timeout_seconds}s; showing captured output."
     else
       echo "WARNING: ${label} attempt ${attempt}/${MAX_ATTEMPTS} failed with exit code ${status}; showing captured output."
     fi
@@ -83,7 +87,7 @@ retry_apt() {
 
     if ((attempt == MAX_ATTEMPTS)); then
       if ((status == 124 || status == 137)); then
-        echo "ERROR: ${label} timed out after ${MAX_ATTEMPTS} attempt(s), ${ATTEMPT_TIMEOUT_SECONDS}s per attempt; last exit code ${status}." | tee -a "$PROBE_LOG"
+        echo "ERROR: ${label} timed out after ${MAX_ATTEMPTS} attempt(s), ${timeout_seconds}s per attempt; last exit code ${status}." | tee -a "$PROBE_LOG"
       else
         echo "ERROR: ${label} failed after ${MAX_ATTEMPTS} attempt(s), last exit code ${status}." | tee -a "$PROBE_LOG"
       fi
@@ -108,17 +112,17 @@ retry_apt() {
   done
 }
 
-retry_apt "apt-get update" update
+retry_apt "apt-get update" "$UPDATE_TIMEOUT_SECONDS" update
 
 if [[ "$PROBE_MODE" == "config-resolve" ]]; then
-  retry_apt "config-resolve build dependencies" install \
+  retry_apt "config-resolve build dependencies" "$INSTALL_TIMEOUT_SECONDS" install \
     build-essential flex bison gawk gettext git libncurses-dev python3 rsync unzip zlib1g-dev file wget
 else
-  retry_apt "build dependencies" install \
+  retry_apt "build dependencies" "$INSTALL_TIMEOUT_SECONDS" install \
     build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
     gettext git libncurses5-dev libssl-dev python3 python3-setuptools rsync unzip zlib1g-dev file wget
 fi
 
 if [[ "$PROBE_MODE" == "boot-smoke" ]]; then
-  retry_apt "boot-smoke QEMU dependency" install qemu-system-x86
+  retry_apt "boot-smoke QEMU dependency" "$INSTALL_TIMEOUT_SECONDS" install qemu-system-x86
 fi
