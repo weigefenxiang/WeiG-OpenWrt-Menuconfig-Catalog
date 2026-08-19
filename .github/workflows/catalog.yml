@@ -55,6 +55,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
+          filter: blob:none
       - id: channel
         name: Resolve isolated data channel / 解析隔离数据通道
         run: echo "data_branch=$(node scripts/catalog-channels.mjs build "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
@@ -78,11 +79,11 @@ jobs:
             if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
                   "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]]; then
               if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-                git fetch --no-tags --depth=1 origin "$BEFORE_SHA"
+                git fetch --no-tags --filter=blob:none --depth=1 origin "$BEFORE_SHA"
               fi
               base_sha="$BEFORE_SHA"
             else
-              git fetch --no-tags --depth=128 origin dev
+              git fetch --no-tags --filter=blob:none --depth=128 origin dev
               base_sha="$(git merge-base "$GITHUB_SHA" origin/dev)"
             fi
           elif [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "$IMPACT_BASE_REF" ]]; then
@@ -91,12 +92,12 @@ jobs:
               exit 1
             }
             if ! git cat-file -e "$IMPACT_BASE_REF^{commit}" 2>/dev/null; then
-              git fetch --no-tags origin "$IMPACT_BASE_REF"
+              git fetch --no-tags --filter=blob:none origin "$IMPACT_BASE_REF"
             fi
             base_sha="$(git rev-parse "$IMPACT_BASE_REF^{commit}" 2>/dev/null || git rev-parse FETCH_HEAD)"
             if ! git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA"; then
               if [[ "$(git rev-parse --is-shallow-repository)" == true ]]; then
-                git fetch --no-tags --unshallow origin "$GITHUB_REF_NAME"
+                git fetch --no-tags --filter=blob:none --unshallow origin "$GITHUB_REF_NAME"
               fi
               git merge-base --is-ancestor "$base_sha" "$GITHUB_SHA" || {
                 echo "impact_base_ref must resolve to an ancestor of the selected fix-* ref."
