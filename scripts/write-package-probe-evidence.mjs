@@ -21,9 +21,9 @@ export function parseProbeLog(log) {
   for (const match of text.matchAll(/ERROR:\s+(package\/[A-Za-z0-9_./+@-]+)\s+failed to build/gi)) {
     issues.push({ type: 'package-build-failure', target: match[1] });
   }
-  if (/ERROR:\s+package compile failed for Probe roots:/i.test(text)) issues.push({ type: 'package-build-failure' });
-  if (/ERROR:\s+RootFS integration failed after Probe-root compilation/i.test(text)) issues.push({ type: 'rootfs-integration-failure' });
-  if (/ERROR:\s+Final package-enabled firmware failed after Baseline success/i.test(text)) issues.push({ type: 'package-firmware-failure' });
+  if (/(?:FAIL|ERROR):\s+package compile failed for Probe roots:/i.test(text)) issues.push({ type: 'package-build-failure' });
+  if (/(?:FAIL|ERROR):\s+RootFS integration failed after Probe-root compilation/i.test(text)) issues.push({ type: 'rootfs-integration-failure' });
+  if (/(?:FAIL|ERROR):\s+Final package-enabled firmware failed after Baseline success/i.test(text)) issues.push({ type: 'package-firmware-failure' });
   for (const match of text.matchAll(/(?:WARNING|ERROR):\s+Makefile ['"]?([^'"\s]+)['"]? has a dependency on ['"]?([^'"\s,]+)[,'"]? which does not exist/gi)) {
     issues.push({ type: 'missing-dependency', makefile: match[1], dependency: match[2] });
   }
@@ -33,6 +33,9 @@ export function parseProbeLog(log) {
     issues.push({ type: 'metadata-unresolved' });
   }
   if (/baseline firmware failed|baseline-kconfig-failure/i.test(text)) issues.push({ type: 'baseline-failure' });
+  if (/Prerequisite check failed|Build dependency:\s+Please install (?:the GNU C(?:\+\+)? Compiler|Python 2\.x)|Please install Python 2\.x/i.test(text)) {
+    issues.push({ type: 'infrastructure-failure', reason: 'host-prerequisite' });
+  }
   if (/No space left on device/i.test(text)) issues.push({ type: 'infrastructure-failure', reason: 'disk-full' });
   if (/(?:^|[\s:])(?:timed?\s*out|timeout:)/i.test(text)) issues.push({ type: 'timeout' });
   if (/Hash check failed|download failed|Connection timed out|Could not resolve host/i.test(text)) issues.push({ type: 'package-download-failure' });
@@ -127,7 +130,7 @@ export function evidenceSummaryLines(evidence) {
     ...(serialRecoveries.length ? [`- Serial recovery / 串行复核恢复: ${[...new Set(serialRecoveries)].map((row) => `\`${row}\``).join(', ')}`] : []),
     `- Fingerprint / 错误指纹: \`${evidence.fingerprint.slice(0, 16)}\``,
     `- Run / 运行: ${evidence.runUrl}`, '', '### Normalized issues / 规范化问题', '',
-    ...(evidence.issues.length ? evidence.issues.map((row) => `- \`${row.type}\`: ${issueText(row)}`) : ['- No normalized issue detected / 未检测到规范化问题']), '',
+    ...(evidence.issues.length ? evidence.issues.map((row) => `- \`${row.type}\`: ${issueText(row)}`) : evidence.reason ? [`- Runtime reason / 运行原因: \`${evidence.reason}\``] : ['- No normalized issue detected / 未检测到规范化问题']), '',
   ];
 }
 
@@ -158,9 +161,9 @@ function conclusionStats(rows) {
 
 function conclusionForRows(rows, exhaustive) {
   const { compatible, incompatible, inconclusive } = conclusionStats(rows);
+  if (inconclusive) return 'inconclusive';
   if (!compatible && !incompatible) return 'inconclusive';
   if (compatible && incompatible) return 'partially-compatible';
-  if (inconclusive) return 'inconclusive';
   if (compatible) return exhaustive ? 'fully-compatible' : 'sampled-compatible';
   return exhaustive ? 'fully-incompatible' : 'sampled-incompatible';
 }
@@ -271,7 +274,7 @@ export function aggregateEvidence(directory, env = {}) {
       ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.branch || '—'} | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} |`), '',
       '<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',
       '| Source/Branch | Target System/Subtarget/Profile | Conclusion / 结论 | Issues / 问题 |', '|---|---|---|---|',
-      ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.targetSystem || '-'}/${row.subtarget || '-'}/${row.profile || '-'} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || '-'} |`), '',
+      ...evidence.map((row) => `| ${row.source}/${row.branch} | ${row.targetSystem || '-'}/${row.subtarget || '-'}/${row.profile || '-'} | **${row.conclusion}** | ${(row.issues || []).map(issueText).join('<br>') || row.reason || '-'} |`), '',
       '</details>', '');
   }
   return { evidence, groups: [...grouped.values()], scopes, summaryScopes, overallStats,

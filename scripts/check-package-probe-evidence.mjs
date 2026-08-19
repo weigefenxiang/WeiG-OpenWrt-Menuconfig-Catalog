@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
-  aggregateEvidence, aggregateRunStatus, aggregateScopeConclusions, createEvidence, parseProbeLog,
+  aggregateEvidence, aggregateRunStatus, aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
 } from './write-package-probe-evidence.mjs';
 
 const state = (env, count = 0) => aggregateRunStatus(env, count).state;
@@ -18,9 +18,20 @@ const row = (source, branch, conclusion) => ({ schema: 4, source, branch, target
 assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A', 'main', 'compatible')], { exhaustive: true })[0].conclusion, 'fully-compatible');
 assert.equal(aggregateScopeConclusions([row('A', 'main', 'incompatible')], { exhaustive: false })[0].conclusion, 'sampled-incompatible');
 assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A', 'main', 'incompatible')], { exhaustive: true })[0].conclusion, 'partially-compatible');
+assert.equal(aggregateScopeConclusions([row('A', 'main', 'compatible'), row('A', 'main', 'incompatible'), row('A', 'main', 'inconclusive')], { exhaustive: true })[0].conclusion, 'inconclusive',
+  'infrastructure uncertainty must dominate mixed business compatibility results');
 
 const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'incompatible', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
 assert.equal(infrastructure.conclusion, 'inconclusive');
+
+const hostPrerequisite = createEvidence({
+  log: "Checking 'python'... failed.\nBuild dependency: Please install Python 2.x\nPrerequisite check failed. Use FORCE=1 to override.\n",
+  runtime: { conclusion: 'incompatible', reason: 'kconfig-resolver-failure', attempts: [] }, env: { PROBE_ROOTS: 'alpha' },
+});
+assert.equal(hostPrerequisite.conclusion, 'inconclusive');
+assert(hostPrerequisite.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'host-prerequisite'));
+const reasonOnly = createEvidence({ log: '', runtime: { conclusion: 'inconclusive', reason: 'metadata-unresolved', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
+assert(evidenceSummaryLines(reasonOnly).some((line) => line.includes('metadata-unresolved')), 'evidence summary must expose runtime reason when no normalized issue exists');
 
 const timeoutPackageNames = parseProbeLog([
   'Package: python-async-timeout:',

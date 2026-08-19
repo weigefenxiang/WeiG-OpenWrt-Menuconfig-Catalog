@@ -163,7 +163,7 @@ async function prepareConfig(states, attempt, { roots = false, metadata = false,
   if (roots) {
     const rejected = ROOTS.filter((name) => actual[name] !== FINAL_STATES.get(name));
     if (rejected.length) {
-      log(`ERROR: directly selected Probe roots did not survive ${USE_DEFCONFIG ? 'make defconfig' : 'submitted config'}: ${JSON.stringify(actual)}`);
+      log(`FAIL: directly selected Probe roots did not survive ${USE_DEFCONFIG ? 'make defconfig' : 'submitted config'}: ${JSON.stringify(actual)}`);
       return { ok: false, states: actual, reason: 'root-kconfig-rejected' };
     }
   }
@@ -230,32 +230,32 @@ function newL1Attempt(environment) {
 
 async function configResolve() {
   log(`L1 environment batch / L1 环境批次: ${TARGET_BATCH.length}`);
+  const metadata = await command('bash', [join(ROOT, 'scripts', 'prepare-metadata.sh'), 'metadata-only']);
+  if (!metadata.ok) {
+    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-failure',
+      stages: { metadata: 'failure' } }));
+  }
   const resolver = await make(['scripts/config/conf'], false);
   if (!resolver.ok) {
     return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'kconfig-resolver-failure',
-      stages: { resolver: 'failure' } }));
-  }
-  const metadata = await make(['prepare-tmpinfo'], false);
-  if (!metadata.ok) {
-    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-failure',
-      stages: { resolver: 'success', metadata: 'failure' } }));
+      stages: { metadata: 'success', resolver: 'failure' } }));
   }
   const packageInfoPath = join(WORKDIR, 'tmp', '.packageinfo');
   if (!existsSync(packageInfoPath)) {
     return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-unresolved',
-      stages: { resolver: 'success', metadata: 'failure' } }));
+      stages: { metadata: 'success', resolver: 'success' } }));
   }
   const packageNames = packageNamesFromInfo(readFileSync(packageInfoPath, 'utf8'));
   if (!packageNames.size) {
     return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-unresolved',
-      stages: { resolver: 'success', metadata: 'failure' } }));
+      stages: { metadata: 'success', resolver: 'success' } }));
   }
   const globallyAbsent = ROOTS.filter((root) => !packageNames.has(root));
   const requested = rootRequestedStates();
   const attempts = [];
   for (const environment of TARGET_BATCH) {
     const attempt = newL1Attempt(environment);
-    attempt.stages = { resolver: 'success', metadata: 'success' };
+    attempt.stages = { metadata: 'success', resolver: 'success' };
     if (globallyAbsent.length) {
       attempt.result = 'skipped'; attempt.reason = 'root-absent-source'; attempt.unavailableRoots = [...globallyAbsent];
       attempt.rootStates = Object.fromEntries(ROOTS.map((root) => [root, globallyAbsent.includes(root) ? 'missing' : 'unknown']));
@@ -289,7 +289,7 @@ async function configResolve() {
       attempt.result = 'skipped'; attempt.reason = 'root-not-applicable';
     } else {
       attempt.result = 'incompatible'; attempt.reason = 'root-combination-rejected';
-      log(`ERROR: L1 root combination rejected by upstream Kconfig: ${rejected.join(', ')}`);
+      log(`FAIL: L1 root combination rejected by upstream Kconfig: ${rejected.join(', ')}`);
     }
     attempts.push(attempt);
   }
@@ -352,12 +352,16 @@ function readPackageInfo() {
   return readFileSync(path, 'utf8');
 }
 
+function configFailureResult(reason) {
+  return reason === 'root-kconfig-rejected' ? 'incompatible' : 'inconclusive';
+}
+
 async function packageCompile(attempt) {
   const stages = {};
   const config = await prepareConfig(FINAL_STATES, attempt, { roots: true, metadata: true, label: 'final' });
   stages.kconfig = config.ok ? 'success' : 'failure';
   attempt.rootStates = config.states;
-  if (!config.ok) return { result: 'incompatible', stages, reason: config.reason };
+  if (!config.ok) return { result: configFailureResult(config.reason), stages, reason: config.reason };
   let resolved;
   try { resolved = resolveRootBuildTargets(readPackageInfo()); }
   catch (error) {
@@ -375,7 +379,7 @@ async function packageCompile(attempt) {
   if (!environment.ok) return { result: 'inconclusive', stages, reason: 'build-environment-failure' };
   const compiled = await makeWithSerialRetry(resolved.targets, `probe roots: ${ROOTS.join(',')}`, attempt);
   stages.packageCompile = compiled.ok ? 'success' : 'failure';
-  if (!compiled.ok) log(`ERROR: package compile failed for Probe roots: ${ROOTS.join(', ')}`);
+  if (!compiled.ok) log(`FAIL: package compile failed for Probe roots: ${ROOTS.join(', ')}`);
   return { result: compiled.ok ? 'compatible' : 'incompatible', stages, reason: compiled.ok ? '' : 'package-compile-failure' };
 }
 
@@ -384,7 +388,7 @@ async function rootfsIntegration(attempt) {
   if (compiled.result !== 'compatible') return compiled;
   const installed = await makeWithSerialRetry(['package/install'], 'rootfs install', attempt);
   compiled.stages.rootfsInstall = installed.ok ? 'success' : 'failure';
-  if (!installed.ok) log('ERROR: RootFS integration failed after Probe-root compilation');
+  if (!installed.ok) log('FAIL: RootFS integration failed after Probe-root compilation');
   return { result: installed.ok ? 'compatible' : 'incompatible', stages: compiled.stages,
     reason: installed.ok ? '' : 'rootfs-install-failure' };
 }
@@ -403,11 +407,11 @@ async function firmwareIntegration(attempt, boot) {
   const finalConfig = await prepareConfig(FINAL_STATES, attempt, { roots: true, metadata: false, label: 'final' });
   attempt.rootStates = finalConfig.states;
   stages.kconfig = finalConfig.ok ? 'success' : 'failure';
-  if (!finalConfig.ok) return { result: 'incompatible', stages, reason: finalConfig.reason };
+  if (!finalConfig.ok) return { result: configFailureResult(finalConfig.reason), stages, reason: finalConfig.reason };
   const firmware = await makeWithSerialRetry([], 'final package firmware', attempt);
   stages.packageFirmware = firmware.ok ? 'success' : 'failure';
   if (!firmware.ok) {
-    log('ERROR: Final package-enabled firmware failed after Baseline success');
+    log('FAIL: Final package-enabled firmware failed after Baseline success');
     return { result: 'incompatible', stages, reason: 'final-firmware-failure' };
   }
   if (boot) {
@@ -424,8 +428,8 @@ let overallReason = '';
 if (MODE === 'config-resolve') {
   attempts = await configResolve();
   const results = attempts.map((row) => row.result);
-  if (results.includes('incompatible')) overallResult = 'incompatible';
-  else if (results.includes('inconclusive')) overallResult = 'inconclusive';
+  if (results.includes('inconclusive')) overallResult = 'inconclusive';
+  else if (results.includes('incompatible')) overallResult = 'incompatible';
   else if (results.includes('compatible')) overallResult = 'compatible';
   else overallResult = 'skipped';
   overallReason = attempts.find((row) => row.result === overallResult)?.reason || '';
@@ -459,5 +463,5 @@ const runtime = {
 };
 writeFileSync(RUNTIME_FILE, JSON.stringify(runtime, null, 2) + '\n');
 log(`Probe conclusion / 探针结论: ${runtime.conclusion}`);
-process.exitCode = ['compatible', 'skipped'].includes(runtime.conclusion) ? 0 : 1;
+process.exitCode = attempts.every((row) => ['compatible', 'incompatible', 'skipped'].includes(row.result)) ? 0 : 1;
 

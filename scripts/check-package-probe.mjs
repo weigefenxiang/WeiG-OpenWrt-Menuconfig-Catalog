@@ -177,7 +177,20 @@ for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'ta
 assert(workflow.includes('actions: write') && workflow.includes('WEIG_PACKAGE_PROBE_BATCH_V3'));
 assert(workflow.includes('PROBE_TARGET_BATCH') && workflow.includes('config-resolve'));
 assert(controller.includes("toLowerCase() !== 'hanwckf'"));
-assert(runner.includes("SOURCE.toLowerCase() === 'hanwckf'") && runner.includes("make(['scripts/config/conf']") && runner.includes("make(['prepare-tmpinfo']"));
+assert(runner.includes("SOURCE.toLowerCase() === 'hanwckf'") && runner.includes("make(['scripts/config/conf']"));
+assert(runner.includes("join(ROOT, 'scripts', 'prepare-metadata.sh')") && runner.includes("'metadata-only'"),
+  'L1 Probe must reuse the shared metadata-only prerequisite boundary');
+assert(runner.indexOf("join(ROOT, 'scripts', 'prepare-metadata.sh')") < runner.indexOf("make(['scripts/config/conf']"),
+  'L1 Probe must prepare reusable metadata before compiling the Kconfig resolver');
+assert(runner.includes("if (results.includes('inconclusive')) overallResult = 'inconclusive';") &&
+  runner.includes("else if (results.includes('incompatible')) overallResult = 'incompatible';"),
+  'L1 Probe must let infrastructure errors dominate business incompatibility');
+assert(runner.includes("process.exitCode = attempts.every((row) => ['compatible', 'incompatible', 'skipped'].includes(row.result)) ? 0 : 1;"),
+  'Probe process status must accept only known conclusive/skipped results and fail runtime/unknown results');
+assert(runner.includes("return reason === 'root-kconfig-rejected' ? 'incompatible' : 'inconclusive';"),
+  'failed config execution must remain inconclusive unless upstream Kconfig conclusively rejects the root');
+assert(workflow.includes('const comments = await github.paginate(') && !workflow.includes('const { data: comments } = await github.paginate('),
+  'Probe summary must treat github.paginate() as the returned comments array');
 assert(controller.includes('environmentScope') && controller.includes('selectProbeCoverage') && !controller.includes('maxAutoTargetAttempts'));
 assert(!issueGateway.includes('WEIG_PACKAGE_PROBE_RUN_V2') && issueGateway.includes('WEIG_PACKAGE_PROBE_RUN_V3'));
 assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')));
