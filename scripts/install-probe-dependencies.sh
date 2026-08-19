@@ -7,8 +7,9 @@ set -euo pipefail
 : "${PROBE_LOG:=probe.log}"
 
 MAX_ATTEMPTS="${PROBE_APT_MAX_ATTEMPTS:-3}"
-ATTEMPT_TIMEOUT_SECONDS="${PROBE_APT_ATTEMPT_TIMEOUT_SECONDS:-480}"
+ATTEMPT_TIMEOUT_SECONDS="${PROBE_APT_ATTEMPT_TIMEOUT_SECONDS:-200}"
 APT_IO_TIMEOUT_SECONDS="${PROBE_APT_IO_TIMEOUT_SECONDS:-30}"
+ATTEMPT_LOG_TAIL_LINES=80
 
 if [[ ! "$MAX_ATTEMPTS" =~ ^[1-3]$ ]]; then
   echo "ERROR: PROBE_APT_MAX_ATTEMPTS must be 1, 2, or 3." | tee -a "$PROBE_LOG"
@@ -20,7 +21,7 @@ if [[ ! "$ATTEMPT_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ || ! "$APT_IO_TIMEOUT_SECOND
 fi
 
 APT_OPTIONS=(
-  -qq
+  -y
   -o "Acquire::Retries=3"
   -o "Acquire::http::Timeout=${APT_IO_TIMEOUT_SECONDS}"
   -o "Acquire::https::Timeout=${APT_IO_TIMEOUT_SECONDS}"
@@ -36,26 +37,60 @@ recover_dpkg() {
   sudo -E timeout --signal=TERM --kill-after=15s 120s dpkg --configure -a 2>&1 | tee -a "$PROBE_LOG"
 }
 
+print_attempt_tail() {
+  local label="$1"
+  local attempt="$2"
+  local attempt_log="$3"
+
+  echo "Probe bootstrap: last ${ATTEMPT_LOG_TAIL_LINES} output lines for ${label} attempt ${attempt}/${MAX_ATTEMPTS}:"
+  if [[ -s "$attempt_log" ]]; then
+    tail -n "$ATTEMPT_LOG_TAIL_LINES" "$attempt_log"
+  else
+    echo "Probe bootstrap: no apt output was captured for this attempt."
+  fi
+}
+
 retry_apt() {
   local label="$1"
   shift
   local apt_command="${1:-}"
-  local attempt status recovery_status delay
+  local attempt status recovery_status delay attempt_log started_at finished_at elapsed
 
   for ((attempt = 1; attempt <= MAX_ATTEMPTS; attempt++)); do
-    echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS}." | tee -a "$PROBE_LOG"
+    attempt_log="$(mktemp)"
+    echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${ATTEMPT_TIMEOUT_SECONDS}s)." | tee -a "$PROBE_LOG"
+    started_at="$(date +%s)"
     set +e
-    run_apt_once "$@" 2>&1 | tee -a "$PROBE_LOG"
+    run_apt_once "$@" 2>&1 | tee -a "$PROBE_LOG" "$attempt_log"
     status="${PIPESTATUS[0]}"
     set -e
+    finished_at="$(date +%s)"
+    elapsed=$((finished_at - started_at))
 
     if ((status == 0)); then
+      echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS} completed in ${elapsed}s." | tee -a "$PROBE_LOG"
+      rm -f "$attempt_log"
       return 0
     fi
+
+    echo "Probe bootstrap: ${label} attempt ${attempt}/${MAX_ATTEMPTS} exited with ${status} after ${elapsed}s." | tee -a "$PROBE_LOG"
+    if ((status == 124 || status == 137)); then
+      echo "TIMEOUT: ${label} attempt ${attempt}/${MAX_ATTEMPTS} exceeded ${ATTEMPT_TIMEOUT_SECONDS}s; showing captured output."
+    else
+      echo "WARNING: ${label} attempt ${attempt}/${MAX_ATTEMPTS} failed with exit code ${status}; showing captured output."
+    fi
+    print_attempt_tail "$label" "$attempt" "$attempt_log"
+
     if ((attempt == MAX_ATTEMPTS)); then
-      echo "ERROR: ${label} failed after ${MAX_ATTEMPTS} attempt(s), last exit code ${status}." | tee -a "$PROBE_LOG"
+      if ((status == 124 || status == 137)); then
+        echo "ERROR: ${label} timed out after ${MAX_ATTEMPTS} attempt(s), ${ATTEMPT_TIMEOUT_SECONDS}s per attempt; last exit code ${status}." | tee -a "$PROBE_LOG"
+      else
+        echo "ERROR: ${label} failed after ${MAX_ATTEMPTS} attempt(s), last exit code ${status}." | tee -a "$PROBE_LOG"
+      fi
+      rm -f "$attempt_log"
       return "$status"
     fi
+    rm -f "$attempt_log"
 
     if [[ "$apt_command" == "install" ]]; then
       set +e

@@ -29,7 +29,13 @@ assert(!workflow.includes('Package probe issue #{0} · batch {1}'), 'legacy opaq
 const dependencyInstaller = readFileSync(resolve(import.meta.dirname, './install-probe-dependencies.sh'), 'utf8');
 assert(workflow.includes('bash scripts/install-probe-dependencies.sh'), 'Probe jobs must use the bounded dependency bootstrap helper');
 assert(dependencyInstaller.includes('PROBE_APT_MAX_ATTEMPTS:-3'), 'dependency bootstrap must default to three total attempts');
-assert(dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS:-480'), 'each dependency attempt must have a bounded timeout');
+assert(dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS:-200'), 'each dependency attempt must default to the approved 200-second bound');
+assert(!dependencyInstaller.includes('  -qq\n'), 'dependency bootstrap must not suppress apt diagnostics with quiet level 2');
+assert(dependencyInstaller.includes('  -y\n'), 'dependency bootstrap must remain noninteractive after exposing apt output');
+assert(dependencyInstaller.includes('ATTEMPT_LOG_TAIL_LINES=80'), 'failed dependency attempts must retain a bounded diagnostic tail');
+assert(dependencyInstaller.includes('tail -n "$ATTEMPT_LOG_TAIL_LINES" "$attempt_log"'), 'failed dependency attempts must print their captured output tail');
+assert(dependencyInstaller.includes('status == 124 || status == 137'), 'timeout-related dependency exits must be diagnosed explicitly');
+assert(dependencyInstaller.includes('completed in ${elapsed}s'), 'dependency attempts must expose elapsed time');
 assert(dependencyInstaller.includes('Acquire::Retries=3'), 'apt must retain its own transport retry protection');
 assert(dependencyInstaller.includes('Acquire::http::Timeout=${APT_IO_TIMEOUT_SECONDS}'), 'apt HTTP reads must have a bounded timeout');
 assert(dependencyInstaller.includes('Acquire::https::Timeout=${APT_IO_TIMEOUT_SECONDS}'), 'apt HTTPS reads must have a bounded timeout');
