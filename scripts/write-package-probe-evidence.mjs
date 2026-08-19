@@ -76,15 +76,19 @@ function normalizedRuntimeConclusion(runtime, issues, fallback) {
 export function createEvidence({ log, config = '', runtime = null, env = {}, attempt: selectedAttempt = null }) {
   const roots = String(env.PROBE_ROOTS || '').split(',').map((row) => row.trim()).filter(Boolean);
   const attempt = selectedAttempt || runtime?.attempts?.[0] || {};
-  const errors = normalizedErrors(log);
-  const issues = parseProbeLog(log);
+  const attemptResult = ['compatible', 'incompatible', 'inconclusive', 'skipped'].includes(attempt.result) ? attempt.result : '';
+  const sharedLogIsRelevant = !selectedAttempt || attemptResult === 'inconclusive';
+  const errors = sharedLogIsRelevant ? normalizedErrors(log) : [];
+  const issues = sharedLogIsRelevant ? parseProbeLog(log) : [];
   if (['root-absent-source', 'root-not-applicable'].includes(attempt.reason)) {
     issues.push({ type: 'not-applicable', roots: attempt.unavailableRoots || [] });
   } else if (attempt.reason === 'root-combination-rejected') {
     issues.push({ type: 'kconfig-combination-rejected', roots: attempt.rejectedRoots || [] });
   }
   const runtimeView = selectedAttempt ? { ...runtime, conclusion: attempt.result, reason: attempt.reason, attempts: [attempt] } : runtime;
-  const conclusion = normalizedRuntimeConclusion(runtimeView, issues, env.PROBE_CONCLUSION || 'unknown');
+  const conclusion = selectedAttempt && attemptResult
+    ? attemptResult
+    : normalizedRuntimeConclusion(runtimeView, issues, env.PROBE_CONCLUSION || 'unknown');
   return {
     schema: 5,
     generatedAt: new Date().toISOString(),
@@ -179,6 +183,8 @@ export function aggregateScopeConclusions(evidence, options = {}) {
   return [...groups.entries()].map(([path, rows]) => ({
     path, source: rows[0]?.source || '', branch: depth >= 2 ? rows[0]?.branch || '' : '',
     ...conclusionStats(rows), conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
+    reasons: [...new Set(rows.map((row) => row.reason).filter(Boolean))],
+    unavailableRoots: [...new Set(rows.flatMap((row) => row.unavailableRoots || []))],
   })).sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
 }
 
@@ -196,7 +202,20 @@ function scopeResultLabel(scope, exhaustive) {
 }
 
 function sourceNeedsBranchBreakdown(scope) {
-  return scope.inconclusive > 0 || (scope.compatible > 0 && scope.incompatible > 0);
+  return scope.skipped > 0 || scope.inconclusive > 0 || (scope.compatible > 0 && scope.incompatible > 0);
+}
+
+function scopeNote(scope) {
+  if (!scope.skipped) return '—';
+  const roots = (scope.unavailableRoots || []).map((row) => `\`${row}\``).join(', ');
+  const suffix = roots ? ` (${roots})` : '';
+  if ((scope.reasons || []).includes('root-absent-source')) {
+    return `Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件${suffix}`;
+  }
+  if ((scope.reasons || []).includes('root-not-applicable')) {
+    return `Skipped: plugin not applicable to target / 跳过：插件不适用于目标${suffix}`;
+  }
+  return `Skipped / 跳过: ${scope.skipped}`;
 }
 
 function branchBreakdowns(sourceScopes, branchScopes) {
@@ -265,7 +284,7 @@ export function aggregateEvidence(directory, env = {}) {
   const lines = ['## Package compatibility probe result / 软件包兼容探针结果', '',
     `- Probe roots / 测试入口: ${roots.map((row) => `\`${row}\``).join(', ') || '-'}`,
     `- Overall / 总结果: **${evidence.length ? overallResult : 'ERROR'}** · \`${evidence.length ? overallConclusion : 'inconclusive'}\``,
-    `- Observed compatibility / 已测兼容率: **${formatCompatibilityRate(overallStats)}** (${overallStats.compatible}/${overallStats.conclusive} conclusive / 明确结果)`,
+    `- Conclusive compatibility / 明确结果兼容率: **${formatCompatibilityRate(overallStats)}** (${overallStats.compatible}/${overallStats.conclusive} conclusive / 明确结果)`,
     `- Coverage / 覆盖: ${env.COVERAGE_PLANNED || evidence.length}/${env.COVERAGE_TOTAL || evidence.length}${exhaustive ? ' (complete)' : ' (sampled)'}`,
     `- Skipped / 跳过: ${overallStats.skipped}`,
     `- ERROR / 未定: ${overallStats.inconclusive}`,
@@ -277,14 +296,14 @@ export function aggregateEvidence(directory, env = {}) {
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
     lines.push('### Source summary / 源码总览', '',
-      '| Source | Result / 结果 | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 |',
-      '|---|---|---:|---:|---:|---:|',
-      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} |`), '');
+      '| Source | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 | Notes / 备注 |',
+      '|---|---|---:|---:|---:|---:|---|',
+      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} | ${scopeNote(scope)} |`), '');
     for (const breakdown of breakdowns) {
       lines.push('<details>', `<summary>${breakdown.source || '-'} · Branch breakdown / 分支明细</summary>`, '',
-        '| Branch | Result / 结果 | Observed compatibility / 已测兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 |',
-        '|---|---|---:|---:|---:|---:|',
-        ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} |`), '',
+        '| Branch | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | ERROR / 未定 | Notes / 备注 |',
+        '|---|---|---:|---:|---:|---:|---|',
+        ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} | ${scopeNote(scope)} |`), '',
         '</details>', '');
     }
     lines.push('<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',

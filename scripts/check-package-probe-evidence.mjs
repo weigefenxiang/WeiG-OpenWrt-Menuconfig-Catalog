@@ -50,6 +50,39 @@ const hostPrerequisite = createEvidence({
 });
 assert.equal(hostPrerequisite.conclusion, 'inconclusive');
 assert(hostPrerequisite.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'host-prerequisite'));
+
+const sharedHostLog = "Checking 'python'... failed.\nBuild dependency: Please install Python 2.x\nPrerequisite check failed. Use FORCE=1 to override.\n";
+const selectedCompatible = createEvidence({
+  log: sharedHostLog,
+  runtime: { mode: 'config-resolve', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { source: 'ImmortalWrt', branch: 'openwrt-18.06', targetSystem: 'ar71xx', subtarget: 'nand', profile: 'DEVICE_test',
+    result: 'compatible', reason: '', rootStates: { alpha: 'y' }, unavailableRoots: [], rejectedRoots: [] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'config-resolve' },
+});
+assert.equal(selectedCompatible.conclusion, 'compatible', 'a conclusive selected attempt must not inherit shared host-prerequisite noise');
+assert(!selectedCompatible.issues.some((issue) => issue.type === 'infrastructure-failure'), 'shared branch log issues must not be attributed to a compatible attempt');
+assert.equal(selectedCompatible.errors.length, 0, 'shared branch log errors must not contaminate a compatible attempt');
+
+const selectedSkipped = createEvidence({
+  log: sharedHostLog,
+  runtime: { mode: 'config-resolve', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { source: 'OpenWrt', branch: 'openwrt-18.06', targetSystem: 'ath25', subtarget: '', profile: 'DEVICE_test',
+    result: 'skipped', reason: 'root-absent-source', rootStates: { alpha: 'missing' }, unavailableRoots: ['alpha'], rejectedRoots: [] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'config-resolve' },
+});
+assert.equal(selectedSkipped.conclusion, 'skipped', 'root absence must remain SKIP even when the shared branch log contains host-prerequisite noise');
+assert(selectedSkipped.issues.some((issue) => issue.type === 'not-applicable' && issue.roots.includes('alpha')));
+assert(!selectedSkipped.issues.some((issue) => issue.type === 'infrastructure-failure'), 'a skipped attempt must not inherit unrelated host-prerequisite issues');
+
+const selectedInconclusive = createEvidence({
+  log: sharedHostLog,
+  runtime: { mode: 'config-resolve', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { source: 'OpenWrt', branch: 'openwrt-18.06', targetSystem: 'lantiq', subtarget: 'xway', profile: 'DEVICE_test',
+    result: 'inconclusive', reason: 'kconfig-resolver-failure', rootStates: {}, unavailableRoots: [], rejectedRoots: [] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'config-resolve' },
+});
+assert.equal(selectedInconclusive.conclusion, 'inconclusive', 'a truly inconclusive selected attempt must remain ERROR-class evidence');
+assert(selectedInconclusive.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'host-prerequisite'));
 const reasonOnly = createEvidence({ log: '', runtime: { conclusion: 'inconclusive', reason: 'metadata-unresolved', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
 assert(evidenceSummaryLines(reasonOnly).some((line) => line.includes('metadata-unresolved')), 'evidence summary must expose runtime reason when no normalized issue exists');
 
@@ -76,7 +109,7 @@ try {
   assert.equal(sampled.overallConclusion, 'sampled-incompatible');
   assert.equal(sampled.overallResult, 'FAIL (sampled)');
   assert.equal(sampled.summaryScopes.length, 2, 'Source summary must always retain one top-level row per source');
-  assert(sampled.lines.some((line) => line.includes('| A | **FAIL (sampled)** | **0%** | 0/1 | 0 | 0 |')), 'sampled 0% source must be explicit without claiming full incompatibility');
+  assert(sampled.lines.some((line) => line.includes('| A | **FAIL (sampled)** | **0%** | 0/1 | 0 | 0 | — |')), 'sampled 0% source must be explicit without claiming full incompatibility');
   assert(sampled.lines.some((line) => line.includes('Probe roots / 测试入口: `luci-app-test`')), 'summary must expose the probed package/root');
   const full = aggregateEvidence(dir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
@@ -94,7 +127,7 @@ try {
   }
   const mixed = aggregateEvidence(mixedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '3', COVERAGE_PLANNED: '3', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert(mixed.lines.some((line) => line.includes('| OpenWrt | **MIXED** | **50%** | 1/2 | 0 | 0 |')), 'mixed source must keep its top-level total');
+  assert(mixed.lines.some((line) => line.includes('| OpenWrt | **MIXED** | **50%** | 1/2 | 0 | 0 | — |')), 'mixed source must keep its top-level total');
   assert(mixed.lines.some((line) => line.includes('<summary>OpenWrt · Branch breakdown / 分支明细</summary>')), 'mixed source must expose branch breakdown');
   assert(!mixed.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'uniform source must stay compact');
 
@@ -105,7 +138,32 @@ try {
   const error = aggregateEvidence(errorDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
   assert.equal(error.overallResult, 'ERROR');
-  assert(error.lines.some((line) => line.includes('| OpenWrt | **ERROR** | **100%** | 1/1 | 0 | 1 |')), 'infrastructure uncertainty must be visually distinct from business FAIL');
+  assert(error.lines.some((line) => line.includes('| OpenWrt | **ERROR** | **100%** | 1/1 | 0 | 1 | — |')), 'infrastructure uncertainty must be visually distinct from business FAIL');
+  assert(error.lines.some((line) => line.includes('Conclusive compatibility / 明确结果兼容率')), 'compatibility percentage must be labeled as conclusive-only');
+
+  const skippedDir = join(dir, 'skipped-source'); mkdirSync(skippedDir);
+  const absent = (branch) => ({ ...row('OpenWrt', branch, 'skipped'), reason: 'root-absent-source', unavailableRoots: ['luci-app-test'],
+    issues: [{ type: 'not-applicable', roots: ['luci-app-test'] }] });
+  for (const [i, evidence] of [absent('openwrt-18.06'), absent('openwrt-19.07')].entries()) {
+    const sub = join(skippedDir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
+  }
+  const skippedSource = aggregateEvidence(skippedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert(skippedSource.lines.some((line) => line.includes('| OpenWrt | **SKIP** | **—** | 0/0 | 2 | 0 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+    'a source with no available plugin must be SKIP and explicitly explain plugin absence');
+  assert(skippedSource.lines.some((line) => line.includes('<summary>OpenWrt · Branch breakdown / 分支明细</summary>')), 'skipped sources must expose branch details');
+  assert(skippedSource.lines.some((line) => line.includes('| openwrt-18.06 | **SKIP** | **—** | 0/0 | 1 | 0 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+    'skipped branch rows must explicitly annotate plugin absence');
+
+  const passSkipDir = join(dir, 'pass-skip'); mkdirSync(passSkipDir);
+  for (const [i, evidence] of [row('ImmortalWrt', 'master', 'compatible'), { ...absent('openwrt-18.06'), source: 'ImmortalWrt' }].entries()) {
+    const sub = join(passSkipDir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
+  }
+  const passSkip = aggregateEvidence(passSkipDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '100', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'true', BATCH_COUNT: '1' });
+  assert(passSkip.lines.some((line) => line.includes('| ImmortalWrt | **PASS (sampled)** | **100%** | 1/1 | 1 | 0 |')),
+    'compatible plus skipped environments must remain PASS-class while showing skipped count');
+  assert(passSkip.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'PASS plus SKIP must expose the skipped branch');
 } finally { rmSync(dir, { recursive: true, force: true }); }
 
 const missing = resolve(import.meta.dirname, '.package-probe-evidence-test-missing');
