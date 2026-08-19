@@ -72,6 +72,7 @@ const REGISTRY = Object.freeze({
     'scripts/collect-curated-size-samples.mjs',
     'scripts/curated-sizes.mjs',
     'scripts/import-curated-i18n.mjs',
+    'scripts/install-probe-dependencies.sh',
     'scripts/package-probe-controller.mjs',
     'scripts/package-probe-gateway.mjs',
     'scripts/package-probe-state.mjs',
