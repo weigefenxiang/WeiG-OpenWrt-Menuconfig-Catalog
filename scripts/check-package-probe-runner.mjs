@@ -76,6 +76,7 @@ function scenario(mode, options = {}) {
         PROBE_TARGET: 'x86/64',
         PROBE_PROFILE: 'DEVICE_generic',
         PROBE_TARGET_CONFIG: 'CONFIG_TARGET_x86=y\nCONFIG_TARGET_x86_64=y\nCONFIG_TARGET_x86_64_DEVICE_generic=y',
+        PROBE_TARGET_BATCH: 'null',
         PROBE_ROOTS: 'alpha',
         PROBE_PACKAGE_CONFIG: Buffer.from('CONFIG_PACKAGE_alpha=y\n').toString('base64url'),
         PROBE_PACKAGE_INTENT: Buffer.from(JSON.stringify([{ package: 'alpha', before: 'n', after: 'y' }])).toString('base64url'),

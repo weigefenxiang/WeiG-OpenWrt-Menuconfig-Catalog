@@ -22,7 +22,7 @@ const SUBTARGET = String(process.env.PROBE_SUBTARGET || '');
 const TARGET_CONFIG = String(process.env.PROBE_TARGET_CONFIG || '');
 const SOURCE = String(process.env.PROBE_SOURCE || '');
 const BRANCH = String(process.env.PROBE_BRANCH || '');
-const TARGET_BATCH = parseTargetBatch(process.env.PROBE_TARGET_BATCH || '');
+const TARGET_BATCH = MODE === 'config-resolve' ? parseTargetBatch(process.env.PROBE_TARGET_BATCH || '') : [];
 const FINAL_PACKAGE_CONFIG = Buffer.from(String(process.env.PROBE_PACKAGE_CONFIG || ''), 'base64url').toString('utf8');
 const INTENT_JSON = Buffer.from(String(process.env.PROBE_PACKAGE_INTENT || 'W10'), 'base64url').toString('utf8');
 const FINAL_STATES = parsePackageConfig(FINAL_PACKAGE_CONFIG);
