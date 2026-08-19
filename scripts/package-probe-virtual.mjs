@@ -8,6 +8,7 @@ import { dirname, join } from 'node:path';
 const DEPTHS = Object.freeze({ 'boot-smoke': 5, 'runtime-health': 6, 'reboot-validation': 7 });
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
 const READY_RE = /(?:procd:\s+- init complete -|Please press Enter to activate this console|(?:^|\n)[^\n]*\blogin:\s*$|(?:^|\n)root@[^\n]*[#$]\s*$)/im;
+const ROOT_PROMPT_RE = /(?:^|\n)root@[^\n]*[#$]\s*$/im;
 const PANIC_RE = /Kernel panic|not syncing|Oops:\s|BUG:\s+unable to handle|watchdog:\s+BUG|rebooting in \d+ seconds/i;
 const REBOOT_RE = /(?:reboot:\s+Restarting system|Restarting system|machine restart|reboot requested)/i;
 const UNSUPPORTED_RE = /unknown (?:target|subtarget)|unsupported|no such file or directory.*(?:kernel|rootfs|combined)|cannot find.*(?:kernel|rootfs|image)/i;
@@ -168,8 +169,8 @@ export async function runVirtualProbe(options = {}) {
     };
 
     const failActiveStage = (reason, result = 'incompatible') => {
-      const stage = phase === 'health1' ? 'runtimeHealth' : phase === 'reboot' ? 'reboot' :
-        phase === 'secondBoot' ? 'secondBoot' : phase === 'health2' ? 'secondRuntimeHealth' : 'boot';
+      const stage = phase === 'health1' || phase === 'console1' ? 'runtimeHealth' : phase === 'reboot' ? 'reboot' :
+        phase === 'secondBoot' ? 'secondBoot' : phase === 'health2' || phase === 'console2' ? 'secondRuntimeHealth' : 'boot';
       finishStage(stages, stage, phaseStarted, result === 'skipped' ? 'skipped' : 'failure');
       finish(result, reason);
     };
@@ -184,19 +185,35 @@ export async function runVirtualProbe(options = {}) {
       observationTimer = setTimeout(() => finish('compatible'), observationMs);
     };
 
-    const sendHealth = (cycle) => {
+    const sendHealth = (cycle, stageStarted = false) => {
       phase = cycle === 1 ? 'health1' : 'health2';
       phaseOffset = transcript.length;
       const name = cycle === 1 ? 'runtimeHealth' : 'secondRuntimeHealth';
-      phaseStarted = startStage(stages, name);
+      if (!stageStarted) phaseStarted = startStage(stages, name);
       const sender = setTimeout(() => {
         if (settled) return;
-        if (!writeStdin(`\n${healthCommand(installedRoots, cycle)}`)) {
+        if (!writeStdin(healthCommand(installedRoots, cycle))) {
           failActiveStage(cycle === 1 ? 'runtime-control-unavailable' : 'final-reboot-health-failed', cycle === 1 ? 'skipped' : 'incompatible');
         }
       }, controlDelayMs);
       sender.unref?.();
       arm(controlDelayMs + controlTimeoutMs, () => failActiveStage(
+        cycle === 1 ? 'runtime-control-unavailable' : 'final-reboot-health-failed', cycle === 1 ? 'skipped' : 'incompatible'));
+    };
+
+    const acquireConsole = (cycle, current) => {
+      phase = cycle === 1 ? 'console1' : 'console2';
+      phaseOffset = transcript.length;
+      phaseStarted = startStage(stages, cycle === 1 ? 'runtimeHealth' : 'secondRuntimeHealth');
+      if (ROOT_PROMPT_RE.test(current)) {
+        sendHealth(cycle, true);
+        return;
+      }
+      if (!writeStdin('\n')) {
+        failActiveStage(cycle === 1 ? 'runtime-control-unavailable' : 'final-reboot-health-failed', cycle === 1 ? 'skipped' : 'incompatible');
+        return;
+      }
+      arm(controlTimeoutMs, () => failActiveStage(
         cycle === 1 ? 'runtime-control-unavailable' : 'final-reboot-health-failed', cycle === 1 ? 'skipped' : 'incompatible'));
     };
 
@@ -222,7 +239,14 @@ export async function runVirtualProbe(options = {}) {
       if (phase === 'boot' && virtualReady(current)) {
         finishStage(stages, 'boot', phaseStarted, 'success');
         if (depth === 5) finish('compatible');
-        else sendHealth(1);
+        else acquireConsole(1, current);
+        return;
+      }
+      if (phase === 'console1' || phase === 'console2') {
+        if (ROOT_PROMPT_RE.test(current)) {
+          clearTimeout(timer); timer = null;
+          sendHealth(phase === 'console1' ? 1 : 2, true);
+        }
         return;
       }
       if (phase === 'health1') {
@@ -256,7 +280,7 @@ export async function runVirtualProbe(options = {}) {
       if (phase === 'secondBoot' && virtualReady(current)) {
         finishStage(stages, 'secondBoot', phaseStarted, 'success');
         clearTimeout(timer); timer = null;
-        sendHealth(2);
+        acquireConsole(2, current);
         return;
       }
       if (phase === 'health2') {

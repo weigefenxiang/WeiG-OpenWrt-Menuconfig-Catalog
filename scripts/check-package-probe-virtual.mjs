@@ -22,27 +22,32 @@ assert.throws(() => healthCommand(['bad;reboot'], 1), /package list is invalid/)
 function fixtureScript(mode) {
   const behavior = {
     success: `
-echo 'procd: - init complete -'
+ready_file="$(mktemp)"
+rm -f "$ready_file"
+trap 'rm -f "$ready_file"' EXIT
+echo 'Please press Enter to activate this console.'
 while IFS= read -r line; do
   case "$line" in
-    *__WEIG_HEALTH_BEGIN_1__*) echo '__WEIG_HEALTH_PASS_1__' ;;
-    *__WEIG_REBOOT_REQUEST__*) echo 'reboot: Restarting system'; sleep 0.05; echo 'procd: - init complete -' ;;
-    *__WEIG_HEALTH_BEGIN_2__*) echo '__WEIG_HEALTH_PASS_2__' ;;
+    '') (sleep 0.05; touch "$ready_file"; echo 'root@OpenWrt:~#') & ;;
+    *__WEIG_HEALTH_BEGIN_1__*) test -f "$ready_file" && echo '__WEIG_HEALTH_PASS_1__' || echo '__WEIG_HEALTH_EARLY_1__' ;;
+    *__WEIG_REBOOT_REQUEST__*) rm -f "$ready_file"; echo 'reboot: Restarting system'; sleep 0.05; echo 'Please press Enter to activate this console.' ;;
+    *__WEIG_HEALTH_BEGIN_2__*) test -f "$ready_file" && echo '__WEIG_HEALTH_PASS_2__' || echo '__WEIG_HEALTH_EARLY_2__' ;;
   esac
 done
 `,
     bootFailure: "echo 'Kernel panic - not syncing'; exit 1\n",
-    noControl: "echo 'procd: - init complete -'; while IFS= read -r line; do :; done\n",
+    noControl: "echo 'Please press Enter to activate this console.'; while IFS= read -r line; do :; done\n",
     healthFailure: `
-echo 'procd: - init complete -'
+echo 'Please press Enter to activate this console.'
 while IFS= read -r line; do
-  case "$line" in *__WEIG_HEALTH_BEGIN_1__*) echo '__WEIG_HEALTH_FAIL_1__';; esac
+  case "$line" in '') echo 'root@OpenWrt:~#';; *__WEIG_HEALTH_BEGIN_1__*) echo '__WEIG_HEALTH_FAIL_1__';; esac
 done
 `,
     rebootFailure: `
-echo 'procd: - init complete -'
+echo 'Please press Enter to activate this console.'
 while IFS= read -r line; do
   case "$line" in
+    '') echo 'root@OpenWrt:~#' ;;
     *__WEIG_HEALTH_BEGIN_1__*) echo '__WEIG_HEALTH_PASS_1__' ;;
     *__WEIG_REBOOT_REQUEST__*) echo 'reboot: Restarting system'; exit 1 ;;
   esac

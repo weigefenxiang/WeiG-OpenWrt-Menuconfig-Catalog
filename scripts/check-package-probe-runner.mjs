@@ -24,11 +24,12 @@ if (process.env.FAKE_FAIL_PARALLEL === 'true' && args.includes('package/network/
 function qemustartSource() {
   return `#!/usr/bin/env bash
 set -eu
-echo 'procd: - init complete -'
+echo 'Please press Enter to activate this console.'
 while IFS= read -r line; do
   case "$line" in
+    '') echo 'root@OpenWrt:~#' ;;
     *__WEIG_HEALTH_BEGIN_1__*) echo '__WEIG_HEALTH_PASS_1__' ;;
-    *__WEIG_REBOOT_REQUEST__*) echo 'reboot: Restarting system'; sleep 0.05; echo 'procd: - init complete -' ;;
+    *__WEIG_REBOOT_REQUEST__*) echo 'reboot: Restarting system'; sleep 0.05; echo 'Please press Enter to activate this console.' ;;
     *__WEIG_HEALTH_BEGIN_2__*) echo '__WEIG_HEALTH_PASS_2__' ;;
   esac
 done

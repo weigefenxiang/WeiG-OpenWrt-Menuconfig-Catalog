@@ -67,7 +67,7 @@ Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe
 - **L3 根系统（`rootfs-integration`）**：复用同一次 L2 结果，再按上游顺序完成 `prepare`、完整已选 `package/compile` 与 `package/install`。Target、基础包及内核版本等 RootFS 前置事实全部由当前 Source 的 Make 图生成，WeiG 不自行拼装 APK/OPKG。
 - **L4 集成（`firmware-integration`）**：只使用用户最终配置完成一次整机固件构建，不构建 Baseline，也不宣称单个插件相对 Baseline 导致失败。
 - **L5 启动（`boot-smoke`）**：L4 成功后优先调用当前源码自己的 `scripts/qemustart`，确认 Final 固件进入基本用户空间；不维护 Target/QEMU 参数表。
-- **L6 运行（`runtime-health`）**：在 L5 后通过可靠控制通道检查 init/procd、基础挂载、uptime、可用时的 ubus，以及 Final 中真正内置的 Root 软件包。无可靠控制能力时记为 `skipped`。
+- **L6 运行（`runtime-health`）**：在 L5 后通过可靠控制通道检查 init/procd、基础挂载、uptime、可用时的 ubus，以及 Final 中真正内置的 Root 软件包。需要按键激活串口时，先激活并等到 root prompt，再发送健康命令；无可靠控制能力时记为 `skipped`。
 - **L7 重启（`reboot-validation`）**：在 L6 后正常重启 Final 固件，等待第二次启动并再次执行相同健康检查；不执行真实 sysupgrade 刷写。
 
 L2–L7 都只执行用户最终配置，逐级复用已经完成的 Stage，不做 Baseline/Final A/B，也不为增加深度而重复构建。成功表示当前 Final 配置在该环境达到所选深度；失败只描述该 Final 配置和具体 Stage，不自动宣称某一个插件具有单独因果关系。`Defconfig` 在 L1 固定使用；L2–L7 默认开启但可由请求明确关闭。开启时运行所选 Source 自己的 `make defconfig`，并只强制验证用户直接启用的 Probe Root 仍保持请求的 `m/y` 状态；关闭时不主动执行 `make defconfig`。
