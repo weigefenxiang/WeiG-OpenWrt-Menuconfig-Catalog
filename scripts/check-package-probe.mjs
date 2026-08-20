@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   attachProbeTargets, createProbePlan, normalizePackageConfig, normalizeProbeMode, normalizeProbeRequest,
-  probePlanSummary, probeTargetConfig, resolveProbeTargetConfigs, selectProbeCoverage,
+  probePlanSummary, probeTargetConfig, PROBE_COVERAGE_LIMITS, resolveProbeTargetConfigs, selectProbeCoverage,
 } from './package-probe-controller.mjs';
 import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import { parseProbeStateToken, PROBE_STATE_PREFIX } from './package-probe-state.mjs';
@@ -13,6 +13,7 @@ import { isProbeIssue, normalizeGatewayRequest, probeCancellationAuthorized, pro
   probeDisplayContext, probeIssueCommand, probeRunMarkers } from './package-probe-gateway.mjs';
 import { createEvidence, parseProbeLog } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
+import { buildCuratedApplications } from './curated-applications.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const policy = JSON.parse(readFileSync(resolve(ROOT, '.github', 'automation-policy.json'), 'utf8'));
@@ -66,7 +67,7 @@ const baseRequest = {
   baselinePackageConfig, packageConfig,
   packageIntent: [{ package: 'luci-app-oscam', before: 'n', after: 'y' }],
   environmentScope: { sources: ['*'], branches: ['*'], targetSystems: ['*'], subtargets: ['*'], profiles: ['*'] },
-  coverage: { mode: 'auto', limit: 40 }, maxParallel: 0, execute: true,
+  coverage: { mode: 'auto', limit: 32 }, maxParallel: 0, execute: true,
 };
 const index = { schema: 2, sources: [
   { id: 'ImmortalWrt', label: 'ImmortalWrt', repo: 'example/immortal', branches: [
@@ -129,7 +130,8 @@ assert.throws(() => normalizeProbeRequest({ ...baseRequest, scope: {} }), /unkno
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, packageIntent: [{ package: 'oscam', before: 'n', after: 'y' }] }), /baseline mismatch/);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, environmentScope: { ...baseRequest.environmentScope, sources: ['*', 'OpenWrt'] } }), /wildcard cannot be mixed/);
 assert.deepEqual(normalizeProbeRequest({ ...baseRequest, coverage: { mode: 'all' } }).coverage, { mode: 'all' });
-assert.throws(() => normalizeProbeRequest({ ...baseRequest, coverage: { mode: 'auto', limit: 257 } }), /1 to 256/);
+assert.deepEqual(PROBE_COVERAGE_LIMITS, { defaultLimit: 32, maxLimit: 128 });
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, coverage: { mode: 'auto', limit: 129 } }), /1 to 128/);
 
 const gatewayRequest = normalizeGatewayRequest(baseRequest);
 assert.deepEqual(gatewayRequest.roots, ['luci-app-oscam']);
@@ -209,6 +211,11 @@ assert.equal(sampleA.length, 20);
 assert.deepEqual(sampleA, sampleAgain, 'same seed must reproduce the same Auto sample');
 assert.notDeepEqual(sampleA, sampleB, 'new run seed should rotate the sample');
 assert.equal(new Set(sampleA.map((row) => row.source)).size, 4, 'Auto must preserve Source breadth before filling the budget');
+const overLimitRows = Array.from({ length: 129 }, (_, index) => ({
+  source: `s${index}`, branch: 'main', targetSystem: 'x86', subtarget: '64', profile: 'generic', target: `t${index}`,
+}));
+assert.throws(() => selectProbeCoverage(overLimitRows, { coverage: { mode: 'all' }, environmentScope: scopeAll, samplingSeed: 'all' }),
+  /narrow the scope to at most 128/, 'Exhaustive coverage must preserve real leaves rather than silently truncate beyond the hard limit');
 
 const apkIssues = parseProbeLog('ERROR: luci-app-openvpn-server-3.0-r0: trying to overwrite etc/config/openvpn owned by openvpn-openssl-2.7.4-r3.\n' +
   'ERROR: Final package-enabled firmware failed\n');
@@ -266,6 +273,14 @@ assert(!existsSync(resolve(ROOT, 'scripts', 'package-probe-issue.mjs')));
 assert(runner.includes('Source-Makefile:') || runner.includes('Source-Makefile'));
 assert(runner.includes('tmp/.packageinfo') || runner.includes("'tmp', '.packageinfo'"));
 assert(runner.includes('makeWithSerialRetry(resolved.targets'));
+assert(runner.includes("makeWithSerialRetry(['prepare'], 'Target build prerequisites'"),
+  'L2 must prepare generic upstream Target/kernel prerequisites before Root compilation');
+assert(!runner.includes("makeWithSerialRetry(['tools/install', 'toolchain/install']"),
+  'L2 must not use a partial tools/toolchain substitute for the upstream Target preparation boundary');
+assert(runner.includes("makeWithSerialRetry(['target/install'], 'final package firmware'"),
+  'L4 must extend the completed L3 chain with the upstream firmware integration target');
+assert(!runner.includes("makeWithSerialRetry([], 'final package firmware'"),
+  'L4-L7 must not restart an independent world build after the earlier Probe stages');
 assert(!runner.includes('for (const packageName of activePackages)'));
 assert(!runner.includes('reduceFailureSet') && !runner.includes('PROBE_REDUCTION_BUDGET') && !runner.includes('PROBE_FALLBACK_TARGETS'));
 assert(runner.includes("['package/install']"));
@@ -280,10 +295,14 @@ assert(runner.includes('deepestPassedLevel') && runner.includes('durationMs'),
 assert(runner.includes('BUILD_LOG=1'));
 assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.includes('fully-incompatible') && evidenceWriter.includes('partially-compatible'));
 assert.equal(policy.probe.maxMatrixJobs, 256);
-assert.deepEqual(policy.probe.autoCoverageLimits, { 'package-compile': 200, 'rootfs-integration': 100, 'firmware-integration': 30, 'boot-smoke': 10, 'config-resolve': 40 });
-assert(!('runtime-health' in policy.probe.autoCoverageLimits) && !('reboot-validation' in policy.probe.autoCoverageLimits),
-  'L6/L7 must not gain an unmeasured default coverage limit');
-assert(controller.includes('coverage limit is required for ${mode} until a measured default is approved'));
+assert.deepEqual(policy.probe.coverage, { defaultLimit: 32, maxLimit: 128 });
+assert(!('autoCoverageLimits' in policy.probe) && !('maxAutoCoverage' in policy.probe),
+  'obsolete per-depth coverage budgets must not compete with the shared Probe coverage authority');
+const applications = buildCuratedApplications(ROOT);
+assert.deepEqual(applications.probeUi.coverage, { defaultLimit: 32, maxLimit: 128 },
+  'applications.json must publish the same Probe coverage authority to the browser');
+assert(controller.includes('PROBE_COVERAGE_DEFAULT_LIMIT') && controller.includes('PROBE_COVERAGE_MAX_LIMIT'));
+assert(!controller.includes('coverage limit is required for ${mode} until a measured default is approved'));
 assert(!('maxAutoTargetAttempts' in policy.probe) && !('reductionMaxAttempts' in policy.probe));
 for (const key of ['howTo', 'submittedState', 'stateInstruction', 'invalid']) assert(probeUi.strings[key]?.en && probeUi.strings[key]?.['zh-CN']);
 assert(catalogWorkflow.includes('scripts/catalog-change-impact.mjs'));
