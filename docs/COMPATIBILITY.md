@@ -70,7 +70,7 @@ Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe
 - **L6 运行（`runtime-health`）**：在 L5 后通过可靠控制通道检查 init/procd、基础挂载、uptime、可用时的 ubus，以及 Final 中真正内置的 Root 软件包。需要按键激活串口时，先激活并等到 root prompt，再发送健康命令；无可靠控制能力时记为 `skipped`。
 - **L7 重启（`reboot-validation`）**：在 L6 后正常重启 Final 固件，等待第二次启动并再次执行相同健康检查；不执行真实 sysupgrade 刷写。
 
-L2–L7 都只执行用户最终配置，逐级复用已经完成的 Stage，不做 Baseline/Final A/B，也不为增加深度而重复构建。成功表示当前 Final 配置在该环境达到所选深度；失败只描述该 Final 配置和具体 Stage，不自动宣称某一个插件具有单独因果关系。`Defconfig` 在 L1 固定使用；L2–L7 默认开启但可由请求明确关闭。开启时运行所选 Source 自己的 `make defconfig`，并只强制验证用户直接启用的 Probe Root 仍保持请求的 `m/y` 状态；关闭时不主动执行 `make defconfig`。
+L2–L7 都只执行用户最终配置，逐级复用已经完成的 Stage，不构建对照固件，也不为增加深度而重复构建。成功表示当前 Final 配置在该环境达到所选深度；失败只描述该 Final 配置和具体 Stage，不自动宣称某一个插件具有单独因果关系。`Defconfig` 在 L1 固定使用；L2–L7 默认开启但可由请求明确关闭。开启时运行所选 Source 自己的 `make defconfig`，并只强制验证用户直接启用的 Probe Root 仍保持请求的 `m/y` 状态；关闭时不主动执行 `make defconfig`。
 
 Probe V3 的浏览器状态包含仅用于校验 Intent 前值的 Baseline、直接 `packageIntent`、唯一构建权威 Final `packageConfig`、Defconfig、五维环境约束和覆盖策略。Runner 不构建 Baseline，也不会传递 dependency list、build order 或第二个 packages/roots 权威；服务端从经过校验的直接 Intent 派生 Root。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝，用户需要从当前 AutoBuild 页面重新提交。
 

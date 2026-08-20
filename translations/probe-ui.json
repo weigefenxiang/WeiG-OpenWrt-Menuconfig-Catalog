@@ -36,6 +36,41 @@
       "zh-CN": "探测深度",
       "zh-TW": "探測深度"
     },
+    "depth1Short": {
+      "en": "L1 Config",
+      "zh-CN": "L1 插件",
+      "zh-TW": "L1 套件"
+    },
+    "depth2Short": {
+      "en": "L2 Compile",
+      "zh-CN": "L2 编译",
+      "zh-TW": "L2 編譯"
+    },
+    "depth3Short": {
+      "en": "L3 RootFS",
+      "zh-CN": "L3 根系统",
+      "zh-TW": "L3 根系統"
+    },
+    "depth4Short": {
+      "en": "L4 Firmware",
+      "zh-CN": "L4 集成",
+      "zh-TW": "L4 整合"
+    },
+    "depth5Short": {
+      "en": "L5 Boot",
+      "zh-CN": "L5 启动",
+      "zh-TW": "L5 啟動"
+    },
+    "depth6Short": {
+      "en": "L6 Runtime",
+      "zh-CN": "L6 运行",
+      "zh-TW": "L6 執行"
+    },
+    "depth7Short": {
+      "en": "L7 Reboot",
+      "zh-CN": "L7 重启",
+      "zh-TW": "L7 重啟"
+    },
     "scope": {
       "en": "Source/Branch scope",
       "zh-CN": "源码分支范围",
@@ -87,19 +122,19 @@
       "zh-TW": "套件編譯"
     },
     "packageCompileHelp": {
-      "en": "L1: Treat directly selected packages as roots, resolve their upstream package metadata, and enter the upstream dependency graph with one Make invocation. Probe does not schedule dependencies package by package.",
-      "zh-CN": "L1：以用户直接选择的软件包为 Root，解析上游 package metadata 后，以一次 Make 调用进入上游依赖图；不自行逐包调度依赖。",
-      "zh-TW": "L1：以使用者直接選擇的套件為 Root，解析上游 package metadata 後，以一次 Make 呼叫進入上游相依圖；不自行逐套件調度相依。"
+      "en": "L2: Treat directly selected packages as roots, resolve their upstream package metadata, and enter the upstream dependency graph with one Make invocation. Probe does not schedule dependencies package by package.",
+      "zh-CN": "L2：以用户直接选择的软件包为 Root，解析上游 package metadata 后，以一次 Make 调用进入上游依赖图；不自行逐包调度依赖。",
+      "zh-TW": "L2：以使用者直接選擇的套件為 Root，解析上游 package metadata 後，以一次 Make 呼叫進入上游相依圖；不自行逐套件調度相依。"
     },
     "rootfsIntegration": {
       "en": "RootFS integration",
-      "zh-CN": "根文件系统集成",
-      "zh-TW": "根檔案系統整合"
+      "zh-CN": "根系统集成",
+      "zh-TW": "根系統整合"
     },
     "rootfsIntegrationHelp": {
-      "en": "L2: Includes L1 and runs upstream package/install with the complete Final state to expose APK/OPKG ownership, path, and co-install conflicts.",
-      "zh-CN": "L2：包含 L1，并执行上游 package/install，用完整 Final 状态检查 APK/OPKG 文件归属、路径冲突与共同安装问题。",
-      "zh-TW": "L2：包含 L1，並執行上游 package/install，用完整 Final 狀態檢查 APK/OPKG 檔案歸屬、路徑衝突與共同安裝問題。"
+      "en": "Install the compiled packages into RootFS and verify that the complete Final state can finish root filesystem integration, including APK/OPKG ownership, path, and co-install checks.",
+      "zh-CN": "将编译出的软件包安装进 RootFS，验证是否能完成根文件系统集成，并检查 APK/OPKG 文件归属、路径冲突与共同安装问题。",
+      "zh-TW": "將編譯出的套件安裝進 RootFS，驗證是否能完成根檔案系統整合，並檢查 APK/OPKG 檔案歸屬、路徑衝突與共同安裝問題。"
     },
     "firmwareIntegration": {
       "en": "Firmware integration",
@@ -107,9 +142,9 @@
       "zh-TW": "韌體整合"
     },
     "firmwareIntegrationHelp": {
-      "en": "L3: Build the Baseline captured when Probe opened and the user-modified Final firmware in the same real environment. A failing Baseline is not attributed to the package.",
-      "zh-CN": "L3：在同一个真实环境中分别构建 Probe 打开时的 Baseline 与用户选择后的 Final 固件；Baseline 本身失败时不归因给插件。",
-      "zh-TW": "L3：在同一個真實環境中分別建置 Probe 開啟時的 Baseline 與使用者選擇後的 Final 韌體；Baseline 本身失敗時不歸因給套件。"
+      "en": "L4: Build the complete Final firmware once in the same upstream worktree. This validates Final firmware integration without building a comparison firmware or claiming single-package causality.",
+      "zh-CN": "L4：在同一上游工作树中只构建一次完整 Final 固件，验证最终配置能否完成固件集成；不构建对照固件，也不推断单个插件的因果关系。",
+      "zh-TW": "L4：在同一上游工作樹中只建置一次完整 Final 韌體，驗證最終設定能否完成韌體整合；不建置對照韌體，也不推斷單一套件的因果關係。"
     },
     "bootSmoke": {
       "en": "Boot smoke",
@@ -117,9 +152,29 @@
       "zh-TW": "啟動自檢"
     },
     "bootSmokeHelp": {
-      "en": "L4: After a successful L3 Final firmware build, run generic QEMU boot smoke on Catalog-approved bootable environments. This is not package-service or real-hardware functional testing.",
-      "zh-CN": "L4：在 L3 Final 固件成功后，对 Catalog 认可的可启动环境执行通用 QEMU 启动自检；不是插件服务或真实硬件功能测试。",
-      "zh-TW": "L4：在 L3 Final 韌體成功後，對 Catalog 認可的可啟動環境執行通用 QEMU 啟動自檢；不是套件服務或真實硬體功能測試。"
+      "en": "L5: After a successful L4 Final firmware build, use the selected upstream source's scripts/qemustart to verify entry into basic userspace. This is not package-service or real-hardware functional testing.",
+      "zh-CN": "L5：L4 Final 固件成功后，使用所选上游源码自己的 scripts/qemustart 验证能否进入基本用户空间；不是插件服务或真实硬件功能测试。",
+      "zh-TW": "L5：L4 Final 韌體成功後，使用所選上游原始碼自己的 scripts/qemustart 驗證能否進入基本使用者空間；不是套件服務或真實硬體功能測試。"
+    },
+    "runtimeHealth": {
+      "en": "Runtime health",
+      "zh-CN": "运行健康",
+      "zh-TW": "執行健康"
+    },
+    "runtimeHealthHelp": {
+      "en": "L6: After a reliable root prompt is available, check init/procd, /proc, /sys, /tmp, uptime, optional ubus, and directly selected roots built into Final. Missing reliable control capability is reported as skipped.",
+      "zh-CN": "L6：可靠取得 root prompt 后，检查 init/procd、/proc、/sys、/tmp、uptime、可用时的 ubus，以及 Final 中实际内置的直接 Root；缺少可靠控制能力时记为 skipped。",
+      "zh-TW": "L6：可靠取得 root prompt 後，檢查 init/procd、/proc、/sys、/tmp、uptime、可用時的 ubus，以及 Final 中實際內建的直接 Root；缺少可靠控制能力時記為 skipped。"
+    },
+    "rebootValidation": {
+      "en": "Reboot validation",
+      "zh-CN": "重启验证",
+      "zh-TW": "重啟驗證"
+    },
+    "rebootValidationHelp": {
+      "en": "L7: Perform a normal reboot, wait for the second boot, and repeat the L6 health checks. This does not perform sysupgrade; missing reliable reboot control is reported as skipped.",
+      "zh-CN": "L7：执行正常 reboot，等待第二次启动后重复 L6 健康检查；不执行 sysupgrade，缺少可靠重启控制能力时记为 skipped。",
+      "zh-TW": "L7：執行正常 reboot，等待第二次啟動後重複 L6 健康檢查；不執行 sysupgrade，缺少可靠重啟控制能力時記為 skipped。"
     },
     "preview": {
       "en": "Preview plan",
@@ -331,21 +386,6 @@
       "zh-CN": "无匹配环境",
       "zh-TW": "無匹配環境"
     },
-    "level1": {
-      "en": "L1",
-      "zh-CN": "L1",
-      "zh-TW": "L1"
-    },
-    "l1Intro": {
-      "en": "Choose packages already loaded for the current Target Profile and run L1 official configuration resolution. Cross-environment requests send only direct package roots; Catalog and each upstream Kconfig resolve Profiles and dependencies on the backend.",
-      "zh-CN": "选择当前 Target Profile 已加载的软件包进行 L1 官方配置求解；跨环境只提交直接选择的软件包，Profile 与依赖由 Catalog 和对应上游 Kconfig 在后台解析。",
-      "zh-TW": "選擇目前 Target Profile 已載入的套件進行 L1 官方設定求解；跨環境只提交直接選擇的套件，Profile 與相依關係由 Catalog 和對應上游 Kconfig 在後端解析。"
-    },
-    "l1HowTo": {
-      "en": "L1 reuses the package, dependency, and description data already loaded by Advanced menuconfig and does not load a second package database. The backend expands environments from Catalog and runs the selected upstream Kconfig resolver with Defconfig semantics; no packages are compiled.",
-      "zh-CN": "L1 复用当前 Advanced menuconfig 已加载的软件包、依赖和说明，不加载第二套软件包数据库。后台按 Catalog 展开环境，并使用对应源码自己的 Kconfig resolver 执行 Defconfig 语义；不编译软件包。",
-      "zh-TW": "L1 複用目前 Advanced menuconfig 已載入的套件、相依關係與說明，不載入第二套套件資料庫。後端依 Catalog 展開環境，並使用對應原始碼自己的 Kconfig resolver 執行 Defconfig 語義；不編譯套件。"
-    },
     "configResolve": {
       "en": "Official config resolve",
       "zh-CN": "官方配置求解",
@@ -365,16 +405,6 @@
       "en": "Package Compatibility Probe excludes the hanwckf Source. Switch to an OpenWrt, ImmortalWrt, or Lean LEDE Target Profile.",
       "zh-CN": "插件兼容探针不包含 hanwckf Source，请切换到 OpenWrt、ImmortalWrt 或 Lean LEDE 的 Target Profile。",
       "zh-TW": "套件相容性探針不包含 hanwckf Source，請切換到 OpenWrt、ImmortalWrt 或 Lean LEDE 的 Target Profile。"
-    },
-    "l1StateInstruction": {
-      "en": "Only direct package roots, environment scope, and the environment limit are submitted. Dependencies auto-selected for the current Profile are display-only; each target Profile resolves its own dependencies with its upstream Kconfig.",
-      "zh-CN": "只提交直接选择的软件包、环境范围和环境上限。当前 Profile 自动补出的依赖仅用于页面显示；目标 Profile 的依赖由其对应源码自己的 Kconfig 重新求解。",
-      "zh-TW": "只提交直接選擇的套件、環境範圍與環境上限。目前 Profile 自動補出的相依關係僅用於頁面顯示；目標 Profile 的相依關係由其對應原始碼自己的 Kconfig 重新求解。"
-    },
-    "l1Submitted": {
-      "en": "The probe request was carried into the GitHub Issue.",
-      "zh-CN": "探针请求已带入 GitHub Issue。",
-      "zh-TW": "探針請求已帶入 GitHub Issue。"
     }
   }
 }

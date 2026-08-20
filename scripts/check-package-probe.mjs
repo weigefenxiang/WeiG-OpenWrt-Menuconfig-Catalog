@@ -29,6 +29,31 @@ const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.
 assert.equal(probeUi.strings?.configResolve?.['zh-CN'], '官方配置求解');
 assert.equal(probeUi.strings?.environmentLimit?.en, 'Probe environments');
 assert.match(probeUi.strings?.sourceExcluded?.en || '', /hanwckf/);
+const probeDepthUi = [
+  ['depth1Short', 'L1 插件', 'configResolve', 'configResolveHelp'],
+  ['depth2Short', 'L2 编译', 'packageCompile', 'packageCompileHelp'],
+  ['depth3Short', 'L3 根系统', 'rootfsIntegration', 'rootfsIntegrationHelp'],
+  ['depth4Short', 'L4 集成', 'firmwareIntegration', 'firmwareIntegrationHelp'],
+  ['depth5Short', 'L5 启动', 'bootSmoke', 'bootSmokeHelp'],
+  ['depth6Short', 'L6 运行', 'runtimeHealth', 'runtimeHealthHelp'],
+  ['depth7Short', 'L7 重启', 'rebootValidation', 'rebootValidationHelp'],
+];
+for (const obsoleteKey of ['level1', 'l1Intro', 'l1HowTo', 'l1StateInstruction', 'l1Submitted']) {
+  assert.equal(obsoleteKey in probeUi.strings, false, `obsolete probe UI key must be removed: ${obsoleteKey}`);
+}
+for (const [shortKey, shortZh, titleKey, helpKey] of probeDepthUi) {
+  assert.equal(probeUi.strings?.[shortKey]?.['zh-CN'], shortZh);
+  for (const language of probeUi.languages) {
+    assert.match(String(probeUi.strings?.[shortKey]?.[language] || ''), /^L[1-7]\s\S/);
+    assert(String(probeUi.strings?.[titleKey]?.[language] || '').trim());
+    assert(String(probeUi.strings?.[helpKey]?.[language] || '').trim());
+  }
+}
+assert.match(probeUi.strings.rootfsIntegrationHelp['zh-CN'], /安装进 RootFS/);
+assert.match(probeUi.strings.firmwareIntegrationHelp['zh-CN'], /只构建一次完整 Final 固件/);
+for (const language of probeUi.languages) {
+  assert.doesNotMatch(probeUi.strings.firmwareIntegrationHelp[language], /Baseline|A\/B|基线|基線/i);
+}
 
 const baselinePackageConfig = 'CONFIG_PACKAGE_oscam=y\n';
 const packageConfig = [
