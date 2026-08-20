@@ -32,6 +32,7 @@ const MAKE_COMMAND = String(process.env.PROBE_MAKE_COMMAND || 'make');
 const MAKE_PREFIX = String(process.env.PROBE_MAKE_ARGUMENT || '').trim();
 const requestedJobs = Number(process.env.PROBE_JOBS || 0);
 const JOBS = Number.isSafeInteger(requestedJobs) && requestedJobs > 0 ? requestedJobs : Math.max(1, availableParallelism() + 1);
+const COMMAND_OUTPUT_LIMIT = 256 * 1024;
 
 const MODE_LEVELS = Object.freeze({
   'config-resolve': 1,
@@ -147,18 +148,34 @@ log(`Make concurrency / Make 并发: -j${JOBS}`);
 log('Defconfig: on (upstream resolver)');
 log(`Probe roots / 测试入口: ${ROOTS.join(', ')}`);
 
+function appendCommandOutput(current, chunk) {
+  const next = current + String(chunk || '');
+  return next.length > COMMAND_OUTPUT_LIMIT ? next.slice(-COMMAND_OUTPUT_LIMIT) : next;
+}
+
 async function command(file, args, options = {}) {
   log(`\n$ ${file} ${args.join(' ')}`);
   return new Promise((resolvePromise) => {
+    let output = '';
     const child = spawn(file, args, {
       cwd: options.cwd || WORKDIR,
       env: { ...process.env, ...(options.env || {}) },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    child.stdout.on('data', (chunk) => { process.stdout.write(chunk); appendFileSync(LOG_FILE, chunk); });
-    child.stderr.on('data', (chunk) => { process.stderr.write(chunk); appendFileSync(LOG_FILE, chunk); });
-    child.on('error', (error) => { log(`ERROR: ${error.message}`); resolvePromise({ ok: false, code: -1 }); });
-    child.on('close', (code) => resolvePromise({ ok: code === 0, code }));
+    child.stdout.on('data', (chunk) => {
+      output = appendCommandOutput(output, chunk);
+      process.stdout.write(chunk); appendFileSync(LOG_FILE, chunk);
+    });
+    child.stderr.on('data', (chunk) => {
+      output = appendCommandOutput(output, chunk);
+      process.stderr.write(chunk); appendFileSync(LOG_FILE, chunk);
+    });
+    child.on('error', (error) => {
+      const text = `ERROR: ${error.message}`;
+      output = appendCommandOutput(output, text);
+      log(text); resolvePromise({ ok: false, code: -1, output });
+    });
+    child.on('close', (code) => resolvePromise({ ok: code === 0, code, output }));
   });
 }
 
@@ -184,6 +201,20 @@ async function makeWithSerialRetry(args, label, attempt) {
     result: serial.ok ? 'recovered' : 'failure',
   });
   return serial;
+}
+
+function failedMakeIsInfrastructure(result) {
+  const text = String(result?.output || '');
+  if (/No space left on device|Prerequisite check failed|Build dependency:\s+Please install|Please install Python 2\.x/i.test(text)) return true;
+  if (/Hash check failed|download failed|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(text)) return true;
+  if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(text)) return true;
+  return /No rule to make target[^\n]*build_dir[^\n]*\/linux-[^/\s]+\/linux-[^/\s]+\/\.config/i.test(text);
+}
+
+function makeFailureResult(result, incompatibleReason, infrastructureReason) {
+  return failedMakeIsInfrastructure(result)
+    ? { result: 'inconclusive', reason: infrastructureReason }
+    : { result: 'incompatible', reason: incompatibleReason };
 }
 
 function safeSlug(value) {
@@ -400,39 +431,41 @@ async function packageCompile(attempt) {
   attempt.sourceMakefiles = resolved.sourceMakefiles;
   attempt.rootTargets = resolved.targets;
   log(`Upstream root build targets / 上游入口目标: ${resolved.targets.join(' ')}`);
-  const environment = await runStage(attempt, 'buildEnvironment', () =>
-    makeWithSerialRetry(['tools/install', 'toolchain/install'], 'build environment', attempt));
-  if (!environment.ok) return { result: 'inconclusive', reason: 'build-environment-failure' };
+  const target = await runStage(attempt, 'targetPrepare', () =>
+    makeWithSerialRetry(['prepare'], 'Target build prerequisites', attempt));
+  if (!target.ok) return { result: 'inconclusive', reason: 'target-prerequisite-failure' };
   const compiled = await runStage(attempt, 'packageCompile', () =>
     makeWithSerialRetry(resolved.targets, `probe roots: ${ROOTS.join(',')}`, attempt));
-  if (!compiled.ok) log(`FAIL: package compile failed for Probe roots: ${ROOTS.join(', ')}`);
-  return { result: compiled.ok ? 'compatible' : 'incompatible', reason: compiled.ok ? '' : 'package-compile-failure' };
+  if (!compiled.ok) {
+    log(`FAIL: package compile failed for Probe roots: ${ROOTS.join(', ')}`);
+    return makeFailureResult(compiled, 'package-compile-failure', 'package-compile-infrastructure');
+  }
+  return { result: 'compatible', reason: '' };
 }
 
 async function rootfsIntegration(attempt) {
   const compiled = await packageCompile(attempt);
   if (compiled.result !== 'compatible') return compiled;
-  const target = await runStage(attempt, 'rootfsTarget', () =>
-    makeWithSerialRetry(['prepare'], 'RootFS target prerequisites', attempt));
-  if (!target.ok) return { result: 'inconclusive', reason: 'build-environment-failure' };
   const packages = await runStage(attempt, 'rootfsPackages', () =>
     makeWithSerialRetry(['package/compile'], 'RootFS selected packages', attempt));
-  if (!packages.ok) return { result: 'incompatible', reason: 'rootfs-package-compile-failure' };
+  if (!packages.ok) return makeFailureResult(packages, 'rootfs-package-compile-failure', 'rootfs-package-infrastructure');
   const installed = await runStage(attempt, 'rootfsInstall', () =>
     makeWithSerialRetry(['package/install'], 'rootfs install', attempt));
-  if (!installed.ok) log('FAIL: RootFS integration failed after Probe-root compilation');
-  return { result: installed.ok ? 'compatible' : 'incompatible', reason: installed.ok ? '' : 'rootfs-install-failure' };
+  if (!installed.ok) {
+    log('FAIL: RootFS integration failed after Probe-root compilation');
+    return makeFailureResult(installed, 'rootfs-install-failure', 'rootfs-install-infrastructure');
+  }
+  return { result: 'compatible', reason: '' };
 }
 
 async function firmwareIntegration(attempt) {
-  const finalConfig = await runStage(attempt, 'config', () => prepareConfig(attempt));
-  attempt.rootStates = finalConfig.states;
-  if (!finalConfig.ok) return { result: configFailureResult(finalConfig.reason), reason: finalConfig.reason };
+  const rootfs = await rootfsIntegration(attempt);
+  if (rootfs.result !== 'compatible') return rootfs;
   const firmware = await runStage(attempt, 'firmwareBuild', () =>
-    makeWithSerialRetry([], 'final package firmware', attempt));
+    makeWithSerialRetry(['target/install'], 'final package firmware', attempt));
   if (!firmware.ok) {
     log('FAIL: Final package-enabled firmware failed');
-    return { result: 'incompatible', reason: 'final-firmware-failure' };
+    return makeFailureResult(firmware, 'final-firmware-failure', 'firmware-build-infrastructure');
   }
   if (MODE === 'firmware-integration') return { result: 'compatible', reason: '' };
   const virtual = await runVirtualProbe({
