@@ -33,7 +33,7 @@ const runtimeSetup = readFileSync(resolve(import.meta.dirname, './setup-probe-ru
 assert(workflow.includes('bash scripts/install-probe-dependencies.sh'), 'Probe jobs must use the bounded dependency bootstrap helper');
 assert(dependencyInstaller.includes('PROBE_APT_MAX_ATTEMPTS:-3'), 'dependency bootstrap must default to three total attempts');
 assert(dependencyInstaller.includes('PROBE_APT_UPDATE_TIMEOUT_SECONDS:-60'), 'apt update attempts must default to the approved 60-second bound');
-assert(dependencyInstaller.includes('PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300'), 'apt install attempts must default to the approved 300-second bound');
+assert(dependencyInstaller.includes('PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300'), 'dependency bootstrap must default to the approved 300-second bound');
 assert(!dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS'), 'the obsolete one-size-fits-all apt timeout must not return');
 assert(dependencyInstaller.includes('prepare_initial_ubuntu_source'), 'dependency bootstrap must prepare the Ubuntu source before the first update attempt');
 assert(dependencyInstaller.indexOf('prepare_initial_ubuntu_source\nretry_apt \"apt-get update\"') > dependencyInstaller.indexOf('prepare_initial_ubuntu_source() {'),
@@ -364,7 +364,8 @@ assert.equal(packageNameEvidence.conclusion, 'incompatible', 'timeout-like packa
 
 const dir = mkdtempSync(join(tmpdir(), 'probe-evidence-'));
 try {
-  for (const [i, evidence] of [row('A', 'main', 'incompatible'), row('B', 'main', 'incompatible')].entries()) {
+  for (const [i, evidence] of [{ ...row('A', 'main', 'incompatible'), reason: 'package-compile-failure' },
+    { ...row('B', 'main', 'incompatible'), reason: 'package-unavailable' }].entries()) {
     const sub = join(dir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
   }
   const sampled = aggregateEvidence(dir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
@@ -372,7 +373,10 @@ try {
   assert.equal(sampled.overallConclusion, 'sampled-incompatible');
   assert.equal(sampled.overallResult, 'FAIL (sampled)');
   assert.equal(sampled.summaryScopes.length, 2, 'Source summary must always retain one top-level row per source');
-  assert(sampled.lines.some((line) => line.includes('| A | **FAIL (sampled)** | **0%** | 0/1 | 0 | 0 | — |')), 'sampled 0% source must be explicit without claiming full incompatibility');
+  assert(sampled.lines.includes('| Source / 源码源 | Compatible / 兼容 | Incompatible / 不兼容 | Inconclusive / 待定 | Selected-package primary-cause rate / 选中插件主因故障率 | Skipped / 跳过 | Notes / 备注 |'),
+    'Source summary must expose the approved bilingual headers and selected-package primary-cause column');
+  assert(sampled.lines.some((line) => line.includes('| A | 0 | 1 | 0 | **1/1 • 100% • compile/link** | 0 | — |')),
+    'sampled incompatible source must preserve counts and expose the selected-package primary cause without claiming exhaustive coverage');
   assert(sampled.lines.some((line) => line.includes('Probe roots / 测试入口: `luci-app-test`')), 'summary must expose the probed package/root');
   const full = aggregateEvidence(dir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
@@ -384,13 +388,15 @@ try {
 
 
   const mixedDir = join(dir, 'mixed'); mkdirSync(mixedDir);
-  for (const [i, evidence] of [row('OpenWrt', 'main', 'compatible'), row('OpenWrt', 'openwrt-23.05', 'incompatible'),
-    row('ImmortalWrt', 'openwrt-23.05', 'incompatible')].entries()) {
+  for (const [i, evidence] of [row('OpenWrt', 'main', 'compatible'),
+    { ...row('OpenWrt', 'openwrt-23.05', 'incompatible'), reason: 'package-unavailable' },
+    { ...row('ImmortalWrt', 'openwrt-23.05', 'incompatible'), reason: 'package-compile-failure' }].entries()) {
     const sub = join(mixedDir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
   }
   const mixed = aggregateEvidence(mixedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '3', COVERAGE_PLANNED: '3', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert(mixed.lines.some((line) => line.includes('| OpenWrt | **MIXED** | **50%** | 1/2 | 0 | 0 | — |')), 'mixed source must keep its top-level total');
+  assert(mixed.lines.some((line) => line.includes('| OpenWrt | 1 | 1 | 0 | **1/2 • 50% • unavailable** | 0 | — |')),
+    'mixed source must keep its top-level totals and selected-package primary-cause rate');
   assert(mixed.lines.some((line) => line.includes('<summary>OpenWrt · Branch breakdown / 分支明细</summary>')), 'mixed source must expose branch breakdown');
   assert(!mixed.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'uniform source must stay compact');
 
@@ -402,7 +408,8 @@ try {
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
   assert.equal(error.overallResult, 'INCOMPLETE');
   assert.equal(error.overallConclusion, 'incomplete');
-  assert(error.lines.some((line) => line.includes('| OpenWrt | **INCOMPLETE** | **100%** | 1/1 | 0 | 1 | Infrastructure incomplete / 基础设施未完成: 1 (timeout) |')), 'one infrastructure failure must mark a mixed source incomplete without erasing a valid result');
+  assert(error.lines.some((line) => line.includes('| OpenWrt | 1 | 0 | 1 | **0/2 • 0% • —** | 0 | Infrastructure incomplete / 基础设施未完成: 1 (timeout) |')),
+    'one infrastructure failure must remain inconclusive without erasing the valid compatible result');
   assert(error.lines.some((line) => line.includes('Conclusive compatibility / 明确结果兼容率')), 'compatibility percentage must be labeled as conclusive-only');
 
   const infraOnlyDir = join(dir, 'infra-only'); mkdirSync(infraOnlyDir);
@@ -427,7 +434,7 @@ try {
   const skipInfra = aggregateEvidence(skipInfraDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
   assert.equal(skipInfra.overallResult, 'INCOMPLETE');
-  assert(skipInfra.lines.some((line) => line.includes('| OpenWrt | **INCOMPLETE** | **—** | 0/0 | 1 | 1 | Infrastructure incomplete / 基础设施未完成: 1 (timeout); Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert(skipInfra.lines.some((line) => line.includes('| OpenWrt | 0 | 0 | 1 | **0/2 • 0% • —** | 1 | Infrastructure incomplete / 基础设施未完成: 1 (timeout); Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'skipped environments plus one infrastructure failure must be INCOMPLETE rather than ERROR');
 
   const skippedDir = join(dir, 'skipped-source'); mkdirSync(skippedDir);
@@ -438,10 +445,10 @@ try {
   }
   const skippedSource = aggregateEvidence(skippedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert(skippedSource.lines.some((line) => line.includes('| OpenWrt | **SKIP** | **—** | 0/0 | 2 | 0 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert(skippedSource.lines.some((line) => line.includes('| OpenWrt | 0 | 0 | 0 | **0/2 • 0% • —** | 2 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'a source with no available plugin must be SKIP and explicitly explain plugin absence');
   assert(skippedSource.lines.some((line) => line.includes('<summary>OpenWrt · Branch breakdown / 分支明细</summary>')), 'skipped sources must expose branch details');
-  assert(skippedSource.lines.some((line) => line.includes('| openwrt-18.06 | **SKIP** | **—** | 0/0 | 1 | 0 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert(skippedSource.lines.some((line) => line.includes('| openwrt-18.06 | 0 | 0 | 0 | **0/1 • 0% • —** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'skipped branch rows must explicitly annotate plugin absence');
 
   const passSkipDir = join(dir, 'pass-skip'); mkdirSync(passSkipDir);
@@ -450,7 +457,7 @@ try {
   }
   const passSkip = aggregateEvidence(passSkipDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '100', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'true', BATCH_COUNT: '1' });
-  assert(passSkip.lines.some((line) => line.includes('| ImmortalWrt | **PASS (sampled)** | **100%** | 1/1 | 1 | 0 |')),
+  assert(passSkip.lines.some((line) => line.includes('| ImmortalWrt | 1 | 0 | 0 | **0/2 • 0% • —** | 1 |')),
     'compatible plus skipped environments must remain PASS-class while showing skipped count');
   assert(passSkip.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'PASS plus SKIP must expose the skipped branch');
 } finally { rmSync(dir, { recursive: true, force: true }); }
