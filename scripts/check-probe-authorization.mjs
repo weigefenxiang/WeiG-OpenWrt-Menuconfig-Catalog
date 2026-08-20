@@ -14,7 +14,7 @@ const requestRaw = {
   schema: 3, channel: 'dev', mode: 'package-compile', useDefconfig: true,
   baselinePackageConfig, packageConfig, packageIntent: [{ package: 'luci-app-oscam', before: 'n', after: 'y' }],
   environmentScope: { sources: ['*'], branches: ['*'], targetSystems: ['*'], subtargets: ['*'], profiles: ['*'] },
-  coverage: { mode: 'auto', limit: 200 }, maxParallel: 0, execute: false,
+  coverage: { mode: 'auto', limit: policy.probe.coverage.maxLimit }, maxParallel: 0, execute: false,
 };
 const request = normalizeProbeRequest(requestRaw);
 
