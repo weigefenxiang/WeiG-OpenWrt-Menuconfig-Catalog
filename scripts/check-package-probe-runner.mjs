@@ -14,16 +14,53 @@ import { join } from 'node:path';
 const args = process.argv.slice(2);
 appendFileSync(process.env.FAKE_MAKE_LOG, JSON.stringify(args) + '\\n');
 if (args.includes('defconfig')) {
-  if (process.env.FAKE_EXPECT_DISABLED === 'true' && !readFileSync(join(process.cwd(), '.config'), 'utf8').includes('# CONFIG_PACKAGE_beta is not set')) process.exit(2);
+  const configPath = join(process.cwd(), '.config');
+  if (process.env.FAKE_EXPECT_DISABLED === 'true' && !readFileSync(configPath, 'utf8').includes('# CONFIG_PACKAGE_beta is not set')) process.exit(2);
   mkdirSync(join(process.cwd(), 'tmp'), { recursive: true });
-  writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), 'Source-Makefile: package/network/alpha/Makefile\\nPackage: alpha\\n');
-  appendFileSync(join(process.cwd(), '.config'), 'CONFIG_PACKAGE_auto-dependency=y\\n');
+  const unavailable = process.env.FAKE_PACKAGE_UNAVAILABLE === 'true';
+  writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), unavailable
+    ? 'Source-Makefile: package/network/beta/Makefile\\nPackage: beta\\n'
+    : 'Source-Makefile: package/network/alpha/Makefile\\nPackage: alpha\\n');
+  if (unavailable || process.env.FAKE_REJECT_ROOT === 'true') {
+    const config = readFileSync(configPath, 'utf8').replace(/^CONFIG_PACKAGE_alpha=[my]\\r?\\n?/m, '');
+    writeFileSync(configPath, config);
+  }
+  appendFileSync(configPath, 'CONFIG_PACKAGE_auto-dependency=y\\n');
 }
-if (process.env.FAKE_FAIL_INFRA === 'true' && args.includes('package/network/alpha/compile')) {
+const rootCompile = args.includes('package/network/alpha/compile');
+if (process.env.FAKE_FAIL_INFRA === 'true' && rootCompile) {
   console.error('curl: (6) Could not resolve host: downloads.example.invalid');
   process.exit(2);
 }
-if (process.env.FAKE_FAIL_PARALLEL === 'true' && args.includes('package/network/alpha/compile') && args[0] !== '-j1') process.exitCode = 1;
+if (process.env.FAKE_FAIL_ROOT === 'true' && rootCompile) {
+  console.error('ERROR: package/network/alpha failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_PREREQUISITE === 'true' && rootCompile) {
+  console.error('ERROR: package/kernel/linux failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_UNATTRIBUTED === 'true' && rootCompile) {
+  console.error('collect2: error: ld returned 1 exit status');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_ROOTFS_PREREQUISITE === 'true' && args.includes('package/compile')) {
+  console.error('ERROR: package/kernel/linux failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_ROOTFS_ROOT_CONFLICT === 'true' && args.includes('package/install')) {
+  console.error('ERROR: alpha-1.0-r0: trying to overwrite etc/example owned by beta-1.0-r0');
+  process.exit(2);
+}
+if (process.env.FAKE_ROOTFS_UNRELATED_CONFLICT === 'true' && args.includes('package/install')) {
+  console.error('ERROR: gamma-1.0-r0: trying to overwrite etc/example owned by beta-1.0-r0');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_FIRMWARE_PREREQUISITE === 'true' && args.includes('target/install')) {
+  console.error('ERROR: package/kernel/linux failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_PARALLEL === 'true' && rootCompile && args[0] !== '-j1') process.exitCode = 1;
 `;
 }
 
@@ -73,6 +110,15 @@ function scenario(mode, options = {}) {
         FAKE_FAIL_PARALLEL: String(options.failParallel === true),
         FAKE_FAIL_INFRA: String(options.failInfrastructure === true),
         FAKE_EXPECT_DISABLED: String(options.expectDisabled === true),
+        FAKE_PACKAGE_UNAVAILABLE: String(options.packageUnavailable === true),
+        FAKE_REJECT_ROOT: String(options.rejectRoot === true),
+        FAKE_FAIL_ROOT: String(options.failRoot === true),
+        FAKE_FAIL_PREREQUISITE: String(options.failPrerequisite === true),
+        FAKE_FAIL_UNATTRIBUTED: String(options.failUnattributed === true),
+        FAKE_FAIL_ROOTFS_PREREQUISITE: String(options.failRootfsPrerequisite === true),
+        FAKE_ROOTFS_ROOT_CONFLICT: String(options.rootfsRootConflict === true),
+        FAKE_ROOTFS_UNRELATED_CONFLICT: String(options.rootfsUnrelatedConflict === true),
+        FAKE_FAIL_FIRMWARE_PREREQUISITE: String(options.failFirmwarePrerequisite === true),
         PROBE_WORKDIR: workdir,
         PROBE_LOG: join(directory, 'probe.log'),
         PROBE_RUNTIME: runtimeFile,
@@ -122,6 +168,34 @@ scenario('package-compile', { expectDisabled: true, intent: [
   { package: 'alpha', before: 'n', after: 'y' },
   { package: 'beta', before: 'y', after: 'n' },
 ] });
+
+const l2Unavailable = scenario('package-compile', { packageUnavailable: true });
+assert.equal(l2Unavailable.runtime.conclusion, 'incompatible');
+assert.equal(l2Unavailable.runtime.reason, 'package-unavailable');
+assert.deepEqual(l2Unavailable.runtime.attempts[0].unavailableRoots, ['alpha']);
+assert.equal(l2Unavailable.calls.some((args) => args.includes('package/network/alpha/compile')), false,
+  'an unavailable selected package must stop before package compilation');
+
+const l2Kconfig = scenario('package-compile', { rejectRoot: true });
+assert.equal(l2Kconfig.runtime.conclusion, 'incompatible');
+assert.equal(l2Kconfig.runtime.reason, 'kconfig-unsatisfied');
+assert.deepEqual(l2Kconfig.runtime.attempts[0].rejectedRoots, ['alpha']);
+
+const l2RootFailure = scenario('package-compile', { failRoot: true });
+assert.equal(l2RootFailure.runtime.conclusion, 'incompatible');
+assert.equal(l2RootFailure.runtime.reason, 'package-compile-failure');
+assert(l2RootFailure.runtime.attempts[0].failedBuildTargets.includes('package/network/alpha'));
+
+const l2Prerequisite = scenario('package-compile', { failPrerequisite: true, expectedStatus: 1 });
+assert.equal(l2Prerequisite.runtime.conclusion, 'inconclusive');
+assert.equal(l2Prerequisite.runtime.reason, 'package-compile-prerequisite-failure');
+assert.deepEqual(l2Prerequisite.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux']);
+
+const l2Unattributed = scenario('package-compile', { failUnattributed: true, expectedStatus: 1 });
+assert.equal(l2Unattributed.runtime.conclusion, 'inconclusive');
+assert.equal(l2Unattributed.runtime.reason, 'package-compile-unattributed-failure');
+assert.deepEqual(l2Unattributed.runtime.attempts[0].failedBuildTargets, []);
+
 const l2Infrastructure = scenario('package-compile', { failInfrastructure: true, expectedStatus: 1 });
 assert.equal(l2Infrastructure.runtime.conclusion, 'inconclusive');
 assert.equal(l2Infrastructure.runtime.reason, 'package-compile-infrastructure');
@@ -140,6 +214,21 @@ assert(l3.calls.findIndex((args) => args.includes('package/network/alpha/compile
 assert(l3.calls.findIndex((args) => args.includes('package/compile')) < l3.calls.findIndex((args) => args.includes('package/install')));
 assert.equal(l3.runtime.attempts[0].deepestPassedLevel, 3);
 
+const l3Prerequisite = scenario('rootfs-integration', { failRootfsPrerequisite: true, expectedStatus: 1 });
+assert.equal(l3Prerequisite.runtime.conclusion, 'inconclusive');
+assert.equal(l3Prerequisite.runtime.reason, 'rootfs-package-prerequisite-failure');
+assert.deepEqual(l3Prerequisite.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux']);
+
+const l3RootConflict = scenario('rootfs-integration', { rootfsRootConflict: true });
+assert.equal(l3RootConflict.runtime.conclusion, 'incompatible');
+assert.equal(l3RootConflict.runtime.reason, 'rootfs-conflict');
+assert(l3RootConflict.runtime.attempts[0].rootfsConflictPackages.includes('alpha'));
+
+const l3UnrelatedConflict = scenario('rootfs-integration', { rootfsUnrelatedConflict: true, expectedStatus: 1 });
+assert.equal(l3UnrelatedConflict.runtime.conclusion, 'inconclusive');
+assert.equal(l3UnrelatedConflict.runtime.reason, 'rootfs-install-prerequisite-failure');
+assert.equal(l3UnrelatedConflict.runtime.attempts[0].rootfsConflictPackages.includes('alpha'), false);
+
 const l4 = scenario('firmware-integration');
 assert.equal(l4.calls.filter((args) => args.includes('defconfig')).length, 1, 'L4 must resolve Final direct intent only once');
 assert.equal(l4.calls.filter((args) => args.includes('prepare')).length, 1, 'L4 must reuse one Target preparation');
@@ -150,6 +239,16 @@ assert.equal(l4.calls.filter((args) => args.includes('target/install')).length, 
 assert(l4.calls.findIndex((args) => args.includes('package/install')) < l4.calls.findIndex((args) => args.includes('target/install')));
 assert.equal(l4.runtime.attempts[0].deepestPassedLevel, 4);
 assert(!('baselinePackageCount' in l4.runtime));
+
+const l4Prerequisite = scenario('firmware-integration', { failFirmwarePrerequisite: true, expectedStatus: 1 });
+assert.equal(l4Prerequisite.runtime.conclusion, 'inconclusive');
+assert.equal(l4Prerequisite.runtime.reason, 'firmware-prerequisite-failure');
+assert.deepEqual(l4Prerequisite.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux']);
+
+const l7InheritedPrerequisite = scenario('reboot-validation', { failFirmwarePrerequisite: true, expectedStatus: 1 });
+assert.equal(l7InheritedPrerequisite.runtime.conclusion, 'inconclusive',
+  'L5-L7 must inherit the same prerequisite attribution instead of blaming the selected package');
+assert.equal(l7InheritedPrerequisite.runtime.reason, 'firmware-prerequisite-failure');
 
 const l7 = scenario('reboot-validation');
 assert.equal(l7.calls.filter((args) => args.includes('defconfig')).length, 1, 'L7 must resolve Final direct intent once');
