@@ -19,6 +19,10 @@ if (args.includes('defconfig')) {
   writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), 'Source-Makefile: package/network/alpha/Makefile\\nPackage: alpha\\n');
   appendFileSync(join(process.cwd(), '.config'), 'CONFIG_PACKAGE_auto-dependency=y\\n');
 }
+if (process.env.FAKE_FAIL_INFRA === 'true' && args.includes('package/network/alpha/compile')) {
+  console.error('curl: (6) Could not resolve host: downloads.example.invalid');
+  process.exit(2);
+}
 if (process.env.FAKE_FAIL_PARALLEL === 'true' && args.includes('package/network/alpha/compile') && args[0] !== '-j1') process.exitCode = 1;
 `;
 }
@@ -67,6 +71,7 @@ function scenario(mode, options = {}) {
         PROBE_MAKE_ARGUMENT: fakeMake,
         FAKE_MAKE_LOG: makeLog,
         FAKE_FAIL_PARALLEL: String(options.failParallel === true),
+        FAKE_FAIL_INFRA: String(options.failInfrastructure === true),
         FAKE_EXPECT_DISABLED: String(options.expectDisabled === true),
         PROBE_WORKDIR: workdir,
         PROBE_LOG: join(directory, 'probe.log'),
@@ -88,7 +93,7 @@ function scenario(mode, options = {}) {
         PROBE_RUNTIME_OBSERVATION_SECONDS: '1',
       },
     });
-    assert.equal(result.status, 0, `${mode} failed:\n${result.stdout}\n${result.stderr}`);
+    assert.equal(result.status, options.expectedStatus ?? 0, `${mode} failed:\n${result.stdout}\n${result.stderr}`);
     const calls = readFileSync(makeLog, 'utf8').trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
     const runtime = JSON.parse(readFileSync(runtimeFile, 'utf8'));
     return { calls, runtime };
@@ -99,10 +104,15 @@ function scenario(mode, options = {}) {
 
 const l2 = scenario('package-compile', { failParallel: true });
 assert.equal(l2.calls.filter((args) => args.includes('defconfig')).length, 1);
-assert.equal(l2.calls.filter((args) => args.includes('tools/install') && args.includes('toolchain/install')).length, 1);
+assert.equal(l2.calls.filter((args) => args.includes('prepare')).length, 1,
+  'L2 must let upstream prepare Target/kernel prerequisites before Root compilation');
+assert.equal(l2.calls.filter((args) => args.includes('tools/install') && args.includes('toolchain/install')).length, 0,
+  'L2 must not bypass the upstream prepare target with a partial build-environment target set');
 const l2Targets = l2.calls.filter((args) => args.includes('package/network/alpha/compile'));
 assert.equal(l2Targets.length, 2, 'L2 must retry the same Root target set exactly once');
 assert(l2Targets[0][0] !== '-j1' && l2Targets[1][0] === '-j1');
+assert(l2.calls.findIndex((args) => args.includes('prepare')) < l2.calls.findIndex((args) => args.includes('package/network/alpha/compile')),
+  'Target/kernel prerequisites must exist before the Root Source-Makefile target enters the upstream graph');
 assert.equal(l2.runtime.attempts[0].serialRetries[0].result, 'recovered');
 assert.equal(l2.runtime.attempts[0].deepestPassedLevel, 2);
 assert.equal(l2.runtime.requestedPackageCount, 1);
@@ -112,28 +122,42 @@ scenario('package-compile', { expectDisabled: true, intent: [
   { package: 'alpha', before: 'n', after: 'y' },
   { package: 'beta', before: 'y', after: 'n' },
 ] });
+const l2Infrastructure = scenario('package-compile', { failInfrastructure: true, expectedStatus: 1 });
+assert.equal(l2Infrastructure.runtime.conclusion, 'inconclusive');
+assert.equal(l2Infrastructure.runtime.reason, 'package-compile-infrastructure');
+assert.equal(l2Infrastructure.runtime.attempts[0].serialRetries[0].result, 'failure');
 
 const l3 = scenario('rootfs-integration');
 assert.equal(l3.calls.filter((args) => args.includes('package/network/alpha/compile')).length, 1,
   'L3 must reuse its single L2 compile rather than repeating it');
 assert.equal(l3.calls.filter((args) => args.includes('prepare')).length, 1,
-  'L3 must let upstream prepare Target prerequisites before RootFS installation');
+  'L3 must reuse the L2 Target preparation instead of preparing the Target twice');
 assert.equal(l3.calls.filter((args) => args.includes('package/compile')).length, 1,
   'L3 must let upstream build the complete selected RootFS package set');
 assert.equal(l3.calls.filter((args) => args.includes('package/install')).length, 1);
-assert(l3.calls.findIndex((args) => args.includes('prepare')) < l3.calls.findIndex((args) => args.includes('package/compile')));
+assert(l3.calls.findIndex((args) => args.includes('prepare')) < l3.calls.findIndex((args) => args.includes('package/network/alpha/compile')));
+assert(l3.calls.findIndex((args) => args.includes('package/network/alpha/compile')) < l3.calls.findIndex((args) => args.includes('package/compile')));
 assert(l3.calls.findIndex((args) => args.includes('package/compile')) < l3.calls.findIndex((args) => args.includes('package/install')));
 assert.equal(l3.runtime.attempts[0].deepestPassedLevel, 3);
 
 const l4 = scenario('firmware-integration');
-assert.equal(l4.calls.length, 2, 'L4 must resolve direct roots once, then issue one full firmware Make call');
-assert(l4.calls[0].includes('defconfig'));
-assert.equal(l4.calls[1].length, 1, 'L4 must not execute a hidden Baseline target');
+assert.equal(l4.calls.filter((args) => args.includes('defconfig')).length, 1, 'L4 must resolve Final direct intent only once');
+assert.equal(l4.calls.filter((args) => args.includes('prepare')).length, 1, 'L4 must reuse one Target preparation');
+assert.equal(l4.calls.filter((args) => args.includes('package/network/alpha/compile')).length, 1, 'L4 must reuse one L2 Root compile');
+assert.equal(l4.calls.filter((args) => args.includes('package/compile')).length, 1, 'L4 must reuse one L3 package compile');
+assert.equal(l4.calls.filter((args) => args.includes('package/install')).length, 1, 'L4 must reuse one L3 package install');
+assert.equal(l4.calls.filter((args) => args.includes('target/install')).length, 1, 'L4 must add only the upstream firmware integration target');
+assert(l4.calls.findIndex((args) => args.includes('package/install')) < l4.calls.findIndex((args) => args.includes('target/install')));
 assert.equal(l4.runtime.attempts[0].deepestPassedLevel, 4);
 assert(!('baselinePackageCount' in l4.runtime));
 
 const l7 = scenario('reboot-validation');
-assert.equal(l7.calls.length, 2, 'L7 must reuse one resolved Final firmware build');
+assert.equal(l7.calls.filter((args) => args.includes('defconfig')).length, 1, 'L7 must resolve Final direct intent once');
+assert.equal(l7.calls.filter((args) => args.includes('prepare')).length, 1, 'L7 must reuse one Target preparation');
+assert.equal(l7.calls.filter((args) => args.includes('package/network/alpha/compile')).length, 1, 'L7 must reuse one L2 Root compile');
+assert.equal(l7.calls.filter((args) => args.includes('package/compile')).length, 1, 'L7 must reuse one L3 package compile');
+assert.equal(l7.calls.filter((args) => args.includes('package/install')).length, 1, 'L7 must reuse one L3 package install');
+assert.equal(l7.calls.filter((args) => args.includes('target/install')).length, 1, 'L7 must reuse one L4 firmware integration');
 assert.equal(l7.runtime.conclusion, 'compatible');
 assert.equal(l7.runtime.attempts[0].deepestPassedLevel, 7);
 assert.equal(l7.runtime.attempts[0].stages.secondRuntimeHealth.status, 'success');
