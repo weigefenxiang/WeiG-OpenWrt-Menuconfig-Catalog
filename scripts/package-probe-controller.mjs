@@ -30,6 +30,16 @@ const DIMENSION_FIELDS = [
   ['sources', 'source'], ['branches', 'branch'], ['targetSystems', 'targetSystem'],
   ['subtargets', 'subtarget'], ['profiles', 'profile'],
 ];
+const PROBE_POLICY = JSON.parse(readFileSync(join(ROOT, '.github', 'automation-policy.json'), 'utf8')).probe || {};
+const PROBE_COVERAGE_DEFAULT_LIMIT = Number(PROBE_POLICY.coverage?.defaultLimit);
+const PROBE_COVERAGE_MAX_LIMIT = Number(PROBE_POLICY.coverage?.maxLimit);
+if (!Number.isInteger(PROBE_COVERAGE_DEFAULT_LIMIT) || !Number.isInteger(PROBE_COVERAGE_MAX_LIMIT) ||
+    PROBE_COVERAGE_DEFAULT_LIMIT < 1 || PROBE_COVERAGE_DEFAULT_LIMIT > PROBE_COVERAGE_MAX_LIMIT) {
+  throw new Error('automation-policy.json requires probe.coverage defaultLimit/maxLimit');
+}
+export const PROBE_COVERAGE_LIMITS = Object.freeze({
+  defaultLimit: PROBE_COVERAGE_DEFAULT_LIMIT, maxLimit: PROBE_COVERAGE_MAX_LIMIT,
+});
 
 const plainObject = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 const stableUnique = (values) => [...new Set(values)];
@@ -142,7 +152,9 @@ export function normalizeProbeCoverage(value) {
   if (!['auto', 'all'].includes(mode)) throw new Error(`unsupported coverage mode: ${mode}`);
   if (mode === 'all') return { mode: 'all' };
   const limit = Number(value.limit);
-  if (!Number.isInteger(limit) || limit < 1 || limit > 256) throw new Error('coverage.limit must be an integer from 1 to 256');
+  if (!Number.isInteger(limit) || limit < 1 || limit > PROBE_COVERAGE_MAX_LIMIT) {
+    throw new Error(`coverage.limit must be an integer from 1 to ${PROBE_COVERAGE_MAX_LIMIT}`);
+  }
   return { mode: 'auto', limit };
 }
 
@@ -468,7 +480,13 @@ function stratifiedSample(rows, limit, dimensions, seed, depth = 0, path = '') {
 
 export function selectProbeCoverage(rows, { coverage, environmentScope, samplingSeed }) {
   const ordered = [...rows].sort((a, b) => rowIdentity(a).localeCompare(rowIdentity(b), undefined, { numeric: true }));
-  if (coverage.mode === 'all' || ordered.length <= coverage.limit) return ordered;
+  if (coverage.mode === 'all') {
+    if (ordered.length > PROBE_COVERAGE_MAX_LIMIT) {
+      throw new Error(`Exhaustive coverage matched ${ordered.length} environments; narrow the scope to at most ${PROBE_COVERAGE_MAX_LIMIT}`);
+    }
+    return ordered;
+  }
+  if (ordered.length <= coverage.limit) return ordered;
   const wildcardDimensions = DIMENSION_FIELDS.filter(([scopeKey]) => environmentScope[scopeKey].includes('*')).map(([, field]) => field);
   return stratifiedSample(ordered, Math.min(coverage.limit, ordered.length), wildcardDimensions, samplingSeed);
 }
@@ -636,11 +654,7 @@ function manualRequest(env, maximumBytes, policy) {
     before: normalizedState(baseline.states, packageName), after: normalizedState(final.states, packageName) }));
   const mode = env.PROBE_MODE || 'config-resolve';
   const coverageMode = env.COVERAGE_MODE || 'auto';
-  const configuredLimit = policy?.probe?.autoCoverageLimits?.[mode];
   const explicitLimit = String(env.COVERAGE_LIMIT || '').trim();
-  if (coverageMode === 'auto' && !explicitLimit && !Number.isInteger(Number(configuredLimit))) {
-    throw new Error(`coverage limit is required for ${mode} until a measured default is approved`);
-  }
   return normalizeProbeRequest({
     schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode,
     useDefconfig: true, baselinePackageConfig: baseline.packageConfig,
@@ -650,7 +664,7 @@ function manualRequest(env, maximumBytes, policy) {
       targetSystems: [env.TARGET_SYSTEM || '*'], subtargets: [env.SUBTARGET || '*'], profiles: [env.TARGET_PROFILE || '*'],
     },
     coverage: { mode: coverageMode, ...(coverageMode === 'all' ? {} : {
-      limit: Number(explicitLimit || configuredLimit),
+      limit: Number(explicitLimit || PROBE_COVERAGE_DEFAULT_LIMIT),
     }) },
     maxParallel: Number(env.MAX_PARALLEL || 0), execute: String(env.DRY_RUN || 'false') !== 'true',
   }, maximumBytes);
