@@ -14,7 +14,6 @@ const WORKDIR = resolve(process.env.PROBE_WORKDIR || join(ROOT, 'work', 'upstrea
 const LOG_FILE = resolve(process.env.PROBE_LOG || join(ROOT, 'probe.log'));
 const RUNTIME_FILE = resolve(process.env.PROBE_RUNTIME || join(ROOT, 'probe-runtime.json'));
 const MODE = String(process.env.PROBE_MODE || 'config-resolve');
-const USE_DEFCONFIG = String(process.env.PROBE_USE_DEFCONFIG || 'true') !== 'false';
 const TARGET = String(process.env.PROBE_TARGET || '');
 const PROFILE = String(process.env.PROBE_PROFILE || '');
 const TARGET_SYSTEM = String(process.env.PROBE_TARGET_SYSTEM || '');
@@ -27,6 +26,7 @@ const FINAL_PACKAGE_CONFIG = Buffer.from(String(process.env.PROBE_PACKAGE_CONFIG
 const INTENT_JSON = Buffer.from(String(process.env.PROBE_PACKAGE_INTENT || 'W10'), 'base64url').toString('utf8');
 const FINAL_STATES = parsePackageConfig(FINAL_PACKAGE_CONFIG);
 const INTENT = parseIntent(INTENT_JSON);
+const DIRECT_STATES = directIntentStates(INTENT);
 const ROOTS = String(process.env.PROBE_ROOTS || '').split(',').map((row) => row.trim()).filter(Boolean);
 const MAKE_COMMAND = String(process.env.PROBE_MAKE_COMMAND || 'make');
 const MAKE_PREFIX = String(process.env.PROBE_MAKE_ARGUMENT || '').trim();
@@ -77,6 +77,19 @@ function parseIntent(text) {
   catch { throw new Error('PROBE_PACKAGE_INTENT is invalid JSON'); }
   if (!Array.isArray(rows)) throw new Error('PROBE_PACKAGE_INTENT must be an array');
   return rows;
+}
+
+function directIntentStates(rows) {
+  const states = new Map();
+  for (const row of rows) {
+    const packageName = String(row?.package || '');
+    const value = String(row?.after || 'n');
+    if (!PACKAGE_RE.test(packageName) || !['n', 'm', 'y'].includes(value) || states.has(packageName)) {
+      throw new Error(`invalid or duplicate direct package intent: ${packageName}`);
+    }
+    states.set(packageName, value);
+  }
+  return states;
 }
 
 function parseTargetBatch(text) {
@@ -131,7 +144,7 @@ async function runStage(attempt, name, action) {
 }
 
 log(`Make concurrency / Make 并发: -j${JOBS}`);
-log(`Defconfig: ${USE_DEFCONFIG ? 'on' : 'off'}`);
+log('Defconfig: on (upstream resolver)');
 log(`Probe roots / 测试入口: ${ROOTS.join(', ')}`);
 
 async function command(file, args, options = {}) {
@@ -173,83 +186,63 @@ async function makeWithSerialRetry(args, label, attempt) {
   return serial;
 }
 
-function writeConfig(states) {
-  const lines = [TARGET_CONFIG.trim()];
-  for (const [packageName, state] of states) lines.push(`CONFIG_PACKAGE_${packageName}=${state}`);
-  writeFileSync(join(WORKDIR, '.config'), `${lines.filter(Boolean).join('\n')}\n`);
-}
-
-function packageState(packageName) {
-  const text = readFileSync(join(WORKDIR, '.config'), 'utf8');
-  const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = text.match(new RegExp(`^CONFIG_PACKAGE_${escaped}=([my])$`, 'm'));
-  return match?.[1] || 'n';
-}
-
-function rootStates() {
-  return Object.fromEntries(ROOTS.map((name) => [name, packageState(name)]));
-}
-
-async function prepareConfig(states, attempt, { roots = false, metadata = false, label = 'config' } = {}) {
-  writeConfig(states);
-  let result = { ok: true, code: 0 };
-  if (USE_DEFCONFIG) result = await make(['defconfig'], false);
-  else if (metadata) result = await make(['prepare-tmpinfo'], false);
-  if (!result.ok) return { ok: false, states: {}, reason: `${label}-${USE_DEFCONFIG ? 'defconfig' : 'metadata'}-failure` };
-  const actual = roots ? rootStates() : {};
-  if (roots) {
-    const rejected = ROOTS.filter((name) => actual[name] !== FINAL_STATES.get(name));
-    if (rejected.length) {
-      log(`FAIL: directly selected Probe roots did not survive ${USE_DEFCONFIG ? 'make defconfig' : 'submitted config'}: ${JSON.stringify(actual)}`);
-      return { ok: false, states: actual, reason: 'root-kconfig-rejected' };
-    }
-  }
-  if (!USE_DEFCONFIG && metadata) {
-    // prepare-tmpinfo must not rewrite the submitted .config; root state is checked after metadata preparation.
-    const after = rootStates();
-    const changed = ROOTS.filter((name) => after[name] !== FINAL_STATES.get(name));
-    if (changed.length) {
-      log(`ERROR: prepare-tmpinfo changed directly selected Probe roots: ${JSON.stringify(after)}`);
-      return { ok: false, states: after, reason: 'root-state-changed' };
-    }
-    return { ok: true, states: after };
-  }
-  return { ok: true, states: actual };
-}
-
-
 function safeSlug(value) {
   return String(value || 'default').replace(/[^A-Za-z0-9_.-]/g, '-').replace(/-+/g, '-').slice(0, 120) || 'default';
 }
 
-function packageStateFromText(text, packageName) {
-  const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return String(text || '').match(new RegExp(`^CONFIG_PACKAGE_${escaped}=([my])$`, 'm'))?.[1] || 'n';
+function packageStatesFromText(text) {
+  return new Map([...String(text || '').matchAll(/^CONFIG_PACKAGE_([A-Za-z0-9][A-Za-z0-9+_.@-]{0,95})=([my])$/gm)]
+    .map((match) => [match[1], match[2]]));
 }
 
 function rootRequestedStates() {
-  const direct = new Map(INTENT.filter((row) => ROOTS.includes(String(row?.package || '')))
-    .map((row) => [String(row.package), String(row.after || 'y')]));
-  return new Map(ROOTS.map((root) => [root, ['m', 'y'].includes(direct.get(root)) ? direct.get(root) : (FINAL_STATES.get(root) || 'y')]));
+  return new Map(ROOTS.map((root) => [root, DIRECT_STATES.get(root) || FINAL_STATES.get(root) || 'y']));
 }
 
-function l1ConfigText(environment, roots) {
-  const lines = ['CONFIG_HAVE_DOT_CONFIG=y', String(environment.targetConfig || '').trim()];
-  for (const [packageName, state] of roots) lines.push(`CONFIG_PACKAGE_${packageName}=${state}`);
+function probeConfigText(targetConfig, requestedStates) {
+  const lines = ['CONFIG_HAVE_DOT_CONFIG=y', String(targetConfig || '').trim()];
+  for (const [packageName, state] of requestedStates) {
+    lines.push(state === 'n' ? `# CONFIG_PACKAGE_${packageName} is not set` : `CONFIG_PACKAGE_${packageName}=${state}`);
+  }
   return `${lines.filter(Boolean).join('\n')}\n`;
+}
+
+async function resolveProbeConfig({ targetConfig, requestedStates, file, resolveConfig, roots, attempt, label }) {
+  writeFileSync(file, probeConfigText(targetConfig, requestedStates));
+  const result = await resolveConfig(file);
+  if (!result.ok) return { ok: false, states: {}, config: file, reason: `${label}-defconfig-failure` };
+  const resolvedStates = packageStatesFromText(readFileSync(file, 'utf8'));
+  const actual = Object.fromEntries(roots.map((root) => [root, resolvedStates.get(root) || 'n']));
+  const directActual = Object.fromEntries([...requestedStates].map(([packageName]) => [packageName, resolvedStates.get(packageName) || 'n']));
+  const rejected = [...requestedStates].filter(([packageName, state]) => directActual[packageName] !== state)
+    .map(([packageName]) => packageName);
+  if (attempt) {
+    attempt.configPath = file;
+    attempt.resolvedPackageCount = resolvedStates.size;
+  }
+  if (rejected.length) {
+    log(`FAIL: direct Probe intent did not survive upstream defconfig: ${JSON.stringify(directActual)}`);
+    return { ok: false, states: actual, config: file, reason: 'root-kconfig-rejected' };
+  }
+  return { ok: true, states: actual, config: file, resolvedPackageCount: resolvedStates.size };
 }
 
 async function solveL1Config(environment, roots, suffix, attempt) {
   const directory = join(WORKDIR, '.probe-configs');
   mkdirSync(directory, { recursive: true });
   const file = join(directory, `${safeSlug(environment.target)}--${safeSlug(environment.profile)}--${safeSlug(suffix)}.config`);
-  writeFileSync(file, l1ConfigText(environment, roots));
-  const result = await command(join(WORKDIR, 'scripts', 'config', 'conf'), [`--defconfig=${file}`, '-w', file, 'Config.in']);
-  if (!result.ok) return { ok: false, states: {}, config: file };
-  const text = readFileSync(file, 'utf8');
-  const states = Object.fromEntries(ROOTS.map((root) => [root, packageStateFromText(text, root)]));
-  if (attempt) attempt.configPath = file;
-  return { ok: true, states, config: file };
+  return resolveProbeConfig({
+    targetConfig: environment.targetConfig, requestedStates: roots, file, roots: [...roots.keys()], attempt,
+    label: 'l1', resolveConfig: (configFile) => command(join(WORKDIR, 'scripts', 'config', 'conf'),
+      [`--defconfig=${configFile}`, '-w', configFile, 'Config.in']),
+  });
+}
+
+async function prepareConfig(attempt, label = 'final') {
+  return resolveProbeConfig({
+    targetConfig: TARGET_CONFIG, requestedStates: DIRECT_STATES, file: join(WORKDIR, '.config'), roots: ROOTS, attempt, label,
+    resolveConfig: () => make(['defconfig'], false),
+  });
 }
 
 function packageNamesFromInfo(text) {
@@ -288,7 +281,7 @@ async function configResolve() {
       stages: { metadata: 'success', resolver: 'success' } }));
   }
   const globallyAbsent = ROOTS.filter((root) => !packageNames.has(root));
-  const requested = rootRequestedStates();
+  const requested = new Map(DIRECT_STATES);
   const attempts = [];
   for (const environment of TARGET_BATCH) {
     const attempt = newL1Attempt(environment);
@@ -394,8 +387,7 @@ function configFailureResult(reason) {
 }
 
 async function packageCompile(attempt) {
-  const config = await runStage(attempt, 'config', () =>
-    prepareConfig(FINAL_STATES, attempt, { roots: true, metadata: true, label: 'final' }));
+  const config = await runStage(attempt, 'config', () => prepareConfig(attempt));
   attempt.rootStates = config.states;
   if (!config.ok) return { result: configFailureResult(config.reason), reason: config.reason };
   let resolved;
@@ -433,8 +425,7 @@ async function rootfsIntegration(attempt) {
 }
 
 async function firmwareIntegration(attempt) {
-  const finalConfig = await runStage(attempt, 'config', () =>
-    prepareConfig(FINAL_STATES, attempt, { roots: true, metadata: false, label: 'final' }));
+  const finalConfig = await runStage(attempt, 'config', () => prepareConfig(attempt));
   attempt.rootStates = finalConfig.states;
   if (!finalConfig.ok) return { result: configFailureResult(finalConfig.reason), reason: finalConfig.reason };
   const firmware = await runStage(attempt, 'firmwareBuild', () =>
@@ -513,10 +504,10 @@ const runtime = {
   generatedAt: new Date().toISOString(),
   mode: MODE,
   selectedLevel: MODE_LEVELS[MODE],
-  useDefconfig: MODE === 'config-resolve' ? true : USE_DEFCONFIG,
+  useDefconfig: true,
   roots: ROOTS,
   packageIntent: INTENT,
-  finalPackageCount: FINAL_STATES.size,
+  requestedPackageCount: ROOTS.length,
   environment: { source: SOURCE, branch: BRANCH, targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE },
   attempts,
   conclusion: overallResult,

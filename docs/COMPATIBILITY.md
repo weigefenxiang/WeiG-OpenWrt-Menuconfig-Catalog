@@ -60,7 +60,7 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 ### 探针深度边界
 
-Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe V3 协议，并把“配置事实”和“构建调度”分给各自权威：Catalog Kconfig 负责用户直接 Intent 与唯一 Final `PACKAGE_*` 状态；进入真实上游源码后，软件包依赖、构建顺序、stamp 与增量构建由该 Source 自己的 Make 系统负责。
+Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe V3 协议，并把“请求事实”和“环境解析”分给各自权威：Issue 只携带用户直接 `packageIntent` 及其紧凑的变更前/后 `PACKAGE_*` 投影；Catalog core 提供每个环境的 Target/Profile 选择器；克隆真实上游源码后，该 Source 自己的 Kconfig/Defconfig 补齐依赖并负责后续构建顺序、stamp 与增量构建。
 
 - **L1 插件（`config-resolve`）**：使用当前源码官方 Kconfig/Defconfig 求解 Final Root 组合；只证明配置能否成立，不执行软件包编译。
 - **L2 编译（`package-compile`）**：把用户直接启用的软件包当作 Root，读取上游 `tmp/.packageinfo` 的 `Source-Makefile`，把 Binary Package 映射为真实源码目标；共用 Source 的 Root 自动去重，并用一次 Make 调用进入上游依赖图。WeiG 不维护第二份 Binary→Source 或 dependency 数据库。
@@ -70,9 +70,11 @@ Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe
 - **L6 运行（`runtime-health`）**：在 L5 后通过可靠控制通道检查 init/procd、基础挂载、uptime、可用时的 ubus，以及 Final 中真正内置的 Root 软件包。需要按键激活串口时，先激活并等到 root prompt，再发送健康命令；无可靠控制能力时记为 `skipped`。
 - **L7 重启（`reboot-validation`）**：在 L6 后正常重启 Final 固件，等待第二次启动并再次执行相同健康检查；不执行真实 sysupgrade 刷写。
 
-L2–L7 都只执行用户最终配置，逐级复用已经完成的 Stage，不构建对照固件，也不为增加深度而重复构建。成功表示当前 Final 配置在该环境达到所选深度；失败只描述该 Final 配置和具体 Stage，不自动宣称某一个插件具有单独因果关系。`Defconfig` 在 L1 固定使用；L2–L7 默认开启但可由请求明确关闭。开启时运行所选 Source 自己的 `make defconfig`，并只强制验证用户直接启用的 Probe Root 仍保持请求的 `m/y` 状态；关闭时不主动执行 `make defconfig`。
+L2–L7 逐级复用已经完成的 Stage，不构建对照固件，也不为增加深度而重复构建。所有深度都强制运行所选 Source 自己的官方解析器：L1 使用 `scripts/config/conf`，L2–L7 使用 `make defconfig`。用户不能关闭该步骤；只有直接 Probe Root 必须保持请求的 `m/y` 状态，`libatomic`、`libusb-1.0` 等自动依赖只出现在各环境解析后的配置和证据中，不进入 Issue 请求。
 
-Probe V3 的浏览器状态包含仅用于校验 Intent 前值的 Baseline、直接 `packageIntent`、唯一构建权威 Final `packageConfig`、Defconfig、五维环境约束和覆盖策略。Runner 不构建 Baseline，也不会传递 dependency list、build order 或第二个 packages/roots 权威；服务端从经过校验的直接 Intent 派生 Root。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝，用户需要从当前 AutoBuild 页面重新提交。
+Probe V3 的浏览器状态包含直接 `packageIntent`、由该 Intent 派生的紧凑 `baselinePackageConfig`/`packageConfig`、固定启用的 Defconfig、五维环境约束和覆盖策略。网页中 Advanced menuconfig 的完整 836 项或 Defconfig 后的 276 项只是交互状态，不是探针请求；Runner 不接收 dependency list、build order 或第二个 packages/roots 权威。服务端先校验请求，再对所有 L1–L7 统一重新派生紧凑 Root 配置，因此旧客户端夹带的自动依赖也不会进入执行权威。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝。
+
+每个 Probe Job 先克隆 Catalog 固定的上游提交，再从该源码的 `include/prereq-build.mk` 检测 Python 与 GCC 能力；不得根据 Source/Branch 名字选择运行环境。需要兼容版本时只安装检测结果要求的环境，随后必须通过上游 `make prereq` 才能安装 feeds 和进入探测。证据分别记录直接 Root 数、Defconfig 解析后的软件包数、Python 与编译器身份。
 
 环境范围由 Catalog 的真实结构动态解析，五个维度均可独立使用通配或精确值：**Source / Branch / Target System / Subtarget / Target Profile**。Target System、Subtarget 与 Profile 直接读取 Catalog core 已有的结构化字段，不从 `x86/64` 之类字符串反向猜测。通配保存的是规则而不是当前叶子快照，因此以后自动发现的新 Branch/Target/Profile 会自然进入匹配范围；不存在的组合记为不适用，不记为不兼容。
 

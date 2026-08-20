@@ -18,11 +18,11 @@ on:
   workflow_dispatch:
     inputs:
       package_config:
-        description: "Final CONFIG_PACKAGE_*=m/y state for manual runs / 手动运行的最终 PACKAGE 状态"
+        description: "Direct CONFIG_PACKAGE_*=m/y roots for manual runs / 手动运行的直接 PACKAGE 入口"
         required: false
         default: ""
       baseline_package_config:
-        description: "Intent-validation state; L2-L7 build Final only / 仅用于意图校验；L2-L7 只构建 Final"
+        description: "Direct pre-change roots used to validate intent / 用于校验意图的变更前直接入口"
         required: false
         default: ""
       roots:
@@ -35,11 +35,6 @@ on:
         type: choice
         options: [config-resolve, package-compile, rootfs-integration, firmware-integration, boot-smoke, runtime-health, reboot-validation]
         default: config-resolve
-      use_defconfig:
-        description: "Run the selected upstream make defconfig / 使用所选上游 make defconfig"
-        required: true
-        type: boolean
-        default: true
       source:
         description: "Source filter or * / Source 筛选或 *"
         required: true
@@ -160,7 +155,6 @@ jobs:
           PROBE_BASELINE_PACKAGE_CONFIG: ${{ inputs.baseline_package_config }}
           PROBE_ROOTS: ${{ inputs.roots }}
           PROBE_MODE: ${{ inputs.mode }}
-          PROBE_USE_DEFCONFIG: ${{ inputs.use_defconfig }}
           SOURCE_PATTERN: ${{ inputs.source }}
           BRANCH_PATTERN: ${{ inputs.branch }}
           TARGET_SYSTEM: ${{ inputs.target_system }}
@@ -214,7 +208,6 @@ jobs:
       PROBE_PACKAGE_CONFIG: ${{ needs.plan.outputs.package_config }}
       PROBE_BASELINE_PACKAGE_CONFIG: ${{ needs.plan.outputs.baseline_package_config }}
       PROBE_PACKAGE_INTENT: ${{ needs.plan.outputs.package_intent }}
-      PROBE_USE_DEFCONFIG: ${{ needs.plan.outputs.use_defconfig }}
       PROBE_MODE: ${{ needs.plan.outputs.mode }}
       PROBE_EVIDENCE_LEVEL: ${{ needs.plan.outputs.evidence_level }}
       PROBE_COVERAGE_MODE: ${{ needs.plan.outputs.coverage_mode }}
@@ -238,13 +231,10 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: bash scripts/install-probe-dependencies.sh
-      - id: runtime
-        name: Select source runtime / 选择源码运行环境
+      - id: clone
+        name: Clone exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
         if: steps.bootstrap.outcome == 'success'
         continue-on-error: true
-        run: bash scripts/setup-probe-runtime.sh
-      - name: Clone exact Catalog Source snapshot / 克隆 Catalog 精确源码快照
-        if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success'
         run: |
           set -o pipefail
           {
@@ -257,9 +247,28 @@ jobs:
               test "$(git -C work/upstream rev-parse HEAD)" = "${{ matrix.upstreamCommit }}"
             fi
           } 2>&1 | tee -a "$PROBE_LOG"
+      - id: requirements
+        name: Detect upstream runtime contract / 检测上游运行环境契约
+        if: steps.bootstrap.outcome == 'success' && steps.clone.outcome == 'success'
+        continue-on-error: true
+        run: bash scripts/setup-probe-runtime.sh detect
+      - id: python
+        name: Install compatible Python / 安装兼容 Python
+        if: steps.requirements.outcome == 'success' && steps.requirements.outputs.runtime == 'python3' && steps.requirements.outputs.python_version != 'system'
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ steps.requirements.outputs.python_version }}
+      - id: runtime
+        name: Activate and verify upstream runtime / 启用并验证上游运行环境
+        if: steps.requirements.outcome == 'success' && (steps.python.outcome == 'success' || steps.python.outcome == 'skipped')
+        continue-on-error: true
+        env:
+          PROBE_RUNTIME_KIND: ${{ steps.requirements.outputs.runtime }}
+          PROBE_COMPILER_KIND: ${{ steps.requirements.outputs.compiler }}
+        run: bash scripts/setup-probe-runtime.sh activate
       - id: feeds
         name: Install feeds / 安装 Feeds
-        if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success'
+        if: steps.bootstrap.outcome == 'success' && steps.clone.outcome == 'success' && steps.runtime.outcome == 'success'
         continue-on-error: true
         working-directory: work/upstream
         env:
@@ -274,8 +283,13 @@ jobs:
         if: always()
         env:
           PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}
+          PROBE_CLONE_OUTCOME: ${{ steps.clone.outcome }}
+          PROBE_RUNTIME_REQUIREMENTS_OUTCOME: ${{ steps.requirements.outcome }}
+          PROBE_PYTHON_SETUP_OUTCOME: ${{ steps.python.outcome }}
           PROBE_RUNTIME_SETUP_OUTCOME: ${{ steps.runtime.outcome }}
           PROBE_RUNTIME_KIND: ${{ steps.runtime.outputs.runtime }}
+          PROBE_RUNTIME_VERSION: ${{ steps.runtime.outputs.version }}
+          PROBE_COMPILER_KIND: ${{ steps.runtime.outputs.compiler }}
           PROBE_FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
           PROBE_FEEDS_FAILURE_REASON: ${{ steps.feeds.outputs.failure_reason }}
           PROBE_FEEDS_FAILURE_FEED: ${{ steps.feeds.outputs.failure_feed }}
@@ -302,7 +316,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
       - name: Finalize Probe environment result / 确认单环境结果
-        if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success' && steps.build.outcome != 'success'
+        if: always() && (steps.bootstrap.outcome != 'success' || steps.clone.outcome != 'success' || steps.requirements.outcome != 'success' || steps.runtime.outcome != 'success' || steps.feeds.outcome != 'success' || steps.build.outcome != 'success')
         run: exit 1
 
   summary:
@@ -364,7 +378,6 @@ jobs:
           MANUAL_BASELINE_PACKAGE_CONFIG: ${{ inputs.baseline_package_config }}
           MANUAL_ROOTS: ${{ inputs.roots }}
           MANUAL_MODE: ${{ inputs.mode }}
-          MANUAL_USE_DEFCONFIG: ${{ inputs.use_defconfig }}
           MANUAL_SOURCE: ${{ inputs.source }}
           MANUAL_BRANCH: ${{ inputs.branch }}
           MANUAL_TARGET_SYSTEM: ${{ inputs.target_system }}
@@ -408,7 +421,7 @@ jobs:
                 owner: context.repo.owner, repo: context.repo.repo, workflow_id: 'package-probe.yml', ref: context.ref.replace('refs/heads/', ''),
                 inputs: {
                   package_config: process.env.MANUAL_PACKAGE_CONFIG, baseline_package_config: process.env.MANUAL_BASELINE_PACKAGE_CONFIG, roots: process.env.MANUAL_ROOTS,
-                  mode: process.env.MANUAL_MODE, use_defconfig: process.env.MANUAL_USE_DEFCONFIG, source: process.env.MANUAL_SOURCE, branch: process.env.MANUAL_BRANCH,
+                  mode: process.env.MANUAL_MODE, source: process.env.MANUAL_SOURCE, branch: process.env.MANUAL_BRANCH,
                   target_system: process.env.MANUAL_TARGET_SYSTEM, subtarget: process.env.MANUAL_SUBTARGET, target_profile: process.env.MANUAL_TARGET_PROFILE,
                   coverage_mode: process.env.MANUAL_COVERAGE_MODE, coverage_limit: process.env.MANUAL_COVERAGE_LIMIT,
                   max_parallel: process.env.MANUAL_MAX_PARALLEL, plan_only: process.env.MANUAL_PLAN_ONLY,
@@ -447,10 +460,13 @@ jobs:
             batches.set(batchIndex, batchConclusion);
             const values = [...batches.values()];
             let finalConclusion = 'inconclusive';
-            if (batches.size === batchCount && !values.some((row) => row === 'inconclusive')) {
-              const compatibleOnly = values.every((row) => ['fully-compatible', 'sampled-compatible'].includes(row));
-              const incompatibleOnly = values.every((row) => ['fully-incompatible', 'sampled-incompatible'].includes(row));
-              finalConclusion = compatibleOnly ? 'fully-compatible' : incompatibleOnly ? 'fully-incompatible' : 'partially-compatible';
+            if (batches.size === batchCount) {
+              if (values.some((row) => row === 'incomplete')) finalConclusion = 'incomplete';
+              else if (!values.some((row) => row === 'inconclusive')) {
+                const compatibleOnly = values.every((row) => ['fully-compatible', 'sampled-compatible'].includes(row));
+                const incompatibleOnly = values.every((row) => ['fully-incompatible', 'sampled-incompatible'].includes(row));
+                finalConclusion = compatibleOnly ? 'fully-compatible' : incompatibleOnly ? 'fully-incompatible' : 'partially-compatible';
+              }
             }
             await github.rest.issues.createComment({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,

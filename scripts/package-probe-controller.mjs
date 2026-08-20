@@ -158,17 +158,19 @@ export function normalizeProbeRequest(raw, maximumBytes = 131072) {
   const packageIntent = normalizePackageIntent(raw.packageIntent, baselineState.states, finalState.states);
   const roots = packageIntent.filter((row) => row.after === 'm' || row.after === 'y').map((row) => row.package);
   const mode = normalizeProbeMode(raw.mode);
-  const l1 = mode === 'config-resolve';
+  if (raw.useDefconfig === false) {
+    throw new Error('Package Probe requires upstream defconfig for every depth');
+  }
   return {
     schema: 3,
     channel,
     mode,
-    useDefconfig: l1 ? true : raw.useDefconfig !== false,
-    baselinePackageConfig: l1 ? packageConfigFromIntent(packageIntent, 'before') : baselineState.packageConfig,
-    packageConfig: l1 ? packageConfigFromIntent(packageIntent, 'after') : finalState.packageConfig,
+    useDefconfig: true,
+    baselinePackageConfig: packageConfigFromIntent(packageIntent, 'before'),
+    packageConfig: packageConfigFromIntent(packageIntent, 'after'),
     packageIntent,
     roots,
-    packages: l1 ? [...roots] : finalState.packages,
+    packages: [...roots],
     environmentScope: normalizeEnvironmentScope(raw.environmentScope),
     coverage: normalizeProbeCoverage(raw.coverage),
     maxParallel: raw.maxParallel === undefined ? 0 : Number(raw.maxParallel),
@@ -371,7 +373,7 @@ export function createProbePlan({ index, env = {}, policy, request: normalizedRe
     codeRef: request.channel, dataBranch: runtimeDataBranchForChannel(request.channel), dataCommit: String(env.PROBE_DATA_COMMIT || ''),
     stateSha256: String(env.PROBE_STATE_SHA256 || ''), samplingSeed: String(env.PROBE_SAMPLING_SEED || ''),
     batchIndex: normalizedBatchIndex(env.PROBE_BATCH_INDEX), mode: request.mode, evidenceLevel: MODES_LIST.indexOf(request.mode) + 1,
-    execute: request.execute, useDefconfig: request.useDefconfig, requested: request.roots, resolvedPackages: request.packages,
+    execute: request.execute, useDefconfig: request.useDefconfig, requested: request.roots, directPackages: request.packages,
     packageIntent: request.packageIntent, baselinePackageConfig: request.baselinePackageConfig, packageConfig: request.packageConfig,
     environmentScope: request.environmentScope, coverageRequest: request.coverage, requestedMaxParallel: request.maxParallel,
     authorizationElevatedParallel: authorization.elevatedParallel, collaboratorCap,
@@ -559,7 +561,7 @@ function writeOutputs(plan, extra = {}) {
   const rows = {
     matrix: JSON.stringify(plan.matrix), max_parallel: String(plan.maxParallel), execute: String(plan.execute),
     relevant: String(plan.relevant !== false), authorized: String(plan.authorized), plan_count: String(plan.matrix.include.length),
-    roots: plan.requested.join(','), packages: plan.resolvedPackages.join(','),
+    roots: plan.requested.join(','), packages: plan.directPackages.join(','),
     package_config: Buffer.from(plan.packageConfig || '').toString('base64url'),
     baseline_package_config: Buffer.from(plan.baselinePackageConfig || '').toString('base64url'),
     package_intent: Buffer.from(JSON.stringify(plan.packageIntent || [])).toString('base64url'),
@@ -590,7 +592,7 @@ export function probePlanSummary(plan) {
     `- Mode / 探测方式: \`${plan.mode}\``,
     `- Defconfig: \`${plan.useDefconfig ? 'on' : 'off'}\``,
     `- Probe roots / 测试入口: ${plan.requested.map((row) => `\`${row}\``).join(', ') || '-'}`,
-    ...(plan.mode === 'config-resolve' ? [] : [`- Final enabled packages / 最终启用软件包: ${plan.resolvedPackages.length}`]),
+    `- Direct Probe config / 直接探针配置: ${plan.directPackages.length}`,
     `- Coverage / 覆盖: \`${plan.coverage?.mode || plan.coverageRequest?.mode}\` ${plan.coverage ? `${plan.coverage.planned}/${plan.coverage.total}` : '-'}`,
     `- Batch / 批次: ${(plan.batchIndex || 0) + 1}/${plan.batchCount || 1}`,
     `- Maximum parallel jobs / 最大并发任务: ${plan.maxParallel}`,
@@ -641,7 +643,7 @@ function manualRequest(env, maximumBytes, policy) {
   }
   return normalizeProbeRequest({
     schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode,
-    useDefconfig: String(env.PROBE_USE_DEFCONFIG || 'true') !== 'false', baselinePackageConfig: baseline.packageConfig,
+    useDefconfig: true, baselinePackageConfig: baseline.packageConfig,
     packageConfig: final.packageConfig, packageIntent: intent,
     environmentScope: {
       sources: [env.SOURCE_PATTERN || '*'], branches: [env.BRANCH_PATTERN || '*'],
@@ -688,7 +690,7 @@ export async function main(env = process.env) {
       schema: 3, generatedAt: new Date().toISOString(), actor, owner: Boolean(owner && actor.toLowerCase() === owner.toLowerCase()),
       relevant: true, authorized: false, authorization: permission, codeRef: request.channel, dataBranch, dataCommit: '',
       mode: request.mode, evidenceLevel: 0, execute: false, useDefconfig: request.useDefconfig,
-      requested: request.roots, resolvedPackages: request.packages, packageIntent: request.packageIntent,
+      requested: request.roots, directPackages: request.packages, packageIntent: request.packageIntent,
       baselinePackageConfig: request.baselinePackageConfig, packageConfig: request.packageConfig,
       environmentScope: request.environmentScope, coverageRequest: request.coverage, coverage: null,
       batchIndex: normalizedBatchIndex(env.PROBE_BATCH_INDEX), batchCount: 1, hasNextBatch: false, nextBatchIndex: 0,

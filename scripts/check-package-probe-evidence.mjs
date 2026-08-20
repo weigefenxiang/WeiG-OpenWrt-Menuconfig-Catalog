@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import {
   aggregateEvidence, aggregateRunStatus, aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
 } from './write-package-probe-evidence.mjs';
@@ -29,7 +30,6 @@ assert(!workflow.includes('Package probe issue #{0} · batch {1}'), 'legacy opaq
 const dependencyInstaller = readFileSync(resolve(import.meta.dirname, './install-probe-dependencies.sh'), 'utf8');
 const feedInstaller = readFileSync(resolve(import.meta.dirname, './install-probe-feeds.sh'), 'utf8');
 const runtimeSetup = readFileSync(resolve(import.meta.dirname, './setup-probe-runtime.sh'), 'utf8');
-const gcc10Policy = runtimeSetup.match(/requires_gcc10\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
 assert(workflow.includes('bash scripts/install-probe-dependencies.sh'), 'Probe jobs must use the bounded dependency bootstrap helper');
 assert(dependencyInstaller.includes('PROBE_APT_MAX_ATTEMPTS:-3'), 'dependency bootstrap must default to three total attempts');
 assert(dependencyInstaller.includes('PROBE_APT_UPDATE_TIMEOUT_SECONDS:-60'), 'apt update attempts must default to the approved 60-second bound');
@@ -72,13 +72,20 @@ assert(dependencyInstaller.includes('https://archive.ubuntu.com/ubuntu/') && dep
 assert(!dependencyInstaller.includes('apt-get clean') && !dependencyInstaller.includes('rm -rf /var/lib/apt/lists'), 'mirror failover must preserve apt state rather than clearing caches or lists');
 assert(workflow.includes('id: bootstrap') && workflow.includes('continue-on-error: true'), 'dependency bootstrap must be recorded without automatically failing the matrix job');
 assert(workflow.includes("if: steps.bootstrap.outcome == 'success'"), 'Probe business steps must run only after dependency bootstrap succeeds');
-assert(workflow.includes("if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success' && steps.build.outcome != 'success'"), 'only an executed Probe business failure may fail the environment job');
+assert(workflow.includes("steps.clone.outcome != 'success'") && workflow.includes("steps.requirements.outcome != 'success'"),
+  'clone and upstream runtime-contract failures must fail the environment job after evidence is written');
 assert(workflow.includes('PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}'), 'normalized evidence must explicitly record dependency bootstrap outcome');
-assert(workflow.includes('id: runtime') && workflow.includes('bash scripts/setup-probe-runtime.sh'), 'Probe jobs must select the source runtime before touching feeds');
+assert(workflow.includes('id: clone') && workflow.includes('id: requirements') && workflow.includes('bash scripts/setup-probe-runtime.sh detect'),
+  'Probe jobs must clone first, then detect the upstream runtime contract');
+assert(workflow.indexOf('id: clone') < workflow.indexOf('id: requirements') && workflow.indexOf('id: requirements') < workflow.indexOf('id: runtime'),
+  'runtime selection must be driven by the cloned upstream prerequisite files');
 assert(workflow.includes('id: feeds') && workflow.includes('bash "$GITHUB_WORKSPACE/scripts/install-probe-feeds.sh"'), 'Probe jobs must use the bounded feed installer');
-assert(workflow.includes("if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success'"),
-  'Probe business execution must require bootstrap, runtime, and feeds success');
+assert(workflow.includes("if: steps.bootstrap.outcome == 'success' && steps.clone.outcome == 'success' && steps.runtime.outcome == 'success'"),
+  'Probe business execution must require bootstrap, clone, runtime, and feeds success');
 assert(workflow.includes('PROBE_RUNTIME_SETUP_OUTCOME: ${{ steps.runtime.outcome }}'), 'normalized evidence must record runtime setup outcome');
+assert(workflow.includes('PROBE_RUNTIME_REQUIREMENTS_OUTCOME: ${{ steps.requirements.outcome }}') &&
+  workflow.includes('PROBE_PYTHON_SETUP_OUTCOME: ${{ steps.python.outcome }}'),
+  'normalized evidence must distinguish runtime detection and Python installation failures');
 assert(workflow.includes('PROBE_FEEDS_OUTCOME: ${{ steps.feeds.outcome }}'), 'normalized evidence must record feeds outcome');
 assert(workflow.includes('probe-feeds-runtime.json'), 'Probe log artifacts must retain normalized feed identity metadata');
 assert(feedInstaller.includes('PROBE_FEED_MAX_ATTEMPTS:-3'), 'feed updates must default to three total attempts');
@@ -105,16 +112,79 @@ assert(feedInstaller.includes("fail_stage 'feed-config'") && feedInstaller.inclu
   'deterministic or exhausted feed failures must stop the feed stage immediately');
 assert(feedInstaller.indexOf("./scripts/feeds install -a") > feedInstaller.indexOf('for feed in "${FEEDS[@]}"'),
   'feed installation must start only after all feed updates complete');
-assert(runtimeSetup.includes('OpenWrt/openwrt-18.06|OpenWrt/openwrt-19.07'),
-  'only officially Python-2 OpenWrt branches may enter the legacy runtime by default');
-assert(gcc10Policy.includes('OpenWrt/openwrt-18.06') && !gcc10Policy.includes('openwrt-19.07') && runtimeSetup.includes('install gcc-10 g++-10'),
-  'only OpenWrt 18.06 may receive the upstream-compatible GCC 10 host compiler');
-assert(runtimeSetup.includes("printf '%s' 'python3'"), 'all other Probe branches must default to Python 3');
+assert(!runtimeSetup.includes('PROBE_SOURCE') && !runtimeSetup.includes('PROBE_BRANCH') &&
+  !/OpenWrt|ImmortalWrt|lede|openwrt-\d/i.test(runtimeSetup),
+  'runtime selection must not special-case a Source or Branch name');
+assert(runtimeSetup.includes('include/prereq-build.mk') && runtimeSetup.includes('contract_block python') && runtimeSetup.includes('contract_block gcc'),
+  'runtime selection must derive Python and compiler requirements from the cloned upstream prerequisite contract');
+assert(runtimeSetup.includes('make -C "$WORKDIR" -j1 prereq'),
+  'the activated runtime must pass the upstream prerequisite command as final authority');
+assert(runtimeSetup.includes('install gcc-10 g++-10'),
+  'a generically detected legacy compiler contract must retain the supported gcc-10 adapter');
 assert(runtimeSetup.includes('Python-${PYTHON2_VERSION}.tar.xz') && runtimeSetup.includes('www.python.org/ftp/python'),
   'legacy Python 2 must come from the official Python source release');
 assert(runtimeSetup.includes('b62c0e7937551d0cc02b8fd5cb0f544f9405bafc9a54d3808ed4594812edef43'),
   'legacy Python 2 source must be checksum pinned');
 assert(!runtimeSetup.includes('FORCE=1'), 'legacy source prerequisites must be satisfied rather than bypassed with FORCE=1');
+
+function detectRuntimeFixture(prerequisiteContract, options = {}) {
+  const directory = mkdtempSync(join(tmpdir(), 'probe-runtime-contract-'));
+  try {
+    const workdir = join(directory, 'upstream');
+    const include = join(workdir, 'include');
+    const bin = join(directory, 'bin');
+    const output = join(directory, 'outputs.txt');
+    mkdirSync(include, { recursive: true });
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(include, 'prereq-build.mk'), prerequisiteContract);
+    const executable = (name, lines) => {
+      const file = join(bin, name);
+      writeFileSync(file, lines.join('\n') + '\n');
+      chmodSync(file, 0o755);
+    };
+    executable('python3', [
+      '#!/usr/bin/env bash',
+      `if [[ "\${1:-}" == '-V' ]]; then echo 'Python 3.${options.pythonMinor ?? 13}.0'; exit 0; fi`,
+      `if [[ "\${2:-}" == *distutils* ]]; then exit ${options.distutils === false ? 1 : 0}; fi`,
+      `echo '${options.pythonMinor ?? 13}'`,
+    ]);
+    executable('gcc', ['#!/usr/bin/env bash', `[[ "\${1:-}" != '-dumpversion' ]] || { echo '${options.gccMajor ?? 13}'; exit; }`,
+      `echo 'gcc (Ubuntu) ${options.gccMajor ?? 13}.2.0'`]);
+    executable('gcc-10', ['#!/usr/bin/env bash', "[[ \"${1:-}\" != '-dumpversion' ]] || { echo '10'; exit; }",
+      "echo 'gcc (Ubuntu) 10.5.0'"]);
+    const result = spawnSync('bash', [resolve(import.meta.dirname, 'setup-probe-runtime.sh'), 'detect'], {
+      encoding: 'utf8', env: { ...process.env, PATH: `${bin.replaceAll('\\', '/')}:${process.env.PATH || ''}`,
+        PROBE_WORKDIR: workdir, GITHUB_OUTPUT: output },
+    });
+    assert.equal(result.status, 0, `runtime fixture failed:\n${result.stdout}\n${result.stderr}`);
+    return Object.fromEntries(readFileSync(output, 'utf8').trim().split(/\r?\n/)
+      .map((line) => line.split(/=(.*)/s).slice(0, 2)));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+const legacyRuntime = detectRuntimeFixture([
+  '$(eval $(call SetupHostCommand,python,Please install Python 2.x, \\', '\tpython2.7 -V, \\', '\tpython2 -V))',
+  '$(eval $(call SetupHostCommand,gcc,Please install GCC, \\', "\tgcc -dumpversion | grep -E '^(4\\.[8-9]|[5-9]\\.?|10\\.?)'))", '',
+].join('\n'));
+assert.deepEqual(legacyRuntime, { runtime: 'python2', python_version: '2.7', compiler: 'gcc-10' });
+
+const distutilsRuntime = detectRuntimeFixture([
+  '$(eval $(call SetupHostCommand,python,Please install Python, \\', '\tpython3.10 -V, \\', '\tpython3.9 -V, \\',
+  "\tpython3 -V 2>&1 | grep -E 'Python 3\\.(6|7|8|9|10)'))",
+  "$(eval $(call TestHostCommand,python3-distutils,python3 -c 'import distutils'))",
+  '$(eval $(call SetupHostCommand,gcc,Please install GCC, \\', '\tgcc --version))', '',
+].join('\n'), { distutils: false });
+assert.deepEqual(distutilsRuntime, { runtime: 'python3', python_version: '3.10', compiler: 'system' });
+
+const modernRuntime = detectRuntimeFixture([
+  '$(eval $(call SetupHostCommand,python,Please install Python, \\', '\tpython3.13 -V, \\', '\tpython3.12 -V, \\',
+  "\tpython3 -V 2>&1 | grep -E 'Python 3\\.(8|9|10|11|12|13)'))",
+  "$(eval $(call TestHostCommand,python3-distutils,printf 'from distutils if old' | python3))",
+  '$(eval $(call SetupHostCommand,gcc,Please install GCC, \\', '\tgcc --version))', '',
+].join('\n'));
+assert.deepEqual(modernRuntime, { runtime: 'python3', python_version: 'system', compiler: 'system' });
 
 const evidenceWriter = readFileSync(resolve(import.meta.dirname, './write-package-probe-evidence.mjs'), 'utf8');
 assert.equal((evidenceWriter.match(/appendFileSync\(env\.GITHUB_STEP_SUMMARY/g) || []).length, 1,
@@ -126,6 +196,12 @@ assert.equal(infrastructure.conclusion, 'inconclusive');
 const bootstrapInfrastructure = createEvidence({ log: '', runtime: null, env: { PROBE_ROOTS: 'alpha', PROBE_BOOTSTRAP_OUTCOME: 'failure', PROBE_CONCLUSION: 'failure' } });
 assert.equal(bootstrapInfrastructure.conclusion, 'inconclusive');
 assert(bootstrapInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'dependency-bootstrap'));
+
+const cloneInfrastructure = createEvidence({ log: '', runtime: null, env: {
+  PROBE_ROOTS: 'alpha', PROBE_BOOTSTRAP_OUTCOME: 'success', PROBE_CLONE_OUTCOME: 'failure', PROBE_CONCLUSION: 'failure',
+} });
+assert.equal(cloneInfrastructure.conclusion, 'inconclusive');
+assert(cloneInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'source-clone'));
 
 const runtimeInfrastructure = createEvidence({ log: '', runtime: null, env: {
   PROBE_ROOTS: 'alpha', PROBE_BOOTSTRAP_OUTCOME: 'success', PROBE_RUNTIME_SETUP_OUTCOME: 'failure', PROBE_RUNTIME_KIND: 'python2',
@@ -201,6 +277,16 @@ assert(runtimeSkipped.issues.some((row) => row.type === 'capability-unavailable'
 assert(evidenceSummaryLines(runtimeSkipped).some((line) => line.includes('L6 / L5')));
 assert(!evidenceSummaryLines(runtimeSkipped).some((line) => line.includes('Baseline / Final')),
   'Final-only Probe evidence must not present an A/B package comparison');
+
+const resolvedDependencyEvidence = createEvidence({ log: '', runtime: { mode: 'package-compile', conclusion: 'compatible',
+  roots: ['alpha'], requestedPackageCount: 1, attempts: [{ result: 'compatible', resolvedPackageCount: 3 }] }, env: {
+  PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile', PROBE_RUNTIME_KIND: 'python3',
+  PROBE_RUNTIME_VERSION: 'Python 3.10.14', PROBE_COMPILER_KIND: 'gcc-10',
+} });
+assert.equal(resolvedDependencyEvidence.requestedPackageCount, 1);
+assert.equal(resolvedDependencyEvidence.resolvedPackageCount, 3);
+assert(evidenceSummaryLines(resolvedDependencyEvidence).some((line) => line.includes('直接探针配置: 1')));
+assert(evidenceSummaryLines(resolvedDependencyEvidence).some((line) => line.includes('Defconfig 解析软件包: 3')));
 
 const rebootFailure = createEvidence({ log: '', runtime: { mode: 'reboot-validation', selectedLevel: 7, conclusion: 'incompatible',
   roots: ['alpha'], attempts: [{ result: 'incompatible', reason: 'final-reboot-failed', selectedLevel: 7,

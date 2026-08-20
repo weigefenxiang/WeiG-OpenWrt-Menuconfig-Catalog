@@ -28,7 +28,7 @@ export function parseProbeLog(log) {
     issues.push({ type: 'missing-dependency', makefile: match[1], dependency: match[2] });
   }
   if (/No rule to make target/i.test(text)) issues.push({ type: 'missing-target' });
-  if (/directly selected Probe roots did not survive/i.test(text)) issues.push({ type: 'kconfig-unsatisfied' });
+  if (/direct(?:ly selected)? Probe (?:roots|intent) did not survive/i.test(text)) issues.push({ type: 'kconfig-unsatisfied' });
   if (/upstream package metadata does not contain Probe root|ambiguous upstream Source-Makefile|tmp\/\.packageinfo is missing/i.test(text)) {
     issues.push({ type: 'metadata-unresolved' });
   }
@@ -80,10 +80,22 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
   const errors = sharedLogIsRelevant ? normalizedErrors(log) : [];
   const issues = sharedLogIsRelevant ? parseProbeLog(log) : [];
   const bootstrapOutcome = String(env.PROBE_BOOTSTRAP_OUTCOME || '').toLowerCase();
+  const cloneOutcome = String(env.PROBE_CLONE_OUTCOME || '').toLowerCase();
+  const runtimeRequirementsOutcome = String(env.PROBE_RUNTIME_REQUIREMENTS_OUTCOME || '').toLowerCase();
+  const pythonSetupOutcome = String(env.PROBE_PYTHON_SETUP_OUTCOME || '').toLowerCase();
   const runtimeSetupOutcome = String(env.PROBE_RUNTIME_SETUP_OUTCOME || '').toLowerCase();
   const feedsOutcome = String(env.PROBE_FEEDS_OUTCOME || '').toLowerCase();
   if (bootstrapOutcome === 'failure') {
     issues.push({ type: 'infrastructure-failure', reason: 'dependency-bootstrap' });
+  }
+  if (cloneOutcome === 'failure') {
+    issues.push({ type: 'infrastructure-failure', reason: 'source-clone' });
+  }
+  if (runtimeRequirementsOutcome === 'failure') {
+    issues.push({ type: 'infrastructure-failure', reason: 'runtime-detection' });
+  }
+  if (pythonSetupOutcome === 'failure') {
+    issues.push({ type: 'infrastructure-failure', reason: 'python-setup' });
   }
   if (runtimeSetupOutcome === 'failure') {
     issues.push({ type: 'infrastructure-failure', reason: 'runtime-setup', runtime: String(env.PROBE_RUNTIME_KIND || '') });
@@ -106,7 +118,8 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     issues.push({ type: 'virtual-probe-failure', reason: attempt.reason });
   }
   const runtimeView = selectedAttempt ? { ...runtime, conclusion: attempt.result, reason: attempt.reason, attempts: [attempt] } : runtime;
-  const stageFailed = bootstrapOutcome === 'failure' || runtimeSetupOutcome === 'failure' || feedsOutcome === 'failure';
+  const stageFailed = bootstrapOutcome === 'failure' || cloneOutcome === 'failure' || runtimeRequirementsOutcome === 'failure' ||
+    pythonSetupOutcome === 'failure' || runtimeSetupOutcome === 'failure' || feedsOutcome === 'failure';
   const conclusion = stageFailed
     ? 'inconclusive'
     : selectedAttempt && attemptResult
@@ -126,7 +139,12 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     profileLabel: attempt.profileLabel || env.PROBE_PROFILE_LABEL || '', mode: env.PROBE_MODE || runtime?.mode || '',
     evidenceLevel: Number(env.PROBE_EVIDENCE_LEVEL || 0), useDefconfig: runtime?.useDefconfig ?? String(env.PROBE_USE_DEFCONFIG || 'true') !== 'false',
     roots: runtime?.roots || roots, rootMappings: attempt.rootMappings || [], rootTargets: attempt.rootTargets || [],
-    finalPackageCount: Number(runtime?.finalPackageCount || env.PROBE_FINAL_PACKAGE_COUNT || 0),
+    requestedPackageCount: Number(runtime?.requestedPackageCount || roots.length),
+    resolvedPackageCount: Number(attempt.resolvedPackageCount || 0),
+    hostRuntime: {
+      kind: String(env.PROBE_RUNTIME_KIND || ''), version: String(env.PROBE_RUNTIME_VERSION || ''),
+      compiler: String(env.PROBE_COMPILER_KIND || ''),
+    },
     rootStates: attempt.rootStates || requestedPackageStates(config, runtime?.roots || roots),
     unavailableRoots: attempt.unavailableRoots || [], rejectedRoots: attempt.rejectedRoots || [], reason: attempt.reason || runtime?.reason || '',
     selectedLevel,
@@ -157,7 +175,9 @@ export function evidenceSummaryLines(evidence) {
     `- Mode / 探测方式: \`${evidence.mode}\` (L${evidence.evidenceLevel})`,
     `- Defconfig: \`${evidence.useDefconfig ? 'on' : 'off'}\``,
     `- Probe roots / 测试入口: ${evidence.roots.map((row) => `\`${row}\``).join(', ') || '-'}`,
-    ...(evidence.mode === 'config-resolve' ? [] : [`- Final enabled packages / 最终启用软件包: ${evidence.finalPackageCount}`]),
+    `- Direct Probe config / 直接探针配置: ${evidence.requestedPackageCount}`,
+    `- Resolved package selections / Defconfig 解析软件包: ${evidence.resolvedPackageCount}`,
+    `- Host runtime / 主机运行环境: \`${evidence.hostRuntime.kind || '-'} ${evidence.hostRuntime.version || ''}\` · compiler \`${evidence.hostRuntime.compiler || '-'}\``,
     `- Selected/deepest level / 选择/最深通过: L${evidence.selectedLevel || evidence.evidenceLevel} / ${evidence.deepestPassedLevel ? `L${evidence.deepestPassedLevel}` : '-'}`,
     `- Duration / 用时: ${(Number(evidence.durationMs || 0) / 1000).toFixed(1)}s`,
     `- Conclusion / 结论: **${evidence.conclusion}**`,

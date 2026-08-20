@@ -232,9 +232,9 @@
       "zh-TW": "Probe V3 狀態已帶入 GitHub Issue。"
     },
     "stateInstruction": {
-      "en": "Probe V3 transports Baseline, direct user Intent, Final PACKAGE_* state, five-dimensional environment constraints, and coverage controls. It does not transport a dependency table, build order, or second package database.",
-      "zh-CN": "Probe V3 只传递 Baseline、用户直接 Intent、最终 PACKAGE_* 状态、五维环境条件和覆盖参数；不会上传依赖表、构建顺序或第二套软件包数据库。",
-      "zh-TW": "Probe V3 只傳遞 Baseline、使用者直接 Intent、最終 PACKAGE_* 狀態、五維環境條件與覆蓋參數；不會上傳相依表、建置順序或第二套套件資料庫。"
+      "en": "Probe V3 submits only directly selected packages and their before/after states. Each environment's upstream Defconfig resolves automatic dependencies; they never enter the Issue.",
+      "zh-CN": "Probe V3 只提交用户直接选择的插件及其变更前后状态；自动依赖由每个环境的上游 Defconfig 补齐，不会进入 Issue。",
+      "zh-TW": "Probe V3 只提交使用者直接選擇的套件及其變更前後狀態；自動相依由每個環境的上游 Defconfig 補齊，不會進入 Issue。"
     },
     "baseline": {
       "en": "Baseline",

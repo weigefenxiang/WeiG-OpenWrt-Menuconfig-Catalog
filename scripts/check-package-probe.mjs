@@ -104,7 +104,26 @@ assert.equal(request.packages.length, 1);
 assert.equal(request.packageConfig, 'CONFIG_PACKAGE_luci-app-oscam=y\n');
 assert.equal(request.baselinePackageConfig, '');
 assert.equal(request.useDefconfig, true);
-assert.equal(normalizeProbeRequest({ ...baseRequest, useDefconfig: false }).useDefconfig, true);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, useDefconfig: false }), /requires upstream defconfig/);
+for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
+  const depthRequest = normalizeProbeRequest({ ...baseRequest, mode });
+  assert.equal(depthRequest.packageConfig, 'CONFIG_PACKAGE_luci-app-oscam=y\n', `${mode} must keep only direct roots`);
+  assert.equal(depthRequest.baselinePackageConfig, '', `${mode} must not submit the resolved baseline`);
+  assert.deepEqual(depthRequest.packages, ['luci-app-oscam'], `${mode} must not submit automatic dependencies`);
+}
+const mixedDirectRequest = normalizeProbeRequest({ ...baseRequest, mode: 'package-compile',
+  baselinePackageConfig: 'CONFIG_PACKAGE_beta=y\nCONFIG_PACKAGE_automatic-old=m\n',
+  packageConfig: 'CONFIG_PACKAGE_alpha=m\nCONFIG_PACKAGE_automatic-new=y\n',
+  packageIntent: [
+    { package: 'alpha', before: 'n', after: 'm' },
+    { package: 'beta', before: 'y', after: 'n' },
+  ],
+});
+assert.equal(mixedDirectRequest.baselinePackageConfig, 'CONFIG_PACKAGE_beta=y\n');
+assert.equal(mixedDirectRequest.packageConfig, 'CONFIG_PACKAGE_alpha=m\n');
+assert.deepEqual(mixedDirectRequest.packages, ['alpha']);
+assert.deepEqual(mixedDirectRequest.packageIntent.map((row) => `${row.package}:${row.before}->${row.after}`),
+  ['alpha:n->m', 'beta:y->n'], 'N/M/Y direct intent must survive while automatic packages are discarded');
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, schema: 2 }), /schema 3/);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, scope: {} }), /unknown keys: scope/);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, packageIntent: [{ package: 'oscam', before: 'n', after: 'y' }] }), /baseline mismatch/);
@@ -114,7 +133,7 @@ assert.throws(() => normalizeProbeRequest({ ...baseRequest, coverage: { mode: 'a
 
 const gatewayRequest = normalizeGatewayRequest(baseRequest);
 assert.deepEqual(gatewayRequest.roots, ['luci-app-oscam']);
-assert.equal(gatewayRequest.finalPackageCount, 1);
+assert.equal(gatewayRequest.requestedPackageCount, 1);
 assert.equal(gatewayRequest.useDefconfig, true);
 assert.equal(probeDisplayContext(gatewayRequest, 33), 'luci-app-oscam · #33 · dev');
 assert.equal(probeDisplayContext({ ...gatewayRequest, roots: ['alpha', 'beta', 'gamma'] }, 34), 'alpha +2 · #34 · dev');
@@ -204,7 +223,9 @@ for (const version of ['master', 'openwrt-27.01', 'openwrt-30.01']) assert(sourc
 
 assert(gatewayWorkflow.includes('\n  issues:\n') && gatewayWorkflow.includes('\n  issue_comment:\n') && gatewayWorkflow.includes('node scripts/package-probe-gateway.mjs'));
 assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') && issueForm.includes('`/cancel`'));
-for (const input of ['baseline_package_config:', 'roots:', 'use_defconfig:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'display_context:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
+for (const input of ['baseline_package_config:', 'roots:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'display_context:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
+const workflowInputs = workflow.slice(workflow.indexOf('workflow_dispatch:'), workflow.indexOf('\npermissions:'));
+assert(!/\n\s+use_defconfig:/.test(workflowInputs), 'Defconfig must not remain a manual Probe switch');
 for (const [mode, level] of [['config-resolve', 'L1'], ['package-compile', 'L2'], ['rootfs-integration', 'L3'], ['firmware-integration', 'L4'], ['boot-smoke', 'L5'], ['runtime-health', 'L6'], ['reboot-validation', 'L7']]) {
   assert(workflow.includes(`inputs.mode == '${mode}' && '${level}'`), `run name must map ${mode} to ${level}`);
 }
@@ -216,6 +237,8 @@ assert(workflow.includes('DISPLAY_CONTEXT: ${{ inputs.display_context }}') && wo
 assert(workflow.includes("String(row.display_title || '').includes(`#${issueNumber}`)") && workflow.includes("String(row.display_title || '').includes(`b${next}`)"),
   'continuation lookup must follow the current compact Probe run-name format');
 assert(!workflow.includes("finalConclusion !== 'inconclusive'"), 'completed Probe requests must not stay open only because evidence is inconclusive');
+assert(workflow.includes("values.some((row) => row === 'incomplete')"),
+  'a batch with mixed conclusive and infrastructure results must remain incomplete at final aggregation');
 assert(workflow.includes("state: 'closed', state_reason: 'completed'"), 'the final Probe batch must close the Issue after recording its conclusion');
 assert(issueGateway.includes('display_context: probeDisplayContext(request, issue.number)'), 'Gateway must supply a display-only run label from the validated request');
 assert(issueGateway.includes('mode: request.mode'), 'Gateway dispatch must pass the validated Probe mode so the run-name level remains authoritative');
@@ -246,8 +269,10 @@ assert(runner.includes('makeWithSerialRetry(resolved.targets'));
 assert(!runner.includes('for (const packageName of activePackages)'));
 assert(!runner.includes('reduceFailureSet') && !runner.includes('PROBE_REDUCTION_BUDGET') && !runner.includes('PROBE_FALLBACK_TARGETS'));
 assert(runner.includes("['package/install']"));
-assert(!runner.includes('BASELINE_STATES') && runner.includes('prepareConfig(FINAL_STATES'),
-  'L2-L7 must execute the Final state only');
+assert(!runner.includes('BASELINE_STATES') && runner.includes('resolveProbeConfig'),
+  'L1-L7 must share one Target/Profile plus direct-root resolver');
+assert(!runner.includes('PROBE_USE_DEFCONFIG') && !runner.includes('prepare-tmpinfo'),
+  'the obsolete Defconfig-off execution branch must be removed');
 assert(runner.includes('runVirtualProbe') && !runner.includes('qemu-system-x86_64'),
   'L5-L7 must use the upstream qemustart adapter instead of a Target-specific QEMU command');
 assert(runner.includes('deepestPassedLevel') && runner.includes('durationMs'),
