@@ -19,6 +19,13 @@ export function buildCuratedApplications(root) {
   const config = readJson(join(root, 'catalog.config.json'));
   const translations = readJson(join(root, 'translations', 'zh-CN.json'));
   const probeUi = readJson(join(root, 'translations', 'probe-ui.json'));
+  const automationPolicy = readJson(join(root, '.github', 'automation-policy.json'));
+  const coverage = automationPolicy?.probe?.coverage || {};
+  const defaultLimit = Number(coverage.defaultLimit);
+  const maxLimit = Number(coverage.maxLimit);
+  if (!Number.isInteger(defaultLimit) || !Number.isInteger(maxLimit) || defaultLimit < 1 || defaultLimit > maxLimit) {
+    throw new Error('automation-policy.json requires probe.coverage defaultLimit/maxLimit');
+  }
   const sizes = readJson(join(root, 'curated-sizes.json'));
   const sizeMap = sizes.bytes || {};
   const items = (config.curatedApplications || []).map((row) => {
@@ -42,7 +49,7 @@ export function buildCuratedApplications(root) {
   return {
     schema: 1,
     groups: activeCuratedGroups(config.curatedGroups, items),
-    probeUi,
+    probeUi: { ...probeUi, coverage: { defaultLimit, maxLimit } },
     sizeMetric: sizes.metric,
     sizeGeneratedAt: sizes.generatedAt,
     items,
