@@ -74,7 +74,7 @@ L2–L7 逐级复用已经完成的 Stage，不构建对照固件，也不为增
 
 Probe V3 的浏览器状态包含直接 `packageIntent`、由该 Intent 派生的紧凑 `baselinePackageConfig`/`packageConfig`、固定启用的 Defconfig、五维环境约束和覆盖策略。网页中 Advanced menuconfig 的完整 836 项或 Defconfig 后的 276 项只是交互状态，不是探针请求；Runner 不接收 dependency list、build order 或第二个 packages/roots 权威。服务端先校验请求，再对所有 L1–L7 统一重新派生紧凑 Root 配置，因此旧客户端夹带的自动依赖也不会进入执行权威。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝。
 
-每个 Probe Job 先克隆 Catalog 固定的上游提交，再从该源码的 `include/prereq-build.mk` 检测 Python 与 GCC 能力；不得根据 Source/Branch 名字选择运行环境。需要兼容版本时只安装检测结果要求的环境，随后通过上游 `make prepare-mk` 校验主机前置条件；该入口不依赖尚未生成的 Target/Profile `.config`。证据分别记录直接 Root 数、Defconfig 解析后的软件包数、Python 与编译器身份。
+每个 Probe Job 先克隆 Catalog 固定的上游提交，再从该源码的 `include/prereq-build.mk` 检测 Python 与 GCC 能力；不得根据 Source/Branch 名字选择运行环境。Runner 的通用构建依赖一次性覆盖后续软件包、RootFS 与固件阶段，需要兼容版本时只安装检测结果要求的运行环境；随后通过上游 `make prepare-mk` 校验不依赖 Target/Profile `.config` 的主机前置条件。证据分别记录直接 Root 数、Defconfig 解析后的软件包数、Python 与编译器身份。
 
 环境范围由 Catalog 的真实结构动态解析，五个维度均可独立使用通配或精确值：**Source / Branch / Target System / Subtarget / Target Profile**。Target System、Subtarget 与 Profile 直接读取 Catalog core 已有的结构化字段，不从 `x86/64` 之类字符串反向猜测。通配保存的是规则而不是当前叶子快照，因此以后自动发现的新 Branch/Target/Profile 会自然进入匹配范围；不存在的组合记为不适用，不记为不兼容。
 

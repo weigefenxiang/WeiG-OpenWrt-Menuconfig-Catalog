@@ -42,6 +42,8 @@ assert(dependencyInstaller.includes('replacing the GitHub Runner Ubuntu mirror w
   'the first apt update must bypass the unstable Runner Azure mirror when the mirror list is available');
 assert(dependencyInstaller.includes('retry_apt "apt-get update" "$UPDATE_TIMEOUT_SECONDS" update'), 'apt update must use its own timeout stage');
 assert(dependencyInstaller.includes('retry_apt "config-resolve build dependencies" "$INSTALL_TIMEOUT_SECONDS" install'), 'dependency install must use its own timeout stage');
+assert(dependencyInstaller.includes('python3-pyelftools'),
+  'build-capable Probe depths must install the pyelftools host prerequisite required by upstream package and RootFS builds');
 assert.equal((dependencyInstaller.match(/retry_apt "apt-get update"/g) || []).length, 1, 'successful apt update must not be repeated by install retries');
 assert(!dependencyInstaller.includes('apt-get clean') && !dependencyInstaller.includes('apt clean') && !dependencyInstaller.includes('/var/cache/apt/archives'), 'dependency retries must preserve apt download/cache state');
 assert(!dependencyInstaller.includes('  -qq\n'), 'dependency bootstrap must not suppress apt diagnostics with quiet level 2');

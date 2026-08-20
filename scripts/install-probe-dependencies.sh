@@ -295,7 +295,8 @@ if [[ "$PROBE_MODE" == "config-resolve" ]]; then
 else
   retry_apt "build dependencies" "$INSTALL_TIMEOUT_SECONDS" install \
     build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
-    gettext git libncurses5-dev libssl-dev python3 python3-setuptools rsync unzip zlib1g-dev file wget
+    gettext git libncurses5-dev libssl-dev python3 python3-pyelftools python3-setuptools \
+    rsync unzip zlib1g-dev file wget
 fi
 
 case "$PROBE_MODE" in
