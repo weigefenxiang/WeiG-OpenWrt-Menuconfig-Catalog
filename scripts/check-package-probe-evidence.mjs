@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -117,8 +117,10 @@ assert(!runtimeSetup.includes('PROBE_SOURCE') && !runtimeSetup.includes('PROBE_B
   'runtime selection must not special-case a Source or Branch name');
 assert(runtimeSetup.includes('include/prereq-build.mk') && runtimeSetup.includes('contract_block python') && runtimeSetup.includes('contract_block gcc'),
   'runtime selection must derive Python and compiler requirements from the cloned upstream prerequisite contract');
-assert(runtimeSetup.includes('make -C "$WORKDIR" -j1 prereq'),
-  'the activated runtime must pass the upstream prerequisite command as final authority');
+assert(runtimeSetup.includes('make -C "$WORKDIR" -j1 prepare-mk'),
+  'the activated runtime must validate upstream host prerequisites without requiring Target/Profile configuration');
+assert(!runtimeSetup.includes('make -C "$WORKDIR" -j1 prereq'),
+  'runtime activation must not invoke the interactive top-level prereq target before .config exists');
 assert(runtimeSetup.includes('install gcc-10 g++-10'),
   'a generically detected legacy compiler contract must retain the supported gcc-10 adapter');
 assert(runtimeSetup.includes('Python-${PYTHON2_VERSION}.tar.xz') && runtimeSetup.includes('www.python.org/ftp/python'),
@@ -164,6 +166,45 @@ function detectRuntimeFixture(prerequisiteContract, options = {}) {
   }
 }
 
+function activateRuntimeFixture() {
+  const directory = mkdtempSync(join(tmpdir(), 'probe-runtime-activate-'));
+  try {
+    const workdir = join(directory, 'upstream');
+    const include = join(workdir, 'include');
+    const bin = join(directory, 'bin');
+    const output = join(directory, 'outputs.txt');
+    const makeLog = join(directory, 'make.log');
+    mkdirSync(include, { recursive: true });
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(include, 'prereq-build.mk'), '# upstream host prerequisite contract\n');
+    const executable = (name, lines) => {
+      const file = join(bin, name);
+      writeFileSync(file, lines.join('\n') + '\n');
+      chmodSync(file, 0o755);
+    };
+    executable('python3', ['#!/usr/bin/env bash', "echo 'Python 3.13.0'"]);
+    executable('make', [
+      '#!/usr/bin/env bash',
+      'printf \'%s\\n\' "$*" >>"$PROBE_ACTIVATE_LOG"',
+      '[[ "$*" == "-C $PROBE_WORKDIR -j1 prepare-mk" ]] || { echo "unexpected make target: $*" >&2; exit 91; }',
+      '[[ ! -e "$PROBE_WORKDIR/.config" ]] || { echo "activate must not create .config" >&2; exit 92; }',
+    ]);
+    const result = spawnSync('bash', [resolve(import.meta.dirname, 'setup-probe-runtime.sh'), 'activate'], {
+      encoding: 'utf8', env: { ...process.env, PATH: `${bin.replaceAll('\\', '/')}:${process.env.PATH || ''}`,
+        PROBE_WORKDIR: workdir.replaceAll('\\', '/'), PROBE_RUNTIME_KIND: 'python3', PROBE_COMPILER_KIND: 'system',
+        PROBE_ACTIVATE_LOG: makeLog.replaceAll('\\', '/'), GITHUB_OUTPUT: output.replaceAll('\\', '/') },
+    });
+    assert.equal(result.status, 0, `runtime activation fixture failed:\n${result.stdout}\n${result.stderr}`);
+    assert.equal(readFileSync(makeLog, 'utf8').trim(), `-C ${workdir.replaceAll('\\', '/')} -j1 prepare-mk`);
+    assert(!existsSync(join(workdir, '.config')), 'runtime activation must not synthesize Target/Profile configuration');
+    const outputs = Object.fromEntries(readFileSync(output, 'utf8').trim().split(/\r?\n/)
+      .map((line) => line.split(/=(.*)/s).slice(0, 2)));
+    assert.deepEqual(outputs, { runtime: 'python3', version: 'Python 3.13.0', compiler: 'system' });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 const legacyRuntime = detectRuntimeFixture([
   '$(eval $(call SetupHostCommand,python,Please install Python 2.x, \\', '\tpython2.7 -V, \\', '\tpython2 -V))',
   '$(eval $(call SetupHostCommand,gcc,Please install GCC, \\', "\tgcc -dumpversion | grep -E '^(4\\.[8-9]|[5-9]\\.?|10\\.?)'))", '',
@@ -185,6 +226,7 @@ const modernRuntime = detectRuntimeFixture([
   '$(eval $(call SetupHostCommand,gcc,Please install GCC, \\', '\tgcc --version))', '',
 ].join('\n'));
 assert.deepEqual(modernRuntime, { runtime: 'python3', python_version: 'system', compiler: 'system' });
+activateRuntimeFixture();
 
 const evidenceWriter = readFileSync(resolve(import.meta.dirname, './write-package-probe-evidence.mjs'), 'utf8');
 assert.equal((evidenceWriter.match(/appendFileSync\(env\.GITHUB_STEP_SUMMARY/g) || []).length, 1,

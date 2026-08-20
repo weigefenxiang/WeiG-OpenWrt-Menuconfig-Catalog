@@ -122,7 +122,7 @@ activate_runtime() {
     command -v python3 >/dev/null
     version="$(python3 -V 2>&1)"
   fi
-  make -C "$WORKDIR" -j1 prereq
+  make -C "$WORKDIR" -j1 prepare-mk
   write_output runtime "$runtime"
   write_output version "$version"
   write_output compiler "$compiler"
