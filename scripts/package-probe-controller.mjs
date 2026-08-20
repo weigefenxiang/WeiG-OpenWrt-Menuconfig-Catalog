@@ -30,6 +30,7 @@ const DIMENSION_FIELDS = [
   ['sources', 'source'], ['branches', 'branch'], ['targetSystems', 'targetSystem'],
   ['subtargets', 'subtarget'], ['profiles', 'profile'],
 ];
+const SOURCE_RUN_PRIORITY = Object.freeze(['immortalwrt', 'lede', 'openwrt']);
 const PROBE_POLICY = JSON.parse(readFileSync(join(ROOT, '.github', 'automation-policy.json'), 'utf8')).probe || {};
 const PROBE_COVERAGE_DEFAULT_LIMIT = Number(PROBE_POLICY.coverage?.defaultLimit);
 const PROBE_COVERAGE_MAX_LIMIT = Number(PROBE_POLICY.coverage?.maxLimit);
@@ -416,6 +417,17 @@ function rowIdentity(row) {
   return [row.source, row.branch, row.targetSystem, row.subtarget, row.profile, row.target].join('\0');
 }
 
+function sourceRunRank(source) {
+  const rank = SOURCE_RUN_PRIORITY.indexOf(String(source || '').toLowerCase());
+  return rank < 0 ? SOURCE_RUN_PRIORITY.length : rank;
+}
+
+function compareProbeRows(left, right) {
+  const sourceRank = sourceRunRank(left.source) - sourceRunRank(right.source);
+  if (sourceRank) return sourceRank;
+  return rowIdentity(left).localeCompare(rowIdentity(right), undefined, { numeric: true });
+}
+
 function seededRank(seed, value) {
   return createHash('sha256').update(`${seed}\0${value}`).digest('hex');
 }
@@ -479,7 +491,7 @@ function stratifiedSample(rows, limit, dimensions, seed, depth = 0, path = '') {
 }
 
 export function selectProbeCoverage(rows, { coverage, environmentScope, samplingSeed }) {
-  const ordered = [...rows].sort((a, b) => rowIdentity(a).localeCompare(rowIdentity(b), undefined, { numeric: true }));
+  const ordered = [...rows].sort(compareProbeRows);
   if (coverage.mode === 'all') {
     if (ordered.length > PROBE_COVERAGE_MAX_LIMIT) {
       throw new Error(`Exhaustive coverage matched ${ordered.length} environments; narrow the scope to at most ${PROBE_COVERAGE_MAX_LIMIT}`);
@@ -488,7 +500,7 @@ export function selectProbeCoverage(rows, { coverage, environmentScope, sampling
   }
   if (ordered.length <= coverage.limit) return ordered;
   const wildcardDimensions = DIMENSION_FIELDS.filter(([scopeKey]) => environmentScope[scopeKey].includes('*')).map(([, field]) => field);
-  return stratifiedSample(ordered, Math.min(coverage.limit, ordered.length), wildcardDimensions, samplingSeed);
+  return stratifiedSample(ordered, Math.min(coverage.limit, ordered.length), wildcardDimensions, samplingSeed).sort(compareProbeRows);
 }
 
 export async function attachProbeTargets(plan, { repository, dataRef, token, policy, loadCore, runId = '' } = {}) {
