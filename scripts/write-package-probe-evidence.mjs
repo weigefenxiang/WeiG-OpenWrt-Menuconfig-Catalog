@@ -106,7 +106,11 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
         ? 'feed-network' : 'feed-stage');
     issues.push({ type: 'infrastructure-failure', reason, feed: String(env.PROBE_FEEDS_FAILURE_FEED || '') });
   }
-  if (['root-absent-source', 'root-not-applicable'].includes(attempt.reason)) {
+  if (attempt.reason === 'package-unavailable') {
+    issues.push({ type: 'package-unavailable', roots: attempt.unavailableRoots || [] });
+  } else if (attempt.reason === 'kconfig-unsatisfied') {
+    issues.push({ type: 'kconfig-unsatisfied', roots: attempt.rejectedRoots || [] });
+  } else if (['root-absent-source', 'root-not-applicable'].includes(attempt.reason)) {
     issues.push({ type: 'not-applicable', roots: attempt.unavailableRoots || [] });
   } else if (attempt.reason === 'root-combination-rejected') {
     issues.push({ type: 'kconfig-combination-rejected', roots: attempt.rejectedRoots || [] });
@@ -117,6 +121,10 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
   } else if (['final-boot-failed', 'final-runtime-failed', 'final-reboot-failed', 'final-reboot-health-failed'].includes(attempt.reason)) {
     issues.push({ type: 'virtual-probe-failure', reason: attempt.reason });
   }
+  let normalizedIssues = [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()];
+  if (attempt.reason === 'package-unavailable') {
+    normalizedIssues = normalizedIssues.filter((row) => row.type !== 'kconfig-unsatisfied');
+  }
   const runtimeView = selectedAttempt ? { ...runtime, conclusion: attempt.result, reason: attempt.reason, attempts: [attempt] } : runtime;
   const stageFailed = bootstrapOutcome === 'failure' || cloneOutcome === 'failure' || runtimeRequirementsOutcome === 'failure' ||
     pythonSetupOutcome === 'failure' || runtimeSetupOutcome === 'failure' || feedsOutcome === 'failure';
@@ -124,7 +132,7 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     ? 'inconclusive'
     : selectedAttempt && attemptResult
       ? attemptResult
-      : normalizedRuntimeConclusion(runtimeView, issues, env.PROBE_CONCLUSION || 'unknown');
+      : normalizedRuntimeConclusion(runtimeView, normalizedIssues, env.PROBE_CONCLUSION || 'unknown');
   const selectedLevel = Number(attempt.selectedLevel || runtime?.selectedLevel || env.PROBE_EVIDENCE_LEVEL || 0);
   const deepestPassedLevel = Number(attempt.deepestPassedLevel || (attemptResult === 'compatible' ? selectedLevel : 0));
   return {
@@ -156,8 +164,8 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
       mode: String(env.PROBE_COVERAGE_MODE || 'auto'), total: Number(env.PROBE_COVERAGE_TOTAL || 1), planned: Number(env.PROBE_COVERAGE_PLANNED || 1),
       sampled: String(env.PROBE_COVERAGE_SAMPLED || 'false') === 'true', batchIndex: Number(env.PROBE_BATCH_INDEX || 0), batchCount: Number(env.PROBE_BATCH_COUNT || 1),
     },
-    attempts: [attempt], issues: [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()], errors,
-    fingerprint: evidenceFingerprint(issues, errors),
+    attempts: [attempt], issues: normalizedIssues, errors,
+    fingerprint: evidenceFingerprint(normalizedIssues, errors),
     run: `run:${env.GITHUB_RUN_ID || ''}`,
     runUrl: `${env.GITHUB_SERVER_URL || ''}/${env.GITHUB_REPOSITORY || ''}/actions/runs/${env.GITHUB_RUN_ID || ''}`,
   };
@@ -216,6 +224,33 @@ function conclusionStats(rows) {
     compatibilityRate: conclusive ? compatible / conclusive : null };
 }
 
+const SELECTED_PACKAGE_PRIMARY_CAUSES = new Map([
+  ['package-unavailable', 'unavailable'],
+  ['kconfig-unsatisfied', 'kconfig'],
+  ['root-combination-rejected', 'kconfig'],
+  ['package-compile-failure', 'compile/link'],
+  ['rootfs-package-compile-failure', 'compile/link'],
+  ['rootfs-conflict', 'rootfs'],
+  ['final-firmware-failure', 'firmware'],
+]);
+
+function selectedPackagePrimaryCause(row) {
+  if (row?.conclusion !== 'incompatible') return '';
+  return SELECTED_PACKAGE_PRIMARY_CAUSES.get(String(row.reason || '')) || '';
+}
+
+function selectedPackagePrimaryStats(rows) {
+  const causes = rows.map(selectedPackagePrimaryCause).filter(Boolean);
+  const labels = [...new Set(causes)];
+  const count = causes.length;
+  const attempted = rows.length;
+  return {
+    selectedPackagePrimaryFailures: count,
+    selectedPackagePrimaryRate: attempted ? count / attempted : null,
+    selectedPackagePrimaryCause: count ? (labels.length === 1 ? labels[0] : 'mixed') : '—',
+  };
+}
+
 function conclusionForRows(rows, exhaustive) {
   const { compatible, incompatible, skipped, inconclusive } = conclusionStats(rows);
   if (inconclusive) return compatible || incompatible || skipped ? 'incomplete' : 'inconclusive';
@@ -235,7 +270,7 @@ export function aggregateScopeConclusions(evidence, options = {}) {
   }
   return [...groups.entries()].map(([path, rows]) => ({
     path, source: rows[0]?.source || '', branch: depth >= 2 ? rows[0]?.branch || '' : '',
-    ...conclusionStats(rows), conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
+    ...conclusionStats(rows), ...selectedPackagePrimaryStats(rows), conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
     reasons: [...new Set(rows.map((row) => row.reason).filter(Boolean))],
     issueTypes: [...new Set(rows.flatMap((row) => (row.issues || []).map((issue) => issue.type)))],
     unavailableRoots: [...new Set(rows.flatMap((row) => row.unavailableRoots || []))],
@@ -244,6 +279,13 @@ export function aggregateScopeConclusions(evidence, options = {}) {
 
 function formatCompatibilityRate(scope) {
   return scope.compatibilityRate === null ? '—' : `${Math.round(scope.compatibilityRate * 100)}%`;
+}
+
+function formatSelectedPackagePrimaryRate(scope) {
+  const attempted = Number(scope.attempted || 0);
+  const count = Number(scope.selectedPackagePrimaryFailures || 0);
+  const rate = attempted ? `${(count / attempted * 100).toFixed(1).replace(/\.0$/, '')}%` : '—';
+  return `${count}/${attempted} • ${rate} • ${scope.selectedPackagePrimaryCause || '—'}`;
 }
 
 function scopeResultLabel(scope, exhaustive) {
@@ -366,14 +408,14 @@ export function aggregateEvidence(directory, env = {}) {
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
     lines.push('### Source summary / 源码总览', '',
-      '| Source | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | INFRA / 未定 | Notes / 备注 |',
-      '|---|---|---:|---:|---:|---:|---|',
-      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} | ${scopeNote(scope)} |`), '');
+      '| Source / 源码源 | Compatible / 兼容 | Incompatible / 不兼容 | Inconclusive / 待定 | Selected-package primary-cause rate / 选中插件主因故障率 | Skipped / 跳过 | Notes / 备注 |',
+      '|---|---:|---:|---:|---|---:|---|',
+      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.compatible} | ${scope.incompatible} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '');
     for (const breakdown of breakdowns) {
       lines.push('<details>', `<summary>${breakdown.source || '-'} · Branch breakdown / 分支明细</summary>`, '',
-        '| Branch | Result / 结果 | Conclusive compatibility / 明确结果兼容率 | Compatible / Conclusive | Skipped / 跳过 | INFRA / 未定 | Notes / 备注 |',
-        '|---|---|---:|---:|---:|---:|---|',
-        ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | **${scopeResultLabel(scope, exhaustive)}** | **${formatCompatibilityRate(scope)}** | ${scope.compatible}/${scope.conclusive} | ${scope.skipped} | ${scope.inconclusive} | ${scopeNote(scope)} |`), '',
+        '| Branch / 分支 | Compatible / 兼容 | Incompatible / 不兼容 | Inconclusive / 待定 | Selected-package primary-cause rate / 选中插件主因故障率 | Skipped / 跳过 | Notes / 备注 |',
+        '|---|---:|---:|---:|---|---:|---|',
+        ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | ${scope.compatible} | ${scope.incompatible} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '',
         '</details>', '');
     }
     lines.push('<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',
