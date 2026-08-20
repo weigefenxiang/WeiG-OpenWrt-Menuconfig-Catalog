@@ -11,7 +11,7 @@ import { runtimeDataBranchForChannel } from './catalog-channels.mjs';
 import { parseProbeStateToken, PROBE_STATE_PREFIX } from './package-probe-state.mjs';
 import { isProbeIssue, normalizeGatewayRequest, probeCancellationAuthorized, probeCancellationRequested,
   probeDisplayContext, probeIssueCommand, probeRunMarkers } from './package-probe-gateway.mjs';
-import { createEvidence, parseProbeLog } from './write-package-probe-evidence.mjs';
+import { aggregateScopeConclusions, createEvidence, parseProbeLog } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
 import { buildCuratedApplications } from './curated-applications.mjs';
 
@@ -199,11 +199,19 @@ assert.equal(plan.matrix.include.reduce((sum, row) => sum + row.environmentCount
 assert.equal(plan.dataCommit, 'f'.repeat(40));
 assert.match(probePlanSummary(plan), /Defconfig: `on`/);
 
+const scopeAll = { sources: ['*'], branches: ['*'], targetSystems: ['*'], subtargets: ['*'], profiles: ['*'] };
+const priorityRows = selectProbeCoverage([
+  { source: 'OpenWrt', branch: 'main', targetSystem: 'x86', subtarget: '64', profile: 'generic', target: 'x86/64' },
+  { source: 'lede', branch: 'master', targetSystem: 'x86', subtarget: '64', profile: 'generic', target: 'x86/64' },
+  { source: 'ImmortalWrt', branch: 'master', targetSystem: 'x86', subtarget: '64', profile: 'generic', target: 'x86/64' },
+], { coverage: { mode: 'all' }, environmentScope: scopeAll, samplingSeed: 'priority' });
+assert.deepEqual(priorityRows.map((row) => row.source), ['ImmortalWrt', 'lede', 'OpenWrt'],
+  'Probe Matrix must use the soft Source priority ImmortalWrt -> lede -> OpenWrt');
+
 const manyRows = [];
 for (const source of ['A', 'B', 'C', 'D']) for (let branch = 0; branch < 5; branch++) for (let profile = 0; profile < 5; profile++) {
   manyRows.push({ source, branch: `b${branch}`, targetSystem: profile % 2 ? 'x86' : 'mediatek', subtarget: profile % 2 ? '64' : 'filogic', profile: `p${profile}`, target: `t${profile}` });
 }
-const scopeAll = { sources: ['*'], branches: ['*'], targetSystems: ['*'], subtargets: ['*'], profiles: ['*'] };
 const sampleA = selectProbeCoverage(manyRows, { coverage: { mode: 'auto', limit: 20 }, environmentScope: scopeAll, samplingSeed: 'seed-a' });
 const sampleAgain = selectProbeCoverage(manyRows, { coverage: { mode: 'auto', limit: 20 }, environmentScope: scopeAll, samplingSeed: 'seed-a' });
 const sampleB = selectProbeCoverage(manyRows, { coverage: { mode: 'auto', limit: 20 }, environmentScope: scopeAll, samplingSeed: 'seed-b' });
@@ -224,6 +232,44 @@ assert(apkIssues.some((row) => row.type === 'package-firmware-failure'));
 const infrastructure = createEvidence({ log: 'No space left on device', runtime: { conclusion: 'incompatible', attempts: [] },
   env: { PROBE_ROOTS: 'alpha', PROBE_CONCLUSION: 'failure' } });
 assert.equal(infrastructure.conclusion, 'inconclusive');
+
+const packageUnavailableEvidence = createEvidence({
+  log: 'FAIL: direct Probe intent did not survive upstream defconfig',
+  runtime: { roots: ['alpha'], conclusion: 'incompatible', attempts: [{
+    result: 'incompatible', reason: 'package-unavailable', unavailableRoots: ['alpha'], rejectedRoots: ['alpha'],
+  }] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_CONCLUSION: 'success' },
+});
+assert.equal(packageUnavailableEvidence.conclusion, 'incompatible');
+assert(packageUnavailableEvidence.issues.some((row) => row.type === 'package-unavailable' && row.roots.includes('alpha')));
+assert.equal(packageUnavailableEvidence.issues.some((row) => row.type === 'kconfig-unsatisfied'), false,
+  'package-unavailable must not be reported as a generic Kconfig rejection');
+
+const kconfigEvidence = createEvidence({
+  runtime: { roots: ['alpha'], conclusion: 'incompatible', attempts: [{
+    result: 'incompatible', reason: 'kconfig-unsatisfied', rejectedRoots: ['alpha'],
+  }] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_CONCLUSION: 'success' },
+});
+assert.equal(kconfigEvidence.conclusion, 'incompatible');
+assert(kconfigEvidence.issues.some((row) => row.type === 'kconfig-unsatisfied' && row.roots.includes('alpha')));
+
+const attributionScopes = aggregateScopeConclusions([
+  { source: 'ImmortalWrt', branch: 'master', conclusion: 'incompatible', reason: 'package-compile-failure', roots: ['alpha'], issues: [] },
+  { source: 'ImmortalWrt', branch: 'openwrt-24.10', conclusion: 'incompatible', reason: 'package-compile-failure', roots: ['alpha'], issues: [] },
+  { source: 'OpenWrt', branch: 'main', conclusion: 'incompatible', reason: 'package-unavailable', roots: ['alpha'], issues: [], unavailableRoots: ['alpha'] },
+  { source: 'lede', branch: 'master', conclusion: 'inconclusive', reason: 'package-compile-prerequisite-failure', roots: ['alpha'], issues: [] },
+], { depth: 1, exhaustive: true });
+const immortalAttribution = attributionScopes.find((row) => row.source === 'ImmortalWrt');
+const openwrtAttribution = attributionScopes.find((row) => row.source === 'OpenWrt');
+const ledeAttribution = attributionScopes.find((row) => row.source === 'lede');
+assert.equal(immortalAttribution.selectedPackagePrimaryFailures, 2);
+assert.equal(immortalAttribution.selectedPackagePrimaryRate, 1);
+assert.equal(immortalAttribution.selectedPackagePrimaryCause, 'compile/link');
+assert.equal(openwrtAttribution.selectedPackagePrimaryFailures, 1);
+assert.equal(openwrtAttribution.selectedPackagePrimaryCause, 'unavailable');
+assert.equal(ledeAttribution.selectedPackagePrimaryFailures, 0);
+assert.equal(ledeAttribution.selectedPackagePrimaryCause, '—');
 
 const lede = config.sources.find((source) => source.id === 'lede');
 for (const version of ['master', 'openwrt-27.01', 'openwrt-30.01']) assert(sourceAllowsBranch(lede, version));
@@ -253,6 +299,8 @@ assert(!controller.includes('display_context'), 'Controller must not consume dis
 assert(workflow.includes('actions: write') && workflow.includes('WEIG_PACKAGE_PROBE_BATCH_V3'));
 assert(workflow.includes('PROBE_TARGET_BATCH') && workflow.includes('config-resolve'));
 assert(controller.includes("toLowerCase() !== 'hanwckf'"));
+assert(controller.includes("Object.freeze(['immortalwrt', 'lede', 'openwrt'])") && controller.includes('compareProbeRows'),
+  'Probe Matrix must preserve the approved soft Source scheduling priority');
 assert(runner.includes("SOURCE.toLowerCase() === 'hanwckf'") && runner.includes("make(['scripts/config/conf']"));
 assert(runner.includes("join(ROOT, 'scripts', 'prepare-metadata.sh')") && runner.includes("'metadata-only'"),
   'L1 Probe must reuse the shared metadata-only prerequisite boundary');
@@ -263,8 +311,11 @@ assert(runner.includes("if (results.includes('inconclusive')) overallResult = 'i
   'L1 Probe must let infrastructure errors dominate business incompatibility');
 assert(runner.includes("process.exitCode = attempts.every((row) => ['compatible', 'incompatible', 'skipped'].includes(row.result)) ? 0 : 1;"),
   'Probe process status must accept only known conclusive/skipped results and fail runtime/unknown results');
-assert(runner.includes("return reason === 'root-kconfig-rejected' ? 'incompatible' : 'inconclusive';"),
-  'failed config execution must remain inconclusive unless upstream Kconfig conclusively rejects the root');
+assert(runner.includes('classifyConfigFailure') && runner.includes("reason: 'package-unavailable'") && runner.includes("reason: 'kconfig-unsatisfied'"),
+  'L2-L7 config attribution must distinguish missing packages from genuine upstream Kconfig rejection');
+assert(runner.includes('classifyPackageBuildFailure') && runner.includes('package-compile-prerequisite-failure') &&
+  runner.includes('package-compile-unattributed-failure'),
+  'L2-L7 must not promote unrelated or unattributed build failures to selected-package incompatibility');
 assert(workflow.includes('const comments = await github.paginate(') && !workflow.includes('const { data: comments } = await github.paginate('),
   'Probe summary must treat github.paginate() as the returned comments array');
 assert(controller.includes('environmentScope') && controller.includes('selectProbeCoverage') && !controller.includes('maxAutoTargetAttempts'));
@@ -294,6 +345,9 @@ assert(runner.includes('deepestPassedLevel') && runner.includes('durationMs'),
   'Probe runtime must preserve selected depth, deepest passed depth, and duration evidence');
 assert(runner.includes('BUILD_LOG=1'));
 assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.includes('fully-incompatible') && evidenceWriter.includes('partially-compatible'));
+assert(evidenceWriter.includes('Selected-package primary-cause rate / 选中插件主因故障率') &&
+  evidenceWriter.includes('| Source / 源码源 | Compatible / 兼容 | Incompatible / 不兼容 | Inconclusive / 待定 |'),
+  'Source summary must expose bilingual headers and selected-package primary-cause rate');
 assert.equal(policy.probe.maxMatrixJobs, 256);
 assert.deepEqual(policy.probe.coverage, { defaultLimit: 32, maxLimit: 128 });
 assert(!('autoCoverageLimits' in policy.probe) && !('maxAutoCoverage' in policy.probe),
