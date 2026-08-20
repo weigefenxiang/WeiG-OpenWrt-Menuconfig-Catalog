@@ -28,14 +28,10 @@
       "config-resolve": 90
     },
     "maxPackageConfigBytes": 131072,
-    "autoCoverageLimits": {
-      "package-compile": 200,
-      "rootfs-integration": 100,
-      "firmware-integration": 30,
-      "boot-smoke": 10,
-      "config-resolve": 40
-    },
-    "maxAutoCoverage": 256
+    "coverage": {
+      "defaultLimit": 32,
+      "maxLimit": 128
+    }
   },
   "translation": {
     "defaultDataBranch": "catalog-candidate",
