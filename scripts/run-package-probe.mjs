@@ -300,7 +300,6 @@ async function resolveProbeConfig({ targetConfig, requestedStates, file, resolve
     attempt.resolvedPackageCount = resolvedStates.size;
   }
   if (rejected.length) {
-    log(`FAIL: direct Probe intent did not survive upstream defconfig: ${JSON.stringify(directActual)}`);
     return { ok: false, states: actual, config: file, reason: 'root-kconfig-rejected', rejectedRoots: rejected };
   }
   return { ok: true, states: actual, config: file, resolvedPackageCount: resolvedStates.size, rejectedRoots: [] };
@@ -474,16 +473,21 @@ function classifyConfigFailure(config, attempt) {
   const unavailableRoots = ROOTS.filter((root) => !(mapping.get(root)?.size));
   if (unavailableRoots.length) {
     attempt.unavailableRoots = unavailableRoots;
-    log(`FAIL: Probe root package unavailable in Source/Branch: ${unavailableRoots.join(', ')}`);
-    return { result: 'incompatible', reason: 'package-unavailable' };
+    log(`SKIP: Probe root package unavailable in Source/Branch: ${unavailableRoots.join(', ')}`);
+    return { result: 'skipped', reason: 'root-absent-source' };
   }
+  log(`FAIL: Probe root package rejected by upstream Kconfig: ${attempt.rejectedRoots.join(', ')}`);
   return { result: 'incompatible', reason: 'kconfig-unsatisfied' };
 }
 
 async function packageCompile(attempt) {
   const config = await runStage(attempt, 'config', () => prepareConfig(attempt));
   attempt.rootStates = config.states;
-  if (!config.ok) return classifyConfigFailure(config, attempt);
+  if (!config.ok) {
+    const classified = classifyConfigFailure(config, attempt);
+    if (classified.result === 'skipped') attempt.stages.config.status = 'skipped';
+    return classified;
+  }
   let resolved;
   try { resolved = await runStage(attempt, 'metadata', async () => resolveRootBuildTargets(readPackageInfo())); }
   catch (error) {

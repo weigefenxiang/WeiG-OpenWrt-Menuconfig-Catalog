@@ -365,7 +365,7 @@ assert.equal(packageNameEvidence.conclusion, 'incompatible', 'timeout-like packa
 const dir = mkdtempSync(join(tmpdir(), 'probe-evidence-'));
 try {
   for (const [i, evidence] of [{ ...row('A', 'main', 'incompatible'), reason: 'package-compile-failure' },
-    { ...row('B', 'main', 'incompatible'), reason: 'package-unavailable' }].entries()) {
+    { ...row('B', 'main', 'skipped'), reason: 'root-absent-source', unavailableRoots: ['luci-app-test'], issues: [{ type: 'not-applicable', roots: ['luci-app-test'] }] }].entries()) {
     const sub = join(dir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
   }
   const sampled = aggregateEvidence(dir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
@@ -377,6 +377,8 @@ try {
     'Source summary must expose two-line bilingual headers, success rate, and package-caused rate in the approved order');
   assert(sampled.lines.some((line) => line.includes('| A | 0 | **0%** | 1 | 0 | **1/1 · 100% · compile/link** | 0 | — |')),
     'sampled incompatible source must preserve counts, show 0% success, and expose the package primary cause without claiming exhaustive coverage');
+  assert(sampled.lines.some((line) => line.includes('| B | 0 | **—** | 0 | 0 | **—** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+    'source-absent samples must be skipped and excluded from both success and package-caused rates');
   assert(sampled.lines.some((line) => line.includes('Probe roots / 测试入口: `luci-app-test`')), 'summary must expose the probed package/root');
 
   const full = aggregateEvidence(dir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
@@ -398,14 +400,14 @@ try {
 
   const mixedDir = join(dir, 'mixed'); mkdirSync(mixedDir);
   for (const [i, evidence] of [row('OpenWrt', 'main', 'compatible'),
-    { ...row('OpenWrt', 'openwrt-23.05', 'incompatible'), reason: 'package-unavailable' },
+    { ...row('OpenWrt', 'openwrt-23.05', 'skipped'), reason: 'root-absent-source', unavailableRoots: ['luci-app-test'], issues: [{ type: 'not-applicable', roots: ['luci-app-test'] }] },
     { ...row('ImmortalWrt', 'openwrt-23.05', 'incompatible'), reason: 'package-compile-failure' }].entries()) {
     const sub = join(mixedDir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
   }
   const mixed = aggregateEvidence(mixedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '3', COVERAGE_PLANNED: '3', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert(mixed.lines.some((line) => line.includes('| OpenWrt | 1 | **50%** | 1 | 0 | **1/2 · 50% · unavailable** | 0 | — |')),
-    'mixed source must keep its top-level totals, success rate, and package-caused attribution');
+  assert(mixed.lines.some((line) => line.includes('| OpenWrt | 1 | **100%** | 0 | 0 | **0/2 · 0% · —** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+    'compatible plus source-absent environments must keep top-level totals; skipped rows do not count as plugin-primary failures, while the existing attempted-row denominator remains 0/2');
   assert(mixed.lines.some((line) => line.includes('<summary>OpenWrt · Branch breakdown / 分支明细</summary>')), 'mixed source must expose branch breakdown');
   assert(!mixed.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'uniform source must stay compact');
 

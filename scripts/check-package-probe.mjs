@@ -234,16 +234,18 @@ const infrastructure = createEvidence({ log: 'No space left on device', runtime:
 assert.equal(infrastructure.conclusion, 'inconclusive');
 
 const packageUnavailableEvidence = createEvidence({
-  log: 'FAIL: direct Probe intent did not survive upstream defconfig',
-  runtime: { roots: ['alpha'], conclusion: 'incompatible', attempts: [{
-    result: 'incompatible', reason: 'package-unavailable', unavailableRoots: ['alpha'], rejectedRoots: ['alpha'],
+  log: 'SKIP: Probe root package unavailable in Source/Branch: alpha',
+  runtime: { roots: ['alpha'], conclusion: 'skipped', attempts: [{
+    result: 'skipped', reason: 'root-absent-source', unavailableRoots: ['alpha'], rejectedRoots: ['alpha'],
   }] },
   env: { PROBE_ROOTS: 'alpha', PROBE_CONCLUSION: 'success' },
 });
-assert.equal(packageUnavailableEvidence.conclusion, 'incompatible');
-assert(packageUnavailableEvidence.issues.some((row) => row.type === 'package-unavailable' && row.roots.includes('alpha')));
+assert.equal(packageUnavailableEvidence.conclusion, 'skipped');
+assert(packageUnavailableEvidence.issues.some((row) => row.type === 'not-applicable' && row.roots.includes('alpha')));
+assert.equal(packageUnavailableEvidence.issues.some((row) => row.type === 'package-unavailable'), false,
+  'a source-absent package must not retain the legacy package-unavailable evidence type');
 assert.equal(packageUnavailableEvidence.issues.some((row) => row.type === 'kconfig-unsatisfied'), false,
-  'package-unavailable must not be reported as a generic Kconfig rejection');
+  'a source-absent package must not be reported as a generic Kconfig rejection');
 
 const kconfigEvidence = createEvidence({
   runtime: { roots: ['alpha'], conclusion: 'incompatible', attempts: [{
@@ -257,7 +259,7 @@ assert(kconfigEvidence.issues.some((row) => row.type === 'kconfig-unsatisfied' &
 const attributionScopes = aggregateScopeConclusions([
   { source: 'ImmortalWrt', branch: 'master', conclusion: 'incompatible', reason: 'package-compile-failure', roots: ['alpha'], issues: [] },
   { source: 'ImmortalWrt', branch: 'openwrt-24.10', conclusion: 'incompatible', reason: 'package-compile-failure', roots: ['alpha'], issues: [] },
-  { source: 'OpenWrt', branch: 'main', conclusion: 'incompatible', reason: 'package-unavailable', roots: ['alpha'], issues: [], unavailableRoots: ['alpha'] },
+  { source: 'OpenWrt', branch: 'main', conclusion: 'skipped', reason: 'root-absent-source', roots: ['alpha'], issues: [{ type: 'not-applicable', roots: ['alpha'] }], unavailableRoots: ['alpha'] },
   { source: 'lede', branch: 'master', conclusion: 'inconclusive', reason: 'package-compile-prerequisite-failure', roots: ['alpha'], issues: [] },
 ], { depth: 1, exhaustive: true });
 const immortalAttribution = attributionScopes.find((row) => row.source === 'ImmortalWrt');
@@ -266,8 +268,9 @@ const ledeAttribution = attributionScopes.find((row) => row.source === 'lede');
 assert.equal(immortalAttribution.selectedPackagePrimaryFailures, 2);
 assert.equal(immortalAttribution.selectedPackagePrimaryRate, 1);
 assert.equal(immortalAttribution.selectedPackagePrimaryCause, 'compile/link');
-assert.equal(openwrtAttribution.selectedPackagePrimaryFailures, 1);
-assert.equal(openwrtAttribution.selectedPackagePrimaryCause, 'unavailable');
+assert.equal(openwrtAttribution.selectedPackagePrimaryFailures, 0);
+assert.equal(openwrtAttribution.selectedPackagePrimaryCause, '—');
+assert.equal(openwrtAttribution.skipped, 1);
 assert.equal(ledeAttribution.selectedPackagePrimaryFailures, 0);
 assert.equal(ledeAttribution.selectedPackagePrimaryCause, '—');
 
@@ -311,8 +314,11 @@ assert(runner.includes("if (results.includes('inconclusive')) overallResult = 'i
   'L1 Probe must let infrastructure errors dominate business incompatibility');
 assert(runner.includes("process.exitCode = attempts.every((row) => ['compatible', 'incompatible', 'skipped'].includes(row.result)) ? 0 : 1;"),
   'Probe process status must accept only known conclusive/skipped results and fail runtime/unknown results');
-assert(runner.includes('classifyConfigFailure') && runner.includes("reason: 'package-unavailable'") && runner.includes("reason: 'kconfig-unsatisfied'"),
-  'L2-L7 config attribution must distinguish missing packages from genuine upstream Kconfig rejection');
+assert(runner.includes('classifyConfigFailure') && runner.includes("result: 'skipped'") &&
+  runner.includes("reason: 'root-absent-source'") && runner.includes("reason: 'kconfig-unsatisfied'") &&
+  !runner.includes("reason: 'package-unavailable'") &&
+  !runner.includes('direct Probe intent did not survive upstream defconfig'),
+  'L2-L7 config attribution must skip missing packages while retaining genuine upstream Kconfig rejection');
 assert(runner.includes('classifyPackageBuildFailure') && runner.includes('package-compile-prerequisite-failure') &&
   runner.includes('package-compile-unattributed-failure'),
   'L2-L7 must not promote unrelated or unattributed build failures to selected-package incompatibility');

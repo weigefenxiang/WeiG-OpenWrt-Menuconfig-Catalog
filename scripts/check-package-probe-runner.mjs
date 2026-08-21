@@ -142,7 +142,7 @@ function scenario(mode, options = {}) {
     assert.equal(result.status, options.expectedStatus ?? 0, `${mode} failed:\n${result.stdout}\n${result.stderr}`);
     const calls = readFileSync(makeLog, 'utf8').trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
     const runtime = JSON.parse(readFileSync(runtimeFile, 'utf8'));
-    return { calls, runtime };
+    return { calls, runtime, log: readFileSync(join(directory, 'probe.log'), 'utf8') };
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
@@ -169,17 +169,41 @@ scenario('package-compile', { expectDisabled: true, intent: [
   { package: 'beta', before: 'y', after: 'n' },
 ] });
 
-const l2Unavailable = scenario('package-compile', { packageUnavailable: true });
-assert.equal(l2Unavailable.runtime.conclusion, 'incompatible');
-assert.equal(l2Unavailable.runtime.reason, 'package-unavailable');
-assert.deepEqual(l2Unavailable.runtime.attempts[0].unavailableRoots, ['alpha']);
-assert.equal(l2Unavailable.calls.some((args) => args.includes('package/network/alpha/compile')), false,
-  'an unavailable selected package must stop before package compilation');
+for (const mode of ['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
+  const unavailable = scenario(mode, { packageUnavailable: true });
+  assert.equal(unavailable.runtime.conclusion, 'skipped', `${mode} missing package must be skipped`);
+  assert.equal(unavailable.runtime.reason, 'root-absent-source', `${mode} missing package must use the source-absence reason`);
+  assert.equal(unavailable.runtime.attempts[0].result, 'skipped');
+  assert.equal(unavailable.runtime.attempts[0].reason, 'root-absent-source');
+  assert.deepEqual(unavailable.runtime.attempts[0].unavailableRoots, ['alpha']);
+  assert.equal(unavailable.runtime.attempts[0].stages.config.status, 'skipped');
+  assert.equal('boot' in unavailable.runtime.attempts[0].stages, false,
+    `${mode} missing package must stop before virtual boot`);
+  assert.equal('runtimeHealth' in unavailable.runtime.attempts[0].stages, false,
+    `${mode} missing package must stop before runtime health`);
+  assert.equal('secondRuntimeHealth' in unavailable.runtime.attempts[0].stages, false,
+    `${mode} missing package must stop before reboot validation`);
+  assert(unavailable.log.includes('SKIP: Probe root package unavailable in Source/Branch: alpha'));
+  assert(!unavailable.log.includes('direct Probe intent did not survive'),
+    `${mode} missing package must not leave a generic Kconfig failure in the evidence log`);
+  assert.equal(unavailable.calls.some((args) => args.includes('prepare')), false,
+    `${mode} missing package must stop before Target preparation`);
+  assert.equal(unavailable.calls.some((args) => args.includes('package/network/alpha/compile')), false,
+    `${mode} missing package must stop before package compilation`);
+  assert.equal(unavailable.calls.some((args) => args.includes('package/compile')), false,
+    `${mode} missing package must stop before RootFS package compilation`);
+  assert.equal(unavailable.calls.some((args) => args.includes('package/install')), false,
+    `${mode} missing package must stop before RootFS installation`);
+  assert.equal(unavailable.calls.some((args) => args.includes('target/install')), false,
+    `${mode} missing package must stop before firmware integration`);
+}
 
 const l2Kconfig = scenario('package-compile', { rejectRoot: true });
 assert.equal(l2Kconfig.runtime.conclusion, 'incompatible');
 assert.equal(l2Kconfig.runtime.reason, 'kconfig-unsatisfied');
 assert.deepEqual(l2Kconfig.runtime.attempts[0].rejectedRoots, ['alpha']);
+assert.equal(l2Kconfig.runtime.attempts[0].stages.config.status, 'failure');
+assert(l2Kconfig.log.includes('FAIL: Probe root package rejected by upstream Kconfig: alpha'));
 
 const l2RootFailure = scenario('package-compile', { failRoot: true });
 assert.equal(l2RootFailure.runtime.conclusion, 'incompatible');
