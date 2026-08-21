@@ -316,6 +316,15 @@ const targetPrerequisiteInfrastructure = createEvidence({
 assert.equal(targetPrerequisiteInfrastructure.conclusion, 'inconclusive');
 assert(targetPrerequisiteInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'target-prerequisite-infrastructure'));
 
+const structuredCompileInfrastructure = createEvidence({
+  log: 'earlyoom: watcher active\n',
+  runtime: { mode: 'package-compile', conclusion: 'inconclusive', roots: ['alpha'], attempts: [{
+    result: 'inconclusive', reason: 'package-compile-infrastructure', selectedLevel: 2, deepestPassedLevel: 1, stages: {},
+  }] }, env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert(structuredCompileInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'package-compile-infrastructure'));
+assert(!structuredCompileInfrastructure.issues.some((issue) => issue.reason === 'memory-exhausted'));
+
 const targetPrerequisiteOom = createEvidence({
   log: 'ERROR: target/linux failed to build\nmake: *** [prepare] Killed\n',
   runtime: { mode: 'package-compile', conclusion: 'incompatible', roots: ['alpha'], attempts: [] },
@@ -364,7 +373,8 @@ const selectedInconclusive = createEvidence({
   env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'config-resolve' },
 });
 assert.equal(selectedInconclusive.conclusion, 'inconclusive', 'a truly inconclusive selected attempt must remain ERROR-class evidence');
-assert(selectedInconclusive.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'host-prerequisite'));
+assert(!selectedInconclusive.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'host-prerequisite'),
+  'a structured selected attempt must not inherit unrelated shared host-prerequisite noise');
 const reasonOnly = createEvidence({ log: '', runtime: { conclusion: 'inconclusive', reason: 'metadata-unresolved', attempts: [] }, env: { PROBE_ROOTS: 'alpha' } });
 assert(evidenceSummaryLines(reasonOnly).some((line) => line.includes('metadata-unresolved')), 'evidence summary must expose runtime reason when no normalized issue exists');
 
@@ -381,6 +391,17 @@ assert(evidenceSummaryLines(runtimeSkipped).some((line) => line.includes('L6 / L
 assert(!evidenceSummaryLines(runtimeSkipped).some((line) => line.includes('Baseline / Final')),
   'Final-only Probe evidence must not present an A/B package comparison');
 
+const finalOnlyCauseEvidence = createEvidence({
+  log: '',
+  runtime: { mode: 'package-compile', conclusion: 'incompatible', roots: ['alpha'],
+    attempts: [{ phase: 'final', result: 'incompatible', reason: 'package-compile-failure', packageCauseKind: 'dependency' }] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(finalOnlyCauseEvidence.pairedComparison, false,
+  'packageCauseKind alone must not activate paired evidence');
+assert(!evidenceSummaryLines(finalOnlyCauseEvidence).some((line) => line.includes('baseline B → final A')),
+  'final-only packageCauseKind must not render A/B details');
+
 const resolvedDependencyEvidence = createEvidence({ log: '', runtime: { mode: 'package-compile', conclusion: 'compatible',
   roots: ['alpha'], requestedPackageCount: 1, attempts: [{ result: 'compatible', resolvedPackageCount: 3 }] }, env: {
   PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile', PROBE_RUNTIME_KIND: 'python3',
@@ -390,6 +411,40 @@ assert.equal(resolvedDependencyEvidence.requestedPackageCount, 1);
 assert.equal(resolvedDependencyEvidence.resolvedPackageCount, 3);
 assert(evidenceSummaryLines(resolvedDependencyEvidence).some((line) => line.includes('直接探针配置: 1')));
 assert(evidenceSummaryLines(resolvedDependencyEvidence).some((line) => line.includes('Defconfig 解析软件包: 3')));
+
+const pairedEvidence = createEvidence({
+  log: 'earlyoom: memory pressure watcher active\nmake: *** [package/compile] Error 2\n',
+  runtime: { mode: 'package-compile', pairedComparison: true,
+    comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] }, conclusion: 'incompatible', roots: ['alpha'],
+    attempts: [{ phase: 'paired', pairId: 'pair:test', pairConclusion: 'incompatible-direct', result: 'incompatible',
+      reason: 'package-compile-failure', packageCauseKind: 'direct', failedBuildTargets: ['package/network/alpha'],
+      baseline: { result: 'compatible' }, final: { result: 'incompatible', reason: 'package-compile-failure' }, stages: {} }] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(pairedEvidence.conclusion, 'incompatible');
+assert.equal(pairedEvidence.pairedComparison, true);
+assert.equal(pairedEvidence.packageCauseKind, 'direct');
+assert.equal(pairedEvidence.errors.length, 0, 'structured paired evidence must ignore shared phase log noise');
+assert(evidenceSummaryLines(pairedEvidence).some((line) => line.includes('baseline B → final A')));
+assert(!pairedEvidence.issues.some((issue) => issue.reason === 'memory-exhausted'), 'earlyoom must not match OOM');
+const pairedStats = aggregateScopeConclusions([
+  { source: 'paired', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-failure', packageCauseKind: 'direct', pairedComparison: true, pairConclusion: 'incompatible-direct', roots: ['alpha'], issues: [] },
+  { source: 'paired', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-dependency-failure', packageCauseKind: 'dependency', pairedComparison: true, pairConclusion: 'incompatible-dependency', roots: ['alpha'], issues: [] },
+], { depth: 1, exhaustive: true });
+assert.equal(pairedStats[0].selectedPackagePrimaryDirectFailures, 1);
+assert.equal(pairedStats[0].selectedPackagePrimaryDependencyFailures, 1);
+const legacyPrerequisiteDirect = aggregateScopeConclusions([
+  { source: 'legacy', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-prerequisite-failure',
+    rootTargets: ['package/network/oscam'], failedBuildTargets: ['package/network/oscam'], roots: ['oscam'], issues: [] },
+], { depth: 1, exhaustive: true });
+assert.equal(legacyPrerequisiteDirect[0].selectedPackagePrimaryFailures, 1,
+  'legacy prerequisite failure with the selected oscam root target must retain compile/link attribution');
+const legacyPrerequisiteUnrelated = aggregateScopeConclusions([
+  { source: 'legacy', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-prerequisite-failure',
+    rootTargets: ['package/network/oscam'], failedBuildTargets: ['package/kernel/linux'], roots: ['oscam'], issues: [] },
+], { depth: 1, exhaustive: true });
+assert.equal(legacyPrerequisiteUnrelated[0].selectedPackagePrimaryFailures, 0,
+  'legacy prerequisite failure without a selected root target intersection must not be attributed');
 
 const rebootFailure = createEvidence({ log: '', runtime: { mode: 'reboot-validation', selectedLevel: 7, conclusion: 'incompatible',
   roots: ['alpha'], attempts: [{ result: 'incompatible', reason: 'final-reboot-failed', selectedLevel: 7,
@@ -481,6 +536,18 @@ try {
   assert(error.lines.some((line) => line.includes('| OpenWrt | 1 | **50%** | 0 | 1 | **0/2 · 0% · —** | 0 | Infrastructure incomplete / 基础设施未完成: 1 (timeout) |')),
     'one infrastructure failure must remain inconclusive without erasing the valid compatible result');
   assert(error.lines.some((line) => line.includes('Conclusive compatibility / 明确结果兼容率')), 'compatibility percentage must be labeled as conclusive-only');
+
+  const baselineFailureDir = join(dir, 'baseline-failure'); mkdirSync(baselineFailureDir);
+  { const sub = join(baselineFailureDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({
+      ...row('lede', 'master', 'inconclusive'), reason: 'baseline-failure', pairedComparison: true,
+      pairConclusion: 'baseline-failure', issues: [{ type: 'baseline-failure', reason: 'baseline-failure' }],
+    })); }
+  const baselineFailureSummary = aggregateEvidence(baselineFailureDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(baselineFailureSummary.summaryScopes[0].baselineFailure, 1);
+  assert.equal(baselineFailureSummary.summaryScopes[0].unattributedInconclusive, 0);
+  assert(baselineFailureSummary.lines.some((line) => line.includes('Baseline B failed; Final A not run / 基线 B 失败，未执行 Final A: 1')),
+    'baseline failure must explicitly state that Final A was not run');
 
   const targetPrerequisiteDir = join(dir, 'target-prerequisite'); mkdirSync(targetPrerequisiteDir);
   { const sub = join(targetPrerequisiteDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({

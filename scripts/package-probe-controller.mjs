@@ -20,8 +20,9 @@ const MODES_LIST = ['config-resolve', 'package-compile', 'rootfs-integration', '
 const VIRTUAL_MODES = new Set(['boot-smoke', 'runtime-health', 'reboot-validation']);
 const REQUEST_KEYS = new Set([
   'schema', 'channel', 'mode', 'useDefconfig', 'baselinePackageConfig', 'packageConfig', 'packageIntent',
-  'environmentScope', 'coverage', 'maxParallel', 'execute',
+  'environmentScope', 'coverage', 'maxParallel', 'execute', 'comparison',
 ]);
+const COMPARISON_KEYS = new Set(['mode', 'executionOrder']);
 const INTENT_KEYS = new Set(['package', 'before', 'after']);
 const ENVIRONMENT_SCOPE_KEYS = new Set(['sources', 'branches', 'targetSystems', 'subtargets', 'profiles']);
 const COVERAGE_KEYS = new Set(['mode', 'limit']);
@@ -49,6 +50,18 @@ const safeKey = (value) => String(value || '').replace(/[^A-Za-z0-9_.-]/g, '-').
 function rejectUnknownKeys(value, allowed, label) {
   const unknown = Object.keys(value || {}).filter((key) => !allowed.has(key));
   if (unknown.length) throw new Error(`${label} contains unknown keys: ${unknown.join(', ')}`);
+}
+
+export function normalizeProbeComparison(value) {
+  if (value === undefined || value === null) return null;
+  if (!plainObject(value)) throw new Error('comparison must be an object');
+  rejectUnknownKeys(value, COMPARISON_KEYS, 'comparison');
+  if (String(value.mode || '') !== 'paired-exclusion') throw new Error('comparison.mode must be paired-exclusion');
+  if (!Array.isArray(value.executionOrder) || value.executionOrder.length !== 2 ||
+      value.executionOrder[0] !== 'baseline' || value.executionOrder[1] !== 'final') {
+    throw new Error('comparison.executionOrder must be [baseline, final]');
+  }
+  return { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] };
 }
 
 export function normalizeProbeMode(value) {
@@ -170,6 +183,7 @@ export function normalizeProbeRequest(raw, maximumBytes = 131072) {
   const finalState = normalizePackageConfig(raw.packageConfig, maximumBytes, { label: 'packageConfig' });
   const packageIntent = normalizePackageIntent(raw.packageIntent, baselineState.states, finalState.states);
   const roots = packageIntent.filter((row) => row.after === 'm' || row.after === 'y').map((row) => row.package);
+  const comparison = normalizeProbeComparison(raw.comparison);
   const mode = normalizeProbeMode(raw.mode);
   if (raw.useDefconfig === false) {
     throw new Error('Package Probe requires upstream defconfig for every depth');
@@ -182,6 +196,8 @@ export function normalizeProbeRequest(raw, maximumBytes = 131072) {
     baselinePackageConfig: packageConfigFromIntent(packageIntent, 'before'),
     packageConfig: packageConfigFromIntent(packageIntent, 'after'),
     packageIntent,
+    comparison,
+    pairedComparison: Boolean(comparison),
     roots,
     packages: [...roots],
     environmentScope: normalizeEnvironmentScope(raw.environmentScope),
@@ -197,7 +213,8 @@ function requireNormalizedProbeRequest(value) {
       typeof value.packageConfig !== 'string' || typeof value.baselinePackageConfig !== 'string') {
     throw new Error('createProbePlan requires a normalized Probe V3 request');
   }
-  return value;
+  const comparison = normalizeProbeComparison(value.comparison);
+  return { ...value, comparison, pairedComparison: Boolean(comparison) };
 }
 
 function targetConfig(target, profile) {
@@ -388,6 +405,8 @@ export function createProbePlan({ index, env = {}, policy, request: normalizedRe
     batchIndex: normalizedBatchIndex(env.PROBE_BATCH_INDEX), mode: request.mode, evidenceLevel: MODES_LIST.indexOf(request.mode) + 1,
     execute: request.execute, useDefconfig: request.useDefconfig, requested: request.roots, directPackages: request.packages,
     packageIntent: request.packageIntent, baselinePackageConfig: request.baselinePackageConfig, packageConfig: request.packageConfig,
+    comparison: request.comparison,
+    pairedComparison: request.pairedComparison === true,
     environmentScope: request.environmentScope, coverageRequest: request.coverage, requestedMaxParallel: request.maxParallel,
     authorizationElevatedParallel: authorization.elevatedParallel, collaboratorCap,
     maxParallel: Math.max(1, Math.min(maxMatrixJobs, authorization.elevatedParallel ? requestedParallel : Math.min(collaboratorCap, requestedParallel))),
@@ -595,6 +614,7 @@ function writeOutputs(plan, extra = {}) {
     package_config: Buffer.from(plan.packageConfig || '').toString('base64url'),
     baseline_package_config: Buffer.from(plan.baselinePackageConfig || '').toString('base64url'),
     package_intent: Buffer.from(JSON.stringify(plan.packageIntent || [])).toString('base64url'),
+    paired_comparison: String(plan.pairedComparison === true),
     use_defconfig: String(plan.useDefconfig), data_branch: plan.dataBranch, data_commit: String(plan.dataCommit || ''),
     sampling_seed: String(plan.samplingSeed || ''), batch_index: String(plan.batchIndex || 0), batch_count: String(plan.batchCount || 1),
     has_next_batch: String(Boolean(plan.hasNextBatch)), next_batch_index: String(plan.nextBatchIndex || 0),
@@ -620,6 +640,7 @@ export function probePlanSummary(plan) {
     `- Catalog channel / Catalog 通道: \`${plan.dataBranch}\``,
     `- Catalog data commit / 数据提交: \`${plan.dataCommit || 'unresolved'}\``,
     `- Mode / 探测方式: \`${plan.mode}\``,
+    `- Paired comparison / A/B 对照: \`${plan.pairedComparison ? 'on' : 'off'}\``,
     `- Defconfig: \`${plan.useDefconfig ? 'on' : 'off'}\``,
     `- Probe roots / 测试入口: ${plan.requested.map((row) => `\`${row}\``).join(', ') || '-'}`,
     `- Direct Probe config / 直接探针配置: ${plan.directPackages.length}`,
@@ -671,6 +692,9 @@ function manualRequest(env, maximumBytes, policy) {
     schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode,
     useDefconfig: true, baselinePackageConfig: baseline.packageConfig,
     packageConfig: final.packageConfig, packageIntent: intent,
+    ...(String(env.PROBE_PAIRED_COMPARISON || '').toLowerCase() === 'true' ? {
+      comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] },
+    } : {}),
     environmentScope: {
       sources: [env.SOURCE_PATTERN || '*'], branches: [env.BRANCH_PATTERN || '*'],
       targetSystems: [env.TARGET_SYSTEM || '*'], subtargets: [env.SUBTARGET || '*'], profiles: [env.TARGET_PROFILE || '*'],
@@ -718,6 +742,8 @@ export async function main(env = process.env) {
       mode: request.mode, evidenceLevel: 0, execute: false, useDefconfig: request.useDefconfig,
       requested: request.roots, directPackages: request.packages, packageIntent: request.packageIntent,
       baselinePackageConfig: request.baselinePackageConfig, packageConfig: request.packageConfig,
+      comparison: request.comparison,
+      pairedComparison: request.pairedComparison === true,
       environmentScope: request.environmentScope, coverageRequest: request.coverage, coverage: null,
       batchIndex: normalizedBatchIndex(env.PROBE_BATCH_INDEX), batchCount: 1, hasNextBatch: false, nextBatchIndex: 0,
       maxParallel: 1, timeoutMinutes: timeoutForMode(policy, request.mode), virtualTiming: virtualTimingPolicy(policy),

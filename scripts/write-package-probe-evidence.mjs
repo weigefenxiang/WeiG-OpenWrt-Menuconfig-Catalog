@@ -74,11 +74,42 @@ function normalizedRuntimeConclusion(runtime, issues, fallback) {
   return fallback === 'success' ? 'compatible' : 'inconclusive';
 }
 
+const STRUCTURED_INFRASTRUCTURE_REASONS = new Set([
+  'package-compile-infrastructure', 'rootfs-package-infrastructure',
+  'rootfs-install-infrastructure', 'firmware-build-infrastructure',
+  'runner-infrastructure', 'target-prerequisite-infrastructure',
+]);
+
+const STRUCTURED_PACKAGE_FAILURE_REASONS = new Set([
+  'package-compile-prerequisite-failure', 'package-compile-unattributed-failure',
+  'rootfs-package-prerequisite-failure', 'rootfs-package-unattributed-failure',
+  'rootfs-install-prerequisite-failure', 'rootfs-install-unattributed-failure',
+  'firmware-prerequisite-failure', 'firmware-unattributed-failure',
+]);
+
+function appendStructuredAttemptIssue(issues, attempt) {
+  const reason = String(attempt?.reason || '');
+  if (STRUCTURED_INFRASTRUCTURE_REASONS.has(reason)) {
+    issues.push({ type: 'infrastructure-failure', reason });
+  } else if (STRUCTURED_PACKAGE_FAILURE_REASONS.has(reason)) {
+    issues.push({ type: 'package-build-failure', reason,
+      ...(attempt?.failedBuildTargets?.length ? { targets: attempt.failedBuildTargets } : {}) });
+  }
+}
+
 export function createEvidence({ log, config = '', runtime = null, env = {}, attempt: selectedAttempt = null }) {
   const roots = String(env.PROBE_ROOTS || '').split(',').map((row) => row.trim()).filter(Boolean);
   const attempt = selectedAttempt || runtime?.attempts?.[0] || {};
+  const runtimeComparison = runtime?.comparison;
+  const pairedComparison = runtime?.pairedComparison === true ||
+    runtimeComparison?.mode === 'paired-exclusion' || Boolean(attempt.pairConclusion);
   const attemptResult = ['compatible', 'incompatible', 'inconclusive', 'skipped'].includes(attempt.result) ? attempt.result : '';
-  const sharedLogIsRelevant = !selectedAttempt || attemptResult === 'inconclusive';
+  // Once the runner emitted a structured attempt result/reason, the shared
+  // log is only a transport artifact.  In particular, a later phase's
+  // earlyoom/watchdog line must not downgrade an already authoritative A
+  // incompatibility.  Logs are consulted only for legacy/no-attempt evidence.
+  const structuredAttempt = Boolean(attemptResult || attempt.pairConclusion);
+  const sharedLogIsRelevant = !structuredAttempt;
   const errors = sharedLogIsRelevant ? normalizedErrors(log) : [];
   const issues = sharedLogIsRelevant ? parseProbeLog(log) : [];
   let targetPrerequisiteCause = '';
@@ -130,9 +161,19 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     issues.push({ type: 'infrastructure-failure', reason: attempt.reason });
   } else if (attempt.reason === 'runner-infrastructure') {
     issues.push({ type: 'infrastructure-failure', reason: attempt.reason });
+  } else if (attempt.pairConclusion === 'baseline-failure') {
+    issues.push({ type: 'baseline-failure', reason: attempt.baseline?.reason || attempt.reason || 'baseline-failure' });
   } else if (['final-boot-failed', 'final-runtime-failed', 'final-reboot-failed', 'final-reboot-health-failed'].includes(attempt.reason)) {
     issues.push({ type: 'virtual-probe-failure', reason: attempt.reason });
   }
+  if (['package-compile-failure', 'rootfs-package-compile-failure', 'final-firmware-failure'].includes(attempt.reason)) {
+    issues.push({ type: 'package-build-failure', reason: attempt.reason, ...(attempt.packageCauseKind ? { cause: attempt.packageCauseKind } : {}),
+      ...(attempt.failedBuildTargets?.length ? { targets: attempt.failedBuildTargets } : {}) });
+  }
+  if (attempt.reason === 'rootfs-conflict') {
+    issues.push({ type: 'rootfs-integration-failure', reason: attempt.reason, ...(attempt.packageCauseKind ? { cause: attempt.packageCauseKind } : {}) });
+  }
+  appendStructuredAttemptIssue(issues, attempt);
   let normalizedIssues = [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()];
   if (attempt.reason === 'package-unavailable') {
     normalizedIssues = normalizedIssues.filter((row) => row.type !== 'kconfig-unsatisfied');
@@ -168,6 +209,21 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     rootStates: attempt.rootStates || requestedPackageStates(config, runtime?.roots || roots),
     unavailableRoots: attempt.unavailableRoots || [], rejectedRoots: attempt.rejectedRoots || [], reason: attempt.reason || runtime?.reason || '',
     targetPrerequisiteCause,
+    comparison: pairedComparison ? (runtimeComparison || { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] }) : null,
+    pairedComparison,
+    pairId: attempt.pairId || '',
+    pairConclusion: attempt.pairConclusion || '',
+    packageCauseKind: attempt.packageCauseKind || '',
+    baseline: attempt.baseline || null,
+    final: attempt.final || null,
+    baselineConfigHash: attempt.baselineConfigHash || '',
+    finalConfigHash: attempt.finalConfigHash || '',
+    configHash: attempt.configHash || '',
+    resolvedConfigDiff: attempt.resolvedConfigDiff || attempt.configDiff || {},
+    addedDependencies: attempt.addedDependencies || attempt.newDependencyPackages || [],
+    newDependencyTargets: attempt.newDependencyTargets || [],
+    failedBuildTargets: attempt.failedBuildTargets || [],
+    failureFingerprint: attempt.failureFingerprint || '',
     selectedLevel,
     deepestPassedLevel,
     durationMs: Number(attempt.durationMs || runtime?.durationMs || 0),
@@ -197,6 +253,7 @@ export function evidenceSummaryLines(evidence) {
     `- Target / 目标: \`${evidence.targetSystem || '-'}/${evidence.subtarget || '-'}/${evidence.profile || '-'}\``,
     `- Upstream commit / 上游提交: \`${evidence.upstreamCommit || 'unknown'}\``,
     `- Mode / 探测方式: \`${evidence.mode}\` (L${evidence.evidenceLevel})`,
+    ...(evidence.pairedComparison ? [`- A/B comparison / A/B 对照: \`baseline B → final A\` · pair \`${evidence.pairId || '-'}\``] : []),
     `- Defconfig: \`${evidence.useDefconfig ? 'on' : 'off'}\``,
     `- Probe roots / 测试入口: ${evidence.roots.map((row) => `\`${row}\``).join(', ') || '-'}`,
     `- Direct Probe config / 直接探针配置: ${evidence.requestedPackageCount}`,
@@ -243,13 +300,15 @@ function conclusionStats(rows) {
   const incompatible = rows.filter((row) => row.conclusion === 'incompatible').length;
   const skipped = rows.filter((row) => row.conclusion === 'skipped').length;
   const inconclusive = rows.filter((row) => row.conclusion === 'inconclusive').length;
+  const baselineFailure = rows.filter((row) => row.conclusion === 'inconclusive' &&
+    (row.pairConclusion === 'baseline-failure' || row.reason === 'baseline-failure')).length;
   const reportedTargetPrerequisite = rows.filter((row) => reportedTargetPrerequisiteCause(row)).length;
   const infraInconclusive = rows.filter((row) => row.conclusion === 'inconclusive' && !reportedTargetPrerequisiteCause(row) &&
     (row.issues || []).some((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(issue.type))).length;
-  const unattributedInconclusive = Math.max(0, inconclusive - reportedTargetPrerequisite - infraInconclusive);
+  const unattributedInconclusive = Math.max(0, inconclusive - baselineFailure - reportedTargetPrerequisite - infraInconclusive);
   const conclusive = compatible + incompatible;
   return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, reportedTargetPrerequisite,
-    infraInconclusive, unattributedInconclusive, conclusive,
+    baselineFailure, infraInconclusive, unattributedInconclusive, conclusive,
     compatibilityRate: conclusive ? compatible / conclusive : null };
 }
 
@@ -263,8 +322,32 @@ const SELECTED_PACKAGE_PRIMARY_CAUSES = new Map([
   ['final-firmware-failure', 'firmware'],
 ]);
 
+const LEGACY_PACKAGE_PREREQUISITE_REASONS = new Set([
+  'package-compile-prerequisite-failure',
+  'rootfs-package-prerequisite-failure',
+  'rootfs-install-prerequisite-failure',
+  'firmware-prerequisite-failure',
+]);
+
+function normalizeBuildTarget(value) {
+  return String(value || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/compile$/, '').replace(/\/+$/, '');
+}
+
+function legacyDirectPrerequisiteCause(row) {
+  if (!LEGACY_PACKAGE_PREREQUISITE_REASONS.has(String(row?.reason || ''))) return false;
+  const failed = new Set((row.failedBuildTargets || row.attempts?.[0]?.failedBuildTargets || [])
+    .map(normalizeBuildTarget).filter(Boolean));
+  if (!failed.size) return false;
+  const roots = row.rootTargets || row.attempts?.[0]?.rootTargets || [];
+  return roots.some((target) => failed.has(normalizeBuildTarget(target)));
+}
+
 function selectedPackagePrimaryCause(row) {
   if (row?.conclusion !== 'incompatible') return '';
+  const paired = row.pairedComparison === true || row.pairConclusion;
+  if (paired && row.packageCauseKind === 'dependency') return 'A/B dependency';
+  if (paired && row.packageCauseKind === 'direct') return 'direct';
+  if (legacyDirectPrerequisiteCause(row)) return 'compile/link';
   return SELECTED_PACKAGE_PRIMARY_CAUSES.get(String(row.reason || '')) || '';
 }
 
@@ -273,8 +356,16 @@ function selectedPackagePrimaryStats(rows) {
   const labels = [...new Set(causes)];
   const count = causes.length;
   const attempted = rows.length;
+  const direct = rows.filter((row) => row.conclusion === 'incompatible' &&
+    (row.pairedComparison === true || row.pairConclusion) && row.packageCauseKind === 'direct').length;
+  const dependency = rows.filter((row) => row.conclusion === 'incompatible' &&
+    (row.pairedComparison === true || row.pairConclusion) && row.packageCauseKind === 'dependency').length;
+  const paired = rows.some((row) => row.pairedComparison === true || row.pairConclusion);
   return {
     selectedPackagePrimaryFailures: count,
+    selectedPackagePrimaryDirectFailures: direct,
+    selectedPackagePrimaryDependencyFailures: dependency,
+    paired,
     selectedPackagePrimaryRate: attempted ? count / attempted : null,
     selectedPackagePrimaryCause: count ? (labels.length === 1 ? labels[0] : 'mixed') : '—',
   };
@@ -302,6 +393,8 @@ export function aggregateScopeConclusions(evidence, options = {}) {
     ...conclusionStats(rows), ...selectedPackagePrimaryStats(rows), conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
     reasons: [...new Set(rows.map((row) => row.reason).filter(Boolean))],
     issueTypes: [...new Set(rows.flatMap((row) => (row.issues || []).map((issue) => issue.type)))],
+    infrastructureReasons: [...new Set(rows.flatMap((row) => (row.issues || [])
+      .filter((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(issue.type)).map((issue) => issue.reason || issue.type)))],
     targetPrerequisiteCauses: [...new Set(rows.map(reportedTargetPrerequisiteCause).filter(Boolean))],
     unavailableRoots: [...new Set(rows.flatMap((row) => row.unavailableRoots || []))],
   })).sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
@@ -322,6 +415,9 @@ function formatSelectedPackagePrimaryRate(scope) {
   if (!probeSamples) return '—';
   const count = Number(scope.selectedPackagePrimaryFailures || 0);
   const rate = attempted ? `${(count / attempted * 100).toFixed(1).replace(/\.0$/, '')}%` : '—';
+  const direct = Number(scope.selectedPackagePrimaryDirectFailures || 0);
+  const dependency = Number(scope.selectedPackagePrimaryDependencyFailures || 0);
+  if (scope.paired && (direct || dependency)) return `${count}/${attempted} · ${rate} · direct ${direct} · A/B dependency ${dependency}`;
   return `${count}/${attempted} · ${rate} · ${scope.selectedPackagePrimaryCause || '—'}`;
 }
 
@@ -344,13 +440,17 @@ function sourceNeedsBranchBreakdown(scope) {
 function scopeNote(scope) {
   const notes = [];
   if (scope.inconclusive > 0) {
+    if (scope.baselineFailure > 0) {
+      notes.push(`Baseline B failed; Final A not run / 基线 B 失败，未执行 Final A: ${scope.baselineFailure}`);
+    }
     const reportedTargetPrerequisite = Number(scope.reportedTargetPrerequisite || 0);
     if (reportedTargetPrerequisite > 0) {
       const causes = (scope.targetPrerequisiteCauses || []).join(', ') || 'unattributed';
       notes.push(`Upstream Target/Toolchain prerequisite reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定: ${reportedTargetPrerequisite} (${causes})`);
     }
     if (scope.infraInconclusive > 0) {
-      const kind = (scope.issueTypes || []).includes('timeout') ? 'timeout' : 'bootstrap/network';
+      const kinds = scope.infrastructureReasons || [];
+      const kind = kinds.length ? kinds.join(', ') : 'infrastructure';
       notes.push(`Infrastructure incomplete / 基础设施未完成: ${scope.infraInconclusive} (${kind})`);
     }
     if (scope.unattributedInconclusive > 0) {

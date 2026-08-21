@@ -15,7 +15,11 @@ export function isAllowedTargetPrerequisiteCause(value) {
 }
 
 export function isMemoryExhaustion(value) {
-  return /Out of memory|OOM|Cannot allocate memory|Can't allocate memory|memory allocation failed|\bKilled\b|killed by signal\s+9|signal\s+9/i.test(String(value || ''));
+  // Keep `earlyoom` (the host watchdog) from matching the standalone OOM
+  // marker.  The old unbounded `OOM` alternative turned an otherwise
+  // authoritative package failure into infrastructure uncertainty whenever
+  // the shared log happened to mention earlyoom.
+  return /\bout[\s_-]+of[\s_-]+memory\b|\bOOM\b|\bcannot allocate memory\b|\bcan't allocate memory\b|\bmemory allocation failed\b|\bkilled by signal\s+9\b|\bsignal\s+9\b|(?:^|[\s:])killed(?:$|[\s:])/i.test(String(value || ''));
 }
 
 export function isMakeInfrastructureFailure(value) {

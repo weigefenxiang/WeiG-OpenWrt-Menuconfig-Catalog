@@ -62,15 +62,15 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 Catalog 的 **Package Compatibility Probe / 软件包兼容探针** 使用 Probe V3 协议，并把“请求事实”和“环境解析”分给各自权威：Issue 只携带用户直接 `packageIntent` 及其紧凑的变更前/后 `PACKAGE_*` 投影；Catalog core 提供每个环境的 Target/Profile 选择器；克隆真实上游源码后，该 Source 自己的 Kconfig/Defconfig 补齐依赖并负责后续构建顺序、stamp 与增量构建。
 
-- **L1 插件（`config-resolve`）**：使用当前源码官方 Kconfig/Defconfig 求解 Final Root 组合；只证明配置能否成立，不执行软件包编译。
+- **L1 插件（`config-resolve`）**：默认使用当前源码官方 Kconfig/Defconfig 求解 Final Root 组合；开启 A/B 后先求解排除所选插件的 Baseline B，再求解 Final A，逐环境保留一条配对证据，只证明配置能否成立，不执行软件包编译。
 - **L2 编译（`package-compile`）**：把用户直接启用的软件包当作 Root，读取上游 `tmp/.packageinfo` 的 `Source-Makefile`，把 Binary Package 映射为真实源码目标；共用 Source 的 Root 自动去重，并用一次 Make 调用进入上游依赖图。WeiG 不维护第二份 Binary→Source 或 dependency 数据库。
 - **L3 根系统（`rootfs-integration`）**：复用同一次 L2 结果，再按上游顺序完成 `prepare`、完整已选 `package/compile` 与 `package/install`。Target、基础包及内核版本等 RootFS 前置事实全部由当前 Source 的 Make 图生成，WeiG 不自行拼装 APK/OPKG。
-- **L4 集成（`firmware-integration`）**：只使用用户最终配置完成一次整机固件构建，不构建 Baseline，也不宣称单个插件相对 Baseline 导致失败。
+- **L4 集成（`firmware-integration`）**：默认只使用用户最终配置完成一次整机固件构建；开启可选 `comparison: { mode: "paired-exclusion", executionOrder: ["baseline", "final"] }` 后，同一环境 Job 先以排除所选直接插件以及经 Defconfig 判定不再需要的自动依赖后的 Baseline B 完成对应层级，再以最终配置的 Final A 重新完成固件、启动与运行阶段。
 - **L5 启动（`boot-smoke`）**：L4 成功后优先调用当前源码自己的 `scripts/qemustart`，确认 Final 固件进入基本用户空间；不维护 Target/QEMU 参数表。
 - **L6 运行（`runtime-health`）**：在 L5 后通过可靠控制通道检查 init/procd、基础挂载、uptime、可用时的 ubus，以及 Final 中真正内置的 Root 软件包。需要按键激活串口时，先激活并等到 root prompt，再发送健康命令；无可靠控制能力时记为 `skipped`。
 - **L7 重启（`reboot-validation`）**：在 L6 后正常重启 Final 固件，等待第二次启动并再次执行相同健康检查；不执行真实 sysupgrade 刷写。
 
-L2–L7 逐级复用已经完成的 Stage，不构建对照固件，也不为增加深度而重复构建。所有深度都强制运行所选 Source 自己的官方解析器：L1 使用 `scripts/config/conf`，L2–L7 使用 `make defconfig`。用户不能关闭该步骤；只有直接 Probe Root 必须保持请求的 `m/y` 状态，`libatomic`、`libusb-1.0` 等自动依赖只出现在各环境解析后的配置和证据中，不进入 Issue 请求。
+L2–L7 默认逐级复用已经完成的 Stage，不为增加深度而重复构建；开启 A/B 后，B→A 仍共享同一 Job 的 bootstrap、源码、feeds 与增量 Make 工作树，但每个 phase 拥有独立日志和证据。B 失败会短路 A，不能据此归因插件；L3–L7 的 A 会重新调用对应的 install/image/qemu 阶段。所有深度都强制运行所选 Source 自己的官方解析器：L1 使用 `scripts/config/conf`，L2–L7 使用 `make defconfig`。用户不能关闭该步骤；只有直接 Probe Root 必须保持请求的 `m/y` 状态，`libatomic`、`libusb-1.0` 等自动依赖只出现在各环境解析后的配置和证据中，不进入 Issue 请求。
 
 Probe V3 的浏览器状态包含直接 `packageIntent`、由该 Intent 派生的紧凑 `baselinePackageConfig`/`packageConfig`、固定启用的 Defconfig、五维环境约束和覆盖策略。网页中 Advanced menuconfig 的完整 836 项或 Defconfig 后的 276 项只是交互状态，不是探针请求；Runner 不接收 dependency list、build order 或第二个 packages/roots 权威。服务端先校验请求，再对所有 L1–L7 统一重新派生紧凑 Root 配置，因此旧客户端夹带的自动依赖也不会进入执行权威。旧 `WEIG_PACKAGE_PROBE_STATE_V2` 请求明确拒绝。
 

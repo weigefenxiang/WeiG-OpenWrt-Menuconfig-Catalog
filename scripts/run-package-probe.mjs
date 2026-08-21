@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // SPDX-FileCopyrightText: 2026 weigefenxiang <weigefenxiang@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, copyFileSync, createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { availableParallelism } from 'node:os';
 import { dirname, join, posix, resolve } from 'node:path';
@@ -24,10 +25,16 @@ const SOURCE = String(process.env.PROBE_SOURCE || '');
 const BRANCH = String(process.env.PROBE_BRANCH || '');
 const TARGET_BATCH = MODE === 'config-resolve' ? parseTargetBatch(process.env.PROBE_TARGET_BATCH || '') : [];
 const FINAL_PACKAGE_CONFIG = Buffer.from(String(process.env.PROBE_PACKAGE_CONFIG || ''), 'base64url').toString('utf8');
+const BASELINE_PACKAGE_CONFIG = Buffer.from(String(process.env.PROBE_BASELINE_PACKAGE_CONFIG || ''), 'base64url').toString('utf8');
 const INTENT_JSON = Buffer.from(String(process.env.PROBE_PACKAGE_INTENT || 'W10'), 'base64url').toString('utf8');
 const FINAL_STATES = parsePackageConfig(FINAL_PACKAGE_CONFIG);
+const BASELINE_STATES = parsePackageConfig(BASELINE_PACKAGE_CONFIG, true);
 const INTENT = parseIntent(INTENT_JSON);
-const DIRECT_STATES = directIntentStates(INTENT);
+const BASELINE_DIRECT_STATES = directIntentStates(INTENT, 'before');
+const FINAL_DIRECT_STATES = directIntentStates(INTENT, 'after');
+const DIRECT_STATES = FINAL_DIRECT_STATES;
+const PAIRED_COMPARISON = String(process.env.PROBE_PAIRED_COMPARISON || '').toLowerCase() === 'true';
+const BASELINE_ROOTS = INTENT.filter((row) => ['m', 'y'].includes(String(row?.before || 'n'))).map((row) => row.package);
 const ROOTS = String(process.env.PROBE_ROOTS || '').split(',').map((row) => row.trim()).filter(Boolean);
 const MAKE_COMMAND = String(process.env.PROBE_MAKE_COMMAND || 'make');
 const MAKE_PREFIX = String(process.env.PROBE_MAKE_ARGUMENT || '').trim();
@@ -44,6 +51,7 @@ const MODE_LEVELS = Object.freeze({
   'runtime-health': 6,
   'reboot-validation': 7,
 });
+let ACTIVE_PHASE_LOG = '';
 if (!MODE_LEVELS[MODE]) {
   throw new Error(`unsupported probe mode: ${MODE}`);
 }
@@ -81,11 +89,11 @@ function parseIntent(text) {
   return rows;
 }
 
-function directIntentStates(rows) {
+function directIntentStates(rows, stateKey = 'after') {
   const states = new Map();
   for (const row of rows) {
     const packageName = String(row?.package || '');
-    const value = String(row?.after || 'n');
+    const value = String(row?.[stateKey] || 'n');
     if (!PACKAGE_RE.test(packageName) || !['n', 'm', 'y'].includes(value) || states.has(packageName)) {
       throw new Error(`invalid or duplicate direct package intent: ${packageName}`);
     }
@@ -117,6 +125,24 @@ function log(line = '') {
   const text = `${line}\n`;
   process.stdout.write(text);
   appendFileSync(LOG_FILE, text);
+  if (ACTIVE_PHASE_LOG && resolve(ACTIVE_PHASE_LOG) !== resolve(LOG_FILE)) appendFileSync(ACTIVE_PHASE_LOG, text);
+}
+
+function phaseLogPath(label) {
+  return join(dirname(LOG_FILE), `probe-${safeSlug(label)}.log`);
+}
+
+async function withPhaseLog(label, action) {
+  const previous = ACTIVE_PHASE_LOG;
+  const file = phaseLogPath(label);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, '');
+  ACTIVE_PHASE_LOG = file;
+  try {
+    return await action(file);
+  } finally {
+    ACTIVE_PHASE_LOG = previous;
+  }
 }
 
 function stageStatus(value) {
@@ -166,10 +192,12 @@ async function command(file, args, options = {}) {
     child.stdout.on('data', (chunk) => {
       output = appendCommandOutput(output, chunk);
       process.stdout.write(chunk); appendFileSync(LOG_FILE, chunk);
+      if (ACTIVE_PHASE_LOG && resolve(ACTIVE_PHASE_LOG) !== resolve(LOG_FILE)) appendFileSync(ACTIVE_PHASE_LOG, chunk);
     });
     child.stderr.on('data', (chunk) => {
       output = appendCommandOutput(output, chunk);
       process.stderr.write(chunk); appendFileSync(LOG_FILE, chunk);
+      if (ACTIVE_PHASE_LOG && resolve(ACTIVE_PHASE_LOG) !== resolve(LOG_FILE)) appendFileSync(ACTIVE_PHASE_LOG, chunk);
     });
     child.on('error', (error) => {
       const text = `ERROR: ${error.message}`;
@@ -214,25 +242,47 @@ function normalizePackageBuildTarget(value) {
 
 function failedPackageBuildTargets(result) {
   const text = String(result?.output || '');
-  const targets = [];
-  for (const match of text.matchAll(/(?:ERROR:\s+)?(package\/[A-Za-z0-9_./+@-]+)\s+failed to build/gi)) {
-    targets.push(normalizePackageBuildTarget(match[1]));
+  const candidates = [];
+  const add = (target, index, source) => {
+    const normalized = normalizePackageBuildTarget(target);
+    if (!normalized) return;
+    candidates.push({ target: normalized, index, source, depth: normalized.split('/').length });
+  };
+  for (const match of text.matchAll(/(ERROR:\s+)?(package\/[A-Za-z0-9_./+@-]+)\s+failed to build/gi)) {
+    add(match[2], match.index || 0, match[1] ? 'explicit' : 'generic');
   }
   for (const match of text.matchAll(/\]\s+(package\/[A-Za-z0-9_./+@-]+\/compile)\s+Error\b/gi)) {
-    targets.push(normalizePackageBuildTarget(match[1]));
+    add(match[1], match.index || 0, 'make');
+  }
+  for (const match of text.matchAll(/make(?:\[\d+\])?:\s+\*{3}\s+\[(package\/[A-Za-z0-9_./+@-]+\/compile)\]\s+Error\b/gim)) {
+    add(match[1], match.index || 0, 'gnu-make');
   }
   for (const match of text.matchAll(/\*\*\*\s+(?:\[[^\]]+\]\s+)?(package\/[A-Za-z0-9_./+@-]+\/compile)\b/gi)) {
-    targets.push(normalizePackageBuildTarget(match[1]));
+    add(match[1], match.index || 0, 'make');
   }
-  return [...new Set(targets)];
+  if (!candidates.length) return [];
+  // Pick the deepest target first; for equal-depth wrappers/inner targets,
+  // the later log line is the most recently reported failure.  This keeps an
+  // inner package target authoritative even when an explicit wrapper line
+  // and a generic make line coexist in the same bounded command output.
+  candidates.sort((left, right) => left.depth - right.depth || left.index - right.index);
+  return [candidates[candidates.length - 1].target];
 }
 
-function classifyPackageBuildFailure(result, rootTargets, attempt, reasons) {
+function classifyPackageBuildFailure(result, rootTargets, attempt, reasons, options = {}) {
   if (failedMakeIsInfrastructure(result)) return { result: 'inconclusive', reason: reasons.infrastructure };
   const failedTargets = failedPackageBuildTargets(result);
   attempt.failedBuildTargets = failedTargets;
   const roots = new Set((rootTargets || []).map(normalizePackageBuildTarget));
-  if (failedTargets.some((target) => roots.has(target))) return { result: 'incompatible', reason: reasons.root };
+  if (failedTargets.some((target) => roots.has(target))) {
+    attempt.packageCauseKind = 'direct';
+    return { result: 'incompatible', reason: reasons.root };
+  }
+  const dependencies = new Set((options.dependencyTargets || attempt.newDependencyTargets || []).map(normalizePackageBuildTarget));
+  if (failedTargets.some((target) => dependencies.has(target)) && reasons.dependency) {
+    attempt.packageCauseKind = 'dependency';
+    return { result: 'incompatible', reason: reasons.dependency };
+  }
   return { result: 'inconclusive', reason: failedTargets.length ? reasons.prerequisite : reasons.unattributed };
 }
 
@@ -252,11 +302,16 @@ function rootfsConflictPackages(result) {
   return [...new Set(packages.filter(Boolean))];
 }
 
-function classifyRootfsInstallFailure(result, attempt) {
+function classifyRootfsInstallFailure(result, attempt, roots = ROOTS, dependencyPackages = []) {
   if (failedMakeIsInfrastructure(result)) return { result: 'inconclusive', reason: 'rootfs-install-infrastructure' };
   const conflictPackages = rootfsConflictPackages(result);
   attempt.rootfsConflictPackages = conflictPackages;
-  if (conflictPackages.some((packageName) => ROOTS.includes(packageName))) {
+  if (conflictPackages.some((packageName) => roots.includes(packageName))) {
+    attempt.packageCauseKind = 'direct';
+    return { result: 'incompatible', reason: 'rootfs-conflict' };
+  }
+  if (conflictPackages.some((packageName) => dependencyPackages.includes(packageName))) {
+    attempt.packageCauseKind = 'dependency';
     return { result: 'incompatible', reason: 'rootfs-conflict' };
   }
   return { result: 'inconclusive', reason: conflictPackages.length ? 'rootfs-install-prerequisite-failure' : 'rootfs-install-unattributed-failure' };
@@ -264,6 +319,61 @@ function classifyRootfsInstallFailure(result, attempt) {
 
 function safeSlug(value) {
   return String(value || 'default').replace(/[^A-Za-z0-9_.-]/g, '-').replace(/-+/g, '-').slice(0, 120) || 'default';
+}
+
+function sha256Text(value) {
+  return createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function enabledPackageNames(states) {
+  return new Set(Object.entries(states || {}).filter(([, state]) => ['m', 'y'].includes(state)).map(([name]) => name));
+}
+
+function resolvedConfigDiff(baselineStates, finalStates, directRoots = ROOTS) {
+  const baseline = enabledPackageNames(baselineStates);
+  const final = enabledPackageNames(finalStates);
+  const direct = new Set(directRoots);
+  const added = [...final].filter((name) => !baseline.has(name)).sort();
+  const removed = [...baseline].filter((name) => !final.has(name)).sort();
+  const shared = [...final].filter((name) => baseline.has(name)).sort();
+  return {
+    added, removed, shared,
+    addedDependencies: added.filter((name) => !direct.has(name)),
+  };
+}
+
+function mappedBuildTargets(packageInfo, packages) {
+  const mapping = parseUpstreamPackageInfo(packageInfo);
+  const targets = [];
+  for (const packageName of packages || []) {
+    const sources = [...(mapping.get(packageName) || [])].map(safeSourceMakefile).sort();
+    if (sources.length === 1) targets.push(`${posix.dirname(sources[0])}/compile`);
+  }
+  return [...new Set(targets)];
+}
+
+async function sha256File(file) {
+  const hash = createHash('sha256');
+  await new Promise((resolvePromise, rejectPromise) => {
+    const stream = createReadStream(file);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('error', rejectPromise);
+    stream.on('end', resolvePromise);
+  });
+  return hash.digest('hex');
+}
+
+async function firmwareSnapshot() {
+  const directory = join(WORKDIR, 'bin', 'targets', TARGET_SYSTEM, SUBTARGET);
+  if (!existsSync(directory)) return { directory, artifacts: [], manifestHash: '' };
+  const artifacts = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!entry.isFile()) continue;
+    const file = join(directory, entry.name);
+    const stats = statSync(file);
+    artifacts.push({ name: entry.name, size: stats.size, sha256: await sha256File(file) });
+  }
+  return { directory, artifacts, manifestHash: sha256Text(JSON.stringify(artifacts)) };
 }
 
 function packageStatesFromText(text) {
@@ -283,39 +393,56 @@ function probeConfigText(targetConfig, requestedStates) {
   return `${lines.filter(Boolean).join('\n')}\n`;
 }
 
-async function resolveProbeConfig({ targetConfig, requestedStates, file, resolveConfig, roots, attempt, label }) {
+async function resolveProbeConfig({ targetConfig, requestedStates, file, resolveConfig, roots, attempt, label, snapshotFile = '' }) {
   writeFileSync(file, probeConfigText(targetConfig, requestedStates));
   const result = await resolveConfig(file);
   if (!result.ok) return { ok: false, states: {}, config: file, reason: `${label}-defconfig-failure`, rejectedRoots: [] };
-  const resolvedStates = packageStatesFromText(readFileSync(file, 'utf8'));
+  const resolvedText = readFileSync(file, 'utf8');
+  const resolvedStates = packageStatesFromText(resolvedText);
   const actual = Object.fromEntries(roots.map((root) => [root, resolvedStates.get(root) || 'n']));
   const directActual = Object.fromEntries([...requestedStates].map(([packageName]) => [packageName, resolvedStates.get(packageName) || 'n']));
   const rejected = [...requestedStates].filter(([packageName, state]) => directActual[packageName] !== state)
     .map(([packageName]) => packageName);
   if (attempt) {
-    attempt.configPath = file;
+    if (snapshotFile) {
+      mkdirSync(dirname(snapshotFile), { recursive: true });
+      copyFileSync(file, snapshotFile);
+    }
+    attempt.configPath = snapshotFile || file;
+    attempt.configHash = sha256Text(resolvedText);
     attempt.resolvedPackageCount = resolvedStates.size;
+    attempt.resolvedPackageStates = Object.fromEntries(resolvedStates);
   }
   if (rejected.length) {
     return { ok: false, states: actual, config: file, reason: 'root-kconfig-rejected', rejectedRoots: rejected };
   }
-  return { ok: true, states: actual, config: file, resolvedPackageCount: resolvedStates.size, rejectedRoots: [] };
+  return {
+    ok: true, states: actual, config: file, resolvedPackageCount: resolvedStates.size,
+    resolvedPackageStates: Object.fromEntries(resolvedStates), configHash: sha256Text(resolvedText), rejectedRoots: [],
+  };
 }
 
 async function solveL1Config(environment, roots, suffix, attempt) {
   const directory = join(WORKDIR, '.probe-configs');
   mkdirSync(directory, { recursive: true });
   const file = join(directory, `${safeSlug(environment.target)}--${safeSlug(environment.profile)}--${safeSlug(suffix)}.config`);
+  const resolver = join(WORKDIR, 'scripts', 'config', 'conf');
+  const resolverShim = `${resolver}.mjs`;
   return resolveProbeConfig({
     targetConfig: environment.targetConfig, requestedStates: roots, file, roots: [...roots.keys()], attempt,
-    label: 'l1', resolveConfig: (configFile) => command(join(WORKDIR, 'scripts', 'config', 'conf'),
-      [`--defconfig=${configFile}`, '-w', configFile, 'Config.in']),
+    label: 'l1', resolveConfig: (configFile) => existsSync(resolverShim)
+      ? command(process.execPath, [resolverShim, `--defconfig=${configFile}`, '-w', configFile, 'Config.in'])
+      : command(resolver, [`--defconfig=${configFile}`, '-w', configFile, 'Config.in']),
   });
 }
 
-async function prepareConfig(attempt, label = 'final') {
+async function prepareConfig(attempt, label = 'final', options = {}) {
+  const roots = options.roots || ROOTS;
+  const requestedStates = options.requestedStates || DIRECT_STATES;
+  const file = options.file || join(WORKDIR, '.config');
   return resolveProbeConfig({
-    targetConfig: TARGET_CONFIG, requestedStates: DIRECT_STATES, file: join(WORKDIR, '.config'), roots: ROOTS, attempt, label,
+    targetConfig: TARGET_CONFIG, requestedStates, file, roots, attempt, label,
+    snapshotFile: join(WORKDIR, '.probe-configs', `${safeSlug(label)}.config`),
     resolveConfig: () => make(['defconfig'], false),
   });
 }
@@ -324,63 +451,71 @@ function packageNamesFromInfo(text) {
   return new Set([...String(text || '').matchAll(/^Package:\s*(\S+)$/gm)].map((match) => match[1]));
 }
 
-function newL1Attempt(environment) {
+function newL1Attempt(environment, phase = 'final') {
   return {
     source: SOURCE, branch: BRANCH,
     targetSystem: environment.targetSystem, subtarget: environment.subtarget,
     target: environment.target, profile: environment.profile, profileLabel: environment.profileLabel,
-    stages: {}, rootStates: {}, unavailableRoots: [], rejectedRoots: [], serialRetries: [],
+    phase, stages: {}, rootStates: {}, unavailableRoots: [], rejectedRoots: [], serialRetries: [],
   };
 }
 
-async function configResolve() {
-  log(`L1 environment batch / L1 环境批次: ${TARGET_BATCH.length}`);
+async function configResolve(options = {}) {
+  const roots = options.roots || ROOTS;
+  const requested = options.requestedStates || DIRECT_STATES;
+  const phase = options.phase || 'final';
+  const requireEnabled = options.requireEnabled !== false;
+  const environments = options.environments || TARGET_BATCH;
+  log(`L1 environment batch / L1 环境批次: ${environments.length}`);
   const metadata = await command('bash', [join(ROOT, 'scripts', 'prepare-metadata.sh'), 'metadata-only']);
   if (!metadata.ok) {
-    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-failure',
+    return environments.map((environment) => ({ ...newL1Attempt(environment, phase), result: 'inconclusive', reason: 'metadata-failure',
       stages: { metadata: 'failure' } }));
   }
   const resolver = await make(['scripts/config/conf'], false);
   if (!resolver.ok) {
-    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'kconfig-resolver-failure',
+    return environments.map((environment) => ({ ...newL1Attempt(environment, phase), result: 'inconclusive', reason: 'kconfig-resolver-failure',
       stages: { metadata: 'success', resolver: 'failure' } }));
   }
   const packageInfoPath = join(WORKDIR, 'tmp', '.packageinfo');
   if (!existsSync(packageInfoPath)) {
-    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-unresolved',
+    return environments.map((environment) => ({ ...newL1Attempt(environment, phase), result: 'inconclusive', reason: 'metadata-unresolved',
       stages: { metadata: 'success', resolver: 'success' } }));
   }
   const packageNames = packageNamesFromInfo(readFileSync(packageInfoPath, 'utf8'));
   if (!packageNames.size) {
-    return TARGET_BATCH.map((environment) => ({ ...newL1Attempt(environment), result: 'inconclusive', reason: 'metadata-unresolved',
+    return environments.map((environment) => ({ ...newL1Attempt(environment, phase), result: 'inconclusive', reason: 'metadata-unresolved',
       stages: { metadata: 'success', resolver: 'success' } }));
   }
-  const globallyAbsent = ROOTS.filter((root) => !packageNames.has(root));
-  const requested = new Map(DIRECT_STATES);
+  const globallyAbsent = roots.filter((root) => !packageNames.has(root));
   const attempts = [];
-  for (const environment of TARGET_BATCH) {
-    const attempt = newL1Attempt(environment);
+  for (const environment of environments) {
+    const attempt = newL1Attempt(environment, phase);
+    attempt.phaseLog = ACTIVE_PHASE_LOG;
     attempt.stages = { metadata: 'success', resolver: 'success' };
     if (globallyAbsent.length) {
       attempt.result = 'skipped'; attempt.reason = 'root-absent-source'; attempt.unavailableRoots = [...globallyAbsent];
-      attempt.rootStates = Object.fromEntries(ROOTS.map((root) => [root, globallyAbsent.includes(root) ? 'missing' : 'unknown']));
+      attempt.rootStates = Object.fromEntries(roots.map((root) => [root, globallyAbsent.includes(root) ? 'missing' : 'unknown']));
       attempts.push(attempt); continue;
     }
     log(`\nL1 Profile / 配置环境: ${SOURCE}/${BRANCH}/${environment.targetSystem}/${environment.subtarget}/${environment.profile}`);
-    const combined = await solveL1Config(environment, requested, 'combined', attempt);
+    const combined = await solveL1Config(environment, requested, `${phase}-combined`, attempt);
     attempt.stages.kconfig = combined.ok ? 'success' : 'failure';
     if (!combined.ok) {
       attempt.result = 'inconclusive'; attempt.reason = 'defconfig-failure'; attempts.push(attempt); continue;
     }
     attempt.rootStates = combined.states;
-    const rejected = ROOTS.filter((root) => !['m', 'y'].includes(combined.states[root]));
+    if (!requireEnabled) {
+      attempt.result = 'compatible'; attempt.reason = ''; attempts.push(attempt); continue;
+    }
+    const rejected = roots.filter((root) => !['m', 'y'].includes(combined.states[root]));
     attempt.rejectedRoots = [...rejected];
     if (!rejected.length) {
       attempt.result = 'compatible'; attempt.reason = ''; attempts.push(attempt); continue;
     }
     const unavailable = [];
     for (const root of rejected) {
-      const single = await solveL1Config(environment, new Map([[root, requested.get(root) || 'y']]), `single-${root}`);
+      const single = await solveL1Config(environment, new Map([[root, requested.get(root) || 'y']]), `${phase}-single-${root}`);
       if (!single.ok) {
         attempt.result = 'inconclusive'; attempt.reason = 'single-root-defconfig-failure';
         attempt.stages.singleRoot = 'failure'; break;
@@ -399,6 +534,135 @@ async function configResolve() {
     attempts.push(attempt);
   }
   return attempts;
+}
+
+function phaseIdentity(row) {
+  return [SOURCE, BRANCH, row?.targetSystem, row?.subtarget, row?.target, row?.profile].map((value) => String(value || '')).join('\0');
+}
+
+function pairIdFor(row) {
+  return `pair:${sha256Text(phaseIdentity(row)).slice(0, 20)}`;
+}
+
+function phaseFailureFingerprint(phase) {
+  return sha256Text(JSON.stringify({
+    phase: phase?.phase || '', result: phase?.result || '', reason: phase?.reason || '',
+    failedBuildTargets: phase?.failedBuildTargets || [], rootStates: phase?.rootStates || {},
+  }));
+}
+
+function completedPhaseAttempt(attempt, result, startedAt, started) {
+  attempt.result = result?.result || 'inconclusive';
+  attempt.reason = result?.reason || '';
+  attempt.selectedLevel = MODE_LEVELS[MODE];
+  attempt.deepestPassedLevel = deepestPassedLevel(attempt);
+  attempt.finishedAt = new Date().toISOString();
+  attempt.durationMs = Math.max(0, Date.now() - started);
+  attempt.failureFingerprint = phaseFailureFingerprint(attempt);
+  return attempt;
+}
+
+function pairAttempt(baseline, final = null) {
+  const selected = final || baseline || {};
+  const pair = {
+    ...selected,
+    phase: 'paired',
+    pairId: pairIdFor(selected),
+    pairConclusion: final ? (final.result === 'incompatible'
+      ? `incompatible-${final.packageCauseKind || 'unattributed'}`
+      : final.result === 'inconclusive' ? 'inconclusive' : final.result || 'inconclusive')
+      : 'baseline-failure',
+    baseline,
+    final: final || { phase: 'final', result: 'not-run', reason: 'baseline-failure', stages: {} },
+  };
+  if (final) Object.assign(pair, final);
+  pair.phase = 'paired';
+  pair.pairId = pairIdFor(selected);
+  pair.baseline = baseline;
+  pair.final = final || { phase: 'final', result: 'not-run', reason: 'baseline-failure', stages: {} };
+  // A non-compatible B is an incomplete paired experiment, never a package
+  // incompatibility.  Preserve B's native result only inside `baseline`.
+  pair.result = final ? final.result : 'inconclusive';
+  pair.reason = final ? final.reason : 'baseline-failure';
+  pair.stages = final ? final.stages : (baseline?.stages || {});
+  pair.packageCauseKind = final?.packageCauseKind || '';
+  pair.baselineConfigHash = baseline?.configHash || '';
+  pair.finalConfigHash = final?.configHash || '';
+  pair.configHash = final?.configHash || baseline?.configHash || '';
+  pair.resolvedConfigDiff = final?.configDiff || {};
+  pair.configDiff = final?.configDiff || {};
+  pair.addedDependencies = final?.newDependencyPackages || final?.configDiff?.addedDependencies || [];
+  pair.newDependencyTargets = final?.newDependencyTargets || [];
+  pair.failureFingerprint = final?.failureFingerprint || baseline?.failureFingerprint || phaseFailureFingerprint(pair);
+  pair.finishedAt = final?.finishedAt || baseline?.finishedAt || new Date().toISOString();
+  pair.durationMs = Math.max(0, Number(baseline?.durationMs || 0) + Number(final?.durationMs || 0));
+  return pair;
+}
+
+function decorateL1Pair(baseline, final) {
+  if (final && baseline?.resolvedPackageStates && final.resolvedPackageStates) {
+    final.configDiff = resolvedConfigDiff(baseline.resolvedPackageStates, final.resolvedPackageStates, ROOTS);
+    final.resolvedConfigDiff = final.configDiff;
+    final.newDependencyPackages = final.configDiff.addedDependencies;
+    try { final.newDependencyTargets = mappedBuildTargets(readPackageInfo(), final.newDependencyPackages); }
+    catch { final.newDependencyTargets = []; }
+  }
+  return pairAttempt(baseline, final);
+}
+
+async function configResolvePaired() {
+  const baseline = await withPhaseLog('baseline', () => configResolve({
+    roots: BASELINE_ROOTS, requestedStates: BASELINE_DIRECT_STATES, phase: 'baseline', requireEnabled: true,
+  }));
+  const runnable = TARGET_BATCH.filter((environment, index) => baseline[index]?.result === 'compatible');
+  const finalRows = runnable.length ? await withPhaseLog('final', () => configResolve({
+    roots: ROOTS, requestedStates: FINAL_DIRECT_STATES, phase: 'final', requireEnabled: true, environments: runnable,
+  })) : [];
+  const finalByIdentity = new Map(finalRows.map((row) => [phaseIdentity(row), row]));
+  return TARGET_BATCH.map((environment, index) => {
+    const baselineAttempt = baseline[index];
+    const finalAttempt = baselineAttempt?.result === 'compatible' ? finalByIdentity.get(phaseIdentity(environment)) || null : null;
+    return decorateL1Pair(baselineAttempt, finalAttempt);
+  });
+}
+
+async function runDepthPhase({ phase, roots, requestedStates, finalStates, baselineResolvedStates }) {
+  const attempt = {
+    source: SOURCE, branch: BRANCH, targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET,
+    target: TARGET, profile: PROFILE, phase,
+    stages: {}, rootStates: {}, rootMappings: [], sourceMakefiles: [], rootTargets: [],
+    unavailableRoots: [], rejectedRoots: [], serialRetries: [],
+  };
+  const started = Date.now();
+  const startedAt = new Date(started).toISOString();
+  attempt.startedAt = startedAt;
+  let result;
+  await withPhaseLog(phase, async (phaseLog) => {
+    attempt.phaseLog = phaseLog;
+    try {
+      const options = { phase, roots, requestedStates, finalStates, baselineResolvedStates };
+      if (MODE === 'package-compile') result = await packageCompile(attempt, options);
+      else if (MODE === 'rootfs-integration') result = await rootfsIntegration(attempt, options);
+      else result = await firmwareIntegration(attempt, options);
+    } catch (error) {
+      attempt.error = String(error?.message || error);
+      result = { result: 'inconclusive', reason: 'runner-infrastructure' };
+    }
+  });
+  return completedPhaseAttempt(attempt, result, startedAt, started);
+}
+
+async function runDepthPaired() {
+  const baseline = await runDepthPhase({
+    phase: 'baseline', roots: BASELINE_ROOTS, requestedStates: BASELINE_DIRECT_STATES,
+    finalStates: BASELINE_STATES,
+  });
+  if (baseline.result !== 'compatible') return [pairAttempt(baseline)];
+  const final = await runDepthPhase({
+    phase: 'final', roots: ROOTS, requestedStates: FINAL_DIRECT_STATES,
+    finalStates: FINAL_STATES, baselineResolvedStates: baseline.resolvedPackageStates || {},
+  });
+  return [pairAttempt(baseline, final)];
 }
 
 export function parseUpstreamPackageInfo(text) {
@@ -457,7 +721,7 @@ function readPackageInfo() {
   return readFileSync(path, 'utf8');
 }
 
-function classifyConfigFailure(config, attempt) {
+function classifyConfigFailure(config, attempt, roots = ROOTS) {
   if (config.reason !== 'root-kconfig-rejected') return { result: 'inconclusive', reason: config.reason };
   attempt.rejectedRoots = config.rejectedRoots || [];
   let packageInfo;
@@ -467,26 +731,42 @@ function classifyConfigFailure(config, attempt) {
     return { result: 'inconclusive', reason: error.code || 'metadata-unresolved' };
   }
   const mapping = parseUpstreamPackageInfo(packageInfo);
-  const unavailableRoots = ROOTS.filter((root) => !(mapping.get(root)?.size));
+  const unavailableRoots = roots.filter((root) => !(mapping.get(root)?.size));
   if (unavailableRoots.length) {
     attempt.unavailableRoots = unavailableRoots;
     log(`SKIP: Probe root package unavailable in Source/Branch: ${unavailableRoots.join(', ')}`);
     return { result: 'skipped', reason: 'root-absent-source' };
   }
   log(`FAIL: Probe root package rejected by upstream Kconfig: ${attempt.rejectedRoots.join(', ')}`);
+  if (attempt.phase === 'final') attempt.packageCauseKind = 'direct';
   return { result: 'incompatible', reason: 'kconfig-unsatisfied' };
 }
 
-async function packageCompile(attempt) {
-  const config = await runStage(attempt, 'config', () => prepareConfig(attempt));
+async function packageCompile(attempt, options = {}) {
+  const roots = options.roots || ROOTS;
+  const requestedStates = options.requestedStates || DIRECT_STATES;
+  const phase = options.phase || 'final';
+  const config = await runStage(attempt, 'config', () => prepareConfig(attempt, phase, {
+    roots, requestedStates, file: options.configFile || join(WORKDIR, '.config'),
+  }));
   attempt.rootStates = config.states;
   if (!config.ok) {
-    const classified = classifyConfigFailure(config, attempt);
+    const classified = classifyConfigFailure(config, attempt, roots);
     if (classified.result === 'skipped') attempt.stages.config.status = 'skipped';
     return classified;
   }
+  if (options.baselineResolvedStates) {
+    attempt.configDiff = resolvedConfigDiff(options.baselineResolvedStates, config.resolvedPackageStates, roots);
+    attempt.resolvedConfigDiff = attempt.configDiff;
+    attempt.newDependencyPackages = attempt.configDiff.addedDependencies;
+    try {
+      attempt.newDependencyTargets = mappedBuildTargets(readPackageInfo(), attempt.newDependencyPackages);
+    } catch {
+      attempt.newDependencyTargets = [];
+    }
+  }
   let resolved;
-  try { resolved = await runStage(attempt, 'metadata', async () => resolveRootBuildTargets(readPackageInfo())); }
+  try { resolved = await runStage(attempt, 'metadata', async () => resolveRootBuildTargets(readPackageInfo(), roots)); }
   catch (error) {
     log(`ERROR: ${error.message}`);
     return { result: 'inconclusive', reason: error.code || 'metadata-unresolved' };
@@ -502,38 +782,47 @@ async function packageCompile(attempt) {
     if (classified.cause) attempt.targetPrerequisiteCause = classified.cause;
     return classified;
   }
+  if (!resolved.targets.length) {
+    attempt.stages.packageCompile = {
+      status: 'skipped', startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), durationMs: 0,
+    };
+    log(`SKIP: ${phase} has no direct package Root targets after defconfig`);
+    return { result: 'compatible', reason: 'no-direct-roots' };
+  }
   const compiled = await runStage(attempt, 'packageCompile', () =>
-    makeWithSerialRetry(resolved.targets, `probe roots: ${ROOTS.join(',')}`, attempt));
+    makeWithSerialRetry(resolved.targets, `${phase} probe roots: ${roots.join(',')}`, attempt));
   if (!compiled.ok) {
-    log(`FAIL: package compile failed for Probe roots: ${ROOTS.join(', ')}`);
+    log(`ERROR: package compile target stage failed after resolved Roots: ${roots.join(', ')}`);
     return classifyPackageBuildFailure(compiled, resolved.targets, attempt, {
       root: 'package-compile-failure', infrastructure: 'package-compile-infrastructure',
       prerequisite: 'package-compile-prerequisite-failure', unattributed: 'package-compile-unattributed-failure',
-    });
+      dependency: 'package-compile-dependency-failure',
+    }, { dependencyTargets: options.dependencyTargets || attempt.newDependencyTargets });
   }
   return { result: 'compatible', reason: '' };
 }
 
-async function rootfsIntegration(attempt) {
-  const compiled = await packageCompile(attempt);
+async function rootfsIntegration(attempt, options = {}) {
+  const compiled = await packageCompile(attempt, options);
   if (compiled.result !== 'compatible') return compiled;
   const packages = await runStage(attempt, 'rootfsPackages', () =>
     makeWithSerialRetry(['package/compile'], 'RootFS selected packages', attempt));
   if (!packages.ok) return classifyPackageBuildFailure(packages, attempt.rootTargets, attempt, {
     root: 'rootfs-package-compile-failure', infrastructure: 'rootfs-package-infrastructure',
     prerequisite: 'rootfs-package-prerequisite-failure', unattributed: 'rootfs-package-unattributed-failure',
-  });
+    dependency: 'rootfs-package-compile-dependency-failure',
+  }, { dependencyTargets: options.dependencyTargets || attempt.newDependencyTargets });
   const installed = await runStage(attempt, 'rootfsInstall', () =>
     makeWithSerialRetry(['package/install'], 'rootfs install', attempt));
   if (!installed.ok) {
     log('FAIL: RootFS integration failed after Probe-root compilation');
-    return classifyRootfsInstallFailure(installed, attempt);
+    return classifyRootfsInstallFailure(installed, attempt, options.roots || ROOTS, options.dependencyPackages || attempt.newDependencyPackages || []);
   }
   return { result: 'compatible', reason: '' };
 }
 
-async function firmwareIntegration(attempt) {
-  const rootfs = await rootfsIntegration(attempt);
+async function firmwareIntegration(attempt, options = {}) {
+  const rootfs = await rootfsIntegration(attempt, options);
   if (rootfs.result !== 'compatible') return rootfs;
   const firmware = await runStage(attempt, 'firmwareBuild', () =>
     makeWithSerialRetry(['target/install'], 'final package firmware', attempt));
@@ -542,16 +831,18 @@ async function firmwareIntegration(attempt) {
     return classifyPackageBuildFailure(firmware, attempt.rootTargets, attempt, {
       root: 'final-firmware-failure', infrastructure: 'firmware-build-infrastructure',
       prerequisite: 'firmware-prerequisite-failure', unattributed: 'firmware-unattributed-failure',
-    });
+      dependency: 'firmware-dependency-failure',
+    }, { dependencyTargets: options.dependencyTargets || attempt.newDependencyTargets });
   }
+  attempt.firmware = await firmwareSnapshot();
   if (MODE === 'firmware-integration') return { result: 'compatible', reason: '' };
   const virtual = await runVirtualProbe({
     mode: MODE,
     workdir: WORKDIR,
     targetSystem: TARGET_SYSTEM,
     subtarget: SUBTARGET,
-    installedRoots: ROOTS.filter((root) => FINAL_STATES.get(root) === 'y'),
-    logFile: join(dirname(LOG_FILE), 'probe-virtual.log'),
+    installedRoots: (options.roots || ROOTS).filter((root) => (options.finalStates || FINAL_STATES).get(root) === 'y'),
+    logFile: join(dirname(LOG_FILE), `probe-virtual-${safeSlug(options.phase || 'final')}.log`),
     bootTimeoutMs: Number(process.env.PROBE_BOOT_TIMEOUT_SECONDS || 180) * 1000,
     controlTimeoutMs: Number(process.env.PROBE_CONTROL_TIMEOUT_SECONDS || 30) * 1000,
     observationMs: Number(process.env.PROBE_RUNTIME_OBSERVATION_SECONDS || 15) * 1000,
@@ -560,6 +851,7 @@ async function firmwareIntegration(attempt) {
   Object.assign(attempt.stages, virtual.stages);
   attempt.virtualCapabilities = virtual.capabilities;
   attempt.virtualLog = virtual.logFile;
+  if (virtual.result === 'incompatible') attempt.packageCauseKind = 'direct';
   return { result: virtual.result, reason: virtual.reason };
 }
 
@@ -582,7 +874,7 @@ let attempts;
 let overallResult;
 let overallReason = '';
 if (MODE === 'config-resolve') {
-  attempts = await configResolve();
+  attempts = PAIRED_COMPARISON ? await configResolvePaired() : await configResolve();
   const results = attempts.map((row) => row.result);
   if (results.includes('inconclusive')) overallResult = 'inconclusive';
   else if (results.includes('incompatible')) overallResult = 'incompatible';
@@ -590,23 +882,35 @@ if (MODE === 'config-resolve') {
   else overallResult = 'skipped';
   overallReason = attempts.find((row) => row.result === overallResult)?.reason || '';
 } else {
-  const attempt = {
-    source: SOURCE, branch: BRANCH,
-    targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE,
-    stages: {}, rootStates: {}, rootMappings: [], sourceMakefiles: [], rootTargets: [], unavailableRoots: [], rejectedRoots: [], serialRetries: [],
-  };
-  const attemptStarted = Date.now();
-  attempt.startedAt = new Date(attemptStarted).toISOString();
-  let result;
-  if (MODE === 'package-compile') result = await packageCompile(attempt);
-  else if (MODE === 'rootfs-integration') result = await rootfsIntegration(attempt);
-  else result = await firmwareIntegration(attempt);
-  attempt.result = result.result; attempt.reason = result.reason;
-  attempt.selectedLevel = MODE_LEVELS[MODE];
-  attempt.deepestPassedLevel = deepestPassedLevel(attempt);
-  attempt.finishedAt = new Date().toISOString();
-  attempt.durationMs = Math.max(0, Date.now() - attemptStarted);
-  attempts = [attempt]; overallResult = result.result; overallReason = result.reason;
+  if (PAIRED_COMPARISON) {
+    attempts = await runDepthPaired();
+    overallResult = attempts[0]?.result || 'inconclusive';
+    overallReason = attempts[0]?.reason || '';
+  } else {
+    const attempt = {
+      source: SOURCE, branch: BRANCH,
+      targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE,
+      phase: 'final', stages: {}, rootStates: {}, rootMappings: [], sourceMakefiles: [], rootTargets: [], unavailableRoots: [], rejectedRoots: [], serialRetries: [],
+    };
+    const attemptStarted = Date.now();
+    attempt.startedAt = new Date(attemptStarted).toISOString();
+    let result;
+    try {
+      if (MODE === 'package-compile') result = await packageCompile(attempt);
+      else if (MODE === 'rootfs-integration') result = await rootfsIntegration(attempt);
+      else result = await firmwareIntegration(attempt);
+    } catch (error) {
+      attempt.error = String(error?.message || error);
+      result = { result: 'inconclusive', reason: 'runner-infrastructure' };
+    }
+    attempt.result = result.result; attempt.reason = result.reason;
+    attempt.selectedLevel = MODE_LEVELS[MODE];
+    attempt.deepestPassedLevel = deepestPassedLevel(attempt);
+    attempt.finishedAt = new Date().toISOString();
+    attempt.durationMs = Math.max(0, Date.now() - attemptStarted);
+    attempt.failureFingerprint = phaseFailureFingerprint(attempt);
+    attempts = [attempt]; overallResult = result.result; overallReason = result.reason;
+  }
 }
 
 const runtime = {
@@ -618,6 +922,8 @@ const runtime = {
   roots: ROOTS,
   packageIntent: INTENT,
   requestedPackageCount: ROOTS.length,
+  comparison: PAIRED_COMPARISON ? { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] } : null,
+  pairedComparison: PAIRED_COMPARISON,
   environment: { source: SOURCE, branch: BRANCH, targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE },
   attempts,
   conclusion: overallResult,

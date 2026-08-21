@@ -23,6 +23,8 @@ export function normalizeGatewayRequest(raw) {
     useDefconfig: request.useDefconfig,
     roots: request.roots,
     requestedPackageCount: request.packages.length,
+    comparison: request.comparison,
+    pairedComparison: request.pairedComparison === true,
     environmentScope: request.environmentScope,
     coverage: request.coverage,
   };
@@ -183,6 +185,7 @@ async function intake(env, event) {
     `- Mode / 深度: \`${request.mode}\``,
     `- Probe roots / 测试入口: ${request.roots.map((row) => `\`${row}\``).join(', ')}`,
     `- Direct Probe config / 直接探针配置: ${request.requestedPackageCount}`,
+    `- Paired comparison / A/B 对照: \`${request.pairedComparison ? 'on' : 'off'}\``,
     `- Defconfig: \`${request.useDefconfig ? 'on' : 'off'}\``,
     `- Coverage / 覆盖: \`${request.coverage.mode}${request.coverage.mode === 'auto' ? ` <= ${request.coverage.limit}` : ''}\``,
     '', 'To cancel, reply `/cancel` in this Issue. / 如需取消，请在本 Issue 回复 `/cancel`。', '',

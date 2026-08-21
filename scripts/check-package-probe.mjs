@@ -107,6 +107,15 @@ assert.equal(request.packages.length, 1);
 assert.equal(request.packageConfig, 'CONFIG_PACKAGE_luci-app-oscam=y\n');
 assert.equal(request.baselinePackageConfig, '');
 assert.equal(request.useDefconfig, true);
+assert.equal(request.comparison, null, 'legacy requests must keep A/B disabled');
+assert.equal(request.pairedComparison, false);
+const pairedRequest = normalizeProbeRequest({ ...baseRequest,
+  comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] },
+});
+assert.deepEqual(pairedRequest.comparison, { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] });
+assert.equal(pairedRequest.pairedComparison, true);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, comparison: { mode: 'paired-exclusion', executionOrder: ['final', 'baseline'] } }), /executionOrder/);
+assert.throws(() => normalizeProbeRequest({ ...baseRequest, comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'], extra: true } }), /unknown keys/);
 assert.throws(() => normalizeProbeRequest({ ...baseRequest, useDefconfig: false }), /requires upstream defconfig/);
 for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
   const depthRequest = normalizeProbeRequest({ ...baseRequest, mode });
@@ -354,8 +363,9 @@ assert(!runner.includes("makeWithSerialRetry([], 'final package firmware'"),
 assert(!runner.includes('for (const packageName of activePackages)'));
 assert(!runner.includes('reduceFailureSet') && !runner.includes('PROBE_REDUCTION_BUDGET') && !runner.includes('PROBE_FALLBACK_TARGETS'));
 assert(runner.includes("['package/install']"));
-assert(!runner.includes('BASELINE_STATES') && runner.includes('resolveProbeConfig'),
-  'L1-L7 must share one Target/Profile plus direct-root resolver');
+assert(runner.includes('BASELINE_STATES') && runner.includes('BASELINE_DIRECT_STATES') && runner.includes('resolveProbeConfig') &&
+  runner.includes('runDepthPaired') && runner.includes('configResolvePaired'),
+  'L1-L7 must share one Target/Profile resolver while supporting optional paired B→A execution');
 assert(!runner.includes('PROBE_USE_DEFCONFIG') && !runner.includes('prepare-tmpinfo'),
   'the obsolete Defconfig-off execution branch must be removed');
 assert(runner.includes('runVirtualProbe') && !runner.includes('qemu-system-x86_64'),

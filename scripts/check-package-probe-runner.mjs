@@ -8,11 +8,12 @@ import { isReportedInconclusive, probeResultExitCode } from './package-probe-fai
 
 const runner = resolve(import.meta.dirname, 'run-package-probe.mjs');
 
-function fakeMakeSource() {
+function fakeMakeSource(rootPackage = 'alpha') {
   return `#!/usr/bin/env node
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 const args = process.argv.slice(2);
+const rootSource = 'package/network/${rootPackage}/Makefile';
 appendFileSync(process.env.FAKE_MAKE_LOG, JSON.stringify(args) + '\\n');
 if (args.includes('defconfig')) {
   const configPath = join(process.cwd(), '.config');
@@ -21,20 +22,34 @@ if (args.includes('defconfig')) {
   const unavailable = process.env.FAKE_PACKAGE_UNAVAILABLE === 'true';
   writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), unavailable
     ? 'Source-Makefile: package/network/beta/Makefile\\nPackage: beta\\n'
-    : 'Source-Makefile: package/network/alpha/Makefile\\nPackage: alpha\\n');
+    : 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\nSource-Makefile: package/network/auto-dependency/Makefile\\nPackage: auto-dependency\\n');
   if (unavailable || process.env.FAKE_REJECT_ROOT === 'true') {
-    const config = readFileSync(configPath, 'utf8').replace(/^CONFIG_PACKAGE_alpha=[my]\\r?\\n?/m, '');
+    const config = readFileSync(configPath, 'utf8').replace(new RegExp('^CONFIG_PACKAGE_${rootPackage}=[my]\\\\r?\\\\n?', 'm'), '');
     writeFileSync(configPath, config);
   }
-  appendFileSync(configPath, 'CONFIG_PACKAGE_auto-dependency=y\\n');
+  if (new RegExp('^CONFIG_PACKAGE_${rootPackage}=[my]$', 'm').test(readFileSync(configPath, 'utf8'))) appendFileSync(configPath, 'CONFIG_PACKAGE_auto-dependency=y\\n');
 }
-const rootCompile = args.includes('package/network/alpha/compile');
+if (args.includes('prepare-tmpinfo')) {
+  mkdirSync(join(process.cwd(), 'tmp'), { recursive: true });
+  writeFileSync(join(process.cwd(), 'tmp', '.targetinfo'), 'Target: x86/64\\n');
+  writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\n');
+}
+const rootCompile = args.includes(rootSource.replace('/Makefile', '/compile'));
 if (process.env.FAKE_FAIL_INFRA === 'true' && rootCompile) {
   console.error('curl: (6) Could not resolve host: downloads.example.invalid');
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_ROOT === 'true' && rootCompile) {
-  console.error('ERROR: package/network/alpha failed to build');
+  console.error('ERROR: package/network/${rootPackage} failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_INNER_WRAPPER === 'true' && rootCompile) {
+  console.error('ERROR: package/compile failed to build');
+  console.error('make[2]: *** [package/network/${rootPackage}/compile] Error 2');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_DEPENDENCY === 'true' && rootCompile && readFileSync(join(process.cwd(), '.config'), 'utf8').includes('CONFIG_PACKAGE_${rootPackage}=y')) {
+  console.error('ERROR: package/network/auto-dependency failed to build');
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_PREREQUISITE === 'true' && rootCompile) {
@@ -50,7 +65,11 @@ if (process.env.FAKE_FAIL_ROOTFS_PREREQUISITE === 'true' && args.includes('packa
   process.exit(2);
 }
 if (process.env.FAKE_ROOTFS_ROOT_CONFLICT === 'true' && args.includes('package/install')) {
-  console.error('ERROR: alpha-1.0-r0: trying to overwrite etc/example owned by beta-1.0-r0');
+  console.error('ERROR: ${rootPackage}-1.0-r0: trying to overwrite etc/example owned by beta-1.0-r0');
+  process.exit(2);
+}
+if (process.env.FAKE_ROOTFS_DEPENDENCY_CONFLICT === 'true' && args.includes('package/install') && readFileSync(join(process.cwd(), '.config'), 'utf8').includes('CONFIG_PACKAGE_${rootPackage}=y')) {
+  console.error('ERROR: auto-dependency-1.0-r0: trying to overwrite etc/example owned by beta-1.0-r0');
   process.exit(2);
 }
 if (process.env.FAKE_ROOTFS_UNRELATED_CONFLICT === 'true' && args.includes('package/install')) {
@@ -119,19 +138,25 @@ done
 function scenario(mode, options = {}) {
   const directory = mkdtempSync(join(tmpdir(), 'probe-runner-'));
   try {
+    const rootPackage = options.rootPackage || 'alpha';
     const workdir = join(directory, 'upstream');
     const bin = join(directory, 'bin');
     mkdirSync(join(workdir, 'scripts'), { recursive: true });
     mkdirSync(bin, { recursive: true });
     const fakeMake = join(directory, 'fake-make.mjs');
-    writeFileSync(fakeMake, fakeMakeSource());
+    writeFileSync(fakeMake, fakeMakeSource(rootPackage));
     const shellMake = join(bin, 'make');
     writeFileSync(shellMake, `#!/usr/bin/env bash\nexec "${process.execPath.replaceAll('\\', '/')}" "${fakeMake.replaceAll('\\', '/')}" "$@"\n`);
     chmodSync(shellMake, 0o755);
-    writeFileSync(join(bin, 'make.cmd'), `@echo off\r\n"${process.execPath}" "${fakeMake}" %*\r\n`);
+  writeFileSync(join(bin, 'make.cmd'), `@echo off\r\n"${process.execPath}" "${fakeMake}" %*\r\n`);
     const qemustart = join(workdir, 'scripts', 'qemustart');
     writeFileSync(qemustart, qemustartSource());
     chmodSync(qemustart, 0o755);
+    if (mode === 'config-resolve') {
+      const conf = join(workdir, 'scripts', 'config', 'conf.mjs');
+      mkdirSync(join(workdir, 'scripts', 'config'), { recursive: true });
+      writeFileSync(conf, "if (process.env.FAKE_FAIL_L1_BASELINE === 'true' && process.argv.some((arg) => arg.includes('DEVICE_bad')) && process.argv.some((arg) => arg.includes('baseline'))) process.exit(2);\nprocess.exit(0);\n");
+    }
     const makeLog = join(directory, 'make.jsonl');
     const runtimeFile = join(directory, 'runtime.json');
     const result = spawnSync(process.execPath, [runner], {
@@ -149,11 +174,15 @@ function scenario(mode, options = {}) {
         FAKE_EXPECT_DISABLED: String(options.expectDisabled === true),
         FAKE_PACKAGE_UNAVAILABLE: String(options.packageUnavailable === true),
         FAKE_REJECT_ROOT: String(options.rejectRoot === true),
-        FAKE_FAIL_ROOT: String(options.failRoot === true),
+         FAKE_FAIL_ROOT: String(options.failRoot === true),
+         FAKE_FAIL_INNER_WRAPPER: String(options.failInnerWrapper === true),
+         FAKE_FAIL_DEPENDENCY: String(options.failDependency === true),
+         FAKE_FAIL_L1_BASELINE: String(options.failL1Baseline === true),
         FAKE_FAIL_PREREQUISITE: String(options.failPrerequisite === true),
         FAKE_FAIL_UNATTRIBUTED: String(options.failUnattributed === true),
         FAKE_FAIL_ROOTFS_PREREQUISITE: String(options.failRootfsPrerequisite === true),
-        FAKE_ROOTFS_ROOT_CONFLICT: String(options.rootfsRootConflict === true),
+         FAKE_ROOTFS_ROOT_CONFLICT: String(options.rootfsRootConflict === true),
+         FAKE_ROOTFS_DEPENDENCY_CONFLICT: String(options.rootfsDependencyConflict === true),
         FAKE_ROOTFS_UNRELATED_CONFLICT: String(options.rootfsUnrelatedConflict === true),
         FAKE_FAIL_FIRMWARE_PREREQUISITE: String(options.failFirmwarePrerequisite === true),
         FAKE_FAIL_TARGET_PREREQUISITE: String(options.failTargetPrerequisite === true),
@@ -174,10 +203,15 @@ function scenario(mode, options = {}) {
         PROBE_TARGET: 'x86/64',
         PROBE_PROFILE: 'DEVICE_generic',
         PROBE_TARGET_CONFIG: 'CONFIG_TARGET_x86=y\nCONFIG_TARGET_x86_64=y\nCONFIG_TARGET_x86_64_DEVICE_generic=y',
-        PROBE_TARGET_BATCH: 'null',
-        PROBE_ROOTS: 'alpha',
-        PROBE_PACKAGE_CONFIG: Buffer.from(options.packageConfig || 'CONFIG_PACKAGE_alpha=y\n').toString('base64url'),
-        PROBE_PACKAGE_INTENT: Buffer.from(JSON.stringify(options.intent || [{ package: 'alpha', before: 'n', after: 'y' }])).toString('base64url'),
+         PROBE_TARGET_BATCH: mode === 'config-resolve' ? JSON.stringify(options.l1Multiple ? [
+           { targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_bad', targetConfig: 'CONFIG_TARGET_x86=y\\nCONFIG_TARGET_x86_64=y' },
+           { targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_generic', targetConfig: 'CONFIG_TARGET_x86=y\\nCONFIG_TARGET_x86_64=y' },
+         ] : [{ targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_generic', targetConfig: 'CONFIG_TARGET_x86=y\\nCONFIG_TARGET_x86_64=y' }]) : 'null',
+        PROBE_ROOTS: rootPackage,
+         PROBE_PACKAGE_CONFIG: Buffer.from(options.packageConfig || `CONFIG_PACKAGE_${rootPackage}=y\n`).toString('base64url'),
+         PROBE_BASELINE_PACKAGE_CONFIG: Buffer.from(options.baselinePackageConfig || '').toString('base64url'),
+         PROBE_PACKAGE_INTENT: Buffer.from(JSON.stringify(options.intent || [{ package: rootPackage, before: 'n', after: 'y' }])).toString('base64url'),
+         PROBE_PAIRED_COMPARISON: String(options.paired === true),
         PROBE_BOOT_TIMEOUT_SECONDS: '2',
         PROBE_CONTROL_TIMEOUT_SECONDS: '1',
         PROBE_RUNTIME_OBSERVATION_SECONDS: '1',
@@ -212,6 +246,51 @@ scenario('package-compile', { expectDisabled: true, intent: [
   { package: 'alpha', before: 'n', after: 'y' },
   { package: 'beta', before: 'y', after: 'n' },
 ] });
+
+const paired = scenario('package-compile', { paired: true });
+assert.equal(paired.runtime.pairedComparison, true);
+assert.equal(paired.runtime.comparison.mode, 'paired-exclusion');
+assert.equal(paired.runtime.attempts.length, 1, 'B and A must remain one environment attempt');
+assert.equal(paired.runtime.attempts[0].baseline.result, 'compatible');
+assert.equal(paired.runtime.attempts[0].final.result, 'compatible');
+assert.equal(paired.runtime.attempts[0].pairConclusion, 'compatible');
+assert.equal(paired.calls.filter((args) => args.includes('defconfig')).length, 2, 'paired execution must resolve B then A');
+assert.equal(paired.calls.filter((args) => args.includes('prepare')).length, 2, 'paired execution must prepare B and A');
+assert.equal(paired.calls.some((args) => args.includes('package/network/alpha/compile')), true, 'A must compile the selected root');
+assert.equal(paired.runtime.attempts[0].baseline.rootTargets.length, 0, 'empty B roots must not invoke a make world target');
+assert.equal(paired.runtime.attempts[0].final.resolvedConfigDiff.addedDependencies.includes('auto-dependency'), true);
+assert.equal(paired.runtime.attempts[0].newDependencyTargets.includes('package/network/auto-dependency/compile'), true);
+
+const pairedShortCircuit = scenario('package-compile', { paired: true, failTargetPrerequisite: true, expectedStatus: 1 });
+assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.result, 'inconclusive');
+assert.equal(pairedShortCircuit.runtime.attempts[0].final.result, 'not-run');
+assert.equal(pairedShortCircuit.calls.some((args) => args.includes('package/network/alpha/compile')), false, 'B failure must short-circuit A');
+
+const pairedDependency = scenario('package-compile', { paired: true, failDependency: true });
+assert.equal(pairedDependency.runtime.attempts[0].result, 'incompatible');
+assert.equal(pairedDependency.runtime.attempts[0].packageCauseKind, 'dependency');
+assert.equal(pairedDependency.runtime.attempts[0].pairConclusion, 'incompatible-dependency');
+
+const pairedRootfsDependency = scenario('rootfs-integration', { paired: true, rootfsDependencyConflict: true });
+assert.equal(pairedRootfsDependency.runtime.attempts[0].result, 'incompatible');
+assert.equal(pairedRootfsDependency.runtime.attempts[0].packageCauseKind, 'dependency', 'A/B dependency rootfs conflicts must be attributed to the added dependency');
+
+const pairedDirect = scenario('package-compile', { paired: true, failRoot: true });
+assert.equal(pairedDirect.runtime.attempts[0].packageCauseKind, 'direct');
+assert.equal(pairedDirect.runtime.attempts[0].pairConclusion, 'incompatible-direct');
+
+const l1Paired = scenario('config-resolve', { paired: true });
+assert.equal(l1Paired.runtime.attempts.length, 1, 'L1 B/A must keep one environment attempt');
+assert.equal(l1Paired.runtime.attempts[0].baseline.result, 'compatible');
+assert.equal(l1Paired.runtime.attempts[0].final.result, 'compatible');
+assert.equal(l1Paired.runtime.attempts[0].pairConclusion, 'compatible');
+assert.equal(l1Paired.calls.filter((args) => args.some((arg) => String(arg).includes('scripts/config/conf'))).length, 2, 'L1 must solve B and A separately');
+const l1MixedPairs = scenario('config-resolve', { paired: true, l1Multiple: true, failL1Baseline: true, expectedStatus: 1 });
+assert.equal(l1MixedPairs.runtime.attempts.length, 2);
+assert.equal(l1MixedPairs.runtime.attempts[0].baseline.result, 'inconclusive');
+assert.equal(l1MixedPairs.runtime.attempts[0].final.result, 'not-run');
+assert.equal(l1MixedPairs.runtime.attempts[1].baseline.result, 'compatible');
+assert.equal(l1MixedPairs.runtime.attempts[1].final.result, 'compatible', 'one environment B failure must not block another environment A');
 
 for (const mode of ['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
   const unavailable = scenario(mode, { packageUnavailable: true });
@@ -253,6 +332,12 @@ const l2RootFailure = scenario('package-compile', { failRoot: true });
 assert.equal(l2RootFailure.runtime.conclusion, 'incompatible');
 assert.equal(l2RootFailure.runtime.reason, 'package-compile-failure');
 assert(l2RootFailure.runtime.attempts[0].failedBuildTargets.includes('package/network/alpha'));
+const l2InnerTarget = scenario('package-compile', { failInnerWrapper: true, rootPackage: 'oscam' });
+assert.equal(l2InnerTarget.runtime.conclusion, 'incompatible');
+assert.deepEqual(l2InnerTarget.runtime.attempts[0].failedBuildTargets, ['package/network/oscam'],
+  'inner oscam target must outrank an explicit outer wrapper');
+assert.equal(l2InnerTarget.runtime.attempts[0].packageCauseKind, 'direct',
+  'inner oscam target must remain directly attributable to the selected root');
 
 const l2Prerequisite = scenario('package-compile', { failPrerequisite: true, expectedStatus: 1 });
 assert.equal(l2Prerequisite.runtime.conclusion, 'inconclusive');
@@ -377,4 +462,4 @@ assert.equal(l7.runtime.conclusion, 'compatible');
 assert.equal(l7.runtime.attempts[0].deepestPassedLevel, 7);
 assert.equal(l7.runtime.attempts[0].stages.secondRuntimeHealth.status, 'success');
 
-console.log('Package Probe Final-only runner checks passed.');
+console.log('Package Probe final-only and paired runner checks passed.');

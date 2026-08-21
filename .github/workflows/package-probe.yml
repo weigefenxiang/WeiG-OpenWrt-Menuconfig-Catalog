@@ -74,6 +74,11 @@ on:
         required: true
         type: boolean
         default: true
+      paired_comparison:
+        description: "Run baseline B before Final A in the same environment job / 在同一环境 Job 内先运行基线 B 再运行 Final A"
+        required: false
+        type: boolean
+        default: false
       issue_number:
         description: "Gateway Issue number / 网关 Issue 编号"
         required: false
@@ -124,6 +129,7 @@ jobs:
       package_config: ${{ steps.plan.outputs.package_config }}
       baseline_package_config: ${{ steps.plan.outputs.baseline_package_config }}
       package_intent: ${{ steps.plan.outputs.package_intent }}
+      paired_comparison: ${{ steps.plan.outputs.paired_comparison }}
       use_defconfig: ${{ steps.plan.outputs.use_defconfig }}
       data_branch: ${{ steps.plan.outputs.data_branch }}
       data_commit: ${{ steps.plan.outputs.data_commit }}
@@ -164,6 +170,7 @@ jobs:
           COVERAGE_LIMIT: ${{ inputs.coverage_limit }}
           MAX_PARALLEL: ${{ inputs.max_parallel }}
           DRY_RUN: ${{ inputs.plan_only }}
+          PROBE_PAIRED_COMPARISON: ${{ inputs.paired_comparison }}
           PROBE_ISSUE_NUMBER: ${{ inputs.issue_number }}
           PROBE_STATE_SHA256: ${{ inputs.state_sha256 }}
           PROBE_ISSUE_CREATED_AT: ${{ inputs.issue_created_at }}
@@ -208,6 +215,7 @@ jobs:
       PROBE_PACKAGE_CONFIG: ${{ needs.plan.outputs.package_config }}
       PROBE_BASELINE_PACKAGE_CONFIG: ${{ needs.plan.outputs.baseline_package_config }}
       PROBE_PACKAGE_INTENT: ${{ needs.plan.outputs.package_intent }}
+      PROBE_PAIRED_COMPARISON: ${{ needs.plan.outputs.paired_comparison }}
       PROBE_MODE: ${{ needs.plan.outputs.mode }}
       PROBE_EVIDENCE_LEVEL: ${{ needs.plan.outputs.evidence_level }}
       PROBE_COVERAGE_MODE: ${{ needs.plan.outputs.coverage_mode }}
@@ -310,7 +318,7 @@ jobs:
           name: package-probe-log-${{ matrix.key }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             probe.log
-            probe-virtual.log
+            probe-*.log
             probe-runtime.json
             probe-feeds-runtime.json
           retention-days: 30
@@ -387,6 +395,7 @@ jobs:
           MANUAL_COVERAGE_LIMIT: ${{ inputs.coverage_limit }}
           MANUAL_MAX_PARALLEL: ${{ inputs.max_parallel }}
           MANUAL_PLAN_ONLY: ${{ inputs.plan_only }}
+          MANUAL_PAIRED_COMPARISON: ${{ inputs.paired_comparison }}
         with:
           script: |
             const fs = require('fs');
@@ -425,6 +434,7 @@ jobs:
                   target_system: process.env.MANUAL_TARGET_SYSTEM, subtarget: process.env.MANUAL_SUBTARGET, target_profile: process.env.MANUAL_TARGET_PROFILE,
                   coverage_mode: process.env.MANUAL_COVERAGE_MODE, coverage_limit: process.env.MANUAL_COVERAGE_LIMIT,
                   max_parallel: process.env.MANUAL_MAX_PARALLEL, plan_only: process.env.MANUAL_PLAN_ONLY,
+                  paired_comparison: process.env.MANUAL_PAIRED_COMPARISON,
                   issue_number: String(issueNumber), display_context: process.env.DISPLAY_CONTEXT, state_sha256: stateSha, issue_created_at: process.env.ISSUE_CREATED_AT,
                   batch_index: next, sampling_seed: process.env.SAMPLING_SEED, data_commit: process.env.DATA_COMMIT,
                 },
