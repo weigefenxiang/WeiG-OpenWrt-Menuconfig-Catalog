@@ -345,9 +345,9 @@ assert(runner.includes('deepestPassedLevel') && runner.includes('durationMs'),
   'Probe runtime must preserve selected depth, deepest passed depth, and duration evidence');
 assert(runner.includes('BUILD_LOG=1'));
 assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.includes('fully-incompatible') && evidenceWriter.includes('partially-compatible'));
-assert(evidenceWriter.includes('Selected-package primary-cause rate / 选中插件主因故障率') &&
-  evidenceWriter.includes('| Source / 源码源 | Compatible / 兼容 | Incompatible / 不兼容 | Inconclusive / 待定 |'),
-  'Source summary must expose bilingual headers and selected-package primary-cause rate');
+assert(evidenceWriter.includes('Package-caused rate<br>插件主因率') &&
+  evidenceWriter.includes('| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Inconclusive<br>待定 |'),
+  'Source summary must expose two-line bilingual headers, success rate, and package-caused rate');
 assert.equal(policy.probe.maxMatrixJobs, 256);
 assert.deepEqual(policy.probe.coverage, { defaultLimit: 32, maxLimit: 128 });
 assert(!('autoCoverageLimits' in policy.probe) && !('maxAutoCoverage' in policy.probe),
