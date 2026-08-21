@@ -281,11 +281,18 @@ function formatCompatibilityRate(scope) {
   return scope.compatibilityRate === null ? '—' : `${Math.round(scope.compatibilityRate * 100)}%`;
 }
 
+function formatSuccessRate(scope) {
+  const probeSamples = Number(scope.compatible || 0) + Number(scope.incompatible || 0) + Number(scope.inconclusive || 0);
+  return probeSamples ? `${Math.round(Number(scope.compatible || 0) / probeSamples * 100)}%` : '—';
+}
+
 function formatSelectedPackagePrimaryRate(scope) {
   const attempted = Number(scope.attempted || 0);
+  const probeSamples = Number(scope.compatible || 0) + Number(scope.incompatible || 0) + Number(scope.inconclusive || 0);
+  if (!probeSamples) return '—';
   const count = Number(scope.selectedPackagePrimaryFailures || 0);
   const rate = attempted ? `${(count / attempted * 100).toFixed(1).replace(/\.0$/, '')}%` : '—';
-  return `${count}/${attempted} • ${rate} • ${scope.selectedPackagePrimaryCause || '—'}`;
+  return `${count}/${attempted} · ${rate} · ${scope.selectedPackagePrimaryCause || '—'}`;
 }
 
 function scopeResultLabel(scope, exhaustive) {
@@ -408,12 +415,12 @@ export function aggregateEvidence(directory, env = {}) {
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
     lines.push('### Source summary / 源码总览', '',
-      '| Source / 源码源 | Compatible / 兼容 | Incompatible / 不兼容 | Inconclusive / 待定 | Selected-package primary-cause rate / 选中插件主因故障率 | Skipped / 跳过 | Notes / 备注 |',
-      '|---|---:|---:|---:|---|---:|---|',
-      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.compatible} | ${scope.incompatible} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '');
+      '| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Inconclusive<br>待定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |',
+      '|---|---:|---:|---:|---:|---|---:|---|',
+      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.compatible} | **${formatSuccessRate(scope)}** | ${scope.incompatible} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '');
     for (const breakdown of breakdowns) {
       lines.push('<details>', `<summary>${breakdown.source || '-'} · Branch breakdown / 分支明细</summary>`, '',
-        '| Branch / 分支 | Compatible / 兼容 | Incompatible / 不兼容 | Inconclusive / 待定 | Selected-package primary-cause rate / 选中插件主因故障率 | Skipped / 跳过 | Notes / 备注 |',
+        '| Branch<br>分支 | Compatible<br>兼容 | Incompatible<br>不兼容 | Inconclusive<br>待定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |',
         '|---|---:|---:|---:|---|---:|---|',
         ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | ${scope.compatible} | ${scope.incompatible} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '',
         '</details>', '');
