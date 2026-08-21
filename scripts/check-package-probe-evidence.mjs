@@ -36,7 +36,7 @@ assert(dependencyInstaller.includes('PROBE_APT_UPDATE_TIMEOUT_SECONDS:-60'), 'ap
 assert(dependencyInstaller.includes('PROBE_APT_INSTALL_TIMEOUT_SECONDS:-300'), 'dependency bootstrap must default to the approved 300-second bound');
 assert(!dependencyInstaller.includes('PROBE_APT_ATTEMPT_TIMEOUT_SECONDS'), 'the obsolete one-size-fits-all apt timeout must not return');
 assert(dependencyInstaller.includes('prepare_initial_ubuntu_source'), 'dependency bootstrap must prepare the Ubuntu source before the first update attempt');
-assert(dependencyInstaller.indexOf('prepare_initial_ubuntu_source\nretry_apt "apt-get update"') > dependencyInstaller.indexOf('prepare_initial_ubuntu_source() {'),
+assert(dependencyInstaller.indexOf('prepare_initial_ubuntu_source\nretry_apt \"apt-get update\"') > dependencyInstaller.indexOf('prepare_initial_ubuntu_source() {'),
   'the first apt update must run only after the initial Ubuntu source preparation call');
 assert(dependencyInstaller.includes('replacing the GitHub Runner Ubuntu mirror with direct archive/security sources before the first update attempt'),
   'the first apt update must bypass the unstable Runner Azure mirror when the mirror list is available');
