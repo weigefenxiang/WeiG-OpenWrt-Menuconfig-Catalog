@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
+import { classifyTargetPrerequisiteFailure, isAllowedTargetPrerequisiteCause, isMemoryExhaustion, isReportedInconclusive } from './package-probe-failure-classification.mjs';
 
 const packageName = (value) => String(value || '').replace(/-[0-9][A-Za-z0-9.+:~_-]*$/, '');
 
@@ -36,6 +37,7 @@ export function parseProbeLog(log) {
     issues.push({ type: 'infrastructure-failure', reason: 'host-prerequisite' });
   }
   if (/No space left on device/i.test(text)) issues.push({ type: 'infrastructure-failure', reason: 'disk-full' });
+  if (isMemoryExhaustion(text)) issues.push({ type: 'infrastructure-failure', reason: 'memory-exhausted' });
   if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(text)) issues.push({ type: 'timeout' });
   if (/Hash check failed|download failed|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(text)) issues.push({ type: 'package-download-failure' });
   if (/not enough space|image is too big|filesystem.*too large/i.test(text)) issues.push({ type: 'image-too-large' });
@@ -79,6 +81,7 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
   const sharedLogIsRelevant = !selectedAttempt || attemptResult === 'inconclusive';
   const errors = sharedLogIsRelevant ? normalizedErrors(log) : [];
   const issues = sharedLogIsRelevant ? parseProbeLog(log) : [];
+  let targetPrerequisiteCause = '';
   const bootstrapOutcome = String(env.PROBE_BOOTSTRAP_OUTCOME || '').toLowerCase();
   const cloneOutcome = String(env.PROBE_CLONE_OUTCOME || '').toLowerCase();
   const runtimeRequirementsOutcome = String(env.PROBE_RUNTIME_REQUIREMENTS_OUTCOME || '').toLowerCase();
@@ -116,6 +119,15 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     issues.push({ type: 'kconfig-combination-rejected', roots: attempt.rejectedRoots || [] });
   } else if (['virtual-boot-unsupported', 'runtime-control-unavailable', 'reboot-control-unavailable'].includes(attempt.reason)) {
     issues.push({ type: 'capability-unavailable', reason: attempt.reason });
+  } else if (attempt.reason === 'target-prerequisite-failure') {
+    const logClassification = classifyTargetPrerequisiteFailure(log);
+    const cause = isAllowedTargetPrerequisiteCause(attempt.targetPrerequisiteCause)
+      ? attempt.targetPrerequisiteCause
+      : logClassification.reason === 'target-prerequisite-failure' ? logClassification.cause : '';
+    targetPrerequisiteCause = cause;
+    issues.push({ type: 'target-prerequisite-failure', reason: attempt.reason, ...(cause ? { cause } : {}) });
+  } else if (attempt.reason === 'target-prerequisite-infrastructure') {
+    issues.push({ type: 'infrastructure-failure', reason: attempt.reason });
   } else if (attempt.reason === 'runner-infrastructure') {
     issues.push({ type: 'infrastructure-failure', reason: attempt.reason });
   } else if (['final-boot-failed', 'final-runtime-failed', 'final-reboot-failed', 'final-reboot-health-failed'].includes(attempt.reason)) {
@@ -155,6 +167,7 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     },
     rootStates: attempt.rootStates || requestedPackageStates(config, runtime?.roots || roots),
     unavailableRoots: attempt.unavailableRoots || [], rejectedRoots: attempt.rejectedRoots || [], reason: attempt.reason || runtime?.reason || '',
+    targetPrerequisiteCause,
     selectedLevel,
     deepestPassedLevel,
     durationMs: Number(attempt.durationMs || runtime?.durationMs || 0),
@@ -171,7 +184,10 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
   };
 }
 
-function issueText(issue) { return issue.path || issue.target || issue.dependency || issue.reason || (issue.roots || []).join(', ') || issue.type; }
+function issueText(issue) {
+  const detail = issue.cause ? `${issue.reason || issue.type} (${issue.cause})` : '';
+  return detail || issue.path || issue.target || issue.dependency || issue.reason || (issue.roots || []).join(', ') || issue.type;
+}
 
 export function evidenceSummaryLines(evidence) {
   const serialRecoveries = evidence.attempts.flatMap((attempt) => (attempt.serialRetries || []).filter((row) => row.result === 'recovered').map((row) => row.label));
@@ -211,16 +227,29 @@ function environmentKey(row, depth = 5) {
   return [row.source, row.branch, row.targetSystem, row.subtarget, row.profile].slice(0, depth).join('/');
 }
 
+const INFRASTRUCTURE_ISSUE_TYPES = new Set(['timeout', 'infrastructure-failure', 'package-download-failure']);
+
+function reportedTargetPrerequisiteCause(row) {
+  if (row?.conclusion !== 'inconclusive' || row?.reason !== 'target-prerequisite-failure') return '';
+  const direct = isAllowedTargetPrerequisiteCause(row.targetPrerequisiteCause) ? row.targetPrerequisiteCause : '';
+  const issueCause = (row.issues || []).find((issue) => issue.type === 'target-prerequisite-failure' &&
+    isAllowedTargetPrerequisiteCause(issue.cause))?.cause || '';
+  const cause = direct || issueCause;
+  return isReportedInconclusive({ ...row, result: row.result || row.conclusion, targetPrerequisiteCause: cause }) ? cause : '';
+}
+
 function conclusionStats(rows) {
   const compatible = rows.filter((row) => row.conclusion === 'compatible').length;
   const incompatible = rows.filter((row) => row.conclusion === 'incompatible').length;
   const skipped = rows.filter((row) => row.conclusion === 'skipped').length;
   const inconclusive = rows.filter((row) => row.conclusion === 'inconclusive').length;
-  const infrastructureTypes = new Set(['timeout', 'infrastructure-failure', 'package-download-failure']);
-  const infraInconclusive = rows.filter((row) => row.conclusion === 'inconclusive' &&
-    (row.issues || []).some((issue) => infrastructureTypes.has(issue.type))).length;
+  const reportedTargetPrerequisite = rows.filter((row) => reportedTargetPrerequisiteCause(row)).length;
+  const infraInconclusive = rows.filter((row) => row.conclusion === 'inconclusive' && !reportedTargetPrerequisiteCause(row) &&
+    (row.issues || []).some((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(issue.type))).length;
+  const unattributedInconclusive = Math.max(0, inconclusive - reportedTargetPrerequisite - infraInconclusive);
   const conclusive = compatible + incompatible;
-  return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, infraInconclusive, conclusive,
+  return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, reportedTargetPrerequisite,
+    infraInconclusive, unattributedInconclusive, conclusive,
     compatibilityRate: conclusive ? compatible / conclusive : null };
 }
 
@@ -273,6 +302,7 @@ export function aggregateScopeConclusions(evidence, options = {}) {
     ...conclusionStats(rows), ...selectedPackagePrimaryStats(rows), conclusion: conclusionForRows(rows, options.exhaustive === true), roots: rows[0]?.roots || [],
     reasons: [...new Set(rows.map((row) => row.reason).filter(Boolean))],
     issueTypes: [...new Set(rows.flatMap((row) => (row.issues || []).map((issue) => issue.type)))],
+    targetPrerequisiteCauses: [...new Set(rows.map(reportedTargetPrerequisiteCause).filter(Boolean))],
     unavailableRoots: [...new Set(rows.flatMap((row) => row.unavailableRoots || []))],
   })).sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
 }
@@ -314,13 +344,17 @@ function sourceNeedsBranchBreakdown(scope) {
 function scopeNote(scope) {
   const notes = [];
   if (scope.inconclusive > 0) {
-    if (scope.infraInconclusive === scope.inconclusive) {
+    const reportedTargetPrerequisite = Number(scope.reportedTargetPrerequisite || 0);
+    if (reportedTargetPrerequisite > 0) {
+      const causes = (scope.targetPrerequisiteCauses || []).join(', ') || 'unattributed';
+      notes.push(`Upstream Target/Toolchain prerequisite reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定: ${reportedTargetPrerequisite} (${causes})`);
+    }
+    if (scope.infraInconclusive > 0) {
       const kind = (scope.issueTypes || []).includes('timeout') ? 'timeout' : 'bootstrap/network';
-      notes.push(`Infrastructure incomplete / 基础设施未完成: ${scope.inconclusive} (${kind})`);
-    } else if (scope.infraInconclusive > 0) {
-      notes.push(`Undetermined / 未定: ${scope.inconclusive} (infrastructure ${scope.infraInconclusive})`);
-    } else {
-      notes.push(`Undetermined / 未定: ${scope.inconclusive}`);
+      notes.push(`Infrastructure incomplete / 基础设施未完成: ${scope.infraInconclusive} (${kind})`);
+    }
+    if (scope.unattributedInconclusive > 0) {
+      notes.push(`Undetermined / 未定: ${scope.unattributedInconclusive}`);
     }
   }
   if (scope.skipped > 0) {

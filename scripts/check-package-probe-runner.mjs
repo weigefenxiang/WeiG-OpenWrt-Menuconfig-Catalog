@@ -4,6 +4,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { isReportedInconclusive, probeResultExitCode } from './package-probe-failure-classification.mjs';
 
 const runner = resolve(import.meta.dirname, 'run-package-probe.mjs');
 
@@ -61,6 +62,42 @@ if (process.env.FAKE_FAIL_FIRMWARE_PREREQUISITE === 'true' && args.includes('tar
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_PARALLEL === 'true' && rootCompile && args[0] !== '-j1') process.exitCode = 1;
+if (process.env.FAKE_FAIL_TARGET_PREREQUISITE === 'true' && args.includes('prepare')) {
+  const cause = process.env.FAKE_TARGET_PREREQUISITE_CAUSE || 'patch-apply';
+  if (cause === 'patch-apply') {
+    console.error('Applying generic upstream patch');
+    console.error('Hunk FAILED at 12');
+    console.error('Patch failed! Please fix the rejected hunk.');
+  } else if (cause === 'toolchain-kernel-version') {
+    console.error('toolchain/glibc: available kernel headers are older than requested');
+  } else if (cause === 'target-build') {
+    console.error("No rule to make target 'target/linux/compile'");
+  } else {
+    console.error('module crypto/geniv.ko is missing');
+  }
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_TARGET_PREREQUISITE_WRAPPER === 'true' && args.includes('prepare')) {
+  console.error('ERROR: target/linux failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_TOOLCHAIN_WRAPPER === 'true' && args.includes('prepare')) {
+  console.error('ERROR: toolchain failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_TARGET_PREREQUISITE_OOM === 'true' && args.includes('prepare')) {
+  console.error('ERROR: target/linux failed to build');
+  console.error('make: *** [prepare] Killed');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_TARGET_PREREQUISITE_INFRASTRUCTURE === 'true' && args.includes('prepare')) {
+  console.error('curl: (6) Could not resolve host: downloads.example.invalid');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_TARGET_PREREQUISITE_UNATTRIBUTED === 'true' && args.includes('prepare')) {
+  console.error('collect2: error: ld returned 1 exit status');
+  process.exit(2);
+}
 `;
 }
 
@@ -119,6 +156,13 @@ function scenario(mode, options = {}) {
         FAKE_ROOTFS_ROOT_CONFLICT: String(options.rootfsRootConflict === true),
         FAKE_ROOTFS_UNRELATED_CONFLICT: String(options.rootfsUnrelatedConflict === true),
         FAKE_FAIL_FIRMWARE_PREREQUISITE: String(options.failFirmwarePrerequisite === true),
+        FAKE_FAIL_TARGET_PREREQUISITE: String(options.failTargetPrerequisite === true),
+        FAKE_TARGET_PREREQUISITE_CAUSE: String(options.targetPrerequisiteCause || ''),
+        FAKE_FAIL_TARGET_PREREQUISITE_WRAPPER: String(options.failTargetPrerequisiteWrapper === true),
+        FAKE_FAIL_TOOLCHAIN_WRAPPER: String(options.failToolchainWrapper === true),
+        FAKE_FAIL_TARGET_PREREQUISITE_OOM: String(options.failTargetPrerequisiteOom === true),
+        FAKE_FAIL_TARGET_PREREQUISITE_INFRASTRUCTURE: String(options.failTargetPrerequisiteInfrastructure === true),
+        FAKE_FAIL_TARGET_PREREQUISITE_UNATTRIBUTED: String(options.failTargetPrerequisiteUnattributed === true),
         PROBE_WORKDIR: workdir,
         PROBE_LOG: join(directory, 'probe.log'),
         PROBE_RUNTIME: runtimeFile,
@@ -224,6 +268,54 @@ const l2Infrastructure = scenario('package-compile', { failInfrastructure: true,
 assert.equal(l2Infrastructure.runtime.conclusion, 'inconclusive');
 assert.equal(l2Infrastructure.runtime.reason, 'package-compile-infrastructure');
 assert.equal(l2Infrastructure.runtime.attempts[0].serialRetries[0].result, 'failure');
+
+const targetPrerequisiteModes = [
+  ['package-compile', 'patch-apply'],
+  ['rootfs-integration', 'toolchain-kernel-version'],
+  ['firmware-integration', 'target-build'],
+  ['boot-smoke', 'kernel-prerequisite'],
+  ['runtime-health', 'patch-apply'],
+  ['reboot-validation', 'toolchain-kernel-version'],
+];
+for (const [mode, cause] of targetPrerequisiteModes) {
+  const targetPrerequisite = scenario(mode, { failTargetPrerequisite: true, targetPrerequisiteCause: cause });
+  assert.equal(targetPrerequisite.runtime.conclusion, 'inconclusive', `${mode} Target prerequisite failure must remain an inconclusive conclusion`);
+  assert.equal(targetPrerequisite.runtime.reason, 'target-prerequisite-failure', `${mode} must use the reported Target prerequisite reason`);
+  assert.equal(targetPrerequisite.runtime.attempts[0].targetPrerequisiteCause, cause, `${mode} must preserve the generic prerequisite cause`);
+  assert.equal(targetPrerequisite.runtime.attempts[0].stages.targetPrepare.status, 'failure');
+  assert.equal(targetPrerequisite.calls.filter((args) => args.includes('prepare')).length, 2, `${mode} must retry prepare once for evidence`);
+  assert.equal(targetPrerequisite.calls.some((args) => args.includes('package/network/alpha/compile')), false, `${mode} must stop before Root compilation`);
+  assert.equal(targetPrerequisite.calls.some((args) => args.includes('package/compile')), false, `${mode} must stop before RootFS compilation`);
+  assert.equal(targetPrerequisite.calls.some((args) => args.includes('package/install')), false, `${mode} must stop before RootFS installation`);
+  assert.equal(targetPrerequisite.calls.some((args) => args.includes('target/install')), false, `${mode} must stop before firmware integration`);
+  assert.equal(targetPrerequisite.calls.some((args) => args.includes('qemustart')), false, `${mode} must stop before virtual probing`);
+  assert.equal('boot' in targetPrerequisite.runtime.attempts[0].stages, false, `${mode} must not enter virtual boot`);
+  assert.equal('runtimeHealth' in targetPrerequisite.runtime.attempts[0].stages, false, `${mode} must not enter runtime health`);
+  assert.equal('secondRuntimeHealth' in targetPrerequisite.runtime.attempts[0].stages, false, `${mode} must not enter reboot health`);
+}
+
+const targetPrerequisiteInfrastructure = scenario('package-compile', { failTargetPrerequisiteInfrastructure: true, expectedStatus: 1 });
+assert.equal(targetPrerequisiteInfrastructure.runtime.conclusion, 'inconclusive');
+assert.equal(targetPrerequisiteInfrastructure.runtime.reason, 'target-prerequisite-infrastructure');
+const targetPrerequisiteUnattributed = scenario('package-compile', { failTargetPrerequisiteUnattributed: true, expectedStatus: 1 });
+assert.equal(targetPrerequisiteUnattributed.runtime.conclusion, 'inconclusive');
+assert.equal(targetPrerequisiteUnattributed.runtime.reason, 'target-prerequisite-unattributed-failure');
+
+const targetWrapper = scenario('package-compile', { failTargetPrerequisiteWrapper: true, expectedStatus: 1 });
+assert.equal(targetWrapper.runtime.reason, 'target-prerequisite-unattributed-failure');
+assert.equal(targetWrapper.runtime.attempts[0].targetPrerequisiteCause, undefined);
+const toolchainWrapper = scenario('package-compile', { failToolchainWrapper: true, expectedStatus: 1 });
+assert.equal(toolchainWrapper.runtime.reason, 'target-prerequisite-unattributed-failure');
+assert.equal(toolchainWrapper.runtime.attempts[0].targetPrerequisiteCause, undefined);
+const targetOom = scenario('package-compile', { failTargetPrerequisiteOom: true, expectedStatus: 1 });
+assert.equal(targetOom.runtime.reason, 'target-prerequisite-infrastructure');
+assert.equal(targetOom.runtime.attempts[0].targetPrerequisiteCause, undefined);
+assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'target-prerequisite-failure' }]), 1,
+  'a reported reason without a cause must remain red');
+assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'unknown' }]), 1,
+  'an unknown reported cause must remain red');
+assert.equal(isReportedInconclusive({ result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'patch-apply' }), true);
+assert.equal(isReportedInconclusive({ result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'unknown' }), false);
 
 const l3 = scenario('rootfs-integration');
 assert.equal(l3.calls.filter((args) => args.includes('package/network/alpha/compile')).length, 1,

@@ -82,6 +82,8 @@ Probe V3 的浏览器状态包含直接 `packageIntent`、由该 Intent 派生�
 
 抽样与全量结论严格分开：样本全部成功/失败只能记为 `sampled-compatible` / `sampled-incompatible`；完整覆盖后才允许 `fully-compatible` / `fully-incompatible`；同一范围内成功与失败并存为 `partially-compatible`。下载、磁盘、Runner、metadata 解析、取消与超时等基础设施问题统一保持 `inconclusive`。结果按 Source → Branch → Target System → Subtarget → Target Profile 聚合，因此可把问题收缩到具体源码、分支或目标范围，但证据不会自动宣称是某上游 Bug，也不会自动改写 `compatibility.json`。
 
+运行状态与兼容性结论是两个轴：`target-prerequisite-failure` 表示已经取得强确定性的上游 Target/Toolchain/Kernel 前置失败证据，允许的通用 cause 只有 `patch-apply`、`toolchain-kernel-version`、`kernel-prerequisite` 与 `target-build`；它仍然报告为 `inconclusive`（reported inconclusive），但允许该环境 Job 成功结束。它只能通过显式 allowlist 取得该退出状态，不能因此变成 `compatible`、`incompatible` 或 `skipped`。网络、下载、磁盘、OOM/Killed、Runner、timeout 等 `target-prerequisite-infrastructure`，以及没有确定证据的 `target-prerequisite-unattributed-failure`，都是 operational/unattributed inconclusive，必须保持红色。最终兼容性结论只读取 normalized evidence，不以 Job 的绿色或红色替代证据结论。
+
 Issue 网关仍以真实 Issue 作者和仓库权限作为权限事实，校验 V3 state token、SHA-256 与 Issue 身份后派发相同代码通道；后续批次继续固定第一次解析的 Catalog data commit。仓库 owner/admin 可使用管理员并发预算，write/maintain 协作者仍受 3 并发上限；普通访客不能启动 Matrix。请求者或具有 write/maintain/admin 权限的协作者可在同一 Issue 回复精确 `/cancel`，取消标记会同时停止当前 Run 并阻止后续批次。规范化证据保留 60 天，完整日志保留 30 天。
 
 失败后的诊断遵循上游增量构建：耗时目标先按 Runner 可用 CPU 数加一执行；失败后对**同一批上游 Root targets**以 `-j1 V=s BUILD_LOG=1` 串行复核，复用同一工作树和 stamp。旧的“Final PACKAGE 全量逐包 compile”、fallback Target 循环和 `reduceFailureSet()`/`reductionMaxAttempts` 已不再属于 Probe 架构，Runner 不自行拆 dependency closure 或搜索最小失败集合。

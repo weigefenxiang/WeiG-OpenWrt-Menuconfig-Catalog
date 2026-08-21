@@ -22,10 +22,12 @@ const workflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-pro
 const gatewayWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'package-probe-request.yml'), 'utf8');
 const issueForm = readFileSync(resolve(ROOT, '.github', 'ISSUE_TEMPLATE', 'package-probe.yml'), 'utf8');
 const catalogWorkflow = readFileSync(resolve(ROOT, '.github', 'workflows', 'catalog.yml'), 'utf8');
+const compatibilityDoc = readFileSync(resolve(ROOT, 'docs', 'COMPATIBILITY.md'), 'utf8');
 const controller = readFileSync(resolve(ROOT, 'scripts', 'package-probe-controller.mjs'), 'utf8');
 const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-gateway.mjs'), 'utf8');
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
 const evidenceWriter = readFileSync(resolve(ROOT, 'scripts', 'write-package-probe-evidence.mjs'), 'utf8');
+const failureClassification = readFileSync(resolve(ROOT, 'scripts', 'package-probe-failure-classification.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
 assert.equal(probeUi.strings?.configResolve?.['zh-CN'], '官方配置求解');
 assert.equal(probeUi.strings?.environmentLimit?.en, 'Probe environments');
@@ -312,8 +314,15 @@ assert(runner.indexOf("join(ROOT, 'scripts', 'prepare-metadata.sh')") < runner.i
 assert(runner.includes("if (results.includes('inconclusive')) overallResult = 'inconclusive';") &&
   runner.includes("else if (results.includes('incompatible')) overallResult = 'incompatible';"),
   'L1 Probe must let infrastructure errors dominate business incompatibility');
-assert(runner.includes("process.exitCode = attempts.every((row) => ['compatible', 'incompatible', 'skipped'].includes(row.result)) ? 0 : 1;"),
-  'Probe process status must accept only known conclusive/skipped results and fail runtime/unknown results');
+assert(runner.includes("from './package-probe-failure-classification.mjs'") &&
+  evidenceWriter.includes("from './package-probe-failure-classification.mjs'"),
+  'Runner and Evidence must share one Target prerequisite classification module');
+assert(failureClassification.includes('export function isReportedInconclusive(row)') &&
+  failureClassification.includes('isAllowedTargetPrerequisiteCause(row?.targetPrerequisiteCause)') &&
+  failureClassification.includes('export function probeResultExitCode'),
+  'Target prerequisite reported inconclusive exit must validate result, reason, and explicit cause allowlist');
+assert(runner.includes('process.exitCode = probeResultExitCode(attempts);'),
+  'Runner process status must use the shared reported-inconclusive allowlist');
 assert(runner.includes('classifyConfigFailure') && runner.includes("result: 'skipped'") &&
   runner.includes("reason: 'root-absent-source'") && runner.includes("reason: 'kconfig-unsatisfied'") &&
   !runner.includes("reason: 'package-unavailable'") &&
@@ -322,6 +331,10 @@ assert(runner.includes('classifyConfigFailure') && runner.includes("result: 'ski
 assert(runner.includes('classifyPackageBuildFailure') && runner.includes('package-compile-prerequisite-failure') &&
   runner.includes('package-compile-unattributed-failure'),
   'L2-L7 must not promote unrelated or unattributed build failures to selected-package incompatibility');
+assert(failureClassification.includes('export function classifyTargetPrerequisiteFailure') && failureClassification.includes('patch-apply') &&
+  failureClassification.includes('toolchain-kernel-version') && failureClassification.includes('target-build') && failureClassification.includes('kernel-prerequisite') &&
+  !runner.includes('Patch failed') && !evidenceWriter.includes('Patch failed'),
+  'Target prerequisite failures must use one generic evidence-based classifier without duplicated cause regexes');
 assert(workflow.includes('const comments = await github.paginate(') && !workflow.includes('const { data: comments } = await github.paginate('),
   'Probe summary must treat github.paginate() as the returned comments array');
 assert(controller.includes('environmentScope') && controller.includes('selectProbeCoverage') && !controller.includes('maxAutoTargetAttempts'));
@@ -354,6 +367,12 @@ assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.include
 assert(evidenceWriter.includes('Package-caused rate<br>插件主因率') &&
   evidenceWriter.includes('| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Inconclusive<br>待定 |'),
   'Source summary must expose two-line bilingual headers, success rate, and package-caused rate');
+assert(evidenceWriter.includes("type: 'target-prerequisite-failure'") &&
+  evidenceWriter.includes('Upstream Target/Toolchain prerequisite reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定'),
+  'Target prerequisite evidence must be structured, excluded from plugin-primary attribution, and visible in Source summary Notes');
+assert(compatibilityDoc.includes('reported inconclusive') && compatibilityDoc.includes('operational/unattributed inconclusive') &&
+  compatibilityDoc.includes('normalized evidence'),
+  'Compatibility policy must document the reported-vs-operational inconclusive double axis');
 assert.equal(policy.probe.maxMatrixJobs, 256);
 assert.deepEqual(policy.probe.coverage, { defaultLimit: 32, maxLimit: 128 });
 assert(!('autoCoverageLimits' in policy.probe) && !('maxAutoCoverage' in policy.probe),

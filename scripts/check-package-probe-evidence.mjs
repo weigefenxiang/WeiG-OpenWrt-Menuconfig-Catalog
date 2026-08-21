@@ -274,6 +274,65 @@ const hostPrerequisite = createEvidence({
 assert.equal(hostPrerequisite.conclusion, 'inconclusive');
 assert(hostPrerequisite.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'host-prerequisite'));
 
+const targetPrerequisite = createEvidence({
+  log: 'Applying generic upstream patch\nHunk FAILED at 12\nPatch failed!\n',
+  runtime: { mode: 'package-compile', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { source: 'lede', branch: 'master', targetSystem: 'x86', subtarget: '64', profile: 'DEVICE_generic',
+    result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'patch-apply',
+    selectedLevel: 2, deepestPassedLevel: 0, stages: { targetPrepare: { status: 'failure' } } },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(targetPrerequisite.conclusion, 'inconclusive');
+assert.equal(targetPrerequisite.targetPrerequisiteCause, 'patch-apply');
+assert(targetPrerequisite.issues.some((issue) => issue.type === 'target-prerequisite-failure' && issue.cause === 'patch-apply'));
+assert(evidenceSummaryLines(targetPrerequisite).some((line) => line.includes('target-prerequisite-failure (patch-apply)')));
+
+const targetPrerequisiteFallback = createEvidence({
+  log: "No rule to make target 'target/linux/compile'\n",
+  runtime: { mode: 'package-compile', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { result: 'inconclusive', reason: 'target-prerequisite-failure', selectedLevel: 2, deepestPassedLevel: 0, stages: {} },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(targetPrerequisiteFallback.targetPrerequisiteCause, 'target-build',
+  'Evidence cause fallback must reuse the shared Target prerequisite classifier');
+assert(targetPrerequisiteFallback.issues.some((issue) => issue.type === 'target-prerequisite-failure' && issue.cause === 'target-build'));
+
+const targetPrerequisiteUnknownCause = createEvidence({
+  log: 'ERROR: target/linux failed to build\n',
+  runtime: { mode: 'package-compile', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'unknown', selectedLevel: 2, deepestPassedLevel: 0, stages: {} },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(targetPrerequisiteUnknownCause.targetPrerequisiteCause, '',
+  'Evidence must not accept an unknown reported Target prerequisite cause');
+assert(targetPrerequisiteUnknownCause.issues.some((issue) => issue.type === 'target-prerequisite-failure' && !issue.cause));
+
+const targetPrerequisiteInfrastructure = createEvidence({
+  log: 'No space left on device\n',
+  runtime: { mode: 'package-compile', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { result: 'inconclusive', reason: 'target-prerequisite-infrastructure', selectedLevel: 2, deepestPassedLevel: 0, stages: {} },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(targetPrerequisiteInfrastructure.conclusion, 'inconclusive');
+assert(targetPrerequisiteInfrastructure.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'target-prerequisite-infrastructure'));
+
+const targetPrerequisiteOom = createEvidence({
+  log: 'ERROR: target/linux failed to build\nmake: *** [prepare] Killed\n',
+  runtime: { mode: 'package-compile', conclusion: 'incompatible', roots: ['alpha'], attempts: [] },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(targetPrerequisiteOom.conclusion, 'inconclusive', 'OOM/Killed output must not become package incompatibility evidence');
+assert(targetPrerequisiteOom.issues.some((issue) => issue.type === 'infrastructure-failure' && issue.reason === 'memory-exhausted'));
+
+const targetPrerequisiteUnattributed = createEvidence({
+  log: '',
+  runtime: { mode: 'package-compile', conclusion: 'inconclusive', roots: ['alpha'], attempts: [] },
+  attempt: { result: 'inconclusive', reason: 'target-prerequisite-unattributed-failure', selectedLevel: 2, deepestPassedLevel: 0, stages: {} },
+  env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' },
+});
+assert.equal(targetPrerequisiteUnattributed.conclusion, 'inconclusive');
+assert(evidenceSummaryLines(targetPrerequisiteUnattributed).some((line) => line.includes('target-prerequisite-unattributed-failure')));
+
 const sharedHostLog = "Checking 'python'... failed.\nBuild dependency: Please install Python 2.x\nPrerequisite check failed. Use FORCE=1 to override.\n";
 const selectedCompatible = createEvidence({
   log: sharedHostLog,
@@ -422,6 +481,36 @@ try {
   assert(error.lines.some((line) => line.includes('| OpenWrt | 1 | **50%** | 0 | 1 | **0/2 · 0% · —** | 0 | Infrastructure incomplete / 基础设施未完成: 1 (timeout) |')),
     'one infrastructure failure must remain inconclusive without erasing the valid compatible result');
   assert(error.lines.some((line) => line.includes('Conclusive compatibility / 明确结果兼容率')), 'compatibility percentage must be labeled as conclusive-only');
+
+  const targetPrerequisiteDir = join(dir, 'target-prerequisite'); mkdirSync(targetPrerequisiteDir);
+  { const sub = join(targetPrerequisiteDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({
+      ...row('lede', 'master', 'inconclusive'), reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'toolchain-kernel-version',
+      issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'toolchain-kernel-version' }],
+    })); }
+  const targetPrerequisiteSummary = aggregateEvidence(targetPrerequisiteDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(targetPrerequisiteSummary.overallConclusion, 'inconclusive');
+  assert(targetPrerequisiteSummary.lines.some((line) => line.includes('| lede | 0 | **0%** | 0 | 1 | **0/1 · 0% · —** | 0 | Upstream Target/Toolchain prerequisite reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定: 1 (toolchain-kernel-version) |')),
+    'Target prerequisite evidence must remain inconclusive, stay out of plugin-primary attribution, and explain the generic cause in Source summary Notes');
+
+  const mixedPrerequisiteDir = join(dir, 'mixed-target-prerequisite'); mkdirSync(mixedPrerequisiteDir);
+  const mixedPrerequisiteRows = [
+    { ...row('mixed', 'main', 'inconclusive'), reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'patch-apply',
+      issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'patch-apply' }] },
+    { ...row('mixed', 'infra', 'inconclusive'), issues: [{ type: 'timeout' }] },
+    { ...row('mixed', 'unknown', 'inconclusive') },
+  ];
+  for (const [i, evidence] of mixedPrerequisiteRows.entries()) {
+    const sub = join(mixedPrerequisiteDir, String(i)); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify(evidence));
+  }
+  const mixedPrerequisite = aggregateEvidence(mixedPrerequisiteDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '3', COVERAGE_PLANNED: '3', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  const mixedPrerequisiteScope = mixedPrerequisite.summaryScopes.find((scope) => scope.source === 'mixed');
+  assert.equal(mixedPrerequisiteScope.reportedTargetPrerequisite, 1);
+  assert.equal(mixedPrerequisiteScope.infraInconclusive, 1);
+  assert.equal(mixedPrerequisiteScope.unattributedInconclusive, 1);
+  assert(mixedPrerequisite.lines.some((line) => line.includes('reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定: 1 (patch-apply); Infrastructure incomplete / 基础设施未完成: 1 (timeout); Undetermined / 未定: 1')),
+    'mixed scopes must report target, infrastructure, and unattributed counts separately without repeating total inconclusive');
 
   const infraOnlyDir = join(dir, 'infra-only'); mkdirSync(infraOnlyDir);
   { const sub = join(infraOnlyDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({ ...row('OpenWrt', 'main', 'inconclusive'), issues: [{ type: 'timeout' }] })); }

@@ -81,6 +81,7 @@ const REGISTRY = Object.freeze({
     'scripts/install-probe-feeds.sh',
     'scripts/setup-probe-runtime.sh',
     'scripts/package-probe-controller.mjs',
+    'scripts/package-probe-failure-classification.mjs',
     'scripts/package-probe-gateway.mjs',
     'scripts/package-probe-state.mjs',
     'scripts/package-probe-virtual.mjs',

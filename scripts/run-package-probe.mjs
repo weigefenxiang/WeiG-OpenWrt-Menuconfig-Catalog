@@ -7,6 +7,7 @@ import { availableParallelism } from 'node:os';
 import { dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runVirtualProbe } from './package-probe-virtual.mjs';
+import { classifyTargetPrerequisiteFailure, isMakeInfrastructureFailure, probeResultExitCode } from './package-probe-failure-classification.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
@@ -204,11 +205,7 @@ async function makeWithSerialRetry(args, label, attempt) {
 }
 
 function failedMakeIsInfrastructure(result) {
-  const text = String(result?.output || '');
-  if (/No space left on device|Prerequisite check failed|Build dependency:\s+Please install|Please install Python 2\.x/i.test(text)) return true;
-  if (/Hash check failed|download failed|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(text)) return true;
-  if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(text)) return true;
-  return /No rule to make target[^\n]*build_dir[^\n]*\/linux-[^/\s]+\/linux-[^/\s]+\/\.config/i.test(text);
+  return isMakeInfrastructureFailure(result?.output);
 }
 
 function normalizePackageBuildTarget(value) {
@@ -500,7 +497,11 @@ async function packageCompile(attempt) {
   log(`Upstream root build targets / 上游入口目标: ${resolved.targets.join(' ')}`);
   const target = await runStage(attempt, 'targetPrepare', () =>
     makeWithSerialRetry(['prepare'], 'Target build prerequisites', attempt));
-  if (!target.ok) return { result: 'inconclusive', reason: 'target-prerequisite-failure' };
+  if (!target.ok) {
+    const classified = classifyTargetPrerequisiteFailure(target.output);
+    if (classified.cause) attempt.targetPrerequisiteCause = classified.cause;
+    return classified;
+  }
   const compiled = await runStage(attempt, 'packageCompile', () =>
     makeWithSerialRetry(resolved.targets, `probe roots: ${ROOTS.join(',')}`, attempt));
   if (!compiled.ok) {
@@ -626,4 +627,4 @@ const runtime = {
 writeFileSync(RUNTIME_FILE, JSON.stringify(runtime, null, 2) + '\n');
 if (runtime.reason) log(`Probe reason / 探针原因: ${runtime.reason}`);
 log(`Probe conclusion / 探针结论: ${runtime.conclusion}`);
-process.exitCode = attempts.every((row) => ['compatible', 'incompatible', 'skipped'].includes(row.result)) ? 0 : 1;
+process.exitCode = probeResultExitCode(attempts);
