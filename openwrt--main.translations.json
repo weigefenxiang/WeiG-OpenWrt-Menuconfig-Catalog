@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-16T04:49:41.859Z",
+  "generatedAt": "2026-08-22T20:06:26.963Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 9980,
+  "options": 10000,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -13252,6 +13252,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-dsa-mt7620",
+      "promptEn": "MediaTek MT7620 integrated switch DSA support",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-dsa-mv88e6060",
       "promptEn": "Marvell MV88E6060 DSA Switch",
       "path": [
@@ -14580,14 +14588,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-switch-rtl8367s",
-      "promptEn": "Realtek RTL8367S switch support",
-      "path": [
-        "Kernel modules",
-        "Network Devices"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-tg3",
       "promptEn": "Broadcom Tigon3 Gigabit Ethernet",
       "path": [
@@ -14694,6 +14694,62 @@
     {
       "symbol": "PACKAGE_kmod-atmtcp",
       "promptEn": "ATM over TCP",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-batman-adv",
+      "promptEn": "B.A.T.M.A.N. Adv",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_BATMAN_V",
+      "promptEn": "B.A.T.M.A.N. V protocol",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_BLA",
+      "promptEn": "Bridge Loop Avoidance",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_DAT",
+      "promptEn": "Distributed ARP Table",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_MCAST",
+      "promptEn": "Multicast optimisation",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_DEBUG",
+      "promptEn": "B.A.T.M.A.N. debugging",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_TRACING",
+      "promptEn": "B.A.T.M.A.N. tracing support",
       "path": [
         "Kernel modules",
         "Network Support"
@@ -23933,22 +23989,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_pipx",
-      "promptEn": "Install/Run Python Applications in Isolated Environments",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_pipx-src",
-      "promptEn": "Install/Run Python Applications in Isolated Environments (sources)",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
       "symbol": "PACKAGE_python3",
       "promptEn": "Python 3.14 programming language",
       "path": [
@@ -27161,22 +27201,6 @@
     {
       "symbol": "PACKAGE_python3-urllib3-src",
       "promptEn": "Sanity-friendly HTTP client (sources)",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_python3-userpath",
-      "promptEn": "Cross-platform tool for modifying a user's PATH",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_python3-userpath-src",
-      "promptEn": "Cross-platform tool for modifying a user's PATH (sources)",
       "path": [
         "Languages",
         "Python"
@@ -37786,8 +37810,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libjuice",
+      "promptEn": "UDP Interactive Connectivity Establishment (ICE) library",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libjwt",
       "promptEn": "libjwt",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libkcp",
+      "promptEn": "KCP - A Fast and Reliable ARQ Protocol",
       "path": [
         "Libraries"
       ]
@@ -38010,6 +38048,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libmonocypher",
+      "promptEn": "Small, auditable, portable cryptographic library",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libmosquitto-nossl",
       "promptEn": "mosquitto - client library (Without SSL Support)",
       "path": [
@@ -38091,6 +38136,14 @@
       "promptEn": "Terminal handling library (Unicode)",
       "path": [
         "Libraries"
+      ]
+    },
+    {
+      "symbol": "LIBNCURSES_TERMINFO",
+      "promptEn": "extra terminfo files",
+      "path": [
+        "Libraries",
+        "Configuration"
       ]
     },
     {
@@ -41202,6 +41255,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-theme-footstrap",
+      "promptEn": "Footstrap Theme",
+      "path": [
+        "LuCI",
+        "4. Themes"
+      ]
+    },
+    {
       "symbol": "PACKAGE_luci-theme-material",
       "promptEn": "Material Theme",
       "path": [
@@ -42875,6 +42936,14 @@
     {
       "symbol": "PACKAGE_nodogsplash",
       "promptEn": "Open public network gateway daemon",
+      "path": [
+        "Network",
+        "Captive Portals"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_opennds",
+      "promptEn": "open Network Demarcation Service",
       "path": [
         "Network",
         "Captive Portals"
@@ -47119,6 +47188,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_mesh11sd",
+      "promptEn": "Dynamic 802.11s Mesh Management Daemon",
+      "path": [
+        "Network",
+        "Mesh"
+      ]
+    },
+    {
       "symbol": "PACKAGE_meshtasticd-avahi-service",
       "promptEn": "Meshtastic daemon (avahi service)",
       "path": [
@@ -48173,6 +48250,14 @@
     {
       "symbol": "PACKAGE_autossh",
       "promptEn": "Autossh client",
+      "path": [
+        "Network",
+        "SSH"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_comrade",
+      "promptEn": "Serverless peer-to-peer terminal sharing",
       "path": [
         "Network",
         "SSH"
@@ -59166,6 +59251,62 @@
       ]
     },
     {
+      "symbol": "PACKAGE_alfred",
+      "promptEn": "A.L.F.R.E.D. - Almighty Lightweight Fact Remote Exchange Daemon",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ALFRED_VIS",
+      "promptEn": "enable vis server for alfred",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ALFRED_BATHOSTS",
+      "promptEn": "enable autogeneration of /etc/bat-hosts",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ALFRED_GPSD",
+      "promptEn": "enable gpsd service for alfred",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_batctl-default",
+      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Default)",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_batctl-full",
+      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Full)",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_batctl-tiny",
+      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Minimal)",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
       "symbol": "PACKAGE_dawn",
       "promptEn": "Decentralized wifi controller",
       "path": [
@@ -61838,6 +61979,20 @@
     {
       "symbol": "NUT_SSL",
       "promptEn": "Build with support for OpenSSL",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "NUT_SSL_NSS",
+      "promptEn": "Build with support for NSS for SSL",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "NUT_SSL_CERTVERIFY",
+      "promptEn": "Build with support for certificate verification when using SSL",
       "path": [
         "Network"
       ]
@@ -75679,6 +75834,7 @@
     "Instant Messaging",
     "Linux ATM tools",
     "LoRaWAN",
+    "Mesh",
     "Meshtastic",
     "NMAP Suite",
     "NTRIP",
@@ -75980,84 +76136,5 @@
       "id": "choice-64",
       "promptEn": "Which OpenGL variant to use"
     }
-  ],
-  "automation": {
-    "generatedAt": "2026-08-21T21:12:37.480Z",
-    "catalogs": 17,
-    "cachedTexts": 28446,
-    "trigger": "schedule",
-    "phase": "zh-CN-usage",
-    "activeLanguage": "zh-CN",
-    "nextLanguage": "zh-CN",
-    "rotationLanguages": [
-      "ru",
-      "es",
-      "pt",
-      "ja",
-      "ko",
-      "de",
-      "fr",
-      "vi"
-    ],
-    "frozenLanguages": [
-      "zh-TW"
-    ],
-    "batchNumber": 5,
-    "batchCount": 5,
-    "queuedThisRun": 500,
-    "retryQueuedAfter": 17,
-    "batchLimit": 500,
-    "queuedCharacters": 43755,
-    "requestedCharactersThisRun": 0,
-    "runCharacterBudget": null,
-    "translatedThisRun": 483,
-    "targetPendingBefore": 6517,
-    "targetPendingAfter": 6034,
-    "localizedFields": 168223,
-    "pendingFields": 2965297,
-    "localizedByLanguage": {
-      "zh-CN": 125253,
-      "zh-TW": 5185,
-      "ru": 5185,
-      "es": 5151,
-      "pt": 5168,
-      "ja": 5185,
-      "ko": 5185,
-      "de": 5130,
-      "fr": 5168,
-      "vi": 5164
-    },
-    "pendingByLanguage": {
-      "zh-CN": 195533,
-      "zh-TW": 315601,
-      "ru": 315601,
-      "es": 315635,
-      "pt": 315618,
-      "ja": 315601,
-      "ko": 315601,
-      "de": 315656,
-      "fr": 315618,
-      "vi": 315622
-    },
-    "uniqueDescriptionPendingByLanguage": {
-      "zh-CN": 6034,
-      "zh-TW": 13493,
-      "ru": 13493,
-      "es": 13493,
-      "pt": 13493,
-      "ja": 13493,
-      "ko": 13493,
-      "de": 13493,
-      "fr": 13493,
-      "vi": 13493
-    },
-    "provider": "argos",
-    "providerConfigured": true,
-    "translationEnabled": true,
-    "model": "en-zh:installed",
-    "rejected": 17,
-    "timedOut": false,
-    "apiError": "",
-    "warning": "Batch incomplete: translated 483/500 queued descriptions"
-  }
+  ]
 }

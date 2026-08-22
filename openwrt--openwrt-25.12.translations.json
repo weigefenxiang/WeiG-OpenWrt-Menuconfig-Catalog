@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "openwrt-25.12"
   },
-  "generatedAt": "2026-08-16T04:49:41.341Z",
+  "generatedAt": "2026-08-22T19:52:23.746Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 9796,
+  "options": 9799,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -4615,6 +4615,13 @@
       "promptEn": "Maximum rotation count for /var/log/messages log file",
       "path": [
         "Administration"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_apboot-aruba-ipq806x",
+      "promptEn": "Patched Aruba APBoot for AP-32x",
+      "path": [
+        "Boot Loaders"
       ]
     },
     {
@@ -61716,6 +61723,14 @@
       ]
     },
     {
+      "symbol": "SINGBOX_WITH_CCM",
+      "promptEn": "Build with Claude Code Multiplexer service support",
+      "path": [
+        "Network",
+        "Select build options"
+      ]
+    },
+    {
       "symbol": "SINGBOX_WITH_CLASH_API",
       "promptEn": "Build with Clash API support",
       "path": [
@@ -61750,6 +61765,14 @@
     {
       "symbol": "SINGBOX_WITH_GVISOR",
       "promptEn": "Build with gVisor support",
+      "path": [
+        "Network",
+        "Select build options"
+      ]
+    },
+    {
+      "symbol": "SINGBOX_WITH_OCM",
+      "promptEn": "Build with OpenAI Codex Multiplexer service support",
       "path": [
         "Network",
         "Select build options"
@@ -74552,84 +74575,5 @@
       "id": "choice-63",
       "promptEn": "Which OpenGL variant to use"
     }
-  ],
-  "automation": {
-    "generatedAt": "2026-08-21T21:12:37.480Z",
-    "catalogs": 17,
-    "cachedTexts": 28446,
-    "trigger": "schedule",
-    "phase": "zh-CN-usage",
-    "activeLanguage": "zh-CN",
-    "nextLanguage": "zh-CN",
-    "rotationLanguages": [
-      "ru",
-      "es",
-      "pt",
-      "ja",
-      "ko",
-      "de",
-      "fr",
-      "vi"
-    ],
-    "frozenLanguages": [
-      "zh-TW"
-    ],
-    "batchNumber": 5,
-    "batchCount": 5,
-    "queuedThisRun": 500,
-    "retryQueuedAfter": 17,
-    "batchLimit": 500,
-    "queuedCharacters": 43755,
-    "requestedCharactersThisRun": 0,
-    "runCharacterBudget": null,
-    "translatedThisRun": 483,
-    "targetPendingBefore": 6517,
-    "targetPendingAfter": 6034,
-    "localizedFields": 168223,
-    "pendingFields": 2965297,
-    "localizedByLanguage": {
-      "zh-CN": 125253,
-      "zh-TW": 5185,
-      "ru": 5185,
-      "es": 5151,
-      "pt": 5168,
-      "ja": 5185,
-      "ko": 5185,
-      "de": 5130,
-      "fr": 5168,
-      "vi": 5164
-    },
-    "pendingByLanguage": {
-      "zh-CN": 195533,
-      "zh-TW": 315601,
-      "ru": 315601,
-      "es": 315635,
-      "pt": 315618,
-      "ja": 315601,
-      "ko": 315601,
-      "de": 315656,
-      "fr": 315618,
-      "vi": 315622
-    },
-    "uniqueDescriptionPendingByLanguage": {
-      "zh-CN": 6034,
-      "zh-TW": 13493,
-      "ru": 13493,
-      "es": 13493,
-      "pt": 13493,
-      "ja": 13493,
-      "ko": 13493,
-      "de": 13493,
-      "fr": 13493,
-      "vi": 13493
-    },
-    "provider": "argos",
-    "providerConfigured": true,
-    "translationEnabled": true,
-    "model": "en-zh:installed",
-    "rejected": 17,
-    "timedOut": false,
-    "apiError": "",
-    "warning": "Batch incomplete: translated 483/500 queued descriptions"
-  }
+  ]
 }
