@@ -1,10 +1,17 @@
 // SPDX-FileCopyrightText: 2026 weigefenxiang <weigefenxiang@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import { createHash } from 'node:crypto';
+
 export const TARGET_PREREQUISITE_CAUSES = Object.freeze([
   'patch-apply',
   'toolchain-kernel-version',
   'kernel-prerequisite',
+  // Kconfig is a second (kernel-owned) resolver.  Keep its EOF/syncconfig
+  // failure as a generic cause; the concrete symbol is deliberately not
+  // part of the classifier contract.
+  'kernel-kconfig-sync-eof',
+  'package-output-missing',
   'target-build',
 ]);
 
@@ -43,12 +50,29 @@ export function isMakeInfrastructureFailure(value) {
   return /No rule to make target[^\n]*build_dir[^\n]*\/linux-[^/\s]+\/linux-[^/\s]+\/\.config/i.test(text);
 }
 
+export function isCommandInfrastructureFailure(result) {
+  return Number(result?.code) === -1 || isMakeInfrastructureFailure(result?.output);
+}
+
 function causeFromLines(lines) {
+  const text = lines.join('\n');
+  // Linux Kconfig asks an interactive question for a newly introduced
+  // symbol and then receives EOF in a non-interactive probe.  Match the
+  // protocol/phase, not the symbol name or a particular source tree.
+  if (/(?:scripts[\\/]kconfig[\\/](?:conf|mconf)\b[^\n]*--syncconfig|--syncconfig\b[^\n]*\bKconfig\b)/i.test(text) &&
+      /(?:\(NEW\)|error\s+in\s+reading|end\s+of\s+file)/i.test(text)) {
+    return 'kernel-kconfig-sync-eof';
+  }
   if (lines.some((line) => /\b(?:Patch failed|Hunk(?:\s+#?\d+)?\s+FAILED|can't find file to patch)\b/i.test(line))) {
     return 'patch-apply';
   }
   if (lines.some((line) => /(?:available\s+kernel headers are (?:older|too old)|kernel headers?[^\n]*(?:older|too old)\b)/i.test(line))) {
     return 'toolchain-kernel-version';
+  }
+  if (lines.some((line) =>
+    /(?:output|artifact|generated\s+(?:file|module)|image)\b[^\n]*(?:is\s+)?(?:missing|not\s+found|does\s+not\s+exist)\b/i.test(line) ||
+    /(?:cannot\s+stat|no\s+such\s+file\s+or\s+directory)[^\n]*(?:\.ko\b|\.ipk\b|\.deb\b|\.img\b|\.bin\b|output|artifact)/i.test(line))) {
+    return 'package-output-missing';
   }
   if (lines.some((line) => /\bmodule(?:\s+['"]?[A-Za-z0-9_./+@:-]+['"]?)?\s+is\s+missing\b/i.test(line) ||
     /\bSOURCE_DATE_EPOCH\s*:\s*not found\b/i.test(line))) {
@@ -112,18 +136,39 @@ export function extractFailedBuildTargets(value) {
 export function deterministicErrorSummary(value) {
   const lines = stripAnsi(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const match = lines.find((line) =>
-    /(?:\berror\s*:|\bfailed(?:\s+to)?\b|\bis\s+missing\b|\bno rule to make target\b|\bpatch failed\b|\bhunk(?:\s+#?\d+)?\s+failed\b)/i.test(line));
+    /(?:\berror\s*:|\berror\s+in\s+reading\b|\bend\s+of\s+file\b|\bfailed(?:\s+to)?\b|\bis\s+missing\b|\bno rule to make target\b|\bpatch failed\b|\bhunk(?:\s+#?\d+)?\s+failed\b)/i.test(line));
   return String(match || '').replace(/\s+/g, ' ').slice(0, 320);
 }
 
 export function classifyPrerequisiteFailure(value) {
   const text = stripAnsi(value);
   const cause = causeFromLines(text.split(/\r?\n/));
+  const errorSummary = deterministicErrorSummary(text);
+  const failedBuildTargets = extractFailedBuildTargets(text);
   return {
     cause: isAllowedTargetPrerequisiteCause(cause) ? cause : '',
-    errorSummary: deterministicErrorSummary(text),
-    failedBuildTargets: extractFailedBuildTargets(text),
+    errorSummary,
+    failedBuildTargets,
+    failureFingerprint: buildFailureFingerprint({ cause, errorSummary, failedBuildTargets }),
   };
+}
+
+/**
+ * Stable, source-independent fingerprint for a failed build observation.
+ *
+ * Only normalized evidence participates.  In particular, this intentionally
+ * excludes Source/Branch, package names embedded in arbitrary log text and
+ * timestamps, so the same class of failure can be compared by the A/B
+ * counterfactual runner.
+ */
+export function buildFailureFingerprint({ cause = '', errorSummary = '', failedBuildTargets = [], phase = '' } = {}) {
+  const payload = {
+    phase: String(phase || ''),
+    cause: String(cause || ''),
+    errorSummary: String(errorSummary || '').replace(/\s+/g, ' ').trim().slice(0, 320),
+    failedBuildTargets: [...new Set((failedBuildTargets || []).map((target) => normalizeFailedBuildTarget(target)).filter(Boolean))].sort(),
+  };
+  return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
 }
 
 export function classifyTargetPrerequisiteFailure(value) {
@@ -131,15 +176,18 @@ export function classifyTargetPrerequisiteFailure(value) {
   const detail = classifyPrerequisiteFailure(text);
   if (isMakeInfrastructureFailure(text)) {
     return { result: 'inconclusive', reason: 'target-prerequisite-infrastructure', cause: '',
-      errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets };
+      errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets,
+      failureFingerprint: detail.failureFingerprint };
   }
   const cause = detail.cause;
   if (isAllowedTargetPrerequisiteCause(cause)) {
     return { result: 'inconclusive', reason: 'target-prerequisite-failure', cause,
-      errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets };
+      errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets,
+      failureFingerprint: detail.failureFingerprint };
   }
   return { result: 'inconclusive', reason: 'target-prerequisite-unattributed-failure', cause: '',
-    errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets };
+    errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets,
+    failureFingerprint: detail.failureFingerprint };
 }
 
 function hasMatchingStructuredIssue(row, reason, cause, failedTargets, errorSummary) {
@@ -184,5 +232,5 @@ export function isReportedInconclusive(row) {
 }
 
 export function probeResultExitCode(rows) {
-  return rows.every((row) => ['compatible', 'incompatible', 'skipped'].includes(row?.result) || isReportedInconclusive(row)) ? 0 : 1;
+  return rows.every((row) => ['compatible', 'incompatible', 'blocked', 'skipped'].includes(row?.result) || isReportedInconclusive(row)) ? 0 : 1;
 }

@@ -487,11 +487,15 @@ jobs:
             const values = [...batches.values()];
             let finalConclusion = 'inconclusive';
             if (batches.size === batchCount) {
-              if (values.some((row) => row === 'incomplete')) finalConclusion = 'incomplete';
+              if (values.some((row) => ['incomplete', 'inconclusive'].includes(row))) finalConclusion = 'incomplete';
+              else if (values.every((row) => row === 'blocked')) finalConclusion = 'blocked';
+              else if (values.every((row) => row === 'skipped')) finalConclusion = 'skipped';
               else if (!values.some((row) => row === 'inconclusive')) {
                 const compatibleOnly = values.every((row) => ['fully-compatible', 'sampled-compatible'].includes(row));
                 const incompatibleOnly = values.every((row) => ['fully-incompatible', 'sampled-incompatible'].includes(row));
-                finalConclusion = compatibleOnly ? 'fully-compatible' : incompatibleOnly ? 'fully-incompatible' : 'partially-compatible';
+                const blockedMixed = values.some((row) => ['blocked', 'partially-blocked'].includes(row));
+                const skippedMixed = values.some((row) => row === 'skipped');
+                finalConclusion = blockedMixed ? 'partially-blocked' : compatibleOnly ? (skippedMixed ? 'partially-compatible' : 'fully-compatible') : incompatibleOnly ? (skippedMixed ? 'partially-compatible' : 'fully-incompatible') : 'partially-compatible';
               }
             }
             await github.rest.issues.createComment({

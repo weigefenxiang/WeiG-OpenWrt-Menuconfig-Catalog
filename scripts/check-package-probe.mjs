@@ -305,7 +305,7 @@ assert(workflow.includes('DISPLAY_CONTEXT: ${{ inputs.display_context }}') && wo
 assert(workflow.includes("String(row.display_title || '').includes(`#${issueNumber}`)") && workflow.includes("String(row.display_title || '').includes(`b${next}`)"),
   'continuation lookup must follow the current compact Probe run-name format');
 assert(!workflow.includes("finalConclusion !== 'inconclusive'"), 'completed Probe requests must not stay open only because evidence is inconclusive');
-assert(workflow.includes("values.some((row) => row === 'incomplete')"),
+assert(workflow.includes("values.some((row) => ['incomplete', 'inconclusive'].includes(row))"),
   'a batch with mixed conclusive and infrastructure results must remain incomplete at final aggregation');
 assert(workflow.includes("state: 'closed', state_reason: 'completed'"), 'the final Probe batch must close the Issue after recording its conclusion');
 assert(issueGateway.includes('display_context: probeDisplayContext(request, issue.number)'), 'Gateway must supply a display-only run label from the validated request');
@@ -379,7 +379,7 @@ assert(runner.includes('deepestPassedLevel') && runner.includes('durationMs'),
 assert(runner.includes('BUILD_LOG=1'));
 assert(evidenceWriter.includes('sampled-incompatible') && evidenceWriter.includes('fully-incompatible') && evidenceWriter.includes('partially-compatible'));
 assert(evidenceWriter.includes('Package-caused rate<br>插件主因率') &&
-  evidenceWriter.includes('| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Inconclusive<br>待定 |'),
+  evidenceWriter.includes('| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Base Profile blocked<br>基础 Profile 阻断 | Unresolved<br>执行未定 |'),
   'Source summary must expose two-line bilingual headers, success rate, and package-caused rate');
 assert(evidenceWriter.includes("type: 'target-prerequisite-failure'") &&
   evidenceWriter.includes('Upstream Target/Toolchain prerequisite reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定'),

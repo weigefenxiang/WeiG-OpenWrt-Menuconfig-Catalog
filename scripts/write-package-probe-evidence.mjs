@@ -70,7 +70,7 @@ function normalizedRuntimeConclusion(runtime, issues, fallback) {
   if (issues.some((row) => ['timeout', 'infrastructure-failure', 'package-download-failure', 'metadata-unresolved', 'baseline-failure'].includes(row.type))) {
     return 'inconclusive';
   }
-  if (['compatible', 'incompatible', 'inconclusive', 'skipped'].includes(runtime?.conclusion)) return runtime.conclusion;
+  if (['compatible', 'incompatible', 'blocked', 'inconclusive', 'skipped'].includes(runtime?.conclusion)) return runtime.conclusion;
   return fallback === 'success' ? 'compatible' : 'inconclusive';
 }
 
@@ -104,13 +104,29 @@ function appendStructuredAttemptIssue(issues, attempt) {
   }
 }
 
+// A blocked result is a complete domain conclusion: the selected plugin was
+// not evaluated because the Base Profile or another shared upstream target
+// was already known to be broken.  Keep the evidence structured so the
+// finalizer can distinguish this from an unresolved/runner failure.
+function appendBlockedAttemptIssue(issues, attempt) {
+  if (String(attempt?.result || '') !== 'blocked' &&
+      !String(attempt?.reason || '').startsWith('base-profile-') &&
+      String(attempt?.reason || '') !== 'baseline-failure') return;
+  issues.push({ type: 'base-profile-failure', reason: attempt?.reason || 'base-profile-failure', pluginEvaluated: false,
+    ...(attempt?.cause ? { cause: attempt.cause } : {}),
+    ...(attempt?.targetPrerequisiteCause ? { cause: attempt.targetPrerequisiteCause } : {}),
+    ...(attempt?.prerequisiteCause ? { cause: attempt.prerequisiteCause } : {}),
+    ...(attempt?.errorSummary ? { errorSummary: attempt.errorSummary } : {}),
+    ...(attempt?.failedBuildTargets?.length ? { targets: attempt.failedBuildTargets } : {}) });
+}
+
 export function createEvidence({ log, config = '', runtime = null, env = {}, attempt: selectedAttempt = null }) {
   const roots = String(env.PROBE_ROOTS || '').split(',').map((row) => row.trim()).filter(Boolean);
   const attempt = selectedAttempt || runtime?.attempts?.[0] || {};
   const runtimeComparison = runtime?.comparison;
   const pairedComparison = runtime?.pairedComparison === true ||
     runtimeComparison?.mode === 'paired-exclusion' || Boolean(attempt.pairConclusion);
-  const attemptResult = ['compatible', 'incompatible', 'inconclusive', 'skipped'].includes(attempt.result) ? attempt.result : '';
+  const attemptResult = ['compatible', 'incompatible', 'blocked', 'inconclusive', 'skipped'].includes(attempt.result) ? attempt.result : '';
   // Once the runner emitted a structured attempt result/reason, the shared
   // log is only a transport artifact.  In particular, a later phase's
   // earlyoom/watchdog line must not downgrade an already authoritative A
@@ -182,6 +198,7 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     issues.push({ type: 'infrastructure-failure', reason: attempt.reason });
   } else if (attempt.pairConclusion === 'baseline-failure') {
     issues.push({ type: 'baseline-failure', reason: attempt.baseline?.reason || attempt.reason || 'baseline-failure' });
+    appendBlockedAttemptIssue(issues, attempt.baseline);
     appendStructuredAttemptIssue(issues, attempt.baseline);
     appendStructuredAttemptIssue(issues, attempt.final);
   } else if (['final-boot-failed', 'final-runtime-failed', 'final-reboot-failed', 'final-reboot-health-failed'].includes(attempt.reason)) {
@@ -194,6 +211,7 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
   if (attempt.reason === 'rootfs-conflict') {
     issues.push({ type: 'rootfs-integration-failure', reason: attempt.reason, ...(attempt.packageCauseKind ? { cause: attempt.packageCauseKind } : {}) });
   }
+  appendBlockedAttemptIssue(issues, attempt);
   appendStructuredAttemptIssue(issues, attempt);
   let normalizedIssues = [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()];
   if (attempt.reason === 'package-unavailable') {
@@ -256,6 +274,9 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     durationMs: Number(attempt.durationMs || runtime?.durationMs || 0),
     stages: attempt.stages || {},
     conclusion,
+    // `conclusion` is the established evidence field; `result` is an
+    // additive alias for consumers that use the runner's result vocabulary.
+    result: conclusion,
     coverage: {
       mode: String(env.PROBE_COVERAGE_MODE || 'auto'), total: Number(env.PROBE_COVERAGE_TOTAL || 1), planned: Number(env.PROBE_COVERAGE_PLANNED || 1),
       sampled: String(env.PROBE_COVERAGE_SAMPLED || 'false') === 'true', batchIndex: Number(env.PROBE_BATCH_INDEX || 0), batchCount: Number(env.PROBE_BATCH_COUNT || 1),
@@ -364,6 +385,7 @@ function reportedPackagePrerequisiteCause(row) {
 function conclusionStats(rows) {
   const compatible = rows.filter((row) => row.conclusion === 'compatible').length;
   const incompatible = rows.filter((row) => row.conclusion === 'incompatible').length;
+  const blocked = rows.filter((row) => row.conclusion === 'blocked').length;
   const skipped = rows.filter((row) => row.conclusion === 'skipped').length;
   const inconclusive = rows.filter((row) => row.conclusion === 'inconclusive').length;
   const preflightSkipped = rows.filter((row) => row.conclusion === 'skipped' && row.pairConclusion === 'preflight-skipped').length;
@@ -372,6 +394,9 @@ function conclusionStats(rows) {
   const baselineFailure = rows.filter((row) => row.conclusion === 'inconclusive' &&
     (row.pairConclusion === 'baseline-failure' || row.reason === 'baseline-failure') &&
     !reportedTargetPrerequisiteCause(row) && !reportedPackagePrerequisiteCause(row)).length;
+  const baselineBlocked = rows.filter((row) => row.conclusion === 'blocked' &&
+    (row.pairedComparison === true || row.pairConclusion) &&
+    (String(row.pairConclusion || '').startsWith('blocked-') || row.final?.reason === 'baseline-blocked' || row.final?.result === 'not-run')).length;
   const metadataUnresolved = rows.filter((row) => row.conclusion === 'inconclusive' &&
     (row.issues || []).some((issue) => issue.type === 'metadata-unresolved')).length;
   const infraInconclusive = rows.filter((row) => row.conclusion === 'inconclusive' && !reportedTargetPrerequisiteCause(row) &&
@@ -379,9 +404,9 @@ function conclusionStats(rows) {
     (row.issues || []).some((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(issue.type))).length;
   const unattributedInconclusive = Math.max(0, inconclusive - baselineFailure - reportedTargetPrerequisite - reportedPackagePrerequisite - infraInconclusive);
   const conclusive = compatible + incompatible;
-  return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, preflightSkipped, reportedTargetPrerequisite,
+  return { attempted: rows.length, compatible, incompatible, blocked, skipped, inconclusive, preflightSkipped, reportedTargetPrerequisite,
     reportedPackagePrerequisite,
-    baselineFailure, metadataUnresolved, infraInconclusive, unattributedInconclusive, conclusive,
+    baselineFailure, baselineBlocked, metadataUnresolved, infraInconclusive, unattributedInconclusive, conclusive,
     compatibilityRate: conclusive ? compatible / conclusive : null };
 }
 
@@ -420,6 +445,7 @@ function selectedPackagePrimaryCause(row) {
   const paired = row.pairedComparison === true || row.pairConclusion;
   if (paired && row.packageCauseKind === 'dependency') return 'A/B dependency';
   if (paired && row.packageCauseKind === 'direct') return 'direct';
+  if (paired && (row.packageCauseKind === 'shared' || row.reason === 'plugin-induced-failure')) return 'A/B shared-target';
   if (legacyDirectPrerequisiteCause(row)) return 'compile/link';
   return SELECTED_PACKAGE_PRIMARY_CAUSES.get(String(row.reason || '')) || '';
 }
@@ -433,11 +459,15 @@ function selectedPackagePrimaryStats(rows) {
     (row.pairedComparison === true || row.pairConclusion) && row.packageCauseKind === 'direct').length;
   const dependency = rows.filter((row) => row.conclusion === 'incompatible' &&
     (row.pairedComparison === true || row.pairConclusion) && row.packageCauseKind === 'dependency').length;
+  const shared = rows.filter((row) => row.conclusion === 'incompatible' &&
+    (row.pairedComparison === true || row.pairConclusion) &&
+    (row.packageCauseKind === 'shared' || row.reason === 'plugin-induced-failure')).length;
   const paired = rows.some((row) => row.pairedComparison === true || row.pairConclusion);
   return {
     selectedPackagePrimaryFailures: count,
     selectedPackagePrimaryDirectFailures: direct,
     selectedPackagePrimaryDependencyFailures: dependency,
+    selectedPackagePrimarySharedFailures: shared,
     paired,
     selectedPackagePrimaryRate: attempted ? count / attempted : null,
     selectedPackagePrimaryCause: count ? (labels.length === 1 ? labels[0] : 'mixed') : '—',
@@ -445,8 +475,11 @@ function selectedPackagePrimaryStats(rows) {
 }
 
 function conclusionForRows(rows, exhaustive) {
-  const { compatible, incompatible, skipped, inconclusive } = conclusionStats(rows);
+  const { compatible, incompatible, blocked, skipped, inconclusive } = conclusionStats(rows);
   if (inconclusive) return compatible || incompatible || skipped ? 'incomplete' : 'inconclusive';
+  if (blocked && !compatible && !incompatible) return 'blocked';
+  if (blocked) return 'partially-blocked';
+  if (!compatible && !incompatible && skipped) return 'skipped';
   if (!compatible && !incompatible) return 'inconclusive';
   if (compatible && incompatible) return 'partially-compatible';
   if (compatible) return exhaustive ? 'fully-compatible' : 'sampled-compatible';
@@ -477,6 +510,12 @@ export function aggregateScopeConclusions(evidence, options = {}) {
       prerequisiteCauses: [...new Set(reportedPackageRows.map(reportedPackagePrerequisiteCause).filter(Boolean))],
       failedBuildTargets: [...new Set(reportedPackageRows.flatMap((row) => row.failedBuildTargets || []))],
       prerequisiteErrors: [...new Set(reportedPackageRows.map((row) => row.errorSummary || '').filter(Boolean))],
+      blockedReasons: [...new Set(rows.filter((row) => row.conclusion === 'blocked')
+        .flatMap((row) => [row.reason, ...(row.issues || []).filter((issue) => issue.type === 'base-profile-failure').map((issue) => issue.reason)]).filter(Boolean))],
+      blockedFailedBuildTargets: [...new Set(rows.filter((row) => row.conclusion === 'blocked')
+        .flatMap((row) => [ ...(row.failedBuildTargets || []), ...(row.issues || []).filter((issue) => issue.type === 'base-profile-failure').flatMap((issue) => issue.targets || []) ]).filter(Boolean))],
+      blockedErrors: [...new Set(rows.filter((row) => row.conclusion === 'blocked')
+        .flatMap((row) => [row.errorSummary, ...(row.issues || []).filter((issue) => issue.type === 'base-profile-failure').map((issue) => issue.errorSummary)]).filter(Boolean))],
       metadataRefreshErrors: [...new Set(rows.flatMap((row) => (row.issues || [])
         .filter((issue) => issue.type === 'metadata-unresolved').map((issue) => issue.errorSummary || '').filter(Boolean)))],
       unavailableRoots: [...new Set(rows.flatMap((row) => row.unavailableRoots || []))],
@@ -489,6 +528,8 @@ function formatCompatibilityRate(scope) {
 }
 
 function formatSuccessRate(scope) {
+  // Base Profile-blocked rows are complete observations, but the plugin was
+  // not evaluated and therefore must not enter the plugin success rate.
   const probeSamples = Number(scope.compatible || 0) + Number(scope.incompatible || 0) + Number(scope.inconclusive || 0);
   return probeSamples ? `${Math.round(Number(scope.compatible || 0) / probeSamples * 100)}%` : '—';
 }
@@ -501,7 +542,10 @@ function formatSelectedPackagePrimaryRate(scope) {
   const rate = attempted ? `${(count / attempted * 100).toFixed(1).replace(/\.0$/, '')}%` : '—';
   const direct = Number(scope.selectedPackagePrimaryDirectFailures || 0);
   const dependency = Number(scope.selectedPackagePrimaryDependencyFailures || 0);
-  if (scope.paired && (direct || dependency)) return `${count}/${attempted} · ${rate} · direct ${direct} · A/B dependency ${dependency}`;
+  const shared = Number(scope.selectedPackagePrimarySharedFailures || 0);
+  if (scope.paired && (direct || dependency || shared)) {
+    return `${count}/${attempted} · ${rate} · direct ${direct} · A/B dependency ${dependency}${shared ? ` · A/B shared-target ${shared}` : ''}`;
+  }
   return `${count}/${attempted} · ${rate} · ${scope.selectedPackagePrimaryCause || '—'}`;
 }
 
@@ -511,6 +555,7 @@ function scopeResultLabel(scope, exhaustive) {
         scope.reportedTargetPrerequisite > 0 || scope.reportedPackagePrerequisite > 0) return 'INCOMPLETE';
     return scope.infraInconclusive === scope.inconclusive ? 'INFRA ERROR' : 'ERROR';
   }
+  if (scope.blocked > 0) return scope.conclusive > 0 ? 'MIXED/BLOCKED' : 'BLOCKED';
   if (scope.conclusive === 0 && scope.skipped > 0) return 'SKIP';
   if (scope.compatible > 0 && scope.incompatible > 0) return 'MIXED';
   if (scope.compatible > 0) return exhaustive ? 'PASS' : 'PASS (sampled)';
@@ -519,7 +564,7 @@ function scopeResultLabel(scope, exhaustive) {
 }
 
 function sourceNeedsBranchBreakdown(scope) {
-  return scope.skipped > 0 || scope.inconclusive > 0 || (scope.compatible > 0 && scope.incompatible > 0);
+  return scope.blocked > 0 || scope.skipped > 0 || scope.inconclusive > 0 || (scope.compatible > 0 && scope.incompatible > 0);
 }
 
 function scopeNote(scope) {
@@ -559,6 +604,12 @@ function scopeNote(scope) {
     if (scope.unattributedInconclusive > 0) {
       notes.push(`Undetermined / 未定: ${scope.unattributedInconclusive}`);
     }
+  }
+  if (scope.blocked > 0) {
+    const details = [...new Set([
+      ...(scope.blockedReasons || []), ...(scope.blockedFailedBuildTargets || []), ...(scope.blockedErrors || []),
+    ].filter(Boolean))].join('; ');
+    notes.push(`${scope.baselineBlocked > 0 ? 'Baseline B blocked; Final A not run; ' : ''}Base Profile blocked; plugin not evaluated / ${scope.baselineBlocked > 0 ? '基线 B 阻断，未执行 Final A；' : ''}基础 Profile 阻断，未评价插件: ${scope.blocked}${details ? ` (${details})` : ''}`);
   }
   if (scope.skipped > 0) {
     const roots = (scope.unavailableRoots || []).map((row) => `\`${row}\``).join(', ');
@@ -642,8 +693,9 @@ export function aggregateEvidence(directory, env = {}) {
     `- Overall / 总结果: **${evidence.length ? overallResult : 'ERROR'}** · \`${evidence.length ? overallConclusion : 'inconclusive'}\``,
     `- Conclusive compatibility / 明确结果兼容率: **${formatCompatibilityRate(overallStats)}** (${overallStats.compatible}/${overallStats.conclusive} conclusive / 明确结果)`,
     `- Coverage / 覆盖: ${env.COVERAGE_PLANNED || evidence.length}/${env.COVERAGE_TOTAL || evidence.length}${exhaustive ? ' (complete)' : ' (sampled)'}`,
+    `- Blocked / 基础 Profile 阻断（插件未评价）: ${overallStats.blocked}`,
     `- Skipped / 跳过: ${overallStats.skipped}`,
-    `- INFRA / 未定: ${overallStats.inconclusive}`,
+    `- Unresolved / 执行未定: ${overallStats.inconclusive}`,
     `- Catalog channel / Catalog 通道: \`${env.DATA_BRANCH || 'unknown'}\``,
     `- Batch / 批次: ${Number(env.BATCH_INDEX || 0) + 1}/${env.BATCH_COUNT || 1}`,
     `- Collected evidence / 已收集证据: ${evidence.length}`,
@@ -652,14 +704,14 @@ export function aggregateEvidence(directory, env = {}) {
   if (!evidence.length) lines.push(...noEvidenceLines(runStatus));
   else {
     lines.push('### Source summary / 源码总览', '',
-      '| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Inconclusive<br>待定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |',
-      '|---|---:|---:|---:|---:|---|---:|---|',
-      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.compatible} | **${formatSuccessRate(scope)}** | ${scope.incompatible} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '');
+      '| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Base Profile blocked<br>基础 Profile 阻断 | Unresolved<br>执行未定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |',
+      '|---|---:|---:|---:|---:|---:|---|---:|---|',
+      ...summaryScopes.map((scope) => `| ${scope.source || '-'} | ${scope.compatible} | **${formatSuccessRate(scope)}** | ${scope.incompatible} | ${scope.blocked} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '');
     for (const breakdown of breakdowns) {
       lines.push('<details>', `<summary>${breakdown.source || '-'} · Branch breakdown / 分支明细</summary>`, '',
-        '| Branch<br>分支 | Compatible<br>兼容 | Incompatible<br>不兼容 | Inconclusive<br>待定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |',
-        '|---|---:|---:|---:|---|---:|---|',
-        ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | ${scope.compatible} | ${scope.incompatible} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '',
+        '| Branch<br>分支 | Compatible<br>兼容 | Incompatible<br>不兼容 | Base Profile blocked<br>基础 Profile 阻断 | Unresolved<br>执行未定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |',
+        '|---|---:|---:|---:|---:|---|---:|---|',
+        ...breakdown.branches.map((scope) => `| ${scope.branch || '—'} | ${scope.compatible} | ${scope.incompatible} | ${scope.blocked} | ${scope.inconclusive} | **${formatSelectedPackagePrimaryRate(scope)}** | ${scope.skipped} | ${scopeNote(scope)} |`), '',
         '</details>', '');
     }
     lines.push('<details>', `<summary>Environment details / 环境明细 (${evidence.length})</summary>`, '',
@@ -703,6 +755,7 @@ export function main(env = process.env) {
       `- Mode / 探测方式: \`config-resolve\` (L1)`,
       `- Environments / 环境: ${evidence.length}`,
       `- Compatible / 通过: ${stats.compatible}`,
+      `- Base Profile blocked / 基础 Profile 阻断（插件未评价）: ${stats.blocked}`,
       `- Skipped / 跳过: ${stats.skipped}`,
       `- Incompatible / 冲突: ${stats.incompatible}`,
       `- Inconclusive / 未定: ${stats.inconclusive}`, '',

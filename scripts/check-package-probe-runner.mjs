@@ -4,7 +4,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { isReportedInconclusive, probeResultExitCode } from './package-probe-failure-classification.mjs';
+import { buildFailureFingerprint, classifyPrerequisiteFailure, isCommandInfrastructureFailure, isReportedInconclusive, probeResultExitCode } from './package-probe-failure-classification.mjs';
 import { evaluateFinalize } from './finalize-package-probe.mjs';
 
 const runner = resolve(import.meta.dirname, 'run-package-probe.mjs');
@@ -18,12 +18,16 @@ const rootSource = 'package/network/${rootPackage}/Makefile';
 appendFileSync(process.env.FAKE_MAKE_LOG, JSON.stringify(args) + '\\n');
 if (args.includes('defconfig')) {
   const configPath = join(process.cwd(), '.config');
+  if (process.env.FAKE_FAIL_DEFCONFIG_INFRA === 'true') {
+    console.error('curl: (6) Could not resolve host: defconfig.example.invalid');
+    process.exit(2);
+  }
   if (process.env.FAKE_EXPECT_DISABLED === 'true' && !readFileSync(configPath, 'utf8').includes('# CONFIG_PACKAGE_beta is not set')) process.exit(2);
   mkdirSync(join(process.cwd(), 'tmp'), { recursive: true });
   const unavailable = process.env.FAKE_PACKAGE_UNAVAILABLE === 'true';
   writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), unavailable
     ? 'Source-Makefile: package/network/beta/Makefile\\nPackage: beta\\n'
-    : 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\nSource-Makefile: package/network/auto-dependency/Makefile\\nPackage: auto-dependency\\n');
+    : 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\nSource-Makefile: package/network/auto-dependency/Makefile\\nPackage: auto-dependency\\nSource-Makefile: package/network/shared/Makefile\\nPackage: shared\\n');
   if (unavailable || process.env.FAKE_REJECT_ROOT === 'true') {
     const config = readFileSync(configPath, 'utf8').replace(new RegExp('^CONFIG_PACKAGE_${rootPackage}=[my]\\\\r?\\\\n?', 'm'), '');
     writeFileSync(configPath, config);
@@ -41,6 +45,15 @@ if (args.includes('prepare-tmpinfo')) {
   writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), unavailable
     ? 'Source-Makefile: package/network/beta/Makefile\\nPackage: beta\\n'
     : 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\n');
+}
+if (process.env.FAKE_SHARED_REPLAY_PREPARE_FAIL === 'true' && process.env.PROBE_REPLAY === 'true' && args.includes('prepare')) {
+  if (process.env.FAKE_SHARED_REPLAY_PREPARE_INFRA === 'true') {
+    console.error('curl: (6) Could not resolve host: replay.example.invalid');
+  } else {
+    console.error('ERROR: module replay-base.ko is missing');
+    console.error('ERROR: target/linux failed to build');
+  }
+  process.exit(2);
 }
 const rootCompile = args.includes(rootSource.replace('/Makefile', '/compile'));
 if (process.env.FAKE_FAIL_INFRA === 'true' && rootCompile) {
@@ -67,6 +80,15 @@ if (process.env.FAKE_FAIL_DEPENDENCY === 'true' && rootCompile && readFileSync(j
 if (process.env.FAKE_FAIL_PREREQUISITE === 'true' && rootCompile) {
   console.error('ERROR: module crypto/geniv.ko is missing');
   console.error('ERROR: package/kernel/linux failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_SHARED_TARGET === 'true' && rootCompile && process.env.PROBE_REPLAY !== 'true') {
+  console.error('ERROR: package/network/shared failed to build');
+  console.error('make[2]: *** [package/network/shared/compile] Error 2');
+  process.exit(2);
+}
+if (process.env.FAKE_SHARED_REPLAY_FAIL === 'true' && args.includes('package/network/shared/compile')) {
+  console.error('ERROR: package/network/shared failed to build');
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_INNER_KERNEL_WRAPPER === 'true' && rootCompile) {
@@ -118,6 +140,10 @@ if (process.env.FAKE_FAIL_TARGET_PREREQUISITE === 'true' && args.includes('prepa
     console.error('toolchain/glibc: available kernel headers are older than requested');
   } else if (cause === 'target-build') {
     console.error("No rule to make target 'target/linux/compile'");
+  } else if (cause === 'kernel-kconfig-sync-eof') {
+    console.error('scripts/kconfig/conf --syncconfig Kconfig');
+    console.error('generic option [Y/n/?] (NEW)');
+    console.error('Error in reading or end of file.');
   } else {
     console.error('module crypto/geniv.ko is missing');
   }
@@ -190,7 +216,7 @@ function scenario(mode, options = {}) {
     if (mode === 'config-resolve') {
       const conf = join(workdir, 'scripts', 'config', 'conf.mjs');
       mkdirSync(join(workdir, 'scripts', 'config'), { recursive: true });
-      writeFileSync(conf, "if (process.env.FAKE_FAIL_L1_BASELINE === 'true' && process.argv.some((arg) => arg.includes('DEVICE_bad')) && process.argv.some((arg) => arg.includes('baseline'))) process.exit(2);\nprocess.exit(0);\n");
+      writeFileSync(conf, "if (process.env.FAKE_FAIL_L1_BASELINE_INFRA === 'true' && process.argv.some((arg) => arg.includes('baseline'))) { console.error('curl: (6) Could not resolve host: l1.example.invalid'); process.exit(2); }\nif (process.env.FAKE_FAIL_L1_BASELINE === 'true' && process.argv.some((arg) => arg.includes('DEVICE_bad')) && process.argv.some((arg) => arg.includes('baseline'))) process.exit(2);\nprocess.exit(0);\n");
     }
     const makeLog = join(directory, 'make.jsonl');
     const runtimeFile = join(directory, 'runtime.json');
@@ -201,11 +227,12 @@ function scenario(mode, options = {}) {
       env: {
         ...process.env,
         PATH: `${bin}${delimiter}${process.env.PATH || ''}`,
-        PROBE_MAKE_COMMAND: process.execPath,
+        PROBE_MAKE_COMMAND: options.failMakeSpawn ? join(directory, 'missing-make') : process.execPath,
         PROBE_MAKE_ARGUMENT: fakeMake,
         FAKE_MAKE_LOG: makeLog,
          FAKE_FAIL_PARALLEL: String(options.failParallel === true),
          FAKE_FAIL_METADATA_REFRESH: String(options.failMetadataRefresh === true),
+        FAKE_FAIL_DEFCONFIG_INFRA: String(options.failDefconfigInfrastructure === true),
         FAKE_FAIL_INFRA: String(options.failInfrastructure === true),
         FAKE_EXPECT_DISABLED: String(options.expectDisabled === true),
         FAKE_PACKAGE_UNAVAILABLE: String(options.packageUnavailable === true),
@@ -215,7 +242,12 @@ function scenario(mode, options = {}) {
          FAKE_FAIL_ROOT_MAKE_ONLY: String(options.failRootMakeOnly === true),
          FAKE_FAIL_DEPENDENCY: String(options.failDependency === true),
          FAKE_FAIL_L1_BASELINE: String(options.failL1Baseline === true),
+        FAKE_FAIL_L1_BASELINE_INFRA: String(options.failL1BaselineInfrastructure === true),
         FAKE_FAIL_PREREQUISITE: String(options.failPrerequisite === true),
+        FAKE_FAIL_SHARED_TARGET: String(options.failSharedTarget === true),
+        FAKE_SHARED_REPLAY_FAIL: String(options.failSharedReplay === true),
+        FAKE_SHARED_REPLAY_PREPARE_FAIL: String(options.failSharedReplayPrepare === true),
+        FAKE_SHARED_REPLAY_PREPARE_INFRA: String(options.failSharedReplayPrepareInfrastructure === true),
         FAKE_FAIL_INNER_KERNEL_WRAPPER: String(options.failInnerKernelWrapper === true),
         FAKE_FAIL_INNER_KERNEL_MAKE_ONLY: String(options.failInnerKernelMakeOnly === true),
         FAKE_FAIL_UNATTRIBUTED: String(options.failUnattributed === true),
@@ -241,7 +273,7 @@ function scenario(mode, options = {}) {
         PROBE_SUBTARGET: '64',
         PROBE_TARGET: 'x86/64',
         PROBE_PROFILE: 'DEVICE_generic',
-        PROBE_TARGET_CONFIG: 'CONFIG_TARGET_x86=y\nCONFIG_TARGET_x86_64=y\nCONFIG_TARGET_x86_64_DEVICE_generic=y',
+        PROBE_TARGET_CONFIG: options.targetConfig || `CONFIG_TARGET_x86=y\nCONFIG_TARGET_x86_64=y\nCONFIG_TARGET_x86_64_DEVICE_generic=y${options.targetConfigExtra ? `\n${options.targetConfigExtra}` : ''}`,
          PROBE_TARGET_BATCH: mode === 'config-resolve' ? JSON.stringify(options.l1Multiple ? [
            { targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_bad', targetConfig: 'CONFIG_TARGET_x86=y\\nCONFIG_TARGET_x86_64=y' },
            { targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_generic', targetConfig: 'CONFIG_TARGET_x86=y\\nCONFIG_TARGET_x86_64=y' },
@@ -293,6 +325,8 @@ assert.equal(paired.runtime.attempts.length, 1, 'B and A must remain one environ
 assert.equal(paired.runtime.attempts[0].baseline.result, 'compatible');
 assert.equal(paired.runtime.attempts[0].final.result, 'compatible');
 assert.equal(paired.runtime.attempts[0].pairConclusion, 'compatible');
+assert.equal(paired.runtime.attempts[0].baseline.reason, 'baseline-ready/no-direct-roots',
+  'empty Baseline-B direct roots must be reported as baseline-ready, not full package compatibility');
 assert.equal(paired.calls.filter((args) => args.includes('defconfig')).length, 2, 'paired execution must resolve B then A');
 assert.equal(paired.calls.filter((args) => args.includes('prepare')).length, 2, 'paired execution must prepare B and A');
 assert.equal(paired.calls.some((args) => args.includes('package/network/alpha/compile')), true, 'A must compile the selected root');
@@ -349,10 +383,26 @@ for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', '
 }
 
 const pairedShortCircuit = scenario('package-compile', { paired: true, failTargetPrerequisite: true, expectedStatus: 0 });
-assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.result, 'inconclusive');
+assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.result, 'blocked');
 assert.equal(pairedShortCircuit.runtime.attempts[0].final.result, 'not-run');
 assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.targetPrerequisiteCause, 'patch-apply');
 assert.equal(pairedShortCircuit.calls.some((args) => args.includes('package/network/alpha/compile')), false, 'B failure must short-circuit A');
+
+const pairedBaselineDefconfigInfrastructure = scenario('package-compile', {
+  paired: true, failDefconfigInfrastructure: true, expectedStatus: 1,
+});
+assert.equal(pairedBaselineDefconfigInfrastructure.runtime.conclusion, 'inconclusive');
+assert.equal(pairedBaselineDefconfigInfrastructure.runtime.attempts[0].baseline.result, 'inconclusive');
+assert.equal(pairedBaselineDefconfigInfrastructure.runtime.attempts[0].baseline.reason, 'runner-infrastructure');
+assert.equal(pairedBaselineDefconfigInfrastructure.runtime.attempts[0].final.result, 'not-run');
+
+const pairedBaselineDefconfigSpawn = scenario('package-compile', {
+  paired: true, failMakeSpawn: true, expectedStatus: 1,
+});
+assert.equal(pairedBaselineDefconfigSpawn.runtime.conclusion, 'inconclusive');
+assert.equal(pairedBaselineDefconfigSpawn.runtime.attempts[0].baseline.result, 'inconclusive');
+assert.equal(pairedBaselineDefconfigSpawn.runtime.attempts[0].baseline.reason, 'runner-infrastructure');
+assert.equal(pairedBaselineDefconfigSpawn.runtime.attempts[0].final.result, 'not-run');
 
 const pairedUnavailable = scenario('package-compile', { paired: true, packageUnavailable: true });
 assert.equal(pairedUnavailable.runtime.conclusion, 'skipped');
@@ -391,18 +441,72 @@ const pairedDirect = scenario('package-compile', { paired: true, failRoot: true 
 assert.equal(pairedDirect.runtime.attempts[0].packageCauseKind, 'direct');
 assert.equal(pairedDirect.runtime.attempts[0].pairConclusion, 'incompatible-direct');
 
+const pairedSharedReplay = scenario('package-compile', {
+  paired: true, failSharedTarget: true, targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
+});
+assert.equal(pairedSharedReplay.runtime.attempts[0].result, 'incompatible',
+  'A-only shared-target failure must become a plugin-induced incompatibility after B replay');
+assert.equal(pairedSharedReplay.runtime.attempts[0].reason, 'plugin-induced-failure');
+assert.equal(pairedSharedReplay.runtime.attempts[0].packageCauseKind, 'shared');
+assert.equal(pairedSharedReplay.runtime.attempts[0].counterfactual.result, 'passed');
+assert.equal(pairedSharedReplay.runtime.attempts[0].counterfactual.mode, 'isolated-replay');
+assert.equal(pairedSharedReplay.runtime.attempts[0].counterfactual.target, 'package/network/shared');
+assert(pairedSharedReplay.calls.some((args) => args.includes('package/network/shared/compile')),
+  'A/B counterfactual must invoke the exact shared target');
+
+const pairedSharedBlocked = scenario('package-compile', {
+  paired: true, failSharedTarget: true, failSharedReplay: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
+});
+assert.equal(pairedSharedBlocked.runtime.attempts[0].result, 'blocked',
+  'B replay failure must block Base Profile attribution');
+assert.equal(pairedSharedBlocked.runtime.attempts[0].reason, 'base-profile-build-failure');
+assert.equal(pairedSharedBlocked.runtime.attempts[0].counterfactual.result, 'failed');
+assert.equal(pairedSharedBlocked.runtime.attempts[0].counterfactual.reason, 'base-profile-build-failure');
+
+const pairedReplayPrepareBlocked = scenario('package-compile', {
+  paired: true, failSharedTarget: true, failSharedReplayPrepare: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
+});
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].result, 'blocked',
+  'deterministic Baseline replay preparation failure must block the Base Profile');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].reason, 'base-profile-blocked');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].counterfactual.result, 'failed');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].counterfactual.reason, 'base-profile-blocked');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].targetPrerequisiteCause, 'kernel-prerequisite');
+assert.deepEqual(pairedReplayPrepareBlocked.runtime.attempts[0].failedBuildTargets, ['target/linux']);
+assert.match(pairedReplayPrepareBlocked.runtime.attempts[0].failureFingerprint, /^[a-f0-9]{64}$/);
+
+const pairedReplayPrepareInfrastructure = scenario('package-compile', {
+  paired: true, failSharedTarget: true, failSharedReplayPrepare: true,
+  failSharedReplayPrepareInfrastructure: true, expectedStatus: 1,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
+});
+assert.equal(pairedReplayPrepareInfrastructure.runtime.attempts[0].result, 'inconclusive',
+  'replay preparation infrastructure failure must remain unresolved');
+assert.equal(pairedReplayPrepareInfrastructure.runtime.attempts[0].reason, 'counterfactual-unresolved');
+assert.equal(pairedReplayPrepareInfrastructure.runtime.attempts[0].counterfactual.result, 'unresolved');
+assert.equal(pairedReplayPrepareInfrastructure.runtime.attempts[0].counterfactual.reason, 'replay-prepare-infrastructure');
+
 const l1Paired = scenario('config-resolve', { paired: true });
 assert.equal(l1Paired.runtime.attempts.length, 1, 'L1 B/A must keep one environment attempt');
 assert.equal(l1Paired.runtime.attempts[0].baseline.result, 'compatible');
 assert.equal(l1Paired.runtime.attempts[0].final.result, 'compatible');
 assert.equal(l1Paired.runtime.attempts[0].pairConclusion, 'compatible');
 assert.equal(l1Paired.calls.filter((args) => args.some((arg) => String(arg).includes('scripts/config/conf'))).length, 2, 'L1 must solve B and A separately');
-const l1MixedPairs = scenario('config-resolve', { paired: true, l1Multiple: true, failL1Baseline: true, expectedStatus: 1 });
+const l1MixedPairs = scenario('config-resolve', { paired: true, l1Multiple: true, failL1Baseline: true, expectedStatus: 0 });
 assert.equal(l1MixedPairs.runtime.attempts.length, 2);
-assert.equal(l1MixedPairs.runtime.attempts[0].baseline.result, 'inconclusive');
+assert.equal(l1MixedPairs.runtime.attempts[0].baseline.result, 'blocked');
 assert.equal(l1MixedPairs.runtime.attempts[0].final.result, 'not-run');
 assert.equal(l1MixedPairs.runtime.attempts[1].baseline.result, 'compatible');
 assert.equal(l1MixedPairs.runtime.attempts[1].final.result, 'compatible', 'one environment B failure must not block another environment A');
+const l1BaselineResolverInfrastructure = scenario('config-resolve', {
+  paired: true, failL1BaselineInfrastructure: true, expectedStatus: 1,
+});
+assert.equal(l1BaselineResolverInfrastructure.runtime.conclusion, 'inconclusive');
+assert.equal(l1BaselineResolverInfrastructure.runtime.attempts[0].baseline.result, 'inconclusive');
+assert.equal(l1BaselineResolverInfrastructure.runtime.attempts[0].baseline.reason, 'runner-infrastructure');
+assert.equal(l1BaselineResolverInfrastructure.runtime.attempts[0].final.result, 'not-run');
 
 for (const mode of ['package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
   const unavailable = scenario(mode, { packageUnavailable: true });
@@ -504,6 +608,7 @@ const targetPrerequisiteModes = [
   ['rootfs-integration', 'toolchain-kernel-version'],
   ['firmware-integration', 'target-build'],
   ['boot-smoke', 'kernel-prerequisite'],
+  ['package-compile', 'kernel-kconfig-sync-eof'],
   ['runtime-health', 'patch-apply'],
   ['reboot-validation', 'toolchain-kernel-version'],
 ];
@@ -575,6 +680,23 @@ const kernelFingerprint = scenario('package-compile', { failPrerequisite: true, 
 const patchFingerprint = scenario('package-compile', { failTargetPrerequisite: true, targetPrerequisiteCause: 'patch-apply' });
 assert.notEqual(kernelFingerprint.runtime.attempts[0].failureFingerprint, patchFingerprint.runtime.attempts[0].failureFingerprint,
   'failure fingerprints must distinguish kernel prerequisite and patch errors');
+
+const syncconfig = classifyPrerequisiteFailure([
+  'scripts/kconfig/conf --syncconfig Kconfig',
+  'new generic option [Y/n/?] (NEW)',
+  'Error in reading or end of file.',
+  'ERROR: target/linux failed to build',
+].join('\n'));
+assert.equal(syncconfig.cause, 'kernel-kconfig-sync-eof',
+  'kernel Kconfig sync EOF must be recognized without a symbol-specific rule');
+assert.deepEqual(syncconfig.failedBuildTargets, ['target/linux']);
+const missingArtifact = classifyPrerequisiteFailure('ERROR: generated module output is missing\nERROR: package/kernel/linux failed to build');
+assert.equal(missingArtifact.cause, 'package-output-missing',
+  'generic missing build artifacts must have a stable cause');
+assert.equal(isCommandInfrastructureFailure({ code: -1, output: '' }), true,
+  'spawn/Runner failure code -1 must remain infrastructure during replay attribution');
+assert.equal(buildFailureFingerprint(syncconfig), syncconfig.failureFingerprint,
+  'failure fingerprint must be deterministic from normalized evidence');
 
 const l3 = scenario('rootfs-integration');
 assert.equal(l3.calls.filter((args) => args.includes('package/network/alpha/compile')).length, 1,
@@ -671,6 +793,31 @@ const finalizeReported = evaluateFinalize({
   evidence: [finalizeEvidence],
 });
 assert.equal(finalizeReported.ok, true, 'Finalize must accept complete LEDE prerequisite evidence');
+const finalizeBlockedAttempt = {
+  ...finalizeIdentity, result: 'blocked', reason: 'base-profile-prepare-failure',
+  failedBuildTargets: ['target/linux'], errorSummary: 'kernel Kconfig syncconfig failed before Final A',
+};
+const finalizeBlockedEvidence = {
+  ...finalizeIdentity, conclusion: 'blocked', result: 'blocked', reason: finalizeBlockedAttempt.reason,
+  failedBuildTargets: finalizeBlockedAttempt.failedBuildTargets, errorSummary: finalizeBlockedAttempt.errorSummary,
+  issues: [{ type: 'base-profile-failure', reason: finalizeBlockedAttempt.reason, pluginEvaluated: false,
+    targets: finalizeBlockedAttempt.failedBuildTargets, errorSummary: finalizeBlockedAttempt.errorSummary }],
+};
+const finalizeBlocked = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [finalizeBlockedAttempt] }, evidence: [finalizeBlockedEvidence],
+});
+assert.equal(finalizeBlocked.ok, true, 'Finalize must accept a complete blocked Base Profile conclusion after a successful Runner exit');
+const finalizeBlockedBuildFailure = evaluateFinalize({
+  env: { ...finalizeBaseEnv, PROBE_BUILD_OUTCOME: 'failure' },
+  runtime: { attempts: [finalizeBlockedAttempt] }, evidence: [finalizeBlockedEvidence],
+});
+assert.equal(finalizeBlockedBuildFailure.ok, false, 'Finalize must reject blocked evidence when the Runner build step failed');
+const finalizeBlockedMissingEvidence = evaluateFinalize({
+  env: finalizeBaseEnv, runtime: { attempts: [finalizeBlockedAttempt] },
+  evidence: [{ ...finalizeBlockedEvidence, issues: [] }],
+});
+assert.equal(finalizeBlockedMissingEvidence.ok, false, 'Finalize must reject a blocked row without structured Base Profile evidence');
 const pairedFinalizeIdentity = { ...finalizeIdentity, phase: 'paired', pairId: 'pair:lede-baseline' };
 const pairedBaselineAttempt = {
   result: 'inconclusive', reason: 'package-compile-prerequisite-failure', prerequisiteCause: 'kernel-prerequisite',

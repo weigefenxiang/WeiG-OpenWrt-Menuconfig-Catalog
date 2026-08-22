@@ -80,9 +80,12 @@ export function evaluateFinalize({ env = process.env, runtime = null, evidence =
     }
   }
 
-  const buildOutcome = normalizedOutcome(env.PROBE_BUILD_OUTCOME);
-  if (buildOutcome !== 'success') errors.push(`build step outcome is ${buildOutcome || 'unknown'}`);
   const attempts = Array.isArray(runtime?.attempts) ? runtime.attempts : [];
+  const buildOutcome = normalizedOutcome(env.PROBE_BUILD_OUTCOME);
+  // Domain conclusions are valid only when the Runner completed normally. A
+  // non-success build outcome is an execution failure, even if stale or
+  // hand-written evidence happens to contain a conclusive result.
+  if (buildOutcome !== 'success') errors.push(`build step outcome is ${buildOutcome || 'unknown'}`);
   if (!attempts.length) errors.push('probe runtime is missing or contains no attempts');
   else if (probeResultExitCode(attempts) !== 0) errors.push('probe runtime contains an unreported/infrastructure conclusion');
 
@@ -94,8 +97,11 @@ export function evaluateFinalize({ env = process.env, runtime = null, evidence =
   }
   for (const [index, row] of evidence.entries()) {
     const conclusion = String(row?.conclusion || '');
-    if (!['compatible', 'incompatible', 'skipped', 'inconclusive'].includes(conclusion)) {
+    if (!['compatible', 'incompatible', 'blocked', 'skipped', 'inconclusive'].includes(conclusion)) {
       errors.push(`evidence ${index + 1} has invalid conclusion ${conclusion || 'unknown'}`);
+    } else if (conclusion === 'blocked' && (!String(row?.reason || '').trim() || !Array.isArray(row?.issues) ||
+      !row.issues.some((issue) => issue?.type === 'base-profile-failure'))) {
+      errors.push(`evidence ${index + 1} has an incomplete blocked Base Profile record`);
     } else if (conclusion === 'inconclusive' && !isReportedInconclusive({
       ...row,
       result: conclusion,

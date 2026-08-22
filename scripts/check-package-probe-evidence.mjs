@@ -515,6 +515,19 @@ const pairedStats = aggregateScopeConclusions([
 ], { depth: 1, exhaustive: true });
 assert.equal(pairedStats[0].selectedPackagePrimaryDirectFailures, 1);
 assert.equal(pairedStats[0].selectedPackagePrimaryDependencyFailures, 1);
+const sharedTargetStats = aggregateScopeConclusions([
+  { source: 'paired-shared', branch: 'main', conclusion: 'incompatible', reason: 'plugin-induced-failure', packageCauseKind: 'shared',
+    pairedComparison: true, pairConclusion: 'incompatible-shared', roots: ['alpha'], issues: [] },
+  { source: 'paired-shared', branch: 'blocked', conclusion: 'blocked', reason: 'base-profile-build-failure', packageCauseKind: 'shared',
+    pairedComparison: true, pairConclusion: 'blocked-base-profile-build-failure', roots: ['alpha'], issues: [{ type: 'base-profile-failure', reason: 'base-profile-build-failure' }] },
+], { depth: 1, exhaustive: true });
+assert.equal(sharedTargetStats[0].selectedPackagePrimaryFailures, 1,
+  'only incompatible shared-target evidence counts as a plugin primary failure');
+assert.equal(sharedTargetStats[0].selectedPackagePrimarySharedFailures, 1);
+assert.equal(sharedTargetStats[0].selectedPackagePrimaryCause, 'A/B shared-target');
+assert.equal(sharedTargetStats[0].blocked, 1, 'blocked shared-target evidence remains separately classified');
+assert(sharedTargetStats[0].selectedPackagePrimaryRate > 0 && sharedTargetStats[0].selectedPackagePrimaryRate < 1,
+  'shared-target attribution must retain a bounded primary-failure rate');
 const legacyPrerequisiteDirect = aggregateScopeConclusions([
   { source: 'legacy', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-prerequisite-failure',
     rootTargets: ['package/network/oscam'], failedBuildTargets: ['package/network/oscam'], roots: ['oscam'], issues: [] },
@@ -569,11 +582,11 @@ try {
   assert.equal(sampled.overallConclusion, 'sampled-incompatible');
   assert.equal(sampled.overallResult, 'FAIL (sampled)');
   assert.equal(sampled.summaryScopes.length, 2, 'Source summary must always retain one top-level row per source');
-  assert(sampled.lines.includes('| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Inconclusive<br>待定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |'),
+  assert(sampled.lines.includes('| Source<br>源码源 | Compatible<br>兼容 | Success rate<br>成功率 | Incompatible<br>不兼容 | Base Profile blocked<br>基础 Profile 阻断 | Unresolved<br>执行未定 | Package-caused rate<br>插件主因率 | Skipped<br>跳过 | Notes<br>备注 |'),
     'Source summary must expose two-line bilingual headers, success rate, and package-caused rate in the approved order');
-  assert(sampled.lines.some((line) => line.includes('| A | 0 | **0%** | 1 | 0 | **1/1 · 100% · compile/link** | 0 | — |')),
+  assert(sampled.lines.some((line) => line.includes('| A | 0 | **0%** | 1 | 0 | 0 | **1/1 · 100% · compile/link** | 0 | — |')),
     'sampled incompatible source must preserve counts, show 0% success, and expose the package primary cause without claiming exhaustive coverage');
-  assert(sampled.lines.some((line) => line.includes('| B | 0 | **—** | 0 | 0 | **—** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert(sampled.lines.some((line) => line.includes('| B | 0 | **—** | 0 | 0 | 0 | **—** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'source-absent samples must be skipped and excluded from both success and package-caused rates');
   assert(sampled.lines.some((line) => line.includes('Probe roots / 测试入口: `luci-app-test`')), 'summary must expose the probed package/root');
 
@@ -591,7 +604,7 @@ try {
   }
   const success = aggregateEvidence(successDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '14', COVERAGE_PLANNED: '14', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert(success.lines.some((line) => line.includes('| ImmortalWrt | 14 | **100%** | 0 | 0 | **0/14 · 0% · —** | 0 | — |')),
+  assert(success.lines.some((line) => line.includes('| ImmortalWrt | 14 | **100%** | 0 | 0 | 0 | **0/14 · 0% · —** | 0 | — |')),
     'fourteen compatible Probe samples must render 100% success without changing package-caused attribution');
 
   const mixedDir = join(dir, 'mixed'); mkdirSync(mixedDir);
@@ -602,7 +615,7 @@ try {
   }
   const mixed = aggregateEvidence(mixedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '3', COVERAGE_PLANNED: '3', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert(mixed.lines.some((line) => line.includes('| OpenWrt | 1 | **100%** | 0 | 0 | **0/2 · 0% · —** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert(mixed.lines.some((line) => line.includes('| OpenWrt | 1 | **100%** | 0 | 0 | 0 | **0/2 · 0% · —** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'compatible plus source-absent environments must keep top-level totals; skipped rows do not count as plugin-primary failures, while the existing attempted-row denominator remains 0/2');
   assert(mixed.lines.some((line) => line.includes('<summary>OpenWrt · Branch breakdown / 分支明细</summary>')), 'mixed source must expose branch breakdown');
   assert(!mixed.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'uniform source must stay compact');
@@ -615,7 +628,7 @@ try {
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
   assert.equal(error.overallResult, 'INCOMPLETE');
   assert.equal(error.overallConclusion, 'incomplete');
-  assert(error.lines.some((line) => line.includes('| OpenWrt | 1 | **50%** | 0 | 1 | **0/2 · 0% · —** | 0 | Infrastructure incomplete / 基础设施未完成: 1 (timeout) |')),
+  assert(error.lines.some((line) => line.includes('| OpenWrt | 1 | **50%** | 0 | 0 | 1 | **0/2 · 0% · —** | 0 | Infrastructure incomplete / 基础设施未完成: 1 (timeout) |')),
     'one infrastructure failure must remain inconclusive without erasing the valid compatible result');
   assert(error.lines.some((line) => line.includes('Conclusive compatibility / 明确结果兼容率')), 'compatibility percentage must be labeled as conclusive-only');
 
@@ -641,7 +654,7 @@ try {
   const targetPrerequisiteSummary = aggregateEvidence(targetPrerequisiteDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
   assert.equal(targetPrerequisiteSummary.overallConclusion, 'inconclusive');
-  assert(targetPrerequisiteSummary.lines.some((line) => line.includes('| lede | 0 | **0%** | 0 | 1 | **0/1 · 0% · —** | 0 |') &&
+  assert(targetPrerequisiteSummary.lines.some((line) => line.includes('| lede | 0 | **0%** | 0 | 0 | 1 | **0/1 · 0% · —** | 0 |') &&
     line.includes('toolchain-kernel-version') && line.includes('target/linux') && line.includes('target/linux failed to build')),
     'Target prerequisite evidence must remain inconclusive, stay out of plugin-primary attribution, and explain cause, target, and deterministic error in Source summary Notes');
 
@@ -690,7 +703,7 @@ try {
   const skipInfra = aggregateEvidence(skipInfraDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
   assert.equal(skipInfra.overallResult, 'INCOMPLETE');
-  assert(skipInfra.lines.some((line) => line.includes('| OpenWrt | 0 | **0%** | 0 | 1 | **0/2 · 0% · —** | 1 | Infrastructure incomplete / 基础设施未完成: 1 (timeout); Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert(skipInfra.lines.some((line) => line.includes('| OpenWrt | 0 | **0%** | 0 | 0 | 1 | **0/2 · 0% · —** | 1 | Infrastructure incomplete / 基础设施未完成: 1 (timeout); Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'skipped environments plus one infrastructure failure must be INCOMPLETE rather than ERROR');
 
   const skippedDir = join(dir, 'skipped-source'); mkdirSync(skippedDir);
@@ -701,10 +714,12 @@ try {
   }
   const skippedSource = aggregateEvidence(skippedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
-  assert(skippedSource.lines.some((line) => line.includes('| OpenWrt | 0 | **—** | 0 | 0 | **—** | 2 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert.equal(skippedSource.overallConclusion, 'skipped', 'all skipped environments are a complete skipped conclusion');
+  assert.equal(skippedSource.overallResult, 'SKIP');
+  assert(skippedSource.lines.some((line) => line.includes('| OpenWrt | 0 | **—** | 0 | 0 | 0 | **—** | 2 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'an all-skipped source must show no success/package-caused rate and explicitly explain plugin absence');
   assert(skippedSource.lines.some((line) => line.includes('<summary>OpenWrt · Branch breakdown / 分支明细</summary>')), 'skipped sources must expose branch details');
-  assert(skippedSource.lines.some((line) => line.includes('| openwrt-18.06 | 0 | 0 | 0 | **—** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
+  assert(skippedSource.lines.some((line) => line.includes('| openwrt-18.06 | 0 | 0 | 0 | 0 | **—** | 1 | Skipped: plugin unavailable in source/branch / 跳过：源码/分支不存在插件 (`luci-app-test`) |')),
     'skipped branch rows must explicitly annotate plugin absence');
 
   const passSkipDir = join(dir, 'pass-skip'); mkdirSync(passSkipDir);
@@ -713,7 +728,7 @@ try {
   }
   const passSkip = aggregateEvidence(passSkipDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '100', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'true', BATCH_COUNT: '1' });
-  assert(passSkip.lines.some((line) => line.includes('| ImmortalWrt | 1 | **100%** | 0 | 0 | **0/2 · 0% · —** | 1 |')),
+  assert(passSkip.lines.some((line) => line.includes('| ImmortalWrt | 1 | **100%** | 0 | 0 | 0 | **0/2 · 0% · —** | 1 |')),
     'compatible plus skipped environments must exclude skipped rows from success-rate denominator while showing skipped count');
   assert(passSkip.lines.some((line) => line.includes('<summary>ImmortalWrt · Branch breakdown / 分支明细</summary>')), 'PASS plus SKIP must expose the skipped branch');
 } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -726,5 +741,51 @@ const skippedEvidence = createEvidence({ log: '', runtime: { mode: 'config-resol
 }] }, env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'config-resolve' } });
 assert.equal(skippedEvidence.conclusion, 'skipped');
 assert(skippedEvidence.issues.some((row) => row.type === 'not-applicable'));
+
+const blockedEvidence = createEvidence({ log: '', runtime: { mode: 'package-compile', conclusion: 'blocked', roots: ['alpha'], attempts: [{
+  source: 'LEDE', branch: 'master', targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_generic',
+  result: 'blocked', reason: 'base-profile-prepare-failure', failedBuildTargets: ['target/linux'],
+  errorSummary: 'kernel Kconfig syncconfig failed before Final A',
+}] }, env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' } });
+assert.equal(blockedEvidence.conclusion, 'blocked');
+assert.equal(blockedEvidence.result, 'blocked');
+assert(blockedEvidence.issues.some((row) => row.type === 'base-profile-failure' && row.pluginEvaluated === false));
+
+const pairedBlockedEvidence = createEvidence({ log: '', runtime: { mode: 'package-compile', conclusion: 'blocked', roots: ['alpha'], pairedComparison: true,
+  comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] }, attempts: [{
+    source: 'LEDE', branch: 'master', targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_generic', phase: 'paired',
+    result: 'blocked', reason: 'base-profile-prepare-failure', pairConclusion: 'blocked-base-profile-prepare-failure',
+    baseline: { result: 'blocked', reason: 'base-profile-prepare-failure', failedBuildTargets: ['target/linux'], errorSummary: 'B failed' },
+    final: { result: 'not-run', reason: 'baseline-blocked' }, failedBuildTargets: ['target/linux'], errorSummary: 'B failed',
+  }] }, env: { PROBE_ROOTS: 'alpha', PROBE_MODE: 'package-compile' } });
+assert.equal(pairedBlockedEvidence.conclusion, 'blocked');
+assert.equal(pairedBlockedEvidence.final.result, 'not-run');
+
+const blockedDir = mkdtempSync(join(tmpdir(), 'probe-evidence-blocked-'));
+try {
+  mkdirSync(join(blockedDir, '0'));
+  writeFileSync(join(blockedDir, '0', 'evidence.json'), JSON.stringify({
+    ...blockedEvidence, fingerprint: 'b'.repeat(64), issues: [{ type: 'base-profile-failure', reason: 'base-profile-prepare-failure',
+      pluginEvaluated: false, targets: ['target/linux'], errorSummary: 'kernel Kconfig syncconfig failed before Final A' }],
+  }));
+  const blocked = aggregateEvidence(blockedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(blocked.overallConclusion, 'blocked');
+  assert.equal(blocked.overallResult, 'BLOCKED');
+  assert.equal(blocked.overallStats.blocked, 1);
+  assert.equal(blocked.overallStats.inconclusive, 0);
+  assert.equal(blocked.runStatus.state, 'execution-collected-with-failures',
+    'a failed Matrix job remains an execution failure even when its domain evidence is blocked');
+  assert(blocked.lines.some((line) => line.includes('Base Profile blocked; plugin not evaluated / 基础 Profile 阻断，未评价插件: 1')));
+
+  const pairedBlockedDir = join(blockedDir, 'paired'); mkdirSync(pairedBlockedDir);
+  writeFileSync(join(pairedBlockedDir, 'evidence.json'), JSON.stringify(pairedBlockedEvidence));
+  const pairedBlocked = aggregateEvidence(blockedDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '2', COVERAGE_PLANNED: '2', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(pairedBlocked.overallStats.baselineBlocked, 1);
+  assert(pairedBlocked.lines.some((line) => line.includes('Baseline B blocked; Final A not run')));
+} finally {
+  rmSync(blockedDir, { recursive: true, force: true });
+}
 
 console.log('Package Probe V3 evidence checks passed.');
