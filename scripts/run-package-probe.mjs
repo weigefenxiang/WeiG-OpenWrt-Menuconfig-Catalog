@@ -8,7 +8,7 @@ import { availableParallelism } from 'node:os';
 import { dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runVirtualProbe } from './package-probe-virtual.mjs';
-import { classifyTargetPrerequisiteFailure, isMakeInfrastructureFailure, probeResultExitCode } from './package-probe-failure-classification.mjs';
+import { classifyPrerequisiteFailure, classifyTargetPrerequisiteFailure, extractFailedBuildTargets, isMakeInfrastructureFailure, probeResultExitCode } from './package-probe-failure-classification.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
@@ -236,40 +236,18 @@ function failedMakeIsInfrastructure(result) {
   return isMakeInfrastructureFailure(result?.output);
 }
 
-function normalizePackageBuildTarget(value) {
-  return String(value || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/compile$/, '').replace(/\/+$/, '');
+function failedPackageBuildTargets(result) {
+  return extractFailedBuildTargets(result?.output);
 }
 
-function failedPackageBuildTargets(result) {
-  const text = String(result?.output || '');
-  const candidates = [];
-  const add = (target, index, source) => {
-    const normalized = normalizePackageBuildTarget(target);
-    if (!normalized) return;
-    candidates.push({ target: normalized, index, source, depth: normalized.split('/').length });
-  };
-  for (const match of text.matchAll(/(ERROR:\s+)?(package\/[A-Za-z0-9_./+@-]+)\s+failed to build/gi)) {
-    add(match[2], match.index || 0, match[1] ? 'explicit' : 'generic');
-  }
-  for (const match of text.matchAll(/\]\s+(package\/[A-Za-z0-9_./+@-]+\/compile)\s+Error\b/gi)) {
-    add(match[1], match.index || 0, 'make');
-  }
-  for (const match of text.matchAll(/make(?:\[\d+\])?:\s+\*{3}\s+\[(package\/[A-Za-z0-9_./+@-]+\/compile)\]\s+Error\b/gim)) {
-    add(match[1], match.index || 0, 'gnu-make');
-  }
-  for (const match of text.matchAll(/\*\*\*\s+(?:\[[^\]]+\]\s+)?(package\/[A-Za-z0-9_./+@-]+\/compile)\b/gi)) {
-    add(match[1], match.index || 0, 'make');
-  }
-  if (!candidates.length) return [];
-  // Pick the deepest target first; for equal-depth wrappers/inner targets,
-  // the later log line is the most recently reported failure.  This keeps an
-  // inner package target authoritative even when an explicit wrapper line
-  // and a generic make line coexist in the same bounded command output.
-  candidates.sort((left, right) => left.depth - right.depth || left.index - right.index);
-  return [candidates[candidates.length - 1].target];
+function normalizePackageBuildTarget(value) {
+  return String(value || '').replace(/\\/g, '/').replace(/^\.\//, '')
+    .replace(/\/(?:compile|install|prepare)$/, '').replace(/\/+$/, '');
 }
 
 function classifyPackageBuildFailure(result, rootTargets, attempt, reasons, options = {}) {
+  const detail = classifyPrerequisiteFailure(result?.output);
+  attempt.errorSummary = detail.errorSummary || attempt.errorSummary || '';
   if (failedMakeIsInfrastructure(result)) return { result: 'inconclusive', reason: reasons.infrastructure };
   const failedTargets = failedPackageBuildTargets(result);
   attempt.failedBuildTargets = failedTargets;
@@ -283,6 +261,7 @@ function classifyPackageBuildFailure(result, rootTargets, attempt, reasons, opti
     attempt.packageCauseKind = 'dependency';
     return { result: 'incompatible', reason: reasons.dependency };
   }
+  attempt.prerequisiteCause = detail.cause || '';
   return { result: 'inconclusive', reason: failedTargets.length ? reasons.prerequisite : reasons.unattributed };
 }
 
@@ -303,7 +282,11 @@ function rootfsConflictPackages(result) {
 }
 
 function classifyRootfsInstallFailure(result, attempt, roots = ROOTS, dependencyPackages = []) {
+  const detail = classifyPrerequisiteFailure(result?.output);
+  attempt.errorSummary = detail.errorSummary || attempt.errorSummary || '';
   if (failedMakeIsInfrastructure(result)) return { result: 'inconclusive', reason: 'rootfs-install-infrastructure' };
+  const failedTargets = failedPackageBuildTargets(result);
+  if (failedTargets.length) attempt.failedBuildTargets = failedTargets;
   const conflictPackages = rootfsConflictPackages(result);
   attempt.rootfsConflictPackages = conflictPackages;
   if (conflictPackages.some((packageName) => roots.includes(packageName))) {
@@ -314,7 +297,10 @@ function classifyRootfsInstallFailure(result, attempt, roots = ROOTS, dependency
     attempt.packageCauseKind = 'dependency';
     return { result: 'incompatible', reason: 'rootfs-conflict' };
   }
-  return { result: 'inconclusive', reason: conflictPackages.length ? 'rootfs-install-prerequisite-failure' : 'rootfs-install-unattributed-failure' };
+  attempt.prerequisiteCause = detail.cause || '';
+  const reportedPrerequisite = Boolean(detail.cause) || conflictPackages.length > 0;
+  return { result: 'inconclusive', reason: reportedPrerequisite
+    ? 'rootfs-install-prerequisite-failure' : 'rootfs-install-unattributed-failure' };
 }
 
 function safeSlug(value) {
@@ -547,7 +533,9 @@ function pairIdFor(row) {
 function phaseFailureFingerprint(phase) {
   return sha256Text(JSON.stringify({
     phase: phase?.phase || '', result: phase?.result || '', reason: phase?.reason || '',
-    failedBuildTargets: phase?.failedBuildTargets || [], rootStates: phase?.rootStates || {},
+    failedBuildTargets: phase?.failedBuildTargets || [], prerequisiteCause: phase?.prerequisiteCause || '',
+    targetPrerequisiteCause: phase?.targetPrerequisiteCause || '', errorSummary: phase?.errorSummary || '',
+    rootStates: phase?.rootStates || {},
   }));
 }
 
@@ -562,8 +550,9 @@ function completedPhaseAttempt(attempt, result, startedAt, started) {
   return attempt;
 }
 
-function pairAttempt(baseline, final = null) {
+function pairAttempt(baseline, final = null, preflight = null) {
   const selected = final || baseline || {};
+  const preflightEvidence = preflight || baseline?.preflight || final?.preflight || null;
   const pair = {
     ...selected,
     phase: 'paired',
@@ -580,12 +569,21 @@ function pairAttempt(baseline, final = null) {
   pair.pairId = pairIdFor(selected);
   pair.baseline = baseline;
   pair.final = final || { phase: 'final', result: 'not-run', reason: 'baseline-failure', stages: {} };
+  pair.preflight = preflightEvidence;
+  pair.preflightResult = preflightEvidence?.result || '';
+  pair.preflightReason = preflightEvidence?.reason || '';
   // A non-compatible B is an incomplete paired experiment, never a package
   // incompatibility.  Preserve B's native result only inside `baseline`.
   pair.result = final ? final.result : 'inconclusive';
   pair.reason = final ? final.reason : 'baseline-failure';
-  pair.stages = final ? final.stages : (baseline?.stages || {});
+  pair.stages = {
+    ...(preflightEvidence?.stage ? { preflight: preflightEvidence.stage } : {}),
+    ...(final ? final.stages : (baseline?.stages || {})),
+  };
   pair.packageCauseKind = final?.packageCauseKind || '';
+  pair.prerequisiteCause = final?.prerequisiteCause || baseline?.prerequisiteCause || '';
+  pair.targetPrerequisiteCause = final?.targetPrerequisiteCause || baseline?.targetPrerequisiteCause || '';
+  pair.errorSummary = final?.errorSummary || baseline?.errorSummary || '';
   pair.baselineConfigHash = baseline?.configHash || '';
   pair.finalConfigHash = final?.configHash || '';
   pair.configHash = final?.configHash || baseline?.configHash || '';
@@ -599,7 +597,7 @@ function pairAttempt(baseline, final = null) {
   return pair;
 }
 
-function decorateL1Pair(baseline, final) {
+function decorateL1Pair(baseline, final, preflight = null) {
   if (final && baseline?.resolvedPackageStates && final.resolvedPackageStates) {
     final.configDiff = resolvedConfigDiff(baseline.resolvedPackageStates, final.resolvedPackageStates, ROOTS);
     final.resolvedConfigDiff = final.configDiff;
@@ -607,10 +605,12 @@ function decorateL1Pair(baseline, final) {
     try { final.newDependencyTargets = mappedBuildTargets(readPackageInfo(), final.newDependencyPackages); }
     catch { final.newDependencyTargets = []; }
   }
-  return pairAttempt(baseline, final);
+  return pairAttempt(baseline, final, preflight);
 }
 
 async function configResolvePaired() {
+  const preflight = await preflightRoots(ROOTS);
+  if (preflight.result !== 'available') return TARGET_BATCH.map((environment) => preflightPairAttempt(preflight, environment));
   const baseline = await withPhaseLog('baseline', () => configResolve({
     roots: BASELINE_ROOTS, requestedStates: BASELINE_DIRECT_STATES, phase: 'baseline', requireEnabled: true,
   }));
@@ -622,7 +622,7 @@ async function configResolvePaired() {
   return TARGET_BATCH.map((environment, index) => {
     const baselineAttempt = baseline[index];
     const finalAttempt = baselineAttempt?.result === 'compatible' ? finalByIdentity.get(phaseIdentity(environment)) || null : null;
-    return decorateL1Pair(baselineAttempt, finalAttempt);
+    return decorateL1Pair(baselineAttempt, finalAttempt, preflight);
   });
 }
 
@@ -653,16 +653,18 @@ async function runDepthPhase({ phase, roots, requestedStates, finalStates, basel
 }
 
 async function runDepthPaired() {
+  const preflight = await preflightRoots(ROOTS);
+  if (preflight.result !== 'available') return [preflightPairAttempt(preflight)];
   const baseline = await runDepthPhase({
     phase: 'baseline', roots: BASELINE_ROOTS, requestedStates: BASELINE_DIRECT_STATES,
     finalStates: BASELINE_STATES,
   });
-  if (baseline.result !== 'compatible') return [pairAttempt(baseline)];
+  if (baseline.result !== 'compatible') return [pairAttempt(baseline, null, preflight)];
   const final = await runDepthPhase({
     phase: 'final', roots: ROOTS, requestedStates: FINAL_DIRECT_STATES,
     finalStates: FINAL_STATES, baselineResolvedStates: baseline.resolvedPackageStates || {},
   });
-  return [pairAttempt(baseline, final)];
+  return [pairAttempt(baseline, final, preflight)];
 }
 
 export function parseUpstreamPackageInfo(text) {
@@ -719,6 +721,110 @@ function readPackageInfo() {
     throw error;
   }
   return readFileSync(path, 'utf8');
+}
+
+async function preflightRoots(roots = ROOTS) {
+  const started = Date.now();
+  const startedAt = new Date(started).toISOString();
+  let packageInfo = '';
+  let metadataFailure = null;
+  let phaseLog = '';
+  await withPhaseLog('preflight', async (logFile) => {
+    phaseLog = logFile;
+    try {
+      packageInfo = readPackageInfo();
+      log('Preflight: using installed Source/Branch package metadata.');
+    } catch (error) {
+      log(`Preflight: package metadata is unavailable; running metadata-only preparation: ${error.message}`);
+      const metadata = await command('bash', [join(ROOT, 'scripts', 'prepare-metadata.sh'), 'metadata-only']);
+      if (!metadata.ok) {
+        metadataFailure = { reason: 'metadata-unresolved', errorSummary: classifyPrerequisiteFailure(metadata.output).errorSummary };
+      } else {
+        try {
+          packageInfo = readPackageInfo();
+        } catch (readError) {
+          metadataFailure = { reason: 'metadata-unresolved', errorSummary: readError.message };
+        }
+      }
+    }
+  });
+  const finishedAt = new Date().toISOString();
+  const stage = {
+    status: metadataFailure ? 'failure' : 'success', startedAt, finishedAt,
+    durationMs: Math.max(0, Date.now() - started),
+  };
+  if (metadataFailure) {
+    log(`ERROR: Preflight package metadata could not be resolved: ${metadataFailure.errorSummary || metadataFailure.reason}`);
+    return {
+      result: 'inconclusive', reason: metadataFailure.reason, errorSummary: metadataFailure.errorSummary || '',
+      unavailableRoots: [], rootMappings: [], sourceMakefiles: [], targets: [], phaseLog, stage,
+    };
+  }
+
+  const mapping = parseUpstreamPackageInfo(packageInfo);
+  const unavailableRoots = roots.filter((root) => !(mapping.get(root)?.size));
+  if (unavailableRoots.length) {
+    log(`SKIP: Preflight root package unavailable in Source/Branch: ${unavailableRoots.join(', ')}`);
+    return {
+      result: 'skipped', reason: 'root-absent-source', errorSummary: '', unavailableRoots,
+      rootMappings: [], sourceMakefiles: [], targets: [], phaseLog, stage,
+    };
+  }
+  const rootMappings = [];
+  const sourceMakefiles = [];
+  try {
+    for (const root of roots) {
+      const sources = [...(mapping.get(root) || [])].map(safeSourceMakefile).sort();
+      if (sources.length !== 1) throw new Error(`ambiguous upstream Source-Makefile for ${root}: ${sources.join(', ')}`);
+      rootMappings.push({ package: root, sourceMakefile: sources[0] });
+      sourceMakefiles.push(sources[0]);
+    }
+  } catch (error) {
+    log(`ERROR: Preflight package metadata is ambiguous: ${error.message}`);
+    return {
+      result: 'inconclusive', reason: 'metadata-unresolved', errorSummary: error.message,
+      unavailableRoots: [], rootMappings: [], sourceMakefiles: [], targets: [], phaseLog, stage,
+    };
+  }
+  const uniqueSources = [...new Set(sourceMakefiles)];
+  const targets = uniqueSources.map((source) => `${posix.dirname(source)}/compile`);
+  log(`Preflight package roots available / 预检插件可用: ${roots.join(', ')}`);
+  return {
+    result: 'available', reason: '', errorSummary: '', unavailableRoots, rootMappings,
+    sourceMakefiles: uniqueSources, targets, phaseLog, stage,
+  };
+}
+
+function notRunPhase(phase, reason) {
+  return { phase, result: 'not-run', reason, stages: {}, rootStates: {}, rootMappings: [],
+    sourceMakefiles: [], rootTargets: [], unavailableRoots: [], rejectedRoots: [], serialRetries: [] };
+}
+
+function preflightPairAttempt(preflight, environment = null) {
+  const target = environment || {
+    targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET, target: TARGET, profile: PROFILE,
+  };
+  const result = preflight.result === 'skipped' ? 'skipped' : 'inconclusive';
+  const reason = preflight.reason;
+  const rootState = preflight.result === 'skipped' ? 'missing' : 'unknown';
+  const pair = {
+    source: SOURCE, branch: BRANCH,
+    targetSystem: target.targetSystem || '', subtarget: target.subtarget || '', target: target.target || '',
+    profile: target.profile || '', profileLabel: target.profileLabel || '', phase: 'paired',
+    stages: { preflight: preflight.stage }, rootStates: Object.fromEntries(ROOTS.map((root) => [root, rootState])),
+    rootMappings: preflight.rootMappings || [], sourceMakefiles: preflight.sourceMakefiles || [],
+    rootTargets: preflight.targets || [], unavailableRoots: preflight.unavailableRoots || [], rejectedRoots: [], serialRetries: [],
+    preflight: { ...preflight, stage: preflight.stage }, preflightResult: preflight.result, preflightReason: preflight.reason,
+    result, reason, selectedLevel: MODE_LEVELS[MODE], deepestPassedLevel: 0,
+    pairConclusion: preflight.result === 'skipped' ? 'preflight-skipped' : 'preflight-failure',
+    baseline: notRunPhase('baseline', preflight.result === 'skipped' ? 'preflight-skipped' : 'preflight-failure'),
+    final: notRunPhase('final', preflight.result === 'skipped' ? 'preflight-skipped' : 'preflight-failure'),
+    packageCauseKind: '', prerequisiteCause: '', targetPrerequisiteCause: '', errorSummary: preflight.errorSummary || '',
+    startedAt: preflight.stage.startedAt, finishedAt: preflight.stage.finishedAt, durationMs: preflight.stage.durationMs,
+  };
+  pair.pairId = pairIdFor(pair);
+  pair.failureFingerprint = phaseFailureFingerprint(pair);
+  return pair;
 }
 
 function classifyConfigFailure(config, attempt, roots = ROOTS) {
@@ -780,6 +886,8 @@ async function packageCompile(attempt, options = {}) {
   if (!target.ok) {
     const classified = classifyTargetPrerequisiteFailure(target.output);
     if (classified.cause) attempt.targetPrerequisiteCause = classified.cause;
+    attempt.errorSummary = classified.errorSummary || attempt.errorSummary || '';
+    attempt.failedBuildTargets = classified.failedBuildTargets || [];
     return classified;
   }
   if (!resolved.targets.length) {

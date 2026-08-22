@@ -74,8 +74,8 @@ assert(dependencyInstaller.includes('https://archive.ubuntu.com/ubuntu/') && dep
 assert(!dependencyInstaller.includes('apt-get clean') && !dependencyInstaller.includes('rm -rf /var/lib/apt/lists'), 'mirror failover must preserve apt state rather than clearing caches or lists');
 assert(workflow.includes('id: bootstrap') && workflow.includes('continue-on-error: true'), 'dependency bootstrap must be recorded without automatically failing the matrix job');
 assert(workflow.includes("if: steps.bootstrap.outcome == 'success'"), 'Probe business steps must run only after dependency bootstrap succeeds');
-assert(workflow.includes("steps.clone.outcome != 'success'") && workflow.includes("steps.requirements.outcome != 'success'"),
-  'clone and upstream runtime-contract failures must fail the environment job after evidence is written');
+assert(workflow.includes('PROBE_CLONE_OUTCOME: ${{ steps.clone.outcome }}') && workflow.includes('PROBE_REQUIREMENTS_OUTCOME: ${{ steps.requirements.outcome }}'),
+  'clone and upstream runtime-contract failures must reach the structured Finalize boundary after evidence is written');
 assert(workflow.includes('PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}'), 'normalized evidence must explicitly record dependency bootstrap outcome');
 assert(workflow.includes('id: clone') && workflow.includes('id: requirements') && workflow.includes('bash scripts/setup-probe-runtime.sh detect'),
   'Probe jobs must clone first, then detect the upstream runtime contract');
@@ -427,6 +427,50 @@ assert.equal(pairedEvidence.packageCauseKind, 'direct');
 assert.equal(pairedEvidence.errors.length, 0, 'structured paired evidence must ignore shared phase log noise');
 assert(evidenceSummaryLines(pairedEvidence).some((line) => line.includes('baseline B → final A')));
 assert(!pairedEvidence.issues.some((issue) => issue.reason === 'memory-exhausted'), 'earlyoom must not match OOM');
+const ledeKernelPrerequisite = createEvidence({
+  log: '',
+  runtime: { mode: 'package-compile', pairedComparison: true,
+    comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] }, conclusion: 'inconclusive', roots: ['oscam'],
+    attempts: [{ phase: 'paired', pairId: 'pair:lede', pairConclusion: 'inconclusive', result: 'inconclusive',
+      reason: 'package-compile-prerequisite-failure', prerequisiteCause: 'kernel-prerequisite',
+      errorSummary: 'ERROR: module crypto/geniv.ko is missing', failedBuildTargets: ['package/kernel/linux'],
+      baseline: { result: 'compatible' }, final: { result: 'inconclusive', reason: 'package-compile-prerequisite-failure',
+        prerequisiteCause: 'kernel-prerequisite', errorSummary: 'ERROR: module crypto/geniv.ko is missing',
+        failedBuildTargets: ['package/kernel/linux'] }, stages: {} }] },
+  env: { PROBE_ROOTS: 'oscam', PROBE_MODE: 'package-compile' },
+});
+assert.equal(ledeKernelPrerequisite.conclusion, 'inconclusive');
+assert.equal(ledeKernelPrerequisite.prerequisiteCause, 'kernel-prerequisite');
+assert.equal(ledeKernelPrerequisite.errorSummary, 'ERROR: module crypto/geniv.ko is missing');
+assert(ledeKernelPrerequisite.issues.some((issue) => issue.type === 'package-build-failure' &&
+  issue.cause === 'kernel-prerequisite' && issue.targets.includes('package/kernel/linux')));
+const ledeScope = aggregateScopeConclusions([ledeKernelPrerequisite], { depth: 1, exhaustive: true })[0];
+assert.equal(ledeScope.reportedPackagePrerequisite, 1);
+assert.equal(ledeScope.selectedPackagePrimaryFailures, 0, 'reported kernel prerequisite must not increase plugin main rate');
+assert.deepEqual(ledeScope.prerequisiteCauses, ['kernel-prerequisite']);
+assert.deepEqual(ledeScope.failedBuildTargets, ['package/kernel/linux']);
+assert.deepEqual(ledeScope.prerequisiteErrors, ['ERROR: module crypto/geniv.ko is missing']);
+const baselineReported = {
+  source: 'lede', branch: 'master', conclusion: 'inconclusive', reason: 'baseline-failure', pairConclusion: 'baseline-failure',
+  roots: ['oscam'], issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'patch-apply',
+    targets: ['target/linux'], errorSummary: 'Hunk FAILED at 12' }],
+  baseline: { result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'patch-apply',
+    failedBuildTargets: ['target/linux'], errorSummary: 'Hunk FAILED at 12' },
+};
+const baselineScope = aggregateScopeConclusions([baselineReported], { depth: 1, exhaustive: true })[0];
+assert.equal(baselineScope.baselineFailure, 0, 'allowlisted Baseline-B prerequisite must not be labeled as an unreported baseline failure');
+assert.equal(baselineScope.reportedTargetPrerequisite, 1);
+assert.deepEqual(baselineScope.targetPrerequisiteCauses, ['patch-apply']);
+const ledeSummaryDir = mkdtempSync(join(tmpdir(), 'probe-lede-summary-'));
+try {
+  writeFileSync(join(ledeSummaryDir, 'evidence.json'), JSON.stringify(ledeKernelPrerequisite));
+  const ledeAggregate = aggregateEvidence(ledeSummaryDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert(ledeAggregate.lines.some((line) => line.includes('kernel-prerequisite') && line.includes('package/kernel/linux') && line.includes('geniv.ko is missing')),
+    'LEDE package prerequisite Notes must expose cause, innermost target, and deterministic error summary');
+} finally {
+  rmSync(ledeSummaryDir, { recursive: true, force: true });
+}
 const pairedStats = aggregateScopeConclusions([
   { source: 'paired', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-failure', packageCauseKind: 'direct', pairedComparison: true, pairConclusion: 'incompatible-direct', roots: ['alpha'], issues: [] },
   { source: 'paired', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-dependency-failure', packageCauseKind: 'dependency', pairedComparison: true, pairConclusion: 'incompatible-dependency', roots: ['alpha'], issues: [] },
@@ -552,18 +596,23 @@ try {
   const targetPrerequisiteDir = join(dir, 'target-prerequisite'); mkdirSync(targetPrerequisiteDir);
   { const sub = join(targetPrerequisiteDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({
       ...row('lede', 'master', 'inconclusive'), reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'toolchain-kernel-version',
-      issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'toolchain-kernel-version' }],
+      failedBuildTargets: ['target/linux'], errorSummary: 'ERROR: target/linux failed to build',
+      issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'toolchain-kernel-version',
+        targets: ['target/linux'], errorSummary: 'ERROR: target/linux failed to build' }],
     })); }
   const targetPrerequisiteSummary = aggregateEvidence(targetPrerequisiteDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
     COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
   assert.equal(targetPrerequisiteSummary.overallConclusion, 'inconclusive');
-  assert(targetPrerequisiteSummary.lines.some((line) => line.includes('| lede | 0 | **0%** | 0 | 1 | **0/1 · 0% · —** | 0 | Upstream Target/Toolchain prerequisite reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定: 1 (toolchain-kernel-version) |')),
-    'Target prerequisite evidence must remain inconclusive, stay out of plugin-primary attribution, and explain the generic cause in Source summary Notes');
+  assert(targetPrerequisiteSummary.lines.some((line) => line.includes('| lede | 0 | **0%** | 0 | 1 | **0/1 · 0% · —** | 0 |') &&
+    line.includes('toolchain-kernel-version') && line.includes('target/linux') && line.includes('target/linux failed to build')),
+    'Target prerequisite evidence must remain inconclusive, stay out of plugin-primary attribution, and explain cause, target, and deterministic error in Source summary Notes');
 
   const mixedPrerequisiteDir = join(dir, 'mixed-target-prerequisite'); mkdirSync(mixedPrerequisiteDir);
   const mixedPrerequisiteRows = [
     { ...row('mixed', 'main', 'inconclusive'), reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'patch-apply',
-      issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'patch-apply' }] },
+      failedBuildTargets: ['target/linux'], errorSummary: 'Hunk FAILED at 12',
+      issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'patch-apply',
+        targets: ['target/linux'], errorSummary: 'Hunk FAILED at 12' }] },
     { ...row('mixed', 'infra', 'inconclusive'), issues: [{ type: 'timeout' }] },
     { ...row('mixed', 'unknown', 'inconclusive') },
   ];
@@ -576,7 +625,9 @@ try {
   assert.equal(mixedPrerequisiteScope.reportedTargetPrerequisite, 1);
   assert.equal(mixedPrerequisiteScope.infraInconclusive, 1);
   assert.equal(mixedPrerequisiteScope.unattributedInconclusive, 1);
-  assert(mixedPrerequisite.lines.some((line) => line.includes('reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定: 1 (patch-apply); Infrastructure incomplete / 基础设施未完成: 1 (timeout); Undetermined / 未定: 1')),
+  assert(mixedPrerequisite.lines.some((line) => line.includes('reported inconclusive / 插件编译前上游 Target/Toolchain 前置失败待定: 1 (patch-apply;') &&
+    line.includes('target/linux') && line.includes('Hunk FAILED at 12') &&
+    line.includes('Infrastructure incomplete / 基础设施未完成: 1 (timeout); Undetermined / 未定: 1')),
     'mixed scopes must report target, infrastructure, and unattributed counts separately without repeating total inconclusive');
 
   const infraOnlyDir = join(dir, 'infra-only'); mkdirSync(infraOnlyDir);

@@ -287,7 +287,8 @@ jobs:
         if: steps.bootstrap.outcome == 'success' && steps.runtime.outcome == 'success' && steps.feeds.outcome == 'success'
         continue-on-error: true
         run: node scripts/run-package-probe.mjs
-      - name: Write normalized evidence / 生成规范化证据
+      - id: evidence
+        name: Write normalized evidence / 生成规范化证据
         if: always()
         env:
           PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}
@@ -303,7 +304,8 @@ jobs:
           PROBE_FEEDS_FAILURE_FEED: ${{ steps.feeds.outputs.failure_feed }}
           PROBE_CONCLUSION: ${{ steps.build.outcome }}
         run: node scripts/write-package-probe-evidence.mjs
-      - name: Upload normalized evidence / 上传规范化证据
+      - id: evidence_upload
+        name: Upload normalized evidence / 上传规范化证据
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -311,7 +313,8 @@ jobs:
           path: probe-evidence/
           retention-days: 60
           if-no-files-found: error
-      - name: Upload complete probe log / 上传完整探针日志
+      - id: log_upload
+        name: Upload complete probe log / 上传完整探针日志
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -324,8 +327,21 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
       - name: Finalize Probe environment result / 确认单环境结果
-        if: always() && (steps.bootstrap.outcome != 'success' || steps.clone.outcome != 'success' || steps.requirements.outcome != 'success' || steps.runtime.outcome != 'success' || steps.feeds.outcome != 'success' || steps.build.outcome != 'success')
-        run: exit 1
+        if: always()
+        env:
+          PROBE_BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}
+          PROBE_CLONE_OUTCOME: ${{ steps.clone.outcome }}
+          PROBE_REQUIREMENTS_OUTCOME: ${{ steps.requirements.outcome }}
+          PROBE_PYTHON_SETUP_OUTCOME: ${{ steps.python.outcome }}
+          PROBE_RUNTIME_SETUP_OUTCOME: ${{ steps.runtime.outcome }}
+          PROBE_FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
+          PROBE_BUILD_OUTCOME: ${{ steps.build.outcome }}
+          PROBE_EVIDENCE_OUTCOME: ${{ steps.evidence.outcome }}
+          PROBE_EVIDENCE_UPLOAD_OUTCOME: ${{ steps.evidence_upload.outcome }}
+          PROBE_LOG_UPLOAD_OUTCOME: ${{ steps.log_upload.outcome }}
+          PROBE_RUNTIME_FILE: ${{ github.workspace }}/probe-runtime.json
+          PROBE_EVIDENCE_DIR: ${{ github.workspace }}/probe-evidence
+        run: node scripts/finalize-package-probe.mjs
 
   summary:
     name: 99 · Probe result and continuation / 探针结果与续批

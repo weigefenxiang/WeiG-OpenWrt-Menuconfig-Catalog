@@ -41,6 +41,7 @@ const REGISTRY = Object.freeze({
   ]),
   none: Object.freeze([
     '.github/workflows/catalog-production.yml',
+    '.github/workflows/package-probe.yml',
     '.github/workflows/catalog-reuse.yml',
     '.github/workflows/catalog.yml',
     '.github/workflows/probe-contracts.yml',
@@ -62,6 +63,7 @@ const REGISTRY = Object.freeze({
     'scripts/check-package-probe-runner.mjs',
     'scripts/check-package-probe.mjs',
     'scripts/check-package-probe-virtual.mjs',
+    'scripts/finalize-package-probe.mjs',
     'scripts/check-probe-authorization.mjs',
     'scripts/check-production-boundary.mjs',
     'scripts/check-production-promotion.mjs',
@@ -124,6 +126,7 @@ function normalizePath(path) {
 
 const MANAGED_WORKFLOWS = new Set([
   '.github/workflows/catalog-production.yml',
+  '.github/workflows/package-probe.yml',
   '.github/workflows/catalog-reuse.yml',
   '.github/workflows/catalog.yml',
   '.github/workflows/probe-contracts.yml',

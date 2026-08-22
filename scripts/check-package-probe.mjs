@@ -28,6 +28,7 @@ const issueGateway = readFileSync(resolve(ROOT, 'scripts', 'package-probe-gatewa
 const runner = readFileSync(resolve(ROOT, 'scripts', 'run-package-probe.mjs'), 'utf8');
 const evidenceWriter = readFileSync(resolve(ROOT, 'scripts', 'write-package-probe-evidence.mjs'), 'utf8');
 const failureClassification = readFileSync(resolve(ROOT, 'scripts', 'package-probe-failure-classification.mjs'), 'utf8');
+const finalizer = readFileSync(resolve(ROOT, 'scripts', 'finalize-package-probe.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
 assert.equal(probeUi.strings?.configResolve?.['zh-CN'], '官方配置求解');
 assert.equal(probeUi.strings?.environmentLimit?.en, 'Probe environments');
@@ -327,11 +328,14 @@ assert(runner.includes("from './package-probe-failure-classification.mjs'") &&
   evidenceWriter.includes("from './package-probe-failure-classification.mjs'"),
   'Runner and Evidence must share one Target prerequisite classification module');
 assert(failureClassification.includes('export function isReportedInconclusive(row)') &&
-  failureClassification.includes('isAllowedTargetPrerequisiteCause(row?.targetPrerequisiteCause)') &&
+  failureClassification.includes('REPORTED_PREREQUISITE_REASON_SET.has(reason)') &&
+  failureClassification.includes('isAllowedTargetPrerequisiteCause(cause)') &&
   failureClassification.includes('export function probeResultExitCode'),
   'Target prerequisite reported inconclusive exit must validate result, reason, and explicit cause allowlist');
 assert(runner.includes('process.exitCode = probeResultExitCode(attempts);'),
   'Runner process status must use the shared reported-inconclusive allowlist');
+assert(workflow.includes('node scripts/finalize-package-probe.mjs') && finalizer.includes('probeResultExitCode(attempts)'),
+  'Finalize must validate structured runtime/evidence conclusions instead of blindly mirroring build outcome');
 assert(runner.includes('classifyConfigFailure') && runner.includes("result: 'skipped'") &&
   runner.includes("reason: 'root-absent-source'") && runner.includes("reason: 'kconfig-unsatisfied'") &&
   !runner.includes("reason: 'package-unavailable'") &&

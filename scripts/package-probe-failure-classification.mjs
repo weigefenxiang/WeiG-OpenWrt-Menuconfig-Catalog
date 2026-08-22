@@ -8,7 +8,19 @@ export const TARGET_PREREQUISITE_CAUSES = Object.freeze([
   'target-build',
 ]);
 
+export const REPORTED_PREREQUISITE_REASONS = Object.freeze([
+  'target-prerequisite-failure',
+  'package-compile-prerequisite-failure',
+  'rootfs-package-prerequisite-failure',
+  'rootfs-install-prerequisite-failure',
+  'firmware-prerequisite-failure',
+]);
+
 const TARGET_PREREQUISITE_CAUSE_SET = new Set(TARGET_PREREQUISITE_CAUSES);
+const REPORTED_PREREQUISITE_REASON_SET = new Set(REPORTED_PREREQUISITE_REASONS);
+const INFRASTRUCTURE_ISSUE_TYPES = new Set([
+  'timeout', 'infrastructure-failure', 'package-download-failure', 'metadata-unresolved',
+]);
 
 export function isAllowedTargetPrerequisiteCause(value) {
   return TARGET_PREREQUISITE_CAUSE_SET.has(String(value || ''));
@@ -48,21 +60,127 @@ function causeFromLines(lines) {
   return '';
 }
 
+function stripAnsi(value) {
+  return String(value || '').replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '');
+}
+
+function normalizeFailedBuildTarget(value) {
+  return String(value || '').replace(/\\/g, '/').replace(/^\.\//, '')
+    .replace(/\/(?:compile|install|prepare)$/, '').replace(/\/+$/, '');
+}
+
+function isGenericBuildWrapper(value) {
+  return /^(?:package|tools|toolchain|target)\/(?:compile|install|prepare)$/.test(String(value || '').replace(/\\/g, '/').replace(/^\.\//, ''));
+}
+
+// An explicit non-wrapper `ERROR: <target> failed to build` line is
+// authoritative.  Make's bracketed target is often only an outer wrapper
+// (for example package/feeds/.../oscam around package/kernel/linux).  Generic
+// top-level wrappers remain lowest even when an upstream log spells them out;
+// among the remaining Make-only candidates, log order is authoritative
+// because build nesting is not encoded reliably by path depth.
+export function extractFailedBuildTargets(value) {
+  const text = stripAnsi(value);
+  const candidates = [];
+  const add = (target, index, source) => {
+    const normalized = normalizeFailedBuildTarget(target);
+    if (!normalized) return;
+    const rank = source === 'explicit' ? (isGenericBuildWrapper(target) ? 0 : 4)
+      : source === 'generic' ? 2 : (isGenericBuildWrapper(target) ? 0 : 1);
+    candidates.push({ target: normalized, index, source, rank, depth: normalized.split('/').length });
+  };
+  for (const match of text.matchAll(/(?:^|\r?\n)\s*ERROR:\s+((?:package|tools|toolchain|target)\/[A-Za-z0-9_./+@-]+)\s+failed to build/gi)) {
+    add(match[1], match.index || 0, 'explicit');
+  }
+  for (const match of text.matchAll(/(?:^|\r?\n)\s*((?:package|tools|toolchain|target)\/[A-Za-z0-9_./+@-]+)\s+failed to build/gi)) {
+    add(match[1], match.index || 0, 'generic');
+  }
+  for (const match of text.matchAll(/make(?:\[\d+\])?:\s+\*{3}\s+\[((?:package|tools|toolchain|target)\/[A-Za-z0-9_./+@-]+\/(?:compile|install|prepare))\]\s+Error\b/gi)) {
+    add(match[1], match.index || 0, 'make');
+  }
+  for (const match of text.matchAll(/\*{3}\s+((?:package|tools|toolchain|target)\/[A-Za-z0-9_./+@-]+\/(?:compile|install|prepare))\s+Error\b/gi)) {
+    add(match[1], match.index || 0, 'make');
+  }
+  if (!candidates.length) return [];
+  // At one evidence level the first make failure is the innermost target;
+  // later make lines are normally only the outer propagation wrapper.  Do
+  // not use path depth here: feed/source layout depth is not build nesting.
+  candidates.sort((left, right) => right.rank - left.rank || left.index - right.index);
+  return [candidates[0].target];
+}
+
+export function deterministicErrorSummary(value) {
+  const lines = stripAnsi(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const match = lines.find((line) =>
+    /(?:\berror\s*:|\bfailed(?:\s+to)?\b|\bis\s+missing\b|\bno rule to make target\b|\bpatch failed\b|\bhunk(?:\s+#?\d+)?\s+failed\b)/i.test(line));
+  return String(match || '').replace(/\s+/g, ' ').slice(0, 320);
+}
+
+export function classifyPrerequisiteFailure(value) {
+  const text = stripAnsi(value);
+  const cause = causeFromLines(text.split(/\r?\n/));
+  return {
+    cause: isAllowedTargetPrerequisiteCause(cause) ? cause : '',
+    errorSummary: deterministicErrorSummary(text),
+    failedBuildTargets: extractFailedBuildTargets(text),
+  };
+}
+
 export function classifyTargetPrerequisiteFailure(value) {
   const text = String(value || '');
+  const detail = classifyPrerequisiteFailure(text);
   if (isMakeInfrastructureFailure(text)) {
-    return { result: 'inconclusive', reason: 'target-prerequisite-infrastructure', cause: '' };
+    return { result: 'inconclusive', reason: 'target-prerequisite-infrastructure', cause: '',
+      errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets };
   }
-  const cause = causeFromLines(text.split(/\r?\n/));
+  const cause = detail.cause;
   if (isAllowedTargetPrerequisiteCause(cause)) {
-    return { result: 'inconclusive', reason: 'target-prerequisite-failure', cause };
+    return { result: 'inconclusive', reason: 'target-prerequisite-failure', cause,
+      errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets };
   }
-  return { result: 'inconclusive', reason: 'target-prerequisite-unattributed-failure', cause: '' };
+  return { result: 'inconclusive', reason: 'target-prerequisite-unattributed-failure', cause: '',
+    errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets };
+}
+
+function hasMatchingStructuredIssue(row, reason, cause, failedTargets, errorSummary) {
+  // Runtime attempts are intentionally compact and do not carry normalized
+  // issues; the evidence writer is the boundary that must materialize them.
+  // A row with an evidence conclusion/schema is therefore invalid when its
+  // issues array is absent, rather than silently bypassing the gate.
+  if (!Array.isArray(row?.issues)) return !('conclusion' in (row || {})) && !('schema' in (row || {}));
+  if (row.issues.some((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(String(issue?.type || '')))) return false;
+  const type = reason === 'target-prerequisite-failure' ? 'target-prerequisite-failure' : 'package-build-failure';
+  return row.issues.some((issue) => issue?.type === type && String(issue.reason || '') === reason &&
+    issue.cause === cause && Array.isArray(issue.targets) && failedTargets.every((target) => issue.targets.includes(target)) &&
+    String(issue.errorSummary || '').trim() === errorSummary);
 }
 
 export function isReportedInconclusive(row) {
-  return row?.result === 'inconclusive' && row?.reason === 'target-prerequisite-failure' &&
-    isAllowedTargetPrerequisiteCause(row?.targetPrerequisiteCause);
+  if (row?.result !== 'inconclusive') return false;
+  const reason = String(row?.reason || '');
+  // A paired run exposes a Baseline-B transport wrapper when B fails before
+  // Final-A can start.  The wrapper is reportable only when its inner phase
+  // carries one of the explicitly allowed upstream prerequisite causes.
+  if (reason === 'baseline-failure' || row?.pairConclusion === 'baseline-failure') {
+    if (Array.isArray(row?.issues) && row.issues.some((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(String(issue?.type || '')))) return false;
+    const inner = [row?.baseline, row?.final].find((candidate) => isReportedInconclusive(candidate));
+    if (!inner) return false;
+    // Paired runtime wrappers intentionally omit normalized issues; paired
+    // evidence rows, identified by conclusion/schema, must materialize the
+    // matching issue instead of bypassing the evidence gate.
+    if (!Array.isArray(row?.issues)) return !('conclusion' in (row || {})) && !('schema' in (row || {}));
+    const innerReason = String(inner.reason || '');
+    const innerCause = inner.targetPrerequisiteCause || inner.prerequisiteCause || inner.cause || '';
+    const innerTargets = Array.isArray(inner.failedBuildTargets) ? inner.failedBuildTargets.filter(Boolean) : [];
+    const innerSummary = String(inner.errorSummary || '').trim();
+    return hasMatchingStructuredIssue(row, innerReason, innerCause, innerTargets, innerSummary);
+  }
+  const cause = row?.targetPrerequisiteCause || row?.prerequisiteCause || row?.cause || '';
+  const failedTargets = Array.isArray(row?.failedBuildTargets) ? row.failedBuildTargets.filter(Boolean) : [];
+  const errorSummary = String(row?.errorSummary || '').trim();
+  if (!REPORTED_PREREQUISITE_REASON_SET.has(reason) || !isAllowedTargetPrerequisiteCause(cause) ||
+      !failedTargets.length || !errorSummary || ['direct', 'dependency'].includes(String(row?.packageCauseKind || ''))) return false;
+  return hasMatchingStructuredIssue(row, reason, cause, failedTargets, errorSummary);
 }
 
 export function probeResultExitCode(rows) {

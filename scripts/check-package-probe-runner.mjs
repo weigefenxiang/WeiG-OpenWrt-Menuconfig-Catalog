@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { isReportedInconclusive, probeResultExitCode } from './package-probe-failure-classification.mjs';
+import { evaluateFinalize } from './finalize-package-probe.mjs';
 
 const runner = resolve(import.meta.dirname, 'run-package-probe.mjs');
 
@@ -32,7 +33,10 @@ if (args.includes('defconfig')) {
 if (args.includes('prepare-tmpinfo')) {
   mkdirSync(join(process.cwd(), 'tmp'), { recursive: true });
   writeFileSync(join(process.cwd(), 'tmp', '.targetinfo'), 'Target: x86/64\\n');
-  writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\n');
+  const unavailable = process.env.FAKE_PACKAGE_UNAVAILABLE === 'true';
+  writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), unavailable
+    ? 'Source-Makefile: package/network/beta/Makefile\\nPackage: beta\\n'
+    : 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\n');
 }
 const rootCompile = args.includes(rootSource.replace('/Makefile', '/compile'));
 if (process.env.FAKE_FAIL_INFRA === 'true' && rootCompile) {
@@ -48,12 +52,29 @@ if (process.env.FAKE_FAIL_INNER_WRAPPER === 'true' && rootCompile) {
   console.error('make[2]: *** [package/network/${rootPackage}/compile] Error 2');
   process.exit(2);
 }
+if (process.env.FAKE_FAIL_ROOT_MAKE_ONLY === 'true' && rootCompile) {
+  console.error('make[2]: *** [package/network/${rootPackage}/compile] Error 2');
+  process.exit(2);
+}
 if (process.env.FAKE_FAIL_DEPENDENCY === 'true' && rootCompile && readFileSync(join(process.cwd(), '.config'), 'utf8').includes('CONFIG_PACKAGE_${rootPackage}=y')) {
   console.error('ERROR: package/network/auto-dependency failed to build');
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_PREREQUISITE === 'true' && rootCompile) {
+  console.error('ERROR: module crypto/geniv.ko is missing');
   console.error('ERROR: package/kernel/linux failed to build');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_INNER_KERNEL_WRAPPER === 'true' && rootCompile) {
+  console.error('ERROR: module crypto/geniv.ko is missing');
+  console.error('ERROR: package/kernel/linux failed to build');
+  console.error('make[2]: *** [package/feeds/packages/oscam/compile] Error 2');
+  process.exit(2);
+}
+if (process.env.FAKE_FAIL_INNER_KERNEL_MAKE_ONLY === 'true' && rootCompile) {
+  console.error('module crypto/geniv.ko is missing');
+  console.error('make[3]: *** [package/kernel/linux/compile] Error 2');
+  console.error('make[2]: *** [package/feeds/packages/oscam/compile] Error 2');
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_UNATTRIBUTED === 'true' && rootCompile) {
@@ -61,6 +82,7 @@ if (process.env.FAKE_FAIL_UNATTRIBUTED === 'true' && rootCompile) {
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_ROOTFS_PREREQUISITE === 'true' && args.includes('package/compile')) {
+  console.error('ERROR: module crypto/geniv.ko is missing');
   console.error('ERROR: package/kernel/linux failed to build');
   process.exit(2);
 }
@@ -77,6 +99,7 @@ if (process.env.FAKE_ROOTFS_UNRELATED_CONFLICT === 'true' && args.includes('pack
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_FIRMWARE_PREREQUISITE === 'true' && args.includes('target/install')) {
+  console.error('ERROR: module crypto/geniv.ko is missing');
   console.error('ERROR: package/kernel/linux failed to build');
   process.exit(2);
 }
@@ -94,6 +117,7 @@ if (process.env.FAKE_FAIL_TARGET_PREREQUISITE === 'true' && args.includes('prepa
   } else {
     console.error('module crypto/geniv.ko is missing');
   }
+  console.error('ERROR: target/linux failed to build');
   process.exit(2);
 }
 if (process.env.FAKE_FAIL_TARGET_PREREQUISITE_WRAPPER === 'true' && args.includes('prepare')) {
@@ -176,9 +200,12 @@ function scenario(mode, options = {}) {
         FAKE_REJECT_ROOT: String(options.rejectRoot === true),
          FAKE_FAIL_ROOT: String(options.failRoot === true),
          FAKE_FAIL_INNER_WRAPPER: String(options.failInnerWrapper === true),
+         FAKE_FAIL_ROOT_MAKE_ONLY: String(options.failRootMakeOnly === true),
          FAKE_FAIL_DEPENDENCY: String(options.failDependency === true),
          FAKE_FAIL_L1_BASELINE: String(options.failL1Baseline === true),
         FAKE_FAIL_PREREQUISITE: String(options.failPrerequisite === true),
+        FAKE_FAIL_INNER_KERNEL_WRAPPER: String(options.failInnerKernelWrapper === true),
+        FAKE_FAIL_INNER_KERNEL_MAKE_ONLY: String(options.failInnerKernelMakeOnly === true),
         FAKE_FAIL_UNATTRIBUTED: String(options.failUnattributed === true),
         FAKE_FAIL_ROOTFS_PREREQUISITE: String(options.failRootfsPrerequisite === true),
          FAKE_ROOTFS_ROOT_CONFLICT: String(options.rootfsRootConflict === true),
@@ -261,10 +288,35 @@ assert.equal(paired.runtime.attempts[0].baseline.rootTargets.length, 0, 'empty B
 assert.equal(paired.runtime.attempts[0].final.resolvedConfigDiff.addedDependencies.includes('auto-dependency'), true);
 assert.equal(paired.runtime.attempts[0].newDependencyTargets.includes('package/network/auto-dependency/compile'), true);
 
-const pairedShortCircuit = scenario('package-compile', { paired: true, failTargetPrerequisite: true, expectedStatus: 1 });
+const pairedShortCircuit = scenario('package-compile', { paired: true, failTargetPrerequisite: true, expectedStatus: 0 });
 assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.result, 'inconclusive');
 assert.equal(pairedShortCircuit.runtime.attempts[0].final.result, 'not-run');
+assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.targetPrerequisiteCause, 'patch-apply');
 assert.equal(pairedShortCircuit.calls.some((args) => args.includes('package/network/alpha/compile')), false, 'B failure must short-circuit A');
+
+const pairedUnavailable = scenario('package-compile', { paired: true, packageUnavailable: true });
+assert.equal(pairedUnavailable.runtime.conclusion, 'skipped');
+assert.equal(pairedUnavailable.runtime.reason, 'root-absent-source');
+assert.equal(pairedUnavailable.runtime.attempts[0].pairConclusion, 'preflight-skipped');
+assert.equal(pairedUnavailable.runtime.attempts[0].baseline.result, 'not-run');
+assert.equal(pairedUnavailable.runtime.attempts[0].final.result, 'not-run');
+assert.deepEqual(pairedUnavailable.runtime.attempts[0].unavailableRoots, ['alpha']);
+assert.equal(pairedUnavailable.runtime.attempts[0].stages.preflight.status, 'success');
+assert.equal(pairedUnavailable.calls.some((args) => args.includes('defconfig')), false, 'absent paired roots must skip B/A defconfig');
+assert.equal(pairedUnavailable.calls.some((args) => args.includes('prepare')), false, 'absent paired roots must skip B/A Target preparation');
+assert.equal(pairedUnavailable.calls.some((args) => args.includes('package/network/alpha/compile')), false, 'absent paired roots must skip B/A package compilation');
+for (const mode of ['config-resolve', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
+  const unavailablePaired = scenario(mode, { paired: true, packageUnavailable: true });
+  assert.equal(unavailablePaired.runtime.conclusion, 'skipped', `${mode} paired missing package must be skipped in preflight`);
+  assert.equal(unavailablePaired.runtime.reason, 'root-absent-source');
+  assert.equal(unavailablePaired.runtime.attempts[0].pairConclusion, 'preflight-skipped');
+  assert.equal(unavailablePaired.runtime.attempts[0].baseline.result, 'not-run');
+  assert.equal(unavailablePaired.runtime.attempts[0].final.result, 'not-run');
+  assert.equal(unavailablePaired.calls.some((args) => args.includes('prepare')), false,
+    `${mode} paired missing package must not enter Target preparation`);
+  assert.equal(unavailablePaired.calls.some((args) => args.includes('package/compile') || args.includes('target/install') || args.includes('qemustart')), false,
+    `${mode} paired missing package must not enter downstream stages`);
+}
 
 const pairedDependency = scenario('package-compile', { paired: true, failDependency: true });
 assert.equal(pairedDependency.runtime.attempts[0].result, 'incompatible');
@@ -339,10 +391,43 @@ assert.deepEqual(l2InnerTarget.runtime.attempts[0].failedBuildTargets, ['package
 assert.equal(l2InnerTarget.runtime.attempts[0].packageCauseKind, 'direct',
   'inner oscam target must remain directly attributable to the selected root');
 
-const l2Prerequisite = scenario('package-compile', { failPrerequisite: true, expectedStatus: 1 });
+const l2Prerequisite = scenario('package-compile', { failPrerequisite: true, expectedStatus: 0 });
 assert.equal(l2Prerequisite.runtime.conclusion, 'inconclusive');
 assert.equal(l2Prerequisite.runtime.reason, 'package-compile-prerequisite-failure');
 assert.deepEqual(l2Prerequisite.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux']);
+assert.equal(l2Prerequisite.runtime.attempts[0].prerequisiteCause, 'kernel-prerequisite');
+assert.match(l2Prerequisite.runtime.attempts[0].errorSummary, /geniv\.ko is missing/);
+
+const l2InnerKernel = scenario('package-compile', {
+  rootPackage: 'oscam', failInnerKernelWrapper: true, expectedStatus: 0,
+});
+assert.equal(l2InnerKernel.runtime.conclusion, 'inconclusive');
+assert.equal(l2InnerKernel.runtime.reason, 'package-compile-prerequisite-failure',
+  'an explicit inner kernel failure must be classified as a prerequisite, not an oscam package failure');
+assert.deepEqual(l2InnerKernel.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux'],
+  'an explicit inner kernel target must outrank the outer oscam make wrapper');
+assert.equal(l2InnerKernel.runtime.attempts[0].prerequisiteCause, 'kernel-prerequisite');
+assert.equal(l2InnerKernel.runtime.attempts[0].packageCauseKind || '', '',
+  'an upstream kernel prerequisite must not receive a plugin cause attribution');
+assert.match(l2InnerKernel.runtime.attempts[0].failureFingerprint, /^[a-f0-9]{64}$/);
+
+const l2InnerKernelMakeOnly = scenario('package-compile', {
+  rootPackage: 'oscam', failInnerKernelMakeOnly: true, expectedStatus: 0,
+});
+assert.equal(l2InnerKernelMakeOnly.runtime.reason, 'package-compile-prerequisite-failure',
+  'Make-only inner kernel failure must remain a prerequisite conclusion');
+assert.deepEqual(l2InnerKernelMakeOnly.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux'],
+  'the first non-wrapper Make target must outrank the later oscam propagation wrapper');
+assert.equal(l2InnerKernelMakeOnly.runtime.attempts[0].prerequisiteCause, 'kernel-prerequisite');
+assert.equal(l2InnerKernelMakeOnly.runtime.attempts[0].packageCauseKind || '', '');
+
+const l2DirectMakeOnly = scenario('package-compile', {
+  rootPackage: 'oscam', failRootMakeOnly: true, expectedStatus: 0,
+});
+assert.equal(l2DirectMakeOnly.runtime.conclusion, 'incompatible',
+  'a single direct oscam Make target must remain a plugin incompatibility');
+assert.deepEqual(l2DirectMakeOnly.runtime.attempts[0].failedBuildTargets, ['package/network/oscam']);
+assert.equal(l2DirectMakeOnly.runtime.attempts[0].packageCauseKind, 'direct');
 
 const l2Unattributed = scenario('package-compile', { failUnattributed: true, expectedStatus: 1 });
 assert.equal(l2Unattributed.runtime.conclusion, 'inconclusive');
@@ -367,6 +452,8 @@ for (const [mode, cause] of targetPrerequisiteModes) {
   assert.equal(targetPrerequisite.runtime.conclusion, 'inconclusive', `${mode} Target prerequisite failure must remain an inconclusive conclusion`);
   assert.equal(targetPrerequisite.runtime.reason, 'target-prerequisite-failure', `${mode} must use the reported Target prerequisite reason`);
   assert.equal(targetPrerequisite.runtime.attempts[0].targetPrerequisiteCause, cause, `${mode} must preserve the generic prerequisite cause`);
+  assert.deepEqual(targetPrerequisite.runtime.attempts[0].failedBuildTargets, ['target/linux'], `${mode} must preserve the generic failed target`);
+  assert.match(targetPrerequisite.runtime.attempts[0].errorSummary, /\S+/, `${mode} must preserve a deterministic error summary`);
   assert.equal(targetPrerequisite.runtime.attempts[0].stages.targetPrepare.status, 'failure');
   assert.equal(targetPrerequisite.calls.filter((args) => args.includes('prepare')).length, 2, `${mode} must retry prepare once for evidence`);
   assert.equal(targetPrerequisite.calls.some((args) => args.includes('package/network/alpha/compile')), false, `${mode} must stop before Root compilation`);
@@ -399,8 +486,35 @@ assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'target-prer
   'a reported reason without a cause must remain red');
 assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'unknown' }]), 1,
   'an unknown reported cause must remain red');
-assert.equal(isReportedInconclusive({ result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'patch-apply' }), true);
+assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'package-compile-prerequisite-failure', prerequisiteCause: 'kernel-prerequisite',
+  failedBuildTargets: ['package/kernel/linux'], errorSummary: 'ERROR: module crypto/geniv.ko is missing' }]), 0,
+  'a complete package prerequisite cause is a valid product terminal result');
+assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'package-compile-prerequisite-failure', prerequisiteCause: 'kernel-prerequisite',
+  errorSummary: 'ERROR: module crypto/geniv.ko is missing' }]), 1,
+  'a package prerequisite without a failed target must remain red');
+assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'package-compile-prerequisite-failure', prerequisiteCause: 'kernel-prerequisite',
+  failedBuildTargets: ['package/kernel/linux'] }]), 1,
+  'a package prerequisite without a deterministic error summary must remain red');
+assert.equal(probeResultExitCode([{ result: 'inconclusive', reason: 'package-compile-prerequisite-failure' }]), 1,
+  'a package prerequisite reason without a cause must remain red');
+assert.equal(probeResultExitCode([{
+  result: 'inconclusive', reason: 'baseline-failure', pairConclusion: 'baseline-failure',
+  baseline: { result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'kernel-prerequisite',
+    failedBuildTargets: ['target/linux'], errorSummary: 'ERROR: target/linux failed to build' },
+  issues: [{ type: 'target-prerequisite-failure', reason: 'target-prerequisite-failure', cause: 'kernel-prerequisite',
+    targets: ['target/linux'], errorSummary: 'ERROR: target/linux failed to build' }],
+}]), 0, 'a paired Baseline-B reported prerequisite is a valid product terminal result');
+assert.equal(isReportedInconclusive({ result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'patch-apply',
+  failedBuildTargets: ['target/linux'], errorSummary: 'Hunk FAILED at 12' }), true);
 assert.equal(isReportedInconclusive({ result: 'inconclusive', reason: 'target-prerequisite-failure', targetPrerequisiteCause: 'unknown' }), false);
+assert.equal(isReportedInconclusive({ result: 'inconclusive', reason: 'package-compile-prerequisite-failure', prerequisiteCause: 'kernel-prerequisite',
+  failedBuildTargets: ['package/kernel/linux'], errorSummary: 'ERROR: module crypto/geniv.ko is missing', packageCauseKind: 'direct' }), false,
+  'direct package failures must never be reported as upstream prerequisites');
+
+const kernelFingerprint = scenario('package-compile', { failPrerequisite: true, expectedStatus: 0 });
+const patchFingerprint = scenario('package-compile', { failTargetPrerequisite: true, targetPrerequisiteCause: 'patch-apply' });
+assert.notEqual(kernelFingerprint.runtime.attempts[0].failureFingerprint, patchFingerprint.runtime.attempts[0].failureFingerprint,
+  'failure fingerprints must distinguish kernel prerequisite and patch errors');
 
 const l3 = scenario('rootfs-integration');
 assert.equal(l3.calls.filter((args) => args.includes('package/network/alpha/compile')).length, 1,
@@ -415,10 +529,11 @@ assert(l3.calls.findIndex((args) => args.includes('package/network/alpha/compile
 assert(l3.calls.findIndex((args) => args.includes('package/compile')) < l3.calls.findIndex((args) => args.includes('package/install')));
 assert.equal(l3.runtime.attempts[0].deepestPassedLevel, 3);
 
-const l3Prerequisite = scenario('rootfs-integration', { failRootfsPrerequisite: true, expectedStatus: 1 });
+const l3Prerequisite = scenario('rootfs-integration', { failRootfsPrerequisite: true, expectedStatus: 0 });
 assert.equal(l3Prerequisite.runtime.conclusion, 'inconclusive');
 assert.equal(l3Prerequisite.runtime.reason, 'rootfs-package-prerequisite-failure');
 assert.deepEqual(l3Prerequisite.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux']);
+assert.equal(l3Prerequisite.runtime.attempts[0].prerequisiteCause, 'kernel-prerequisite');
 
 const l3RootConflict = scenario('rootfs-integration', { rootfsRootConflict: true });
 assert.equal(l3RootConflict.runtime.conclusion, 'incompatible');
@@ -441,15 +556,17 @@ assert(l4.calls.findIndex((args) => args.includes('package/install')) < l4.calls
 assert.equal(l4.runtime.attempts[0].deepestPassedLevel, 4);
 assert(!('baselinePackageCount' in l4.runtime));
 
-const l4Prerequisite = scenario('firmware-integration', { failFirmwarePrerequisite: true, expectedStatus: 1 });
+const l4Prerequisite = scenario('firmware-integration', { failFirmwarePrerequisite: true, expectedStatus: 0 });
 assert.equal(l4Prerequisite.runtime.conclusion, 'inconclusive');
 assert.equal(l4Prerequisite.runtime.reason, 'firmware-prerequisite-failure');
 assert.deepEqual(l4Prerequisite.runtime.attempts[0].failedBuildTargets, ['package/kernel/linux']);
+assert.equal(l4Prerequisite.runtime.attempts[0].prerequisiteCause, 'kernel-prerequisite');
 
-const l7InheritedPrerequisite = scenario('reboot-validation', { failFirmwarePrerequisite: true, expectedStatus: 1 });
+const l7InheritedPrerequisite = scenario('reboot-validation', { failFirmwarePrerequisite: true, expectedStatus: 0 });
 assert.equal(l7InheritedPrerequisite.runtime.conclusion, 'inconclusive',
   'L5-L7 must inherit the same prerequisite attribution instead of blaming the selected package');
 assert.equal(l7InheritedPrerequisite.runtime.reason, 'firmware-prerequisite-failure');
+assert.equal(l7InheritedPrerequisite.runtime.attempts[0].prerequisiteCause, 'kernel-prerequisite');
 
 const l7 = scenario('reboot-validation');
 assert.equal(l7.calls.filter((args) => args.includes('defconfig')).length, 1, 'L7 must resolve Final direct intent once');
@@ -461,5 +578,118 @@ assert.equal(l7.calls.filter((args) => args.includes('target/install')).length, 
 assert.equal(l7.runtime.conclusion, 'compatible');
 assert.equal(l7.runtime.attempts[0].deepestPassedLevel, 7);
 assert.equal(l7.runtime.attempts[0].stages.secondRuntimeHealth.status, 'success');
+
+const finalizeBaseEnv = {
+  PROBE_BOOTSTRAP_OUTCOME: 'success', PROBE_CLONE_OUTCOME: 'success', PROBE_REQUIREMENTS_OUTCOME: 'success', PROBE_PYTHON_SETUP_OUTCOME: 'skipped',
+  PROBE_RUNTIME_SETUP_OUTCOME: 'success', PROBE_FEEDS_OUTCOME: 'success', PROBE_EVIDENCE_OUTCOME: 'success',
+  PROBE_EVIDENCE_UPLOAD_OUTCOME: 'success', PROBE_LOG_UPLOAD_OUTCOME: 'success', PROBE_BUILD_OUTCOME: 'success',
+};
+const finalizeIdentity = {
+  source: 'LEDE', branch: 'master', targetSystem: 'x86', subtarget: '64', target: 'x86/64', profile: 'DEVICE_generic',
+  phase: 'final', pairId: '',
+};
+const finalizeErrorSummary = 'ERROR: module crypto/geniv.ko is missing';
+const finalizeTarget = 'package/kernel/linux';
+const finalizeIssue = {
+  type: 'package-build-failure', reason: 'package-compile-prerequisite-failure', cause: 'kernel-prerequisite',
+  targets: [finalizeTarget], errorSummary: finalizeErrorSummary,
+};
+const finalizeAttempt = {
+  ...finalizeIdentity, result: 'inconclusive', reason: 'package-compile-prerequisite-failure',
+  prerequisiteCause: 'kernel-prerequisite', failedBuildTargets: [finalizeTarget], errorSummary: finalizeErrorSummary,
+};
+const finalizeEvidence = {
+  ...finalizeIdentity, conclusion: 'inconclusive', reason: finalizeAttempt.reason,
+  prerequisiteCause: finalizeAttempt.prerequisiteCause, failedBuildTargets: [finalizeTarget], errorSummary: finalizeErrorSummary,
+  issues: [finalizeIssue],
+};
+assert.equal(probeResultExitCode([finalizeAttempt]), 0,
+  'runtime attempts may omit normalized issues when cause, target, and summary are complete');
+const finalizeReported = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [finalizeAttempt] },
+  evidence: [finalizeEvidence],
+});
+assert.equal(finalizeReported.ok, true, 'Finalize must accept complete LEDE prerequisite evidence');
+const pairedFinalizeIdentity = { ...finalizeIdentity, phase: 'paired', pairId: 'pair:lede-baseline' };
+const pairedBaselineAttempt = {
+  result: 'inconclusive', reason: 'package-compile-prerequisite-failure', prerequisiteCause: 'kernel-prerequisite',
+  failedBuildTargets: [finalizeTarget], errorSummary: finalizeErrorSummary,
+};
+const pairedRuntimeAttempt = {
+  ...pairedFinalizeIdentity, result: 'inconclusive', reason: 'baseline-failure', pairConclusion: 'baseline-failure',
+  baseline: pairedBaselineAttempt, final: { result: 'not-run', reason: 'baseline-failure' },
+};
+const pairedEvidence = {
+  ...pairedFinalizeIdentity, schema: 5, conclusion: 'inconclusive', reason: 'baseline-failure', pairConclusion: 'baseline-failure',
+  baseline: pairedBaselineAttempt, final: { result: 'not-run', reason: 'baseline-failure' }, issues: [finalizeIssue],
+};
+assert.equal(probeResultExitCode([pairedRuntimeAttempt]), 0,
+  'paired runtime wrappers may omit normalized issues when the inner prerequisite is complete');
+const finalizePairedReported = evaluateFinalize({
+  env: finalizeBaseEnv, runtime: { attempts: [pairedRuntimeAttempt] }, evidence: [pairedEvidence],
+});
+assert.equal(finalizePairedReported.ok, true, 'Finalize must accept a complete paired Baseline-B prerequisite evidence row');
+const pairedEvidenceWithoutIssues = { ...pairedEvidence };
+delete pairedEvidenceWithoutIssues.issues;
+const finalizePairedMissingIssues = evaluateFinalize({
+  env: finalizeBaseEnv, runtime: { attempts: [pairedRuntimeAttempt] }, evidence: [pairedEvidenceWithoutIssues],
+});
+assert.equal(finalizePairedMissingIssues.ok, false,
+  'Finalize must reject a paired evidence row whose normalized issues array is absent');
+const finalizeUnattributed = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [{ ...finalizeAttempt, reason: 'package-compile-unattributed-failure' }] },
+  evidence: [{ ...finalizeEvidence, reason: 'package-compile-unattributed-failure', issues: [] }],
+});
+assert.equal(finalizeUnattributed.ok, false, 'Finalize must reject an unattributed package failure');
+const finalizeMissingTarget = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [{ ...finalizeAttempt, failedBuildTargets: [] }] },
+  evidence: [{ ...finalizeEvidence, failedBuildTargets: [], issues: [{ ...finalizeIssue, targets: [] }] }],
+});
+assert.equal(finalizeMissingTarget.ok, false, 'Finalize must reject prerequisite evidence without a failed target');
+const finalizeMissingSummary = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [{ ...finalizeAttempt, errorSummary: '' }] },
+  evidence: [{ ...finalizeEvidence, errorSummary: '', issues: [{ ...finalizeIssue, errorSummary: '' }] }],
+});
+assert.equal(finalizeMissingSummary.ok, false, 'Finalize must reject prerequisite evidence without a deterministic summary');
+const finalizeMissingIssue = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [finalizeAttempt] },
+  evidence: [{ ...finalizeEvidence, issues: [] }],
+});
+assert.equal(finalizeMissingIssue.ok, false, 'Finalize must reject prerequisite evidence without a matching structured issue');
+const finalizeMissingIssuesFieldEvidence = { ...finalizeEvidence };
+delete finalizeMissingIssuesFieldEvidence.issues;
+const finalizeMissingIssuesField = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [finalizeAttempt] },
+  evidence: [finalizeMissingIssuesFieldEvidence],
+});
+assert.equal(finalizeMissingIssuesField.ok, false, 'Finalize must reject evidence with no issues array');
+const finalizeInfrastructure = evaluateFinalize({
+  env: finalizeBaseEnv,
+  runtime: { attempts: [finalizeAttempt] },
+  evidence: [{ ...finalizeEvidence, issues: [finalizeIssue, { type: 'infrastructure-failure', reason: 'feed-stage' }] }],
+});
+assert.equal(finalizeInfrastructure.ok, false, 'Finalize must reject evidence containing infrastructure failure');
+const finalizeRuntimeMissing = evaluateFinalize({ env: finalizeBaseEnv, runtime: { attempts: [] }, evidence: [] });
+assert.equal(finalizeRuntimeMissing.ok, false, 'Finalize must reject missing runtime attempts and evidence');
+const finalizeEvidenceMissing = evaluateFinalize({ env: finalizeBaseEnv, runtime: { attempts: [finalizeAttempt] }, evidence: [] });
+assert.equal(finalizeEvidenceMissing.ok, false, 'Finalize must reject missing evidence for a runtime attempt');
+const finalizeCountMismatch = evaluateFinalize({
+  env: finalizeBaseEnv, runtime: { attempts: [finalizeAttempt] }, evidence: [finalizeEvidence, { ...finalizeEvidence, pairId: 'extra' }],
+});
+assert.equal(finalizeCountMismatch.ok, false, 'Finalize must reject a runtime/evidence count mismatch');
+const finalizeIdentityMismatch = evaluateFinalize({
+  env: finalizeBaseEnv, runtime: { attempts: [finalizeAttempt] }, evidence: [{ ...finalizeEvidence, profile: 'DEVICE_other' }],
+});
+assert.equal(finalizeIdentityMismatch.ok, false, 'Finalize must reject a runtime/evidence identity mismatch');
+for (const outcome of ['failure', 'cancelled', 'skipped', '']) {
+  const result = evaluateFinalize({ env: { ...finalizeBaseEnv, PROBE_BUILD_OUTCOME: outcome }, runtime: { attempts: [finalizeAttempt] }, evidence: [finalizeEvidence] });
+  assert.equal(result.ok, false, `Finalize must reject build outcome ${outcome || 'empty'}`);
+}
 
 console.log('Package Probe final-only and paired runner checks passed.');
