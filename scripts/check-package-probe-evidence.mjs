@@ -471,6 +471,44 @@ try {
 } finally {
   rmSync(ledeSummaryDir, { recursive: true, force: true });
 }
+const metadataRefreshFailure = createEvidence({
+  log: '',
+  runtime: { mode: 'package-compile', pairedComparison: true,
+    comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] }, conclusion: 'inconclusive', roots: ['oscam'],
+    attempts: [{ phase: 'paired', pairId: 'pair:metadata', pairConclusion: 'preflight-failure', result: 'inconclusive',
+      reason: 'metadata-unresolved', preflightResult: 'inconclusive', preflightReason: 'metadata-unresolved',
+      preflight: { result: 'inconclusive', reason: 'metadata-unresolved', errorSummary: 'metadata refresh failed after Feeds installation',
+        stage: { status: 'failure', refresh: { status: 'failure', packageInfo: 'present' } } },
+      baseline: { result: 'not-run', reason: 'preflight-failure' }, final: { result: 'not-run', reason: 'preflight-failure' }, stages: {} }] },
+  env: { PROBE_ROOTS: 'oscam', PROBE_MODE: 'package-compile' },
+});
+assert.equal(metadataRefreshFailure.conclusion, 'inconclusive', 'metadata refresh failure must remain operational inconclusive');
+const metadataIssue = metadataRefreshFailure.issues.find((issue) => issue.type === 'metadata-unresolved');
+assert(metadataIssue, 'metadata refresh failure must be a structured evidence issue');
+assert.equal(metadataIssue.reason, 'metadata-unresolved');
+assert.equal(metadataIssue.phase, 'preflight');
+assert.equal(metadataIssue.errorSummary, 'metadata refresh failed after Feeds installation');
+assert(evidenceSummaryLines(metadataRefreshFailure).some((line) => line.includes('metadata-unresolved') && line.includes('metadata refresh failed after Feeds installation')),
+  'single-environment evidence must expose the metadata refresh failure details');
+const metadataRefreshScope = aggregateScopeConclusions([metadataRefreshFailure], { depth: 1, exhaustive: true })[0];
+assert.equal(metadataRefreshScope.metadataUnresolved, 1);
+assert.equal(metadataRefreshScope.infraInconclusive, 1);
+assert.equal(metadataRefreshScope.unattributedInconclusive, 0);
+const metadataRefreshSummaryDir = mkdtempSync(join(tmpdir(), 'probe-metadata-refresh-summary-'));
+try {
+  writeFileSync(join(metadataRefreshSummaryDir, 'evidence.json'), JSON.stringify(metadataRefreshFailure));
+  const metadataRefreshAggregate = aggregateEvidence(metadataRefreshSummaryDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'failure', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(metadataRefreshAggregate.overallConclusion, 'inconclusive');
+  assert.equal(metadataRefreshAggregate.overallResult, 'INFRA ERROR', 'metadata refresh failure must remain red at aggregate level');
+  assert(metadataRefreshAggregate.lines.some((line) => line.includes('After-Feeds metadata refresh failed / Feeds 后元数据刷新失败: 1') &&
+    line.includes('metadata-unresolved') && line.includes('metadata refresh failed after Feeds installation')),
+  'Source summary Notes must identify the after-Feeds metadata refresh failure');
+  assert(!metadataRefreshAggregate.lines.some((line) => line.includes('Undetermined / 未定')),
+    'metadata refresh failure must not be reduced to a generic Undetermined note');
+} finally {
+  rmSync(metadataRefreshSummaryDir, { recursive: true, force: true });
+}
 const pairedStats = aggregateScopeConclusions([
   { source: 'paired', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-failure', packageCauseKind: 'direct', pairedComparison: true, pairConclusion: 'incompatible-direct', roots: ['alpha'], issues: [] },
   { source: 'paired', branch: 'main', conclusion: 'incompatible', reason: 'package-compile-dependency-failure', packageCauseKind: 'dependency', pairedComparison: true, pairConclusion: 'incompatible-dependency', roots: ['alpha'], issues: [] },

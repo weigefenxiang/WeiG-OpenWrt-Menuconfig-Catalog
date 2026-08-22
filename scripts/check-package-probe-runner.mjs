@@ -31,6 +31,10 @@ if (args.includes('defconfig')) {
   if (new RegExp('^CONFIG_PACKAGE_${rootPackage}=[my]$', 'm').test(readFileSync(configPath, 'utf8'))) appendFileSync(configPath, 'CONFIG_PACKAGE_auto-dependency=y\\n');
 }
 if (args.includes('prepare-tmpinfo')) {
+  if (process.env.FAKE_FAIL_METADATA_REFRESH === 'true') {
+    console.error('ERROR: metadata refresh failed after Feeds installation');
+    process.exit(2);
+  }
   mkdirSync(join(process.cwd(), 'tmp'), { recursive: true });
   writeFileSync(join(process.cwd(), 'tmp', '.targetinfo'), 'Target: x86/64\\n');
   const unavailable = process.env.FAKE_PACKAGE_UNAVAILABLE === 'true';
@@ -166,6 +170,13 @@ function scenario(mode, options = {}) {
     const workdir = join(directory, 'upstream');
     const bin = join(directory, 'bin');
     mkdirSync(join(workdir, 'scripts'), { recursive: true });
+    if (options.stalePackageInfo || options.staleRootMetadata) {
+      mkdirSync(join(workdir, 'tmp'), { recursive: true });
+      const stale = options.staleRootMetadata
+        ? `Source-Makefile: package/network/${rootPackage}/Makefile\nPackage: ${rootPackage}\n`
+        : 'Source-Makefile: package/network/stale/Makefile\nPackage: stale\n';
+      writeFileSync(join(workdir, 'tmp', '.packageinfo'), stale);
+    }
     mkdirSync(bin, { recursive: true });
     const fakeMake = join(directory, 'fake-make.mjs');
     writeFileSync(fakeMake, fakeMakeSource(rootPackage));
@@ -193,7 +204,8 @@ function scenario(mode, options = {}) {
         PROBE_MAKE_COMMAND: process.execPath,
         PROBE_MAKE_ARGUMENT: fakeMake,
         FAKE_MAKE_LOG: makeLog,
-        FAKE_FAIL_PARALLEL: String(options.failParallel === true),
+         FAKE_FAIL_PARALLEL: String(options.failParallel === true),
+         FAKE_FAIL_METADATA_REFRESH: String(options.failMetadataRefresh === true),
         FAKE_FAIL_INFRA: String(options.failInfrastructure === true),
         FAKE_EXPECT_DISABLED: String(options.expectDisabled === true),
         FAKE_PACKAGE_UNAVAILABLE: String(options.packageUnavailable === true),
@@ -287,6 +299,54 @@ assert.equal(paired.calls.some((args) => args.includes('package/network/alpha/co
 assert.equal(paired.runtime.attempts[0].baseline.rootTargets.length, 0, 'empty B roots must not invoke a make world target');
 assert.equal(paired.runtime.attempts[0].final.resolvedConfigDiff.addedDependencies.includes('auto-dependency'), true);
 assert.equal(paired.runtime.attempts[0].newDependencyTargets.includes('package/network/auto-dependency/compile'), true);
+
+for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
+  const refreshed = scenario(mode, { paired: true, stalePackageInfo: true });
+  const refreshedAttempt = refreshed.runtime.attempts[0];
+  assert(refreshed.calls.filter((args) => args.includes('prepare-tmpinfo')).length >= 1,
+    `${mode} preflight must refresh package metadata even when stale tmp/.packageinfo exists`);
+  assert(refreshed.log.includes('Preflight: refreshing package metadata after Feeds installation.'),
+    `${mode} preflight must log the post-Feeds metadata refresh`);
+  assert.equal(refreshedAttempt.preflight.result, 'available', `${mode} refresh must replace stale metadata`);
+  assert.equal(refreshedAttempt.preflight.stage.refresh.status, 'success');
+  assert.equal(refreshedAttempt.baseline.result, 'compatible', `${mode} refreshed metadata must allow Baseline B`);
+  assert.equal(refreshedAttempt.final.result, 'compatible', `${mode} refreshed metadata must allow Final A`);
+}
+
+for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
+  const refreshedMissing = scenario(mode, { paired: true, packageUnavailable: true, staleRootMetadata: true });
+  const refreshedMissingAttempt = refreshedMissing.runtime.attempts[0];
+  assert.equal(refreshedMissing.runtime.conclusion, 'skipped', `${mode} must trust refreshed missing metadata`);
+  assert.equal(refreshedMissingAttempt.pairConclusion, 'preflight-skipped');
+  assert.equal(refreshedMissingAttempt.baseline.result, 'not-run');
+  assert.equal(refreshedMissingAttempt.final.result, 'not-run');
+  assert(refreshedMissing.calls.filter((args) => args.includes('prepare-tmpinfo')).length >= 1,
+    `${mode} must refresh before deciding that the root is absent`);
+  assert.equal(refreshedMissingAttempt.preflight.stage.refresh.status, 'success');
+  assert.equal(refreshedMissing.calls.some((args) => args.includes('defconfig')), false,
+    `${mode} refreshed missing metadata must not enter B/A`);
+}
+
+for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
+  const failedRefresh = scenario(mode, {
+    paired: true,
+    failMetadataRefresh: true,
+    staleRootMetadata: true,
+    expectedStatus: 1,
+  });
+  const failedRefreshAttempt = failedRefresh.runtime.attempts[0];
+  assert.equal(failedRefresh.runtime.conclusion, 'inconclusive', `${mode} refresh failure must be operational`);
+  assert.equal(failedRefresh.runtime.reason, 'metadata-unresolved');
+  assert.equal(failedRefreshAttempt.preflightResult, 'inconclusive');
+  assert.equal(failedRefreshAttempt.preflightReason, 'metadata-unresolved');
+  assert.equal(failedRefreshAttempt.baseline.result, 'not-run');
+  assert.equal(failedRefreshAttempt.final.result, 'not-run');
+  assert.equal(failedRefreshAttempt.preflight.stage.refresh.status, 'failure');
+  assert(failedRefresh.calls.filter((args) => args.includes('prepare-tmpinfo')).length >= 1,
+    `${mode} refresh failure must not fall back to stale metadata`);
+  assert.equal(failedRefresh.calls.some((args) => args.includes('defconfig')), false,
+    `${mode} refresh failure must stop before B/A`);
+}
 
 const pairedShortCircuit = scenario('package-compile', { paired: true, failTargetPrerequisite: true, expectedStatus: 0 });
 assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.result, 'inconclusive');

@@ -728,23 +728,25 @@ async function preflightRoots(roots = ROOTS) {
   const startedAt = new Date(started).toISOString();
   let packageInfo = '';
   let metadataFailure = null;
+  let refreshStatus = 'not-run';
   let phaseLog = '';
   await withPhaseLog('preflight', async (logFile) => {
     phaseLog = logFile;
-    try {
-      packageInfo = readPackageInfo();
-      log('Preflight: using installed Source/Branch package metadata.');
-    } catch (error) {
-      log(`Preflight: package metadata is unavailable; running metadata-only preparation: ${error.message}`);
-      const metadata = await command('bash', [join(ROOT, 'scripts', 'prepare-metadata.sh'), 'metadata-only']);
-      if (!metadata.ok) {
-        metadataFailure = { reason: 'metadata-unresolved', errorSummary: classifyPrerequisiteFailure(metadata.output).errorSummary };
-      } else {
-        try {
-          packageInfo = readPackageInfo();
-        } catch (readError) {
-          metadataFailure = { reason: 'metadata-unresolved', errorSummary: readError.message };
-        }
+    log('Preflight: refreshing package metadata after Feeds installation.');
+    const metadata = await command('bash', [join(ROOT, 'scripts', 'prepare-metadata.sh'), 'metadata-only']);
+    refreshStatus = metadata.ok ? 'success' : 'failure';
+    if (!metadata.ok) {
+      const detail = classifyPrerequisiteFailure(metadata.output);
+      metadataFailure = {
+        reason: 'metadata-unresolved',
+        errorSummary: detail.errorSummary || 'metadata refresh failed after Feeds installation',
+      };
+    } else {
+      try {
+        packageInfo = readPackageInfo();
+      } catch (readError) {
+        refreshStatus = 'failure';
+        metadataFailure = { reason: 'metadata-unresolved', errorSummary: readError.message };
       }
     }
   });
@@ -752,6 +754,11 @@ async function preflightRoots(roots = ROOTS) {
   const stage = {
     status: metadataFailure ? 'failure' : 'success', startedAt, finishedAt,
     durationMs: Math.max(0, Date.now() - started),
+    refresh: {
+      status: refreshStatus,
+      command: 'scripts/prepare-metadata.sh metadata-only',
+      packageInfo: packageInfo ? 'present' : 'missing',
+    },
   };
   if (metadataFailure) {
     log(`ERROR: Preflight package metadata could not be resolved: ${metadataFailure.errorSummary || metadataFailure.reason}`);

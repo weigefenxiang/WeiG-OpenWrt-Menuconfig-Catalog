@@ -158,6 +158,11 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     issues.push({ type: 'not-applicable', roots: attempt.unavailableRoots || [] });
   } else if (attempt.reason === 'root-combination-rejected') {
     issues.push({ type: 'kconfig-combination-rejected', roots: attempt.rejectedRoots || [] });
+  } else if (attempt.reason === 'metadata-unresolved' || attempt.preflightReason === 'metadata-unresolved' ||
+    attempt.preflight?.reason === 'metadata-unresolved') {
+    const errorSummary = String(attempt.errorSummary || attempt.preflight?.errorSummary || '').trim();
+    issues.push({ type: 'metadata-unresolved', reason: 'metadata-unresolved', phase: 'preflight',
+      ...(errorSummary ? { errorSummary } : {}) });
   } else if (['virtual-boot-unsupported', 'runtime-control-unavailable', 'reboot-control-unavailable'].includes(attempt.reason)) {
     issues.push({ type: 'capability-unavailable', reason: attempt.reason });
   } else if (attempt.reason === 'target-prerequisite-failure') {
@@ -367,6 +372,8 @@ function conclusionStats(rows) {
   const baselineFailure = rows.filter((row) => row.conclusion === 'inconclusive' &&
     (row.pairConclusion === 'baseline-failure' || row.reason === 'baseline-failure') &&
     !reportedTargetPrerequisiteCause(row) && !reportedPackagePrerequisiteCause(row)).length;
+  const metadataUnresolved = rows.filter((row) => row.conclusion === 'inconclusive' &&
+    (row.issues || []).some((issue) => issue.type === 'metadata-unresolved')).length;
   const infraInconclusive = rows.filter((row) => row.conclusion === 'inconclusive' && !reportedTargetPrerequisiteCause(row) &&
     !reportedPackagePrerequisiteCause(row) &&
     (row.issues || []).some((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(issue.type))).length;
@@ -374,7 +381,7 @@ function conclusionStats(rows) {
   const conclusive = compatible + incompatible;
   return { attempted: rows.length, compatible, incompatible, skipped, inconclusive, preflightSkipped, reportedTargetPrerequisite,
     reportedPackagePrerequisite,
-    baselineFailure, infraInconclusive, unattributedInconclusive, conclusive,
+    baselineFailure, metadataUnresolved, infraInconclusive, unattributedInconclusive, conclusive,
     compatibilityRate: conclusive ? compatible / conclusive : null };
 }
 
@@ -470,6 +477,8 @@ export function aggregateScopeConclusions(evidence, options = {}) {
       prerequisiteCauses: [...new Set(reportedPackageRows.map(reportedPackagePrerequisiteCause).filter(Boolean))],
       failedBuildTargets: [...new Set(reportedPackageRows.flatMap((row) => row.failedBuildTargets || []))],
       prerequisiteErrors: [...new Set(reportedPackageRows.map((row) => row.errorSummary || '').filter(Boolean))],
+      metadataRefreshErrors: [...new Set(rows.flatMap((row) => (row.issues || [])
+        .filter((issue) => issue.type === 'metadata-unresolved').map((issue) => issue.errorSummary || '').filter(Boolean)))],
       unavailableRoots: [...new Set(rows.flatMap((row) => row.unavailableRoots || []))],
     };
   }).sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
@@ -537,10 +546,15 @@ function scopeNote(scope) {
       ].filter(Boolean))].join('; ') || 'reported prerequisite';
       notes.push(`Package prerequisite reported inconclusive / 插件编译前置失败待定: ${reportedPackagePrerequisite} (${details})`);
     }
-    if (scope.infraInconclusive > 0) {
-      const kinds = scope.infrastructureReasons || [];
+    if (scope.metadataUnresolved > 0) {
+      const details = [...new Set(['metadata-unresolved', ...(scope.metadataRefreshErrors || [])].filter(Boolean))].join('; ');
+      notes.push(`After-Feeds metadata refresh failed / Feeds 后元数据刷新失败: ${scope.metadataUnresolved} (${details})`);
+    }
+    const otherInfraInconclusive = Math.max(0, Number(scope.infraInconclusive || 0) - Number(scope.metadataUnresolved || 0));
+    if (otherInfraInconclusive > 0) {
+      const kinds = (scope.infrastructureReasons || []).filter((kind) => kind !== 'metadata-unresolved');
       const kind = kinds.length ? kinds.join(', ') : 'infrastructure';
-      notes.push(`Infrastructure incomplete / 基础设施未完成: ${scope.infraInconclusive} (${kind})`);
+      notes.push(`Infrastructure incomplete / 基础设施未完成: ${otherInfraInconclusive} (${kind})`);
     }
     if (scope.unattributedInconclusive > 0) {
       notes.push(`Undetermined / 未定: ${scope.unattributedInconclusive}`);
