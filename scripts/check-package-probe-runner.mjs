@@ -88,6 +88,7 @@ if (process.env.FAKE_SHARED_REPLAY_PREPARE_FAIL === 'true' && process.env.PROBE_
     console.error('bash: line 1: ' + host + '/bin/gzip: No such file or directory');
     console.error('make[3] -C tools/libdeflate compile');
     console.error('ERROR: tools/libdeflate failed to build.');
+    process.exit(2);
   } else if (process.env.FAKE_SHARED_REPLAY_PREPARE_CAPABILITY === 'true') {
     console.error("No rule to make target '/tmp/.probe-replays/tmp/.build'");
     process.exit(2);
