@@ -41,8 +41,12 @@ case "$cmd" in
     fi
     if [[ "$mode" == "network-fail" ]]; then
       echo "fatal: unable to access '\${uri%%;*}/': Failed to connect to host port 443: Couldn't connect to server" >&2
+    elif [[ "$mode" == "gateway-fail" ]]; then
+      echo "fatal: unable to access '\${uri%%;*}/': The requested URL returned error: 504" >&2
+    elif [[ "$mode" == "auth-fail" ]]; then
+      echo "fatal: could not read Username for '\${uri%%;*}': terminal prompts disabled" >&2
     else
-      echo "mock feed update failure" >&2
+      echo "fatal: unable to access '\${uri%%;*}/': The requested URL returned error: 504" >&2
     fi
     exit 1
     ;;
@@ -62,6 +66,7 @@ esac
         PATH: `${join(dir, 'bin')}:${process.env.PATH || ''}`,
         PROBE_LOG: join(dir, 'probe.log'),
         PROBE_FEEDS_RUNTIME: join(dir, 'runtime.json'),
+        PROBE_FEED_BACKOFF_BASE_SECONDS: '0',
       },
     });
     return {
@@ -74,29 +79,41 @@ esac
   }
 }
 
-const genericFailure = runScenario({ mode: 'generic-fail' });
-assert.equal(genericFailure.status, 1);
-assert.equal((genericFailure.output.match(/^Probe feeds: updating packages provider /gm) || []).length, 9,
-  'feed-update failures must receive three attempts on each of three providers');
-assert.equal((genericFailure.output.match(/^Probe feeds: switching packages provider /gm) || []).length, 2,
-  'feed-update failures must switch source exactly twice before failing');
-assert(genericFailure.output.includes('provider 1/3 git.openwrt.org attempt 3/3 failed'),
+const gatewayFailure = runScenario({ mode: 'gateway-fail' });
+assert.equal(gatewayFailure.status, 1);
+assert.equal((gatewayFailure.output.match(/^Probe feeds: updating packages provider /gm) || []).length, 9,
+  'HTTP 504 failures must receive three attempts on each of three providers');
+assert.equal((gatewayFailure.output.match(/^Probe feeds: switching packages provider /gm) || []).length, 2,
+  'HTTP 504 failures must switch source exactly twice before failing');
+assert(gatewayFailure.output.includes('provider 1/3 git.openwrt.org attempt 3/3 failed'),
   'the upstream provider must be exhausted before the first source switch');
-assert(genericFailure.output.includes('provider 2/3 github-openwrt attempt 3/3 failed'),
+assert(gatewayFailure.output.includes('provider 2/3 github-openwrt attempt 3/3 failed'),
   'the GitHub provider must be exhausted before the second source switch');
-assert(genericFailure.output.includes('provider 3/3 codeberg-openwrt attempt 3/3 failed'),
+assert(gatewayFailure.output.includes('provider 3/3 codeberg-openwrt attempt 3/3 failed'),
   'the final Codeberg provider must receive all three attempts');
-assert(genericFailure.output.includes('exhausted 3 provider(s) after 9 total attempts'),
+assert(gatewayFailure.output.includes('exhausted 3 provider(s) after 9 total attempts'),
   'the feed stage must not fail before all nine attempts are exhausted');
-assert.equal(genericFailure.runtime.failureReason, 'feed-update');
-assert.equal(genericFailure.runtime.feeds[0]?.attempts, 9);
-assert.equal(genericFailure.runtime.feeds[0]?.provider, 'codeberg-openwrt');
+assert.equal(gatewayFailure.runtime.failureReason, 'feed-network');
+assert.equal(gatewayFailure.runtime.failureClass, 'feed-fetch-infrastructure');
+assert(gatewayFailure.output.includes('class=feed-fetch-infrastructure'),
+  'exhausted transient feed failures must expose the infrastructure classification in logs');
+assert.equal(gatewayFailure.runtime.feeds[0]?.attempts, 9);
+assert.equal(gatewayFailure.runtime.feeds[0]?.provider, 'codeberg-openwrt');
 
 const networkFailure = runScenario({ mode: 'network-fail' });
 assert.equal(networkFailure.status, 1);
 assert.equal(networkFailure.runtime.failureReason, 'feed-network',
   'Failed to connect / Could not connect errors must be classified as feed-network');
 assert.equal(networkFailure.runtime.feeds[0]?.attempts, 9);
+
+const authFailure = runScenario({ mode: 'auth-fail' });
+assert.equal(authFailure.status, 1);
+assert.equal((authFailure.output.match(/^Probe feeds: updating packages provider /gm) || []).length, 1,
+  'authentication failures must fail immediately without retrying or switching providers');
+assert(!authFailure.output.includes('switching packages provider'),
+  'authentication failures must not try an alternate provider');
+assert.equal(authFailure.runtime.failureReason, 'feed-permanent');
+assert.equal(authFailure.runtime.failureClass, 'feed-fetch-permanent');
 
 const githubRecovery = runScenario({ mode: 'github-success' });
 assert.equal(githubRecovery.status, 0);
@@ -107,5 +124,7 @@ assert(!githubRecovery.output.includes('codeberg-openwrt'), 'a successful first 
 assert.equal(githubRecovery.runtime.outcome, 'success');
 assert.equal(githubRecovery.runtime.feeds[0]?.provider, 'github-openwrt');
 assert.equal(githubRecovery.runtime.feeds[0]?.attempts, 4);
+assert(githubRecovery.output.includes('exponential backoff'),
+  'feed retries must identify exponential backoff in diagnostics');
 
 console.log('Package Probe feed failover checks passed.');

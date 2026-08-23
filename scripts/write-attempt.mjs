@@ -48,6 +48,11 @@ const attempt = {
   status,
   stage: status === 'success' ? 'complete' : (failed?.[0] || 'unknown'),
   outcomes: Object.fromEntries(steps),
+  feedFailure: process.env.FEEDS_FAILURE_REASON ? {
+    reason: process.env.FEEDS_FAILURE_REASON,
+    class: process.env.FEEDS_FAILURE_CLASS || 'feed-fetch-infrastructure',
+    feed: process.env.FEEDS_FAILURE_FEED || '',
+  } : null,
   attemptedAt: new Date().toISOString(),
   runUrl: process.env.RUN_URL,
   run: {
@@ -76,6 +81,7 @@ const summary = [
   `Compatibility mode: ${attempt.compatibilityMode}`,
   `Final status: ${attempt.status}`,
   `Failed stage: ${attempt.status === 'failure' ? attempt.stage : '-'}`,
+  `Feed failure: ${attempt.feedFailure ? `${attempt.feedFailure.class} / ${attempt.feedFailure.reason} / ${attempt.feedFailure.feed || '-'}` : '-'}`,
   `Failure log: ${failureLog}`,
   `Artifact: ${attempt.artifactName}`,
   `Run ID: ${attempt.run.id}`,

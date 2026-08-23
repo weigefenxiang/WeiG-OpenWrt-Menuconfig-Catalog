@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { buildFailureFingerprint, classifyPrerequisiteFailure, isCommandInfrastructureFailure, isReportedInconclusive, probeResultExitCode } from './package-probe-failure-classification.mjs';
+import { buildFailureFingerprint, classifyPrerequisiteFailure, extractFailureErrors, isCommandInfrastructureFailure, isReportedInconclusive, probeResultExitCode } from './package-probe-failure-classification.mjs';
 import { evaluateFinalize } from './finalize-package-probe.mjs';
 
 const runner = resolve(import.meta.dirname, 'run-package-probe.mjs');
 
 function fakeMakeSource(rootPackage = 'alpha') {
   return `#!/usr/bin/env node
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 const args = process.argv.slice(2);
 const rootSource = 'package/network/${rootPackage}/Makefile';
@@ -45,6 +45,16 @@ if (args.includes('prepare-tmpinfo')) {
   writeFileSync(join(process.cwd(), 'tmp', '.packageinfo'), unavailable
     ? 'Source-Makefile: package/network/beta/Makefile\\nPackage: beta\\n'
     : 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\n');
+}
+if (process.env.PROBE_REPLAY === 'true' && args.includes('prepare') && process.env.FAKE_REPLAY_LAYOUT_LOG) {
+  const required = { build_dir: 'BUILD_DIR', staging_dir: 'STAGING_DIR', staging_dir_host: 'STAGING_DIR_HOST', tmp: 'TMP_DIR', bin: 'BIN_DIR' };
+  const variables = Object.fromEntries(args.filter((arg) => arg.includes('=')).map((arg) => arg.split(/=(.*)/s).slice(0, 2)));
+  const missing = Object.entries(required).filter(([, variable]) => !variables[variable] || !existsSync(variables[variable]) || !statSync(variables[variable]).isDirectory()).map(([name]) => name);
+  appendFileSync(process.env.FAKE_REPLAY_LAYOUT_LOG, JSON.stringify({ missing }) + '\\n');
+  if (missing.length) {
+    console.error('ERROR: replay workspace is incomplete');
+    process.exit(2);
+  }
 }
 if (process.env.FAKE_SHARED_REPLAY_PREPARE_FAIL === 'true' && process.env.PROBE_REPLAY === 'true' && args.includes('prepare')) {
   if (process.env.FAKE_SHARED_REPLAY_PREPARE_INFRA === 'true') {
@@ -91,6 +101,10 @@ if (process.env.FAKE_SHARED_REPLAY_FAIL === 'true' && args.includes('package/net
   console.error('ERROR: package/network/shared failed to build');
   process.exit(2);
 }
+if (process.env.FAKE_SHARED_REPLAY_UNATTRIBUTED === 'true' && args.includes('package/network/shared/compile')) {
+  console.error('collect2: error: ld returned 1 exit status');
+  process.exit(2);
+}
 if (process.env.FAKE_FAIL_INNER_KERNEL_WRAPPER === 'true' && rootCompile) {
   console.error('ERROR: module crypto/geniv.ko is missing');
   console.error('ERROR: package/kernel/linux failed to build');
@@ -128,6 +142,16 @@ if (process.env.FAKE_FAIL_FIRMWARE_PREREQUISITE === 'true' && args.includes('tar
   console.error('ERROR: module crypto/geniv.ko is missing');
   console.error('ERROR: package/kernel/linux failed to build');
   process.exit(2);
+}
+if ((process.env.FAKE_VIRTUAL_ARTIFACT === 'true' || process.env.FAKE_VIRTUAL_ARTIFACT_FINAL_ONLY === 'true') && args.includes('target/install')) {
+  const finalOnlyMarker = join(process.cwd(), '.fake-virtual-artifact-built');
+  const shouldWriteArtifact = process.env.FAKE_VIRTUAL_ARTIFACT_FINAL_ONLY !== 'true' || existsSync(finalOnlyMarker);
+  if (process.env.FAKE_VIRTUAL_ARTIFACT_FINAL_ONLY === 'true' && !existsSync(finalOnlyMarker)) writeFileSync(finalOnlyMarker, 'baseline');
+  if (shouldWriteArtifact) {
+    const artifactDirectory = join(process.cwd(), 'bin', 'targets', 'x86', '64');
+    mkdirSync(artifactDirectory, { recursive: true });
+    writeFileSync(join(artifactDirectory, 'test-combined.img'), 'fake firmware');
+  }
 }
 if (process.env.FAKE_FAIL_PARALLEL === 'true' && rootCompile && args[0] !== '-j1') process.exitCode = 1;
 if (process.env.FAKE_FAIL_TARGET_PREREQUISITE === 'true' && args.includes('prepare')) {
@@ -177,6 +201,19 @@ if (process.env.FAKE_FAIL_TARGET_PREREQUISITE_UNATTRIBUTED === 'true' && args.in
 function qemustartSource() {
   return `#!/usr/bin/env bash
 set -eu
+while [ "\$#" -gt 0 ]; do
+  case "\$1" in
+    --rootfs|--kernel) shift ;;
+  esac
+  shift
+done
+if [ -n "\${FAKE_QEMU_LOG:-}" ]; then echo invoked >> "\$FAKE_QEMU_LOG"; fi
+if [ "\${FAKE_QEMU_ALWAYS_FAIL:-false}" = "true" ] || { [ "\${FAKE_QEMU_FAIL_AFTER_FIRST:-false}" = "true" ] && [ -f "\${FAKE_QEMU_COUNTER_FILE:?}" ]; }; then
+  touch "\${FAKE_QEMU_COUNTER_FILE:?}"
+  echo 'guest boot did not reach a console'
+  while IFS= read -r line; do :; done
+fi
+if [ -n "\${FAKE_QEMU_COUNTER_FILE:-}" ]; then touch "\$FAKE_QEMU_COUNTER_FILE"; fi
 echo 'Please press Enter to activate this console.'
 while IFS= read -r line; do
   case "$line" in
@@ -219,6 +256,10 @@ function scenario(mode, options = {}) {
       writeFileSync(conf, "if (process.env.FAKE_FAIL_L1_BASELINE_INFRA === 'true' && process.argv.some((arg) => arg.includes('baseline'))) { console.error('curl: (6) Could not resolve host: l1.example.invalid'); process.exit(2); }\nif (process.env.FAKE_FAIL_L1_BASELINE === 'true' && process.argv.some((arg) => arg.includes('DEVICE_bad')) && process.argv.some((arg) => arg.includes('baseline'))) process.exit(2);\nprocess.exit(0);\n");
     }
     const makeLog = join(directory, 'make.jsonl');
+    const replayLayoutLog = join(directory, 'replay-layout.jsonl');
+    if (options.replayPathConflict) {
+      writeFileSync(join(workdir, '.probe-replays'), 'not-a-directory');
+    }
     const runtimeFile = join(directory, 'runtime.json');
     const result = spawnSync(process.execPath, [runner], {
       cwd: resolve(import.meta.dirname, '..'),
@@ -245,9 +286,11 @@ function scenario(mode, options = {}) {
         FAKE_FAIL_L1_BASELINE_INFRA: String(options.failL1BaselineInfrastructure === true),
         FAKE_FAIL_PREREQUISITE: String(options.failPrerequisite === true),
         FAKE_FAIL_SHARED_TARGET: String(options.failSharedTarget === true),
-        FAKE_SHARED_REPLAY_FAIL: String(options.failSharedReplay === true),
+         FAKE_SHARED_REPLAY_FAIL: String(options.failSharedReplay === true),
+         FAKE_SHARED_REPLAY_UNATTRIBUTED: String(options.failSharedReplayUnattributed === true),
         FAKE_SHARED_REPLAY_PREPARE_FAIL: String(options.failSharedReplayPrepare === true),
         FAKE_SHARED_REPLAY_PREPARE_INFRA: String(options.failSharedReplayPrepareInfrastructure === true),
+        FAKE_REPLAY_LAYOUT_LOG: replayLayoutLog,
         FAKE_FAIL_INNER_KERNEL_WRAPPER: String(options.failInnerKernelWrapper === true),
         FAKE_FAIL_INNER_KERNEL_MAKE_ONLY: String(options.failInnerKernelMakeOnly === true),
         FAKE_FAIL_UNATTRIBUTED: String(options.failUnattributed === true),
@@ -255,7 +298,13 @@ function scenario(mode, options = {}) {
          FAKE_ROOTFS_ROOT_CONFLICT: String(options.rootfsRootConflict === true),
          FAKE_ROOTFS_DEPENDENCY_CONFLICT: String(options.rootfsDependencyConflict === true),
         FAKE_ROOTFS_UNRELATED_CONFLICT: String(options.rootfsUnrelatedConflict === true),
-        FAKE_FAIL_FIRMWARE_PREREQUISITE: String(options.failFirmwarePrerequisite === true),
+         FAKE_FAIL_FIRMWARE_PREREQUISITE: String(options.failFirmwarePrerequisite === true),
+         FAKE_VIRTUAL_ARTIFACT: String(options.virtualArtifact === true),
+         FAKE_VIRTUAL_ARTIFACT_FINAL_ONLY: String(options.virtualArtifactFinalOnly === true),
+         FAKE_QEMU_ALWAYS_FAIL: String(options.virtualBootAlwaysFail === true),
+         FAKE_QEMU_FAIL_AFTER_FIRST: String(options.virtualBootFailAfterFirst === true),
+         FAKE_QEMU_COUNTER_FILE: join(directory, 'qemu-counter'),
+         FAKE_QEMU_LOG: join(directory, 'qemu.jsonl'),
         FAKE_FAIL_TARGET_PREREQUISITE: String(options.failTargetPrerequisite === true),
         FAKE_TARGET_PREREQUISITE_CAUSE: String(options.targetPrerequisiteCause || ''),
         FAKE_FAIL_TARGET_PREREQUISITE_WRAPPER: String(options.failTargetPrerequisiteWrapper === true),
@@ -291,7 +340,9 @@ function scenario(mode, options = {}) {
     assert.equal(result.status, options.expectedStatus ?? 0, `${mode} failed:\n${result.stdout}\n${result.stderr}`);
     const calls = readFileSync(makeLog, 'utf8').trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
     const runtime = JSON.parse(readFileSync(runtimeFile, 'utf8'));
-    return { calls, runtime, log: readFileSync(join(directory, 'probe.log'), 'utf8') };
+    return { status: result.status, calls, runtime, log: readFileSync(join(directory, 'probe.log'), 'utf8'),
+      replayLayout: existsSync(replayLayoutLog) ? readFileSync(replayLayoutLog, 'utf8') : '',
+      qemuLog: existsSync(join(directory, 'qemu.jsonl')) ? readFileSync(join(directory, 'qemu.jsonl'), 'utf8') : '' };
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
@@ -343,9 +394,48 @@ for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', '
     `${mode} preflight must log the post-Feeds metadata refresh`);
   assert.equal(refreshedAttempt.preflight.result, 'available', `${mode} refresh must replace stale metadata`);
   assert.equal(refreshedAttempt.preflight.stage.refresh.status, 'success');
-  assert.equal(refreshedAttempt.baseline.result, 'compatible', `${mode} refreshed metadata must allow Baseline B`);
-  assert.equal(refreshedAttempt.final.result, 'compatible', `${mode} refreshed metadata must allow Final A`);
+  const virtualRuntimeOnly = ['boot-smoke', 'runtime-health', 'reboot-validation'].includes(mode);
+  assert.equal(refreshedAttempt.baseline.result, virtualRuntimeOnly ? 'skipped' : 'compatible', `${mode} refreshed metadata must preserve virtual coverage state`);
+  assert.equal(refreshedAttempt.final.result, virtualRuntimeOnly ? 'skipped' : 'compatible', `${mode} must run Final A through firmware when Baseline B runtime is unsupported`);
+  if (virtualRuntimeOnly) {
+    assert.equal(refreshedAttempt.baseline.deepestPassedLevel, 4, `${mode} Baseline B must reach firmware before runtime skip`);
+    assert.equal(refreshedAttempt.final.deepestPassedLevel, 4, `${mode} Final A must reach firmware despite B runtime skip`);
+    assert.equal(refreshedAttempt.final.runtimeCovered, false, `${mode} must report runtime coverage as unavailable`);
+    assert.equal(refreshed.calls.filter((args) => args.includes('target/install')).length, 2,
+      `${mode} must execute firmware integration for both B and A`);
+  }
 }
+
+const pairedRuntimeSkipAArtifact = scenario('boot-smoke', {
+  paired: true, virtualArtifactFinalOnly: true, expectedStatus: 0,
+});
+const runtimeSkipA = pairedRuntimeSkipAArtifact.runtime.attempts[0];
+assert.equal(runtimeSkipA.baseline.result, 'skipped',
+  'a Baseline-B without a virtual artifact must report uncovered runtime');
+assert.equal(runtimeSkipA.final.result, 'skipped',
+  'Final-A must remain skipped when only A produces a virtual artifact');
+assert.equal(runtimeSkipA.final.deepestPassedLevel, 4,
+  'an uncovered paired runtime must cap Final-A at firmware/L4');
+assert.equal(runtimeSkipA.final.runtimeCovered, false);
+assert.equal(pairedRuntimeSkipAArtifact.qemuLog, '',
+  'Final-A must not enter QEMU when Baseline-B runtime coverage is unavailable');
+
+const pairedBaselineBootFailure = scenario('boot-smoke', {
+  paired: true, virtualArtifact: true, virtualBootAlwaysFail: true, expectedStatus: 0,
+});
+assert.equal(pairedBaselineBootFailure.status, 0, 'a deterministic Baseline-B guest boot blocker must exit successfully');
+assert.equal(pairedBaselineBootFailure.runtime.attempts[0].baseline.result, 'blocked');
+assert.equal(pairedBaselineBootFailure.runtime.attempts[0].baseline.reason, 'base-profile-boot-failure');
+assert.equal(pairedBaselineBootFailure.runtime.attempts[0].final.result, 'not-run');
+
+const pairedFinalBootFailure = scenario('boot-smoke', {
+  paired: true, virtualArtifact: true, virtualBootFailAfterFirst: true, expectedStatus: 0,
+});
+assert.equal(pairedFinalBootFailure.runtime.attempts[0].baseline.result, 'compatible',
+  'a bootable Baseline-B must allow Final-A to run');
+assert.equal(pairedFinalBootFailure.runtime.attempts[0].final.result, 'incompatible',
+  'a Final-A guest boot failure must be plugin-visible');
+assert.equal(pairedFinalBootFailure.runtime.attempts[0].final.reason, 'final-boot-failed');
 
 for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', 'firmware-integration', 'boot-smoke', 'runtime-health', 'reboot-validation']) {
   const refreshedMissing = scenario(mode, { paired: true, packageUnavailable: true, staleRootMetadata: true });
@@ -383,10 +473,29 @@ for (const mode of ['config-resolve', 'package-compile', 'rootfs-integration', '
 }
 
 const pairedShortCircuit = scenario('package-compile', { paired: true, failTargetPrerequisite: true, expectedStatus: 0 });
+assert.equal(pairedShortCircuit.status, 0, 'a deterministic Baseline-B blocker must exit successfully');
 assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.result, 'blocked');
 assert.equal(pairedShortCircuit.runtime.attempts[0].final.result, 'not-run');
 assert.equal(pairedShortCircuit.runtime.attempts[0].baseline.targetPrerequisiteCause, 'patch-apply');
 assert.equal(pairedShortCircuit.calls.some((args) => args.includes('package/network/alpha/compile')), false, 'B failure must short-circuit A');
+
+const pairedBaselinePackageFailure = scenario('package-compile', {
+  paired: true, failRoot: true, expectedStatus: 0,
+  intent: [{ package: 'alpha', before: 'y', after: 'y' }],
+});
+assert.equal(pairedBaselinePackageFailure.status, 0, 'a deterministic Base Profile package blocker must exit successfully');
+assert.equal(pairedBaselinePackageFailure.runtime.attempts[0].baseline.result, 'blocked',
+  'a deterministic Base Profile package failure must be blocked at every depth');
+assert.equal(pairedBaselinePackageFailure.runtime.attempts[0].baseline.reason, 'base-profile-build-failure');
+assert.equal(pairedBaselinePackageFailure.runtime.attempts[0].final.result, 'not-run');
+
+const pairedBaselineUnknownFailure = scenario('package-compile', {
+  paired: true, failUnattributed: true, expectedStatus: 1,
+  intent: [{ package: 'alpha', before: 'y', after: 'y' }],
+});
+assert.equal(pairedBaselineUnknownFailure.runtime.attempts[0].baseline.result, 'inconclusive',
+  'an unknown Baseline-B script failure must not be upgraded to blocked');
+assert.equal(pairedBaselineUnknownFailure.runtime.attempts[0].final.result, 'not-run');
 
 const pairedBaselineDefconfigInfrastructure = scenario('package-compile', {
   paired: true, failDefconfigInfrastructure: true, expectedStatus: 1,
@@ -458,24 +567,52 @@ const pairedSharedBlocked = scenario('package-compile', {
   paired: true, failSharedTarget: true, failSharedReplay: true,
   targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
 });
+assert.equal(pairedSharedBlocked.status, 0, 'a confirmed shared-target Base Profile blocker must exit successfully');
 assert.equal(pairedSharedBlocked.runtime.attempts[0].result, 'blocked',
   'B replay failure must block Base Profile attribution');
 assert.equal(pairedSharedBlocked.runtime.attempts[0].reason, 'base-profile-build-failure');
 assert.equal(pairedSharedBlocked.runtime.attempts[0].counterfactual.result, 'failed');
 assert.equal(pairedSharedBlocked.runtime.attempts[0].counterfactual.reason, 'base-profile-build-failure');
 
+const pairedReplayUnknownFailure = scenario('package-compile', {
+  paired: true, failSharedTarget: true, failSharedReplayUnattributed: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y', expectedStatus: 1,
+});
+assert.equal(pairedReplayUnknownFailure.runtime.attempts[0].result, 'inconclusive',
+  'an unattributed shared-target replay failure must remain counterfactual-unresolved');
+assert.equal(pairedReplayUnknownFailure.runtime.attempts[0].reason, 'counterfactual-unresolved');
+assert.equal(pairedReplayUnknownFailure.runtime.attempts[0].counterfactual.reason, 'replay-target-unresolved');
+
 const pairedReplayPrepareBlocked = scenario('package-compile', {
   paired: true, failSharedTarget: true, failSharedReplayPrepare: true,
-  targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y', expectedStatus: 1,
 });
-assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].result, 'blocked',
-  'deterministic Baseline replay preparation failure must block the Base Profile');
-assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].reason, 'base-profile-blocked');
-assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].counterfactual.result, 'failed');
-assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].counterfactual.reason, 'base-profile-blocked');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].result, 'inconclusive',
+  'isolated replay preparation failure must remain unresolved until the shared target is entered');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].reason, 'counterfactual-unresolved');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].counterfactual.result, 'unresolved');
+assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].counterfactual.reason, 'replay-prepare-unresolved');
 assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].targetPrerequisiteCause, 'kernel-prerequisite');
 assert.deepEqual(pairedReplayPrepareBlocked.runtime.attempts[0].failedBuildTargets, ['target/linux']);
 assert.match(pairedReplayPrepareBlocked.runtime.attempts[0].failureFingerprint, /^[a-f0-9]{64}$/);
+
+const pairedReplayDirectories = scenario('package-compile', {
+  paired: true, failSharedTarget: true, targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
+});
+assert.equal(pairedReplayDirectories.runtime.attempts[0].counterfactual.result, 'passed');
+assert(pairedReplayDirectories.runtime.attempts[0].baselineReplay.replayDirectories.build_dir,
+  'isolated replay must record each private build directory');
+assert.match(pairedReplayDirectories.replayLayout, /"missing":\[\]/,
+  'isolated replay must create and verify all private build directories before prepare');
+
+const pairedReplayBootstrapUnresolved = scenario('package-compile', {
+  paired: true, failSharedTarget: true, replayPathConflict: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y', expectedStatus: 1,
+});
+assert.equal(pairedReplayBootstrapUnresolved.runtime.attempts[0].result, 'inconclusive',
+  'replay path/permission failures must remain unresolved');
+assert.equal(pairedReplayBootstrapUnresolved.runtime.attempts[0].reason, 'counterfactual-unresolved');
+assert.equal(pairedReplayBootstrapUnresolved.runtime.attempts[0].counterfactual.reason, 'replay-bootstrap-failure');
 
 const pairedReplayPrepareInfrastructure = scenario('package-compile', {
   paired: true, failSharedTarget: true, failSharedReplayPrepare: true,
@@ -693,6 +830,33 @@ assert.deepEqual(syncconfig.failedBuildTargets, ['target/linux']);
 const missingArtifact = classifyPrerequisiteFailure('ERROR: generated module output is missing\nERROR: package/kernel/linux failed to build');
 assert.equal(missingArtifact.cause, 'package-output-missing',
   'generic missing build artifacts must have a stable cause');
+const fallbackErrors = extractFailureErrors([
+  'curl: (22) The requested URL returned error: 404',
+  'Trying fallback mirror',
+  'curl: (22) The requested URL returned error: 404',
+  'No more mirrors to try',
+].join('\n'));
+assert.equal(fallbackErrors.terminalError, 'No more mirrors to try',
+  'terminal error must win over an earlier mirror 404');
+assert.equal(fallbackErrors.recoverableErrors.length, 1,
+  'recoverable mirror errors must be retained separately');
+const fallbackThenBuild = extractFailureErrors([
+  'curl: (22) The requested URL returned error: 404',
+  'Trying fallback mirror',
+  'ERROR: package/network/alpha failed to build',
+].join('\n'));
+assert.equal(fallbackThenBuild.terminalError, 'ERROR: package/network/alpha failed to build',
+  'a recovered 404 must not replace the terminal build wrapper');
+const legacyHostHeaders = classifyPrerequisiteFailure([
+  'The Linux kernel headers are older than the minimum required by the host toolchain',
+  'ERROR: target/linux failed to build',
+].join('\n'));
+assert.equal(legacyHostHeaders.cause, 'legacy-host-headers');
+const hostToolchain = classifyPrerequisiteFailure([
+  'The host compiler version is not supported by the build toolchain',
+  'ERROR: tools failed to build',
+].join('\n'));
+assert.equal(hostToolchain.cause, 'host-toolchain-compatibility');
 assert.equal(isCommandInfrastructureFailure({ code: -1, output: '' }), true,
   'spawn/Runner failure code -1 must remain infrastructure during replay attribution');
 assert.equal(buildFailureFingerprint(syncconfig), syncconfig.failureFingerprint,
@@ -757,9 +921,9 @@ assert.equal(l7.calls.filter((args) => args.includes('package/network/alpha/comp
 assert.equal(l7.calls.filter((args) => args.includes('package/compile')).length, 1, 'L7 must reuse one L3 package compile');
 assert.equal(l7.calls.filter((args) => args.includes('package/install')).length, 1, 'L7 must reuse one L3 package install');
 assert.equal(l7.calls.filter((args) => args.includes('target/install')).length, 1, 'L7 must reuse one L4 firmware integration');
-assert.equal(l7.runtime.conclusion, 'compatible');
-assert.equal(l7.runtime.attempts[0].deepestPassedLevel, 7);
-assert.equal(l7.runtime.attempts[0].stages.secondRuntimeHealth.status, 'success');
+assert.equal(l7.runtime.conclusion, 'skipped', 'L7 without a bootable test artifact must be a structured skip');
+assert.equal(l7.runtime.attempts[0].deepestPassedLevel, 4);
+assert.equal('secondRuntimeHealth' in l7.runtime.attempts[0].stages, false);
 
 const finalizeBaseEnv = {
   PROBE_BOOTSTRAP_OUTCOME: 'success', PROBE_CLONE_OUTCOME: 'success', PROBE_REQUIREMENTS_OUTCOME: 'success', PROBE_PYTHON_SETUP_OUTCOME: 'skipped',

@@ -6,6 +6,11 @@ import { createHash } from 'node:crypto';
 export const TARGET_PREREQUISITE_CAUSES = Object.freeze([
   'patch-apply',
   'toolchain-kernel-version',
+  // Host-side tool/header mismatches are deterministic Base Profile
+  // failures, but must remain source-independent.  Do not key these on a
+  // particular release, package, or build tool name.
+  'host-toolchain-compatibility',
+  'legacy-host-headers',
   'kernel-prerequisite',
   // Kconfig is a second (kernel-owned) resolver.  Keep its EOF/syncconfig
   // failure as a generic cause; the concrete symbol is deliberately not
@@ -44,9 +49,14 @@ export function isMemoryExhaustion(value) {
 export function isMakeInfrastructureFailure(value) {
   const text = String(value || '');
   if (/No space left on device|Prerequisite check failed|Build dependency:\s+Please install|Please install Python 2\.x/i.test(text)) return true;
-  if (/Hash check failed|download failed|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(text)) return true;
-  if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(text)) return true;
   if (isMemoryExhaustion(text)) return true;
+  // Only the terminal error is authoritative for network classification.
+  // A fallback sequence may contain an early 404/403 while eventually
+  // reaching a deterministic package error; scanning the entire log would
+  // incorrectly turn that build failure into infrastructure noise.
+  const terminal = extractFailureErrors(text).terminalError || text;
+  if (/Hash check failed|download failed|No more (?:mirrors?|fallbacks?)(?:\s+to\s+try)?|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:403|404|429|5\d\d)|returned error:\s*(?:403|404|429|5\d\d)|curl:\s*\([^)]*\)\s*(?:HTTP\s+)?(?:403|404|429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(terminal)) return true;
+  if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(terminal)) return true;
   return /No rule to make target[^\n]*build_dir[^\n]*\/linux-[^/\s]+\/linux-[^/\s]+\/\.config/i.test(text);
 }
 
@@ -56,6 +66,7 @@ export function isCommandInfrastructureFailure(result) {
 
 function causeFromLines(lines) {
   const text = lines.join('\n');
+  const substantiveLines = lines.filter((line) => !/^(?:ERROR:\s*)?(?:package|tools|toolchain|target)(?:\/[A-Za-z0-9_./+@-]+)?\s+failed to build\s*$/i.test(String(line || '').trim()));
   // Linux Kconfig asks an interactive question for a newly introduced
   // symbol and then receives EOF in a non-interactive probe.  Match the
   // protocol/phase, not the symbol name or a particular source tree.
@@ -66,8 +77,24 @@ function causeFromLines(lines) {
   if (lines.some((line) => /\b(?:Patch failed|Hunk(?:\s+#?\d+)?\s+FAILED|can't find file to patch)\b/i.test(line))) {
     return 'patch-apply';
   }
-  if (lines.some((line) => /(?:available\s+kernel headers are (?:older|too old)|kernel headers?[^\n]*(?:older|too old)\b)/i.test(line))) {
+  if (substantiveLines.some((line) => /available\s+kernel headers are (?:older|too old)/i.test(line))) {
     return 'toolchain-kernel-version';
+  }
+  // Old upstream trees can fail before their selected package is reached
+  // because the host-side libc/toolchain requires newer Linux headers.  The
+  // wording varies between build systems; classify the relationship rather
+  // than a concrete kernel version or distribution.
+  if (substantiveLines.some((line) => /(?:linux|kernel)\s+headers?[^\n]*(?:older|too old|outdated|minimum|required|unsupported|not supported)/i.test(line) ||
+      /(?:minimum|required|supported|unsupported)[^\n]*(?:linux|kernel)\s+headers?/i.test(line))) {
+    return 'legacy-host-headers';
+  }
+  // A host toolchain incompatibility is deterministic when the build
+  // explicitly reports an unsupported host compiler/header/toolchain or a
+  // required host capability/version.  Keep the matcher intentionally broad
+  // so it applies equally to every Source/Branch and host tool.
+  if (substantiveLines.some((line) => /(?:host|build-host|toolchain)[^\n]*(?:incompatible|unsupported|not supported|requires|cannot|can't|failed|version)/i.test(line) ||
+      /(?:compiler|standard library|build tool)[^\n]*(?:incompatible|unsupported|not supported|requires|cannot|can't|failed|version)/i.test(line))) {
+    return 'host-toolchain-compatibility';
   }
   if (lines.some((line) =>
     /(?:output|artifact|generated\s+(?:file|module)|image)\b[^\n]*(?:is\s+)?(?:missing|not\s+found|does\s+not\s+exist)\b/i.test(line) ||
@@ -134,20 +161,70 @@ export function extractFailedBuildTargets(value) {
 }
 
 export function deterministicErrorSummary(value) {
+  return extractFailureErrors(value).terminalError;
+}
+
+function normalizedErrorLine(line) {
+  return String(line || '').replace(/\s+/g, ' ').trim().slice(0, 320);
+}
+
+function isRecoverableErrorLine(line) {
+  const text = String(line || '');
+  // Mirror probes commonly emit one or more 403/404/5xx/curl failures before
+  // trying the next URL.  These are evidence, not the terminal cause, unless
+  // the log also says that no fallback remains.
+  if (/no more (?:mirrors?|fallbacks?)(?:\s+to\s+try)?/i.test(text)) return false;
+  return /(?:curl:\s*\([^)]*\)[^\n]*(?:403|404|429|5\d\d)|HTTP\/\d(?:\.\d)?\s+(?:403|404|429|5\d\d)|\b(?:403|404|429|5\d\d)\b[^\n]*(?:download|fetch|mirror|url)|(?:download|fetch|mirror)[^\n]*(?:403|404|429|5\d\d))/i.test(text);
+}
+
+function isTerminalErrorLine(line) {
+  const text = String(line || '');
+  if (!text) return false;
+  if (/no more (?:mirrors?|fallbacks?)(?:\s+to\s+try)?/i.test(text)) return true;
+  if (/^(?:ERROR:\s*)?(?:package|tools|toolchain|target)\/[A-Za-z0-9_./+@-]+\s+failed to build\s*$/i.test(text)) return false;
+  if (/^make(?:\[\d+\])?:\s+\*{3}\s+.*\bError\s+\d+/i.test(text)) return false;
+  return /(?:\bfatal\s+error\b|\berror\s*:\b|\berror\s+in\s+reading\b|\bend\s+of\s+file\b|\bfailed(?:\s+to)?\b|\bis\s+missing\b|\bnot found\b|\bdoes not exist\b|\bno rule to make target\b|\bpatch failed\b|\bhunk(?:\s+#?\d+)?\s+failed\b|\bundefined reference\b|\breturned non-zero\b|\bcannot\b|\bcan't\b)/i.test(text);
+}
+
+/**
+ * Separate transient mirror/download observations from the terminal error.
+ * The first 404 in a fallback sequence must never become the displayed root
+ * cause.  The returned strings are normalized and stable for evidence and
+ * fingerprints.
+ */
+export function extractFailureErrors(value) {
   const lines = stripAnsi(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const match = lines.find((line) =>
-    /(?:\berror\s*:|\berror\s+in\s+reading\b|\bend\s+of\s+file\b|\bfailed(?:\s+to)?\b|\bis\s+missing\b|\bno rule to make target\b|\bpatch failed\b|\bhunk(?:\s+#?\d+)?\s+failed\b)/i.test(line));
-  return String(match || '').replace(/\s+/g, ' ').slice(0, 320);
+  const recoverableErrors = [];
+  const terminalCandidates = [];
+  const wrapperCandidates = [];
+  for (const line of lines) {
+    const normalized = normalizedErrorLine(line);
+    if (isRecoverableErrorLine(line)) recoverableErrors.push(normalized);
+    if (/^(?:ERROR:\s*)?(?:package|tools|toolchain|target)\/[A-Za-z0-9_./+@-]+\s+failed to build\s*$/i.test(line) ||
+        /^make(?:\[\d+\])?:\s+\*{3}\s+.*\bError\s+\d+/i.test(line)) wrapperCandidates.push(normalized);
+    if (isTerminalErrorLine(line)) terminalCandidates.push(normalized);
+  }
+  const uniqueRecoverable = [...new Set(recoverableErrors)];
+  // Prefer the last specific terminal line.  Outer Make wrappers are excluded
+  // above; if a log has no inner detail, retain the last wrapper/error line.
+  const terminalError = terminalCandidates.length
+    ? terminalCandidates[terminalCandidates.length - 1]
+    : wrapperCandidates.length ? wrapperCandidates[wrapperCandidates.length - 1]
+      : (uniqueRecoverable.length ? uniqueRecoverable[uniqueRecoverable.length - 1] : '');
+  return { recoverableErrors: uniqueRecoverable, terminalError };
 }
 
 export function classifyPrerequisiteFailure(value) {
   const text = stripAnsi(value);
   const cause = causeFromLines(text.split(/\r?\n/));
-  const errorSummary = deterministicErrorSummary(text);
+  const errors = extractFailureErrors(text);
+  const errorSummary = errors.terminalError;
   const failedBuildTargets = extractFailedBuildTargets(text);
   return {
     cause: isAllowedTargetPrerequisiteCause(cause) ? cause : '',
     errorSummary,
+    terminalError: errors.terminalError,
+    recoverableErrors: errors.recoverableErrors,
     failedBuildTargets,
     failureFingerprint: buildFailureFingerprint({ cause, errorSummary, failedBuildTargets }),
   };
@@ -177,16 +254,19 @@ export function classifyTargetPrerequisiteFailure(value) {
   if (isMakeInfrastructureFailure(text)) {
     return { result: 'inconclusive', reason: 'target-prerequisite-infrastructure', cause: '',
       errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets,
+      terminalError: detail.terminalError, recoverableErrors: detail.recoverableErrors,
       failureFingerprint: detail.failureFingerprint };
   }
   const cause = detail.cause;
   if (isAllowedTargetPrerequisiteCause(cause)) {
     return { result: 'inconclusive', reason: 'target-prerequisite-failure', cause,
       errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets,
+      terminalError: detail.terminalError, recoverableErrors: detail.recoverableErrors,
       failureFingerprint: detail.failureFingerprint };
   }
   return { result: 'inconclusive', reason: 'target-prerequisite-unattributed-failure', cause: '',
     errorSummary: detail.errorSummary, failedBuildTargets: detail.failedBuildTargets,
+    terminalError: detail.terminalError, recoverableErrors: detail.recoverableErrors,
     failureFingerprint: detail.failureFingerprint };
 }
 

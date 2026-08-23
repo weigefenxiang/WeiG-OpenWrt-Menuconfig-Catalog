@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // SPDX-FileCopyrightText: 2026 weigefenxiang <weigefenxiang@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { appendFileSync, existsSync, mkdirSync } from 'node:fs';
+import { appendFileSync, chmodSync, createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { dirname, join } from 'node:path';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { createGunzip } from 'node:zlib';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 
 const DEPTHS = Object.freeze({ 'boot-smoke': 5, 'runtime-health': 6, 'reboot-validation': 7 });
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
@@ -11,8 +14,13 @@ const READY_RE = /(?:procd:\s+- init complete -|Please press Enter to activate t
 const ROOT_PROMPT_RE = /(?:^|\n)root@[^\n]*[#$]\s*$/im;
 const PANIC_RE = /Kernel panic|not syncing|Oops:\s|BUG:\s+unable to handle|watchdog:\s+BUG|rebooting in \d+ seconds/i;
 const REBOOT_RE = /(?:reboot:\s+Restarting system|Restarting system|machine restart|reboot requested)/i;
-const UNSUPPORTED_RE = /unknown (?:target|subtarget)|unsupported|no such file or directory.*(?:kernel|rootfs|combined)|cannot find.*(?:kernel|rootfs|image)/i;
-const HOST_ERROR_RE = /(?:qemu-system-[^:\s]+:\s+command not found|exec:\s+qemu-system|failed to initialize kvm|Could not access KVM|permission denied.*qemu|No space left on device)/i;
+const UNSUPPORTED_RE = /unknown (?:target|subtarget)|target .* is not supported|unsupported|no such file or directory.*(?:kernel|rootfs|combined|image)|cannot find.*(?:kernel|rootfs|image)|unable to find image|could not open .*no such file or directory/i;
+const HOST_ERROR_RE = /(?:qemu-system-[^:\s]+:\s+command not found|exec:\s+qemu-system|failed to initialize kvm|Could not access KVM|permission denied.*qemu|permission denied.*(?:image|disk)|cannot set up guest memory|No space left on device|failed to create.*(?:tap|bridge)|qemu: could not open)/i;
+const IMAGE_RE = /(?:\.img|\.qcow2|\.raw|\.vmdk|\.vdi|\.iso|\.efi|\.elf|\.bin)(?:\.gz)?$/i;
+const COMPRESSED_RE = /\.gz$/i;
+const UNSAFE_ARTIFACT_RE = /(?:\.sha256(?:sum)?|\.manifest|\.json|\.txt|\.sig)(?:\.gz)?$/i;
+const QEMUSTART_OPTION_NAMES = Object.freeze(['--rootfs', '--kernel']);
+const DEFAULT_MAX_ARTIFACT_BYTES = 2 * 1024 * 1024 * 1024;
 
 const nowIso = () => new Date().toISOString();
 
@@ -30,6 +38,14 @@ function finishStage(stages, name, started, status) {
   };
 }
 
+function virtualDeepestPassedLevel(stages) {
+  if (stages.secondRuntimeHealth?.status === 'success') return 7;
+  if (stages.runtimeHealth?.status === 'success') return 6;
+  if (stages.secondBoot?.status === 'success') return 5;
+  if (stages.boot?.status === 'success') return 5;
+  return 4;
+}
+
 export function virtualProbeDepth(mode) {
   const depth = DEPTHS[String(mode || '')];
   if (!depth) throw new Error(`unsupported virtual Probe mode: ${mode}`);
@@ -42,6 +58,220 @@ export function virtualReady(text) {
 
 export function virtualPanic(text) {
   return PANIC_RE.test(String(text || ''));
+}
+
+function artifactKind(name) {
+  const lower = String(name || '').toLowerCase();
+  if (lower.includes('combined')) return 'combined';
+  if (lower.includes('rootfs')) return 'rootfs';
+  if (lower.includes('efi')) return 'efi';
+  if (lower.includes('kernel') || lower.includes('initramfs')) return 'kernel';
+  // A `.bin` named factory/sysupgrade/firmware is often a router flash
+  // image, not a QEMU block image.  Only explicit disk-container extensions
+  // establish the generic disk-image capability; vendor-specific names stay
+  // opaque and therefore cannot be handed to --rootfs.
+  if (/\.(?:img|qcow2|raw|vmdk|vdi|iso)(?:\.gz)?$/.test(lower)) return 'disk-image';
+  return 'image';
+}
+
+function artifactScore(entry) {
+  const name = String(entry.name || '').toLowerCase();
+  const kind = entry.kind;
+  const score = kind === 'combined' ? 500 : kind === 'efi' ? 400 : kind === 'rootfs' ? 300 : kind === 'kernel' ? 200 : kind === 'disk-image' ? 150 : 0;
+  const bootable = /(?:squashfs|ext4|jffs2|combined|efi|rootfs|disk|generic)/.test(name) ? 50 : 0;
+  const compressed = COMPRESSED_RE.test(name) ? -2 : 0;
+  return score + bootable + compressed;
+}
+
+function collectFiles(directory, root = directory) {
+  if (!existsSync(directory)) return [];
+  const rows = [];
+  for (const name of readdirSync(directory)) {
+    const file = join(directory, name);
+    let stat;
+    try { stat = statSync(file); } catch { continue; }
+    if (stat.isDirectory()) rows.push(...collectFiles(file, root));
+    else if (stat.isFile()) rows.push({ path: file, relativePath: relative(root, file).replace(/\\/g, '/'), name });
+  }
+  return rows;
+}
+
+/**
+ * Locate build output by its actual filename.  The old implementation
+ * delegated filename selection to qemustart, which assumes an OpenWrt prefix
+ * and therefore misses ImmortalWrt/LEDE images.  This function deliberately
+ * only inspects the target's bin directory and never manufactures a filename.
+ */
+export function scanFirmwareArtifacts(workdir, targetSystem, subtarget) {
+  const directory = resolve(workdir, 'bin', 'targets', String(targetSystem || ''), String(subtarget || ''));
+  const artifacts = collectFiles(directory, directory)
+    .filter((entry) => IMAGE_RE.test(entry.name) && !UNSAFE_ARTIFACT_RE.test(entry.name))
+    .map((entry) => ({ ...entry, kind: artifactKind(entry.name) }))
+    .sort((a, b) => artifactScore(b) - artifactScore(a) || a.relativePath.localeCompare(b.relativePath));
+  return { directory, artifacts };
+}
+
+function safeArtifactPath(root, name) {
+  const destination = resolve(root, name);
+  const base = `${resolve(root)}${process.platform === 'win32' ? '\\' : '/'}`;
+  if (destination !== resolve(root) && !destination.startsWith(base)) {
+    throw new Error(`unsafe virtual firmware artifact path: ${name}`);
+  }
+  return destination;
+}
+
+/**
+ * Decompress a selected .gz artifact into the probe-owned temporary folder.
+ * The source remains untouched and the destination is guaranteed to stay
+ * below the work directory.
+ */
+function boundedArtifactStream(maxBytes) {
+  let total = 0;
+  return new Transform({
+    transform(chunk, encoding, callback) {
+      total += chunk.length;
+      if (total > maxBytes) {
+        const error = new Error(`virtual firmware artifact exceeds ${maxBytes} bytes`);
+        error.code = 'VIRTUAL_ARTIFACT_LIMIT';
+        callback(error);
+        return;
+      }
+      callback(null, chunk);
+    },
+  });
+}
+
+export async function materializeFirmwareArtifact(entry, workdir, artifactDirectory = join(workdir, '.probe-artifacts'), maxArtifactBytes = DEFAULT_MAX_ARTIFACT_BYTES) {
+  if (!entry?.path) return null;
+  const workRoot = resolve(workdir);
+  const artifactRoot = resolve(artifactDirectory);
+  const workPrefix = `${workRoot}${process.platform === 'win32' ? '\\' : '/'}`;
+  if (artifactRoot !== workRoot && !artifactRoot.startsWith(workPrefix)) {
+    throw new Error(`virtual firmware artifact directory escapes Probe workdir: ${artifactDirectory}`);
+  }
+  mkdirSync(artifactRoot, { recursive: true });
+  const source = resolve(entry.path);
+  const sourceName = basename(source);
+  const outputName = sourceName.replace(/\.gz$/i, '');
+  const destination = safeArtifactPath(artifactRoot, outputName);
+  if (!COMPRESSED_RE.test(sourceName)) return { ...entry, path: source, materialized: false };
+  const numericLimit = Number(maxArtifactBytes);
+  const byteLimit = Number.isFinite(numericLimit) && numericLimit > 0 ? numericLimit : DEFAULT_MAX_ARTIFACT_BYTES;
+  try {
+    await pipeline(
+      createReadStream(source),
+      createGunzip(),
+      boundedArtifactStream(byteLimit),
+      createWriteStream(destination, { flags: 'w', mode: 0o600 }),
+    );
+    chmodSync(destination, 0o600);
+  } catch (error) {
+    rmSync(destination, { force: true });
+    throw error;
+  }
+  return { ...entry, path: destination, materialized: true, sourcePath: source };
+}
+
+function stripShellComments(text) {
+  return String(text || '').split(/\r?\n/).map((line) => {
+    let quote = '';
+    let escaped = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const character = line[index];
+      if (escaped) { escaped = false; continue; }
+      if (quote === '"' && character === '\\') { escaped = true; continue; }
+      if (quote && character === quote) { quote = ''; continue; }
+      if (!quote && (character === '"' || character === "'" || character === '`')) { quote = character; continue; }
+      if (!quote && character === '#' && (index === 0 || /\s/.test(line[index - 1]))) return line.slice(0, index);
+    }
+    return line;
+  }).join('\n');
+}
+
+function parsedCaseOptions(text) {
+  const options = new Set();
+  // A bare option label is the interface we can invoke as two argv entries:
+  // `--rootfs PATH`.  Patterns such as `--rootfs=*` are intentionally not
+  // accepted because passing a separate path would not exercise that parser.
+  const caseBlockRe = /\bcase\b[^;\n]*\bin\b([\s\S]*?)\besac\b/gi;
+  const labelRe = /(?:^|[|\n;])\s*["']?(--rootfs|--kernel)["']?\s*(?=\)|\|)/gi;
+  for (const block of text.matchAll(caseBlockRe)) {
+    for (const label of String(block[1] || '').matchAll(labelRe)) options.add(label[1].toLowerCase());
+  }
+  return options;
+}
+
+function parsedGetoptOptions(text) {
+  const options = new Set();
+  // GNU getopt's long-option declaration is also an authoritative parser
+  // boundary.  Require an actual getopt command segment, rather than an
+  // echo/usage string, and only accept the two options used by qemustart.
+  const commandRe = /(?:^|[;&|(`$])\s*(?:command\s+)?(?:gnu-)?getopt\b[^\n]*/g;
+  for (const command of text.matchAll(commandRe)) {
+    const line = String(command[0] || '');
+    if (!/(?:--long(?:=|\s+)|--longoptions(?:=|\s+))/i.test(line)) continue;
+    for (const option of QEMUSTART_OPTION_NAMES) {
+      const name = option.slice(2);
+      if (new RegExp(`(?:^|[\\s,=:])${name}(?::|[\\s,=:]|$)`, 'i').test(line)) options.add(option);
+    }
+  }
+  return options;
+}
+
+/**
+ * Detect qemustart's supported, documented image options from its parser,
+ * not from comments or usage text.  OpenWrt-family qemustart scripts expose
+ * --rootfs/--kernel; no speculative --image/--disk alias is accepted.  A
+ * script with no verifiable parser is not safe to invoke for non-OpenWrt
+ * prefixes, so callers must report virtual-boot-unsupported.
+ */
+export function detectQemuStartInterface(qemustart) {
+  if (!existsSync(qemustart)) return { supported: false, options: [], reason: 'missing-qemustart' };
+  let text = '';
+  try { text = readFileSync(qemustart, 'utf8'); } catch { return { supported: false, options: [], reason: 'qemustart-unreadable' }; }
+  const source = stripShellComments(text);
+  const options = [...new Set([...parsedCaseOptions(source), ...parsedGetoptOptions(source)])]
+    .filter((option) => QEMUSTART_OPTION_NAMES.includes(option));
+  if (!options.length) return { supported: false, options, reason: 'qemustart-no-artifact-option' };
+  const rootfs = options.find((option) => option === '--rootfs') || '';
+  const kernel = options.find((option) => option === '--kernel') || '';
+  return { supported: Boolean(rootfs || kernel), options, rootfsOption: rootfs, kernelOption: kernel };
+}
+
+function selectFirmwareArtifacts(workdir, targetSystem, subtarget, qemuInterface) {
+  const scanned = scanFirmwareArtifacts(workdir, targetSystem, subtarget);
+  const combined = scanned.artifacts.find((entry) => ['combined', 'efi'].includes(entry.kind));
+  const rootfs = scanned.artifacts.find((entry) => entry.kind === 'rootfs');
+  const diskImage = scanned.artifacts.find((entry) => entry.kind === 'disk-image');
+  const kernel = scanned.artifacts.find((entry) => entry.kind === 'kernel');
+  // Never hand an arbitrary .bin (for example a vendor U-Boot or calibration
+  // blob) to a --rootfs parser.  It must carry an explicit disk-image/rootfs
+  // semantic in its filename, or be a known combined/EFI output.
+  const selectedRootfs = combined || rootfs || (qemuInterface.rootfsOption ? diskImage : null);
+  if (!selectedRootfs && !kernel) return { ...scanned, selectedRootfs: null, selectedKernel: null };
+  return { ...scanned, selectedRootfs, selectedKernel: kernel };
+}
+
+async function virtualArtifacts(options, qemustart, targetSystem, subtarget) {
+  const qemuInterface = detectQemuStartInterface(qemustart);
+  // Keep the artifact inventory even when the current qemustart cannot
+  // consume an explicit path.  The caller can then distinguish “firmware was
+  // built, but virtual boot is unsupported” from “the firmware output itself
+  // is absent” without guessing from a brand prefix.
+  const scanned = scanFirmwareArtifacts(options.workdir, targetSystem, subtarget);
+  if (!qemuInterface.supported) return { qemuInterface, scanned };
+  const selected = selectFirmwareArtifacts(options.workdir, targetSystem, subtarget, qemuInterface);
+  // Only pass artifacts through options the actual qemustart script exposes.
+  // A script that accepts --kernel but not --rootfs must not silently fall
+  // back to its prefix-based default rootfs lookup.
+  const selectedRootfs = qemuInterface.rootfsOption ? selected.selectedRootfs : null;
+  const selectedKernel = qemuInterface.kernelOption ? selected.selectedKernel : null;
+  if (!selectedRootfs && !selectedKernel) return { qemuInterface, scanned, selectedRootfs: null, selectedKernel: null };
+  const artifactDirectory = options.artifactDirectory || join(options.workdir, '.probe-artifacts');
+  const maxArtifactBytes = options.maxArtifactBytes;
+  const materializedRootfs = selectedRootfs ? await materializeFirmwareArtifact(selectedRootfs, options.workdir, artifactDirectory, maxArtifactBytes) : null;
+  const materializedKernel = selectedKernel ? await materializeFirmwareArtifact(selectedKernel, options.workdir, artifactDirectory, maxArtifactBytes) : null;
+  return { qemuInterface, scanned, selectedRootfs: materializedRootfs, selectedKernel: materializedKernel };
 }
 
 function markerLine(text, marker) {
@@ -74,10 +304,12 @@ export function healthCommand(packages = [], cycle = 1) {
   ].join('\n') + '\n';
 }
 
-function outcomeForBootTranscript(text) {
+export function virtualBootOutcome(text, comparisonPhase = 'final') {
   if (UNSUPPORTED_RE.test(text)) return { result: 'skipped', reason: 'virtual-boot-unsupported' };
-  if (HOST_ERROR_RE.test(text)) return { result: 'inconclusive', reason: 'runner-infrastructure' };
-  return { result: 'incompatible', reason: 'final-boot-failed' };
+  if (HOST_ERROR_RE.test(text)) return { result: 'inconclusive', reason: 'virtual-runner-infrastructure' };
+  return comparisonPhase === 'baseline'
+    ? { result: 'blocked', reason: 'base-profile-boot-failure' }
+    : { result: 'incompatible', reason: 'final-boot-failed' };
 }
 
 export async function runVirtualProbe(options = {}) {
@@ -93,12 +325,34 @@ export async function runVirtualProbe(options = {}) {
   const spawnProcess = options.spawnProcess || spawn;
   const targetSystem = String(options.targetSystem || '');
   const subtarget = String(options.subtarget || '');
+  // The caller must identify which side of an A/B pair is running.  Final-A
+  // boot failures are plugin-visible incompatibilities; only a deterministic
+  // Baseline-B boot failure is a Base Profile blocker.
+  const comparisonPhase = String(options.phase || 'final');
   const installedRoots = options.installedRoots || [];
   const stages = {};
-  const capabilities = { qemustart: existsSync(qemustart), serialControl: false, rebootControl: false };
+  const capabilities = { qemustart: existsSync(qemustart), serialControl: false, rebootControl: false, firmware: false,
+    qemustartOptions: [], artifactDirectory: '' };
   mkdirSync(dirname(logFile), { recursive: true });
   if (!capabilities.qemustart || !targetSystem || !subtarget) {
-    return { result: 'skipped', reason: 'virtual-boot-unsupported', stages, capabilities, logFile };
+    return { result: 'skipped', reason: 'virtual-boot-unsupported', deepestPassedLevel: 4, runtimeCovered: false, stages, capabilities, logFile };
+  }
+
+  let artifacts;
+  try { artifacts = await virtualArtifacts(options, qemustart, targetSystem, subtarget); }
+  catch (error) {
+    const infrastructure = ['EACCES', 'EPERM', 'ENOSPC', 'EMFILE', 'ENFILE'].includes(String(error?.code || '')) ||
+      /(?:permission denied|no space left|too many open files)/i.test(String(error?.message || error));
+    return { result: infrastructure ? 'inconclusive' : 'skipped',
+      reason: infrastructure ? 'virtual-runner-infrastructure' : 'virtual-boot-unsupported', deepestPassedLevel: 4, runtimeCovered: false, stages, capabilities,
+      logFile, errorSummary: String(error?.message || error) };
+  }
+  capabilities.qemustartOptions = artifacts.qemuInterface.options || [];
+  capabilities.artifactDirectory = artifacts.selectedRootfs?.path || artifacts.selectedKernel?.path || '';
+  capabilities.firmware = Boolean(artifacts.selectedRootfs || artifacts.selectedKernel);
+  if (!artifacts.qemuInterface.supported || (!artifacts.selectedRootfs && !artifacts.selectedKernel)) {
+    return { result: 'skipped', reason: 'virtual-boot-unsupported', deepestPassedLevel: 4, runtimeCovered: false, stages, capabilities, logFile,
+      firmwareDirectory: artifacts.scanned.directory, firmwareArtifacts: artifacts.scanned.artifacts || [] };
   }
 
   return await new Promise((resolvePromise) => {
@@ -156,7 +410,9 @@ export async function runVirtualProbe(options = {}) {
       if (settled) return;
       settled = true;
       clearTimers();
-      pendingOutcome = { result, reason, stages, capabilities, logFile, transcript };
+      pendingOutcome = { result, reason, stages, capabilities, logFile, transcript,
+        deepestPassedLevel: virtualDeepestPassedLevel(stages), runtimeCovered: result === 'compatible',
+        firmwareArtifacts: artifacts.scanned.artifacts || [] };
       stop();
       if (!child || child.exitCode !== null) resolveOutcome();
       else {
@@ -233,7 +489,10 @@ export async function runVirtualProbe(options = {}) {
       if (settled) return;
       const current = transcript.slice(phaseOffset);
       if (virtualPanic(current)) {
-        failActiveStage(phase === 'boot' ? 'final-boot-failed' : phase === 'health1' ? 'final-runtime-failed' : 'final-reboot-failed');
+        failActiveStage(phase === 'boot'
+          ? (comparisonPhase === 'baseline' ? 'base-profile-boot-failure' : 'final-boot-failed')
+          : phase === 'health1' ? 'final-runtime-failed' : 'final-reboot-failed',
+        phase === 'boot' && comparisonPhase === 'baseline' ? 'blocked' : 'incompatible');
         return;
       }
       if (phase === 'boot' && virtualReady(current)) {
@@ -298,7 +557,10 @@ export async function runVirtualProbe(options = {}) {
     };
 
     try {
-      child = spawnProcess('bash', ['scripts/qemustart', targetSystem, subtarget], {
+      const qemuArgs = [qemustart, targetSystem, subtarget];
+      if (artifacts.qemuInterface.rootfsOption && artifacts.selectedRootfs) qemuArgs.push(artifacts.qemuInterface.rootfsOption, artifacts.selectedRootfs.path);
+      if (artifacts.qemuInterface.kernelOption && artifacts.selectedKernel) qemuArgs.push(artifacts.qemuInterface.kernelOption, artifacts.selectedKernel.path);
+      child = spawnProcess('bash', qemuArgs, {
         cwd: workdir,
         env: { ...process.env, ...(options.env || {}) },
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -311,23 +573,23 @@ export async function runVirtualProbe(options = {}) {
       child.stderr?.on('data', append);
       child.on('error', (error) => {
         append(`\nERROR: ${error.message}\n`);
-        if (!settled) failActiveStage('runner-infrastructure', 'inconclusive');
+        if (!settled) failActiveStage('virtual-runner-infrastructure', 'inconclusive');
       });
       child.on('close', () => {
         if (settled) { resolveOutcome(); return; }
         if (phase === 'boot') {
-          const outcome = outcomeForBootTranscript(transcript);
+          const outcome = virtualBootOutcome(transcript, comparisonPhase);
           failActiveStage(outcome.reason, outcome.result);
         } else if (phase === 'health1') failActiveStage('final-runtime-failed');
         else failActiveStage('final-reboot-failed');
       });
       arm(bootTimeoutMs, () => {
-        const outcome = outcomeForBootTranscript(transcript);
+        const outcome = virtualBootOutcome(transcript, comparisonPhase);
         failActiveStage(outcome.reason, outcome.result);
       });
     } catch (error) {
       append(`\nERROR: ${error.message}\n`);
-      failActiveStage('runner-infrastructure', 'inconclusive');
+      failActiveStage('virtual-runner-infrastructure', 'inconclusive');
     }
   });
 }

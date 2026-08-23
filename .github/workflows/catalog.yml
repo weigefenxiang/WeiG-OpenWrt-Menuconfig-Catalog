@@ -33,6 +33,7 @@ on:
       - "scripts/kconfig-relations.mjs"
       - "scripts/lib.mjs"
       - "scripts/prepare-metadata.sh"
+      - "scripts/install-probe-feeds.sh"
       - "scripts/profile-config-contract.mjs"
       - "scripts/source-policy.mjs"
 
@@ -196,9 +197,20 @@ jobs:
         run: bash scripts/run-stage.sh clone bash scripts/clone-upstream.sh "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
       - name: Prepare feeds
         id: feeds
-        timeout-minutes: 25
+        # Three attempts on each of three trusted providers can take just over
+        # 27 minutes at the bounded 180-second per-attempt timeout.  Keep the
+        # stage deadline above that bound so an exhausted feed emits its
+        # structured feed-fetch-infrastructure result instead of being killed
+        # by the workflow timeout first.
+        timeout-minutes: 35
         working-directory: work/upstream
-        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" feeds bash -c './scripts/feeds update -a && ./scripts/feeds install -a'
+        env:
+          PROBE_LOG: ${{ runner.temp }}/catalog-feeds.log
+          PROBE_FEEDS_RUNTIME: ${{ github.workspace }}/probe-feeds-runtime.json
+          PROBE_SOURCE: ${{ matrix.source }}
+          PROBE_BRANCH: ${{ matrix.branch }}
+          PROBE_FEED_BACKOFF_BASE_SECONDS: 10
+        run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" feeds bash "$GITHUB_WORKSPACE/scripts/install-probe-feeds.sh"
       - name: Generate upstream metadata
         id: metadata
         timeout-minutes: 15
@@ -258,6 +270,9 @@ jobs:
           TOOLS_OUTCOME: ${{ steps.tools.outcome }}
           CLONE_OUTCOME: ${{ steps.clone.outcome }}
           FEEDS_OUTCOME: ${{ steps.feeds.outcome }}
+          FEEDS_FAILURE_REASON: ${{ steps.feeds.outputs.failure_reason }}
+          FEEDS_FAILURE_CLASS: ${{ steps.feeds.outputs.failure_class }}
+          FEEDS_FAILURE_FEED: ${{ steps.feeds.outputs.failure_feed }}
           METADATA_OUTCOME: ${{ steps.metadata.outcome }}
           EXTRACT_OUTCOME: ${{ steps.extract.outcome }}
           KCONFIG_CONTRACT_OUTCOME: ${{ steps.kconfig_contract.outcome }}
@@ -278,6 +293,7 @@ jobs:
             dist/*.curated-candidates.json
             attempts/*.attempt.json
             attempts/*--SUMMARY.txt
+            probe-feeds-runtime.json
             failure-logs/*.log
           retention-days: 60
           if-no-files-found: error

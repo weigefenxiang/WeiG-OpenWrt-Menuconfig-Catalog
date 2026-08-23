@@ -82,9 +82,10 @@ export function evaluateFinalize({ env = process.env, runtime = null, evidence =
 
   const attempts = Array.isArray(runtime?.attempts) ? runtime.attempts : [];
   const buildOutcome = normalizedOutcome(env.PROBE_BUILD_OUTCOME);
-  // Domain conclusions are valid only when the Runner completed normally. A
-  // non-success build outcome is an execution failure, even if stale or
-  // hand-written evidence happens to contain a conclusive result.
+  // Domain conclusions are valid only after the Runner build step completed
+  // successfully.  Blocked/skipped/incompatible are product conclusions, so
+  // the Runner must normalize them and exit zero; a failed build remains an
+  // execution failure even when stale evidence looks conclusive.
   if (buildOutcome !== 'success') errors.push(`build step outcome is ${buildOutcome || 'unknown'}`);
   if (!attempts.length) errors.push('probe runtime is missing or contains no attempts');
   else if (probeResultExitCode(attempts) !== 0) errors.push('probe runtime contains an unreported/infrastructure conclusion');

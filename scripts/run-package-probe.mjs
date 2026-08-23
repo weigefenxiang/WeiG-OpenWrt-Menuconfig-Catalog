@@ -240,6 +240,21 @@ function failedPackageBuildTargets(result) {
   return extractFailedBuildTargets(result?.output);
 }
 
+function applyFailureDetail(attempt, detail) {
+  if (!attempt || !detail) return;
+  const terminalError = detail.terminalError || detail.errorSummary || '';
+  if (terminalError) {
+    attempt.terminalError = terminalError;
+    attempt.errorSummary = terminalError;
+  }
+  const recoverableErrors = Array.isArray(detail.recoverableErrors) ? detail.recoverableErrors : [];
+  if (recoverableErrors.length) {
+    attempt.recoverableErrors = [...new Set([...(attempt.recoverableErrors || []), ...recoverableErrors])];
+  } else if (!Array.isArray(attempt.recoverableErrors)) {
+    attempt.recoverableErrors = [];
+  }
+}
+
 function normalizePackageBuildTarget(value) {
   return String(value || '').replace(/\\/g, '/').replace(/^\.\//, '')
     .replace(/\/(?:compile|install|prepare)$/, '').replace(/\/+$/, '');
@@ -247,7 +262,7 @@ function normalizePackageBuildTarget(value) {
 
 function classifyPackageBuildFailure(result, rootTargets, attempt, reasons, options = {}) {
   const detail = classifyPrerequisiteFailure(result?.output);
-  attempt.errorSummary = detail.errorSummary || attempt.errorSummary || '';
+  applyFailureDetail(attempt, detail);
   attempt.failureCause = detail.cause || '';
   attempt.failureFingerprint = detail.failureFingerprint || attempt.failureFingerprint || '';
   if (failedMakeIsInfrastructure(result)) return { result: 'inconclusive', reason: reasons.infrastructure };
@@ -295,7 +310,7 @@ function rootfsConflictPackages(result) {
 
 function classifyRootfsInstallFailure(result, attempt, roots = ROOTS, dependencyPackages = []) {
   const detail = classifyPrerequisiteFailure(result?.output);
-  attempt.errorSummary = detail.errorSummary || attempt.errorSummary || '';
+  applyFailureDetail(attempt, detail);
   attempt.failureCause = detail.cause || '';
   attempt.failureFingerprint = detail.failureFingerprint || attempt.failureFingerprint || '';
   if (failedMakeIsInfrastructure(result)) return { result: 'inconclusive', reason: 'rootfs-install-infrastructure' };
@@ -538,7 +553,7 @@ async function configResolve(options = {}) {
     if (!combined.ok) {
       const detail = classifyPrerequisiteFailure(combined.output || '');
       attempt.resolverCode = combined.code;
-      attempt.errorSummary = detail.errorSummary || '';
+      applyFailureDetail(attempt, detail);
       attempt.failureCause = detail.cause || '';
       attempt.failureFingerprint = detail.failureFingerprint || '';
       if (combined.infrastructure) {
@@ -571,7 +586,7 @@ async function configResolve(options = {}) {
       if (!single.ok) {
         const detail = classifyPrerequisiteFailure(single.output || '');
         attempt.resolverCode = single.code;
-        attempt.errorSummary = detail.errorSummary || attempt.errorSummary || '';
+        applyFailureDetail(attempt, detail);
         attempt.failureCause = detail.cause || attempt.failureCause || '';
         attempt.failureFingerprint = detail.failureFingerprint || attempt.failureFingerprint || '';
         if (single.infrastructure) {
@@ -632,11 +647,71 @@ function completedPhaseAttempt(attempt, result, startedAt, started) {
   return attempt;
 }
 
+function isOperationalPhaseReason(reason) {
+  return /(?:infrastructure|metadata|runner|network|download|timeout|oom|resource|counterfactual|unresolved)/i.test(String(reason || ''));
+}
+
+function isGenericFailureWrapper(value) {
+  const text = String(value || '').trim();
+  return /^(?:ERROR:\s*)?(?:package|tools|toolchain|target)(?:\/[A-Za-z0-9_./+@-]+)?\s+failed to build\s*$/i.test(text) ||
+    /^make(?:\[\d+\])?:\s+\*{3}\s+.*\bError\s+\d+/i.test(text);
+}
+
+function hasDeterministicBaselineEvidence(attempt, result) {
+  if (attempt?.rejectedRoots?.length) return true;
+  const failedTargets = Array.isArray(attempt?.failedBuildTargets) ? attempt.failedBuildTargets.filter(Boolean) : [];
+  const conflictPackages = Array.isArray(attempt?.rootfsConflictPackages)
+    ? attempt.rootfsConflictPackages.filter(Boolean) : [];
+  const terminalError = String(attempt?.terminalError || attempt?.errorSummary || '').trim();
+  if (!terminalError || isMakeInfrastructureFailure(terminalError)) return false;
+  // Rootfs/firmware size limits are deterministic domain failures even when
+  // the upstream log does not print a Make target.  Keep this matcher generic
+  // so it does not depend on a Source, Branch, package, or image filename.
+  const domainLimitFailure = /(?:rootfs|firmware|filesystem|image)[^\n]*(?:too\s+(?:large|big)|exceed(?:s|ed)?|(?:size|space)\s+limit|maximum\s+size|overflow)/i.test(terminalError);
+  if (!failedTargets.length && !conflictPackages.length && !domainLimitFailure) return false;
+  // A direct B package failure is already classified as incompatible by the
+  // package ownership classifier; its outer Make wrapper is sufficient in
+  // that case.  Unknown/unattributed wrappers must remain unresolved.
+  const cause = String(attempt?.failureCause || attempt?.targetPrerequisiteCause || attempt?.prerequisiteCause || '').trim();
+  if (cause) return true;
+  if (result?.result === 'incompatible') return true;
+  return !isGenericFailureWrapper(terminalError);
+}
+
+/**
+ * Give Baseline-B the same result vocabulary at every depth.  A failed B is
+ * a Base Profile blocker only when the Runner captured deterministic failure
+ * evidence.  Harness/network/metadata failures remain unresolved and must
+ * never be upgraded merely because they happened during B.
+ */
+function normalizeBaselinePhaseResult(attempt, result) {
+  if (result?.result === 'compatible' || result?.result === 'skipped' || result?.result === 'blocked') return result;
+  const reason = String(result?.reason || '');
+  if (isOperationalPhaseReason(reason)) {
+    return { ...result, result: 'inconclusive', reason: reason || 'baseline-unresolved' };
+  }
+  if (!hasDeterministicBaselineEvidence(attempt, result)) {
+    return { ...result, result: 'inconclusive', reason: reason || 'baseline-unresolved' };
+  }
+  const prepareFailure = attempt?.stages?.config?.status === 'failure' || attempt?.stages?.targetPrepare?.status === 'failure';
+  attempt.baselineBlockReason = prepareFailure ? 'base-profile-prepare-failure' : 'base-profile-build-failure';
+  attempt.packageCauseKind = '';
+  return {
+    ...result, result: 'blocked',
+    reason: prepareFailure ? 'base-profile-prepare-failure' : 'base-profile-build-failure',
+  };
+}
+
 function pairAttempt(baseline, final = null, preflight = null) {
   const selected = final || baseline || {};
   const preflightEvidence = preflight || baseline?.preflight || final?.preflight || null;
   const baselineOnlyResult = baseline?.result || 'inconclusive';
-  const baselineOnlyReason = baseline?.reason || 'baseline-failure';
+  // Every execution path must carry a structured reason.  Keep the legacy
+  // `baseline-failure` spelling readable when consuming old artifacts, but do
+  // not emit it for newly-created paired attempts.
+  const baselineOnlyReason = baseline?.reason && baseline.reason !== 'baseline-failure'
+    ? baseline.reason : 'baseline-unresolved';
+  const baselineFinalReason = baseline?.result === 'blocked' ? 'baseline-blocked' : baselineOnlyReason;
   const pair = {
     ...selected,
     phase: 'paired',
@@ -645,23 +720,25 @@ function pairAttempt(baseline, final = null, preflight = null) {
       ? `incompatible-${final.packageCauseKind || 'unattributed'}`
       : final.result === 'blocked' ? `blocked-${final.reason || 'base-profile-failure'}`
       : final.result === 'inconclusive' ? 'inconclusive' : final.result || 'inconclusive')
-      : baseline?.result === 'blocked' ? `blocked-${baseline.reason || 'base-profile-failure'}` : 'baseline-failure',
+      : baseline?.result === 'blocked' ? `blocked-${baseline.reason || 'base-profile-failure'}` : baselineOnlyReason,
     baseline,
-    final: final || { phase: 'final', result: 'not-run', reason: baseline?.result === 'blocked' ? 'baseline-blocked' : 'baseline-failure', stages: {} },
+    final: final || { phase: 'final', result: 'not-run', reason: baselineFinalReason, stages: {} },
   };
   if (final) Object.assign(pair, final);
   pair.phase = 'paired';
   pair.pairId = pairIdFor(selected);
   pair.baseline = baseline;
-  pair.final = final || { phase: 'final', result: 'not-run', reason: baseline?.result === 'blocked' ? 'baseline-blocked' : 'baseline-failure', stages: {} };
+  pair.final = final || { phase: 'final', result: 'not-run', reason: baselineFinalReason, stages: {} };
   pair.preflight = preflightEvidence;
   pair.preflightResult = preflightEvidence?.result || '';
   pair.preflightReason = preflightEvidence?.reason || '';
   // A non-compatible B is never a package incompatibility.  A confirmed
   // Base Profile failure is a complete `blocked` domain conclusion; an
   // unresolved B remains an inconclusive transport result.
-  pair.result = final ? final.result : baselineOnlyResult === 'blocked' ? 'blocked' : 'inconclusive';
-  pair.reason = final ? final.reason : baselineOnlyResult === 'blocked' ? baselineOnlyReason : 'baseline-failure';
+  pair.result = final ? final.result
+    : baselineOnlyResult === 'blocked' ? 'blocked'
+      : baselineOnlyResult === 'skipped' ? 'skipped' : 'inconclusive';
+  pair.reason = final ? final.reason : baselineOnlyResult === 'skipped' ? baselineOnlyReason : baselineOnlyReason;
   pair.stages = {
     ...(preflightEvidence?.stage ? { preflight: preflightEvidence.stage } : {}),
     ...(final ? final.stages : (baseline?.stages || {})),
@@ -669,7 +746,12 @@ function pairAttempt(baseline, final = null, preflight = null) {
   pair.packageCauseKind = final?.packageCauseKind || '';
   pair.prerequisiteCause = final?.prerequisiteCause || baseline?.prerequisiteCause || '';
   pair.targetPrerequisiteCause = final?.targetPrerequisiteCause || baseline?.targetPrerequisiteCause || '';
-  pair.errorSummary = final?.errorSummary || baseline?.errorSummary || '';
+  if (final && 'runtimeCovered' in final) pair.runtimeCovered = final.runtimeCovered;
+  else if (baseline && 'runtimeCovered' in baseline) pair.runtimeCovered = baseline.runtimeCovered;
+  pair.runtimeCoverageReason = final?.runtimeCoverageReason || baseline?.runtimeCoverageReason || '';
+  pair.terminalError = final?.terminalError || final?.errorSummary || baseline?.terminalError || baseline?.errorSummary || '';
+  pair.errorSummary = pair.terminalError;
+  pair.recoverableErrors = [...new Set([...(baseline?.recoverableErrors || []), ...(final?.recoverableErrors || [])])];
   pair.baselineConfigHash = baseline?.configHash || '';
   pair.finalConfigHash = final?.configHash || '';
   pair.configHash = final?.configHash || baseline?.configHash || '';
@@ -712,7 +794,7 @@ async function configResolvePaired() {
   });
 }
 
-async function runDepthPhase({ phase, roots, requestedStates, finalStates, baselineResolvedStates }) {
+async function runDepthPhase({ phase, roots, requestedStates, finalStates, baselineResolvedStates, skipVirtual = false, runtimeSkipReason = '' }) {
   const attempt = {
     source: SOURCE, branch: BRANCH, targetSystem: TARGET_SYSTEM, subtarget: SUBTARGET,
     target: TARGET, profile: PROFILE, phase,
@@ -726,7 +808,7 @@ async function runDepthPhase({ phase, roots, requestedStates, finalStates, basel
   await withPhaseLog(phase, async (phaseLog) => {
     attempt.phaseLog = phaseLog;
     try {
-      const options = { phase, roots, requestedStates, finalStates, baselineResolvedStates };
+      const options = { phase, roots, requestedStates, finalStates, baselineResolvedStates, skipVirtual, runtimeSkipReason };
       if (MODE === 'package-compile') result = await packageCompile(attempt, options);
       else if (MODE === 'rootfs-integration') result = await rootfsIntegration(attempt, options);
       else result = await firmwareIntegration(attempt, options);
@@ -735,6 +817,7 @@ async function runDepthPhase({ phase, roots, requestedStates, finalStates, basel
       result = { result: 'inconclusive', reason: 'runner-infrastructure' };
     }
   });
+  if (phase === 'baseline') result = normalizeBaselinePhaseResult(attempt, result);
   return completedPhaseAttempt(attempt, result, startedAt, started);
 }
 
@@ -748,13 +831,46 @@ function replayMakeVariables(directory) {
   ];
 }
 
+const REPLAY_DIRECTORY_NAMES = Object.freeze(['build_dir', 'staging_dir', 'staging_dir_host', 'tmp', 'bin']);
+
+function replayDirectoryPaths(directory) {
+  return Object.fromEntries(REPLAY_DIRECTORY_NAMES.map((name) => [name, join(directory, name)]));
+}
+
+function prepareReplayWorkspace(directory) {
+  const paths = replayDirectoryPaths(directory);
+  try {
+    mkdirSync(directory, { recursive: true });
+    for (const path of Object.values(paths)) mkdirSync(path, { recursive: true });
+    const missing = Object.entries(paths).filter(([, path]) => !existsSync(path) || !statSync(path).isDirectory()).map(([name]) => name);
+    if (missing.length) {
+      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay directories are missing or not directories: ${missing.join(', ')}`, paths };
+    }
+    return { ok: true, paths };
+  } catch (error) {
+    return { ok: false, reason: 'replay-bootstrap-failure', error: String(error?.message || error), paths };
+  }
+}
+
 function counterfactualFailureDetail(result) {
   const detail = classifyPrerequisiteFailure(result?.output || '');
   return {
     cause: detail.cause || '', errorSummary: detail.errorSummary || '',
+    terminalError: detail.terminalError || detail.errorSummary || '',
+    recoverableErrors: detail.recoverableErrors || [],
     failedBuildTargets: detail.failedBuildTargets || [],
     failureFingerprint: detail.failureFingerprint || '',
   };
+}
+
+function hasDeterministicCounterfactualFailure(detail) {
+  const terminalError = String(detail?.terminalError || detail?.errorSummary || '').trim();
+  if (!terminalError || isMakeInfrastructureFailure(terminalError)) return false;
+  // Once the isolated replay has entered the exact shared target, an allowed
+  // prerequisite cause or a concrete failed target is sufficient domain
+  // evidence.  A bare script/compiler non-zero with neither is still a
+  // Runner attribution gap and must remain unresolved.
+  return Boolean(detail?.cause || detail?.failedBuildTargets?.length);
 }
 
 /**
@@ -802,19 +918,43 @@ async function replaySharedTarget(baseline, final) {
   }
 
   const replayDirectory = join(WORKDIR, '.probe-replays', `${safeSlug(TARGET || 'target')}--${safeSlug(PROFILE || 'profile')}--${safeSlug(target)}`);
-  rmSync(replayDirectory, { recursive: true, force: true });
-  mkdirSync(replayDirectory, { recursive: true });
+  let replayCleanupError = null;
+  try { rmSync(replayDirectory, { recursive: true, force: true }); }
+  catch (error) { replayCleanupError = String(error?.message || error); }
+  const replayWorkspace = replayCleanupError
+    ? { ok: false, reason: 'replay-bootstrap-failure', error: replayCleanupError, paths: replayDirectoryPaths(replayDirectory) }
+    : prepareReplayWorkspace(replayDirectory);
+  const replayAttempt = {
+    phase: 'baseline-replay', target, stages: {}, serialRetries: [],
+    replayDirectories: replayWorkspace.paths,
+  };
+  if (!replayWorkspace.ok) {
+    replayAttempt.stages.replayBootstrap = { status: 'failure', reason: replayWorkspace.reason };
+    replayAttempt.error = replayWorkspace.error;
+    final.counterfactual = {
+      type: 'shared-target', target, mode: 'isolated-replay', result: 'unresolved',
+      reason: replayWorkspace.reason, error: replayWorkspace.error, directory: replayDirectory,
+    };
+    final.reason = 'counterfactual-unresolved';
+    final.baselineReplay = { ...replayAttempt, directory: replayDirectory };
+    return { applied: true, result: 'unresolved', target, reason: replayWorkspace.reason };
+  }
   const replayConfig = join(replayDirectory, '.config');
-  copyFileSync(baselineConfig, replayConfig);
   const topLevelConfig = join(WORKDIR, '.config');
-  const originalConfig = existsSync(topLevelConfig) ? readFileSync(topLevelConfig) : null;
-  const replayAttempt = { phase: 'baseline-replay', target, stages: {}, serialRetries: [] };
+  let originalConfig = null;
+  let originalConfigCaptured = false;
   const env = { KCONFIG_CONFIG: replayConfig, KCONFIG_OVERWRITECONFIG: '1', PROBE_REPLAY: 'true' };
   const variables = replayMakeVariables(replayDirectory);
   const options = { cwd: WORKDIR, env };
   let prep;
   let targetResult;
   try {
+    // File access is part of the replay bootstrap.  Any permission/path
+    // failure here is an unresolved Runner result, never a Base Profile
+    // conclusion.
+    copyFileSync(baselineConfig, replayConfig);
+    originalConfig = existsSync(topLevelConfig) ? readFileSync(topLevelConfig) : null;
+    originalConfigCaptured = true;
     // Fake and older OpenWrt make frontends read .config from TOPDIR even
     // when KCONFIG_CONFIG is set.  Keep that file aligned for the duration
     // of the replay and always restore Final-A afterwards.
@@ -824,27 +964,26 @@ async function replaySharedTarget(baseline, final) {
     if (!prep.ok) {
       const detail = counterfactualFailureDetail(prep);
       const infrastructure = isCommandInfrastructureFailure(prep);
-      replayAttempt.errorSummary = detail.errorSummary;
+      applyFailureDetail(replayAttempt, detail);
       replayAttempt.failedBuildTargets = detail.failedBuildTargets;
       replayAttempt.failureFingerprint = detail.failureFingerprint;
       final.counterfactual = {
         type: 'shared-target', target, mode: 'isolated-replay',
-        result: infrastructure ? 'unresolved' : 'failed',
-        reason: infrastructure ? 'replay-prepare-infrastructure' : 'base-profile-blocked', ...detail,
+        result: 'unresolved',
+        // B already passed prepare.  A fresh replay prepare failure proves
+        // only that the replay harness/environment diverged; the shared
+        // target was never entered, so it cannot establish a Base Profile
+        // blocker.
+        reason: infrastructure ? 'replay-prepare-infrastructure' : 'replay-prepare-unresolved', ...detail,
       };
-      final.errorSummary = detail.errorSummary || final.errorSummary || '';
-      final.failureCause = detail.cause || final.failureCause || '';
+      applyFailureDetail(final, detail);
       final.failureFingerprint = detail.failureFingerprint || final.failureFingerprint || '';
       if (detail.failedBuildTargets.length) final.failedBuildTargets = detail.failedBuildTargets;
       if (detail.cause) final.targetPrerequisiteCause = detail.cause;
-      if (infrastructure) {
-        final.reason = 'counterfactual-unresolved';
-        return { applied: true, result: 'unresolved', target, reason: 'replay-prepare-infrastructure' };
-      }
       final.packageCauseKind = '';
-      final.result = 'blocked';
-      final.reason = 'base-profile-blocked';
-      return { applied: true, result: 'base-profile-blocked', target };
+      final.reason = 'counterfactual-unresolved';
+      return { applied: true, result: 'unresolved', target,
+        reason: infrastructure ? 'replay-prepare-infrastructure' : 'replay-prepare-unresolved' };
     }
     targetResult = await makeWithSerialRetry([`${target}/compile`, ...variables], 'Baseline shared-target replay', replayAttempt, options);
     replayAttempt.stages.targetReplay = { status: targetResult.ok ? 'success' : 'failure' };
@@ -862,9 +1001,20 @@ async function replaySharedTarget(baseline, final) {
         reason: 'replay-infrastructure-failure', directory: replayDirectory, ...detail,
       };
       final.reason = 'counterfactual-unresolved';
-      final.errorSummary = detail.errorSummary || final.errorSummary || '';
-      final.failureCause = detail.cause || final.failureCause || '';
+      applyFailureDetail(final, detail);
       return { applied: true, result: 'unresolved', target, reason: 'replay-infrastructure-failure' };
+    }
+    if (!hasDeterministicCounterfactualFailure(detail)) {
+      final.counterfactual = {
+        type: 'shared-target', target, mode: 'isolated-replay', result: 'unresolved',
+        reason: 'replay-target-unresolved', directory: replayDirectory, ...detail,
+      };
+      final.packageCauseKind = '';
+      final.reason = 'counterfactual-unresolved';
+      applyFailureDetail(final, detail);
+      final.failedBuildTargets = detail.failedBuildTargets.length ? detail.failedBuildTargets : final.failedBuildTargets;
+      final.failureFingerprint = detail.failureFingerprint || final.failureFingerprint || '';
+      return { applied: true, result: 'unresolved', target, reason: 'replay-target-unresolved' };
     }
     final.counterfactual = {
       type: 'shared-target', target, mode: 'isolated-replay', result: 'failed',
@@ -873,8 +1023,7 @@ async function replaySharedTarget(baseline, final) {
     final.packageCauseKind = '';
     final.result = 'blocked';
     final.reason = 'base-profile-build-failure';
-    final.errorSummary = detail.errorSummary || final.errorSummary || '';
-    final.failureCause = detail.cause || final.failureCause || '';
+    applyFailureDetail(final, detail);
     final.failedBuildTargets = detail.failedBuildTargets.length ? detail.failedBuildTargets : final.failedBuildTargets;
     final.failureFingerprint = detail.failureFingerprint || final.failureFingerprint || '';
     return { applied: true, result: 'base-profile-build-failure', target };
@@ -886,10 +1035,17 @@ async function replaySharedTarget(baseline, final) {
     final.reason = 'counterfactual-unresolved';
     return { applied: true, result: 'unresolved', target, reason: 'replay-runner-failure' };
   } finally {
-    if (originalConfig === null) rmSync(topLevelConfig, { force: true });
-    else writeFileSync(topLevelConfig, originalConfig);
+    if (originalConfigCaptured) {
+      if (originalConfig === null) rmSync(topLevelConfig, { force: true });
+      else writeFileSync(topLevelConfig, originalConfig);
+    }
     final.baselineReplay = { ...replayAttempt, directory: replayDirectory };
   }
+}
+
+function baselineRuntimeCoverageSkip(attempt) {
+  return MODE_LEVELS[MODE] >= MODE_LEVELS['boot-smoke'] && attempt?.result === 'skipped' &&
+    attempt?.stages?.firmwareBuild?.status === 'success' && Number(attempt?.deepestPassedLevel || 0) >= 4;
 }
 
 async function runDepthPaired() {
@@ -899,10 +1055,20 @@ async function runDepthPaired() {
     phase: 'baseline', roots: BASELINE_ROOTS, requestedStates: BASELINE_DIRECT_STATES,
     finalStates: BASELINE_STATES,
   });
-  if (baseline.result !== 'compatible') return [pairAttempt(baseline, null, preflight)];
+  // A virtual capability skip after a successful firmware build is not a
+  // Base Profile failure.  Keep B's coverage result, but still run Final A
+  // through L4 so package/firmware compatibility is evaluated.  All other B
+  // non-compatible states (blocked, unresolved, or an earlier skip) remain a
+  // hard short-circuit.
+  const continueAfterBaselineRuntimeSkip = baselineRuntimeCoverageSkip(baseline);
+  if (baseline.result !== 'compatible' && !continueAfterBaselineRuntimeSkip) {
+    return [pairAttempt(baseline, null, preflight)];
+  }
   const final = await runDepthPhase({
     phase: 'final', roots: ROOTS, requestedStates: FINAL_DIRECT_STATES,
     finalStates: FINAL_STATES, baselineResolvedStates: baseline.resolvedPackageStates || {},
+    skipVirtual: continueAfterBaselineRuntimeSkip,
+    runtimeSkipReason: baseline.runtimeCoverageReason || baseline.reason || 'virtual-boot-unsupported',
   });
   if (final.result === 'inconclusive' && final.failedBuildTargets?.length &&
       final.reason !== 'target-prerequisite-infrastructure') {
@@ -1120,7 +1286,7 @@ async function packageCompile(attempt, options = {}) {
     if (config.infrastructure) {
       const detail = classifyPrerequisiteFailure(config.output || '');
       attempt.resolverCode = config.code;
-      attempt.errorSummary = detail.errorSummary || '';
+      applyFailureDetail(attempt, detail);
       attempt.failureCause = detail.cause || '';
       attempt.failureFingerprint = detail.failureFingerprint || '';
       return { result: 'inconclusive', reason: 'runner-infrastructure' };
@@ -1179,7 +1345,7 @@ async function packageCompile(attempt, options = {}) {
   if (!target.ok) {
     const classified = classifyTargetPrerequisiteFailure(target.output);
     if (classified.cause) attempt.targetPrerequisiteCause = classified.cause;
-    attempt.errorSummary = classified.errorSummary || attempt.errorSummary || '';
+    applyFailureDetail(attempt, classified);
     attempt.failedBuildTargets = classified.failedBuildTargets || [];
     attempt.failureCause = classified.cause || '';
     attempt.failureFingerprint = classified.failureFingerprint || attempt.failureFingerprint || '';
@@ -1253,8 +1419,17 @@ async function firmwareIntegration(attempt, options = {}) {
   }
   attempt.firmware = await firmwareSnapshot();
   if (MODE === 'firmware-integration') return { result: 'compatible', reason: '' };
+  // When Baseline-B cannot establish a virtual runtime, Final-A is deliberately
+  // capped at firmware (L4).  A new A-only image must not turn an uncovered
+  // comparison into a boot/runtime plugin conclusion.
+  if (options.skipVirtual) {
+    attempt.runtimeCovered = false;
+    attempt.runtimeCoverageReason = options.runtimeSkipReason || 'virtual-boot-unsupported';
+    return { result: 'skipped', reason: attempt.runtimeCoverageReason };
+  }
   const virtual = await runVirtualProbe({
     mode: MODE,
+    phase: options.phase || 'final',
     workdir: WORKDIR,
     targetSystem: TARGET_SYSTEM,
     subtarget: SUBTARGET,
@@ -1268,6 +1443,8 @@ async function firmwareIntegration(attempt, options = {}) {
   Object.assign(attempt.stages, virtual.stages);
   attempt.virtualCapabilities = virtual.capabilities;
   attempt.virtualLog = virtual.logFile;
+  attempt.runtimeCovered = virtual.runtimeCovered === true || virtual.result === 'compatible';
+  attempt.runtimeCoverageReason = virtual.runtimeCovered === false || virtual.result !== 'compatible' ? (virtual.reason || '') : '';
   if (virtual.result === 'incompatible') attempt.packageCauseKind = 'direct';
   return { result: virtual.result, reason: virtual.reason };
 }
