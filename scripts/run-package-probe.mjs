@@ -912,13 +912,21 @@ function prepareReplayWorkspace(directory) {
 
 function counterfactualFailureDetail(result) {
   const detail = classifyPrerequisiteFailure(result?.output || '');
-  return {
+  const normalized = {
     cause: detail.cause || '', errorSummary: detail.errorSummary || '',
     terminalError: detail.terminalError || detail.errorSummary || '',
     recoverableErrors: detail.recoverableErrors || [],
     failedBuildTargets: detail.failedBuildTargets || [],
     failureFingerprint: detail.failureFingerprint || '',
   };
+  // Keep bounded command output available to the replay-capability matcher,
+  // but never enumerable: unresolved/counterfactual evidence spreads this
+  // detail object, so exposing rawOutput there would duplicate the whole
+  // prepare log in runtime JSON and uploaded evidence.
+  Object.defineProperty(normalized, 'rawOutput', {
+    value: String(result?.output || ''), enumerable: false, configurable: false,
+  });
+  return normalized;
 }
 
 function hasDeterministicCounterfactualFailure(detail) {
@@ -933,7 +941,8 @@ function hasDeterministicCounterfactualFailure(detail) {
 
 function isKnownReplayCapabilityFailure(detail, replayStage) {
   if (!['prepare'].includes(String(replayStage || ''))) return false;
-  const text = [detail?.terminalError, detail?.errorSummary, ...(detail?.recoverableErrors || [])].filter(Boolean).join('\n');
+  const text = [detail?.terminalError, detail?.errorSummary, ...(detail?.recoverableErrors || []), detail?.rawOutput]
+    .filter(Boolean).join('\n');
   // These are replay-harness directory contracts, not an upstream Target
   // failure.  Only path-specific evidence is reportable; a generic Make or
   // compiler error remains the red `counterfactual-unresolved` result.
