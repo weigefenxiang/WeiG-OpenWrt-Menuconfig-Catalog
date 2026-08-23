@@ -240,17 +240,17 @@ function failedPackageBuildTargets(result) {
   return extractFailedBuildTargets(result?.output);
 }
 
-function applyFailureDetail(attempt, detail) {
+function applyFailureDetail(attempt, detail, options = {}) {
   if (!attempt || !detail) return;
   const terminalError = detail.terminalError || detail.errorSummary || '';
-  if (terminalError) {
+  if (terminalError && (!options.preserveExisting || !attempt.terminalError)) {
     attempt.terminalError = terminalError;
     attempt.errorSummary = terminalError;
   }
   const recoverableErrors = Array.isArray(detail.recoverableErrors) ? detail.recoverableErrors : [];
   if (recoverableErrors.length) {
     attempt.recoverableErrors = [...new Set([...(attempt.recoverableErrors || []), ...recoverableErrors])];
-  } else if (!Array.isArray(attempt.recoverableErrors)) {
+  } else if (!options.preserveExisting && !Array.isArray(attempt.recoverableErrors)) {
     attempt.recoverableErrors = [];
   }
 }
@@ -822,33 +822,63 @@ async function runDepthPhase({ phase, roots, requestedStates, finalStates, basel
 }
 
 function replayMakeVariables(directory) {
+  const paths = replayDirectoryPaths(directory);
   return [
-    `BUILD_DIR=${join(directory, 'build_dir')}`,
-    `STAGING_DIR=${join(directory, 'staging_dir')}`,
-    `STAGING_DIR_HOST=${join(directory, 'staging_dir_host')}`,
-    `TMP_DIR=${join(directory, 'tmp')}`,
-    `BIN_DIR=${join(directory, 'bin')}`,
+    `BUILD_DIR=${paths.build_dir}`,
+    `STAGING_DIR=${paths.staging_dir}`,
+    `STAGING_DIR_HOST=${paths.staging_dir_host}`,
+    `TMP_DIR=${paths.tmp}`,
+    `BIN_DIR=${paths.bin}`,
   ];
 }
 
-const REPLAY_DIRECTORY_NAMES = Object.freeze(['build_dir', 'staging_dir', 'staging_dir_host', 'tmp', 'bin']);
+// OpenWrt derives STAGING_DIR_HOST from STAGING_DIR as `staging_dir/host`.
+// Keep that relationship in the replay instead of inventing a sibling
+// `staging_dir_host` tree which the upstream Makefiles never inspect.
+const REPLAY_DIRECTORY_NAMES = Object.freeze(['build_dir', 'staging_dir', 'tmp', 'bin']);
 
 function replayDirectoryPaths(directory) {
-  return Object.fromEntries(REPLAY_DIRECTORY_NAMES.map((name) => [name, join(directory, name)]));
+  const paths = Object.fromEntries(REPLAY_DIRECTORY_NAMES.map((name) => [name, join(directory, name)]));
+  paths.staging_dir_host = join(paths.staging_dir, 'host');
+  return paths;
 }
 
 function prepareReplayWorkspace(directory) {
   const paths = replayDirectoryPaths(directory);
+  const requiredStamps = {
+    tmpBuild: join(paths.tmp, '.build'),
+    stagingHostPrereq: join(paths.staging_dir_host, '.prereq-build'),
+  };
   try {
     mkdirSync(directory, { recursive: true });
     for (const path of Object.values(paths)) mkdirSync(path, { recursive: true });
+    // These are Make stamp files, not directories.  A directory at either
+    // path makes `touch`/file prerequisites fail with an opaque replay error;
+    // reject that shape rather than deleting or masking an existing path.
+    const stampConflicts = Object.entries(requiredStamps)
+      .filter(([, path]) => existsSync(path) && !statSync(path).isFile())
+      .map(([name]) => name);
+    if (stampConflicts.length) {
+      return { ok: false, reason: 'replay-bootstrap-failure',
+        error: `replay stamp paths are not files: ${stampConflicts.join(', ')}`, paths, requiredStamps };
+    }
+    for (const path of Object.values(requiredStamps)) writeFileSync(path, '', { flag: 'a' });
+    for (const name of ['.packageinfo', '.targetinfo']) {
+      const source = join(WORKDIR, 'tmp', name);
+      const destination = join(paths.tmp, name);
+      if (existsSync(source) && statSync(source).isFile()) copyFileSync(source, destination);
+    }
     const missing = Object.entries(paths).filter(([, path]) => !existsSync(path) || !statSync(path).isDirectory()).map(([name]) => name);
     if (missing.length) {
-      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay directories are missing or not directories: ${missing.join(', ')}`, paths };
+      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay directories are missing or not directories: ${missing.join(', ')}`, paths, requiredStamps };
     }
-    return { ok: true, paths };
+    const nonFiles = Object.entries(requiredStamps).filter(([, path]) => !existsSync(path) || !statSync(path).isFile()).map(([name]) => name);
+    if (nonFiles.length) {
+      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay stamp paths are missing or not files: ${nonFiles.join(', ')}`, paths, requiredStamps };
+    }
+    return { ok: true, paths, requiredStamps };
   } catch (error) {
-    return { ok: false, reason: 'replay-bootstrap-failure', error: String(error?.message || error), paths };
+    return { ok: false, reason: 'replay-bootstrap-failure', error: String(error?.message || error), paths, requiredStamps };
   }
 }
 
@@ -873,6 +903,45 @@ function hasDeterministicCounterfactualFailure(detail) {
   return Boolean(detail?.cause || detail?.failedBuildTargets?.length);
 }
 
+function isKnownReplayCapabilityFailure(detail, replayStage) {
+  if (!['prepare'].includes(String(replayStage || ''))) return false;
+  const text = [detail?.terminalError, detail?.errorSummary, ...(detail?.recoverableErrors || [])].filter(Boolean).join('\n');
+  // These are replay-harness directory contracts, not an upstream Target
+  // failure.  Only path-specific evidence is reportable; a generic Make or
+  // compiler error remains the red `counterfactual-unresolved` result.
+  const stampPath = '(?:tmp[\\/]\\.build|staging_dir(?:[\\/]host|_host)[\\/]\\.prereq-build)';
+  const missing = '(?:missing|not\\s+found|does\\s+not\\s+exist|incomplete)';
+  return new RegExp(`(?:no\\s+rule\\s+to\\s+make\\s+target[^\\n]*${stampPath}|${stampPath}[^\\n]*${missing}|(?:BUILD_DIR|STAGING_DIR(?:_HOST)?|TMP_DIR|BIN_DIR)[^\\n]*${missing})`, 'i').test(text);
+}
+
+function preserveFinalFailure(final) {
+  if (!final || final.originalFailure) return;
+  final.originalFailure = {
+    terminalError: final.terminalError || '', errorSummary: final.errorSummary || '',
+    recoverableErrors: [...(final.recoverableErrors || [])],
+    failedBuildTargets: [...(final.failedBuildTargets || [])],
+    failureCause: final.failureCause || '', prerequisiteCause: final.prerequisiteCause || '',
+    targetPrerequisiteCause: final.targetPrerequisiteCause || '', reason: final.reason || '',
+    failureFingerprint: final.failureFingerprint || '',
+  };
+}
+
+function setReplayUnavailable(final, target, stage, detail, replayAttempt, directory) {
+  final.counterfactual = {
+    type: 'shared-target', target, mode: 'isolated-replay', result: 'unavailable',
+    reason: 'counterfactual-replay-unavailable', stage, directory,
+    ...(detail?.errorSummary ? { errorSummary: detail.errorSummary } : {}),
+    ...(detail?.terminalError ? { terminalError: detail.terminalError } : {}),
+    ...(detail?.failedBuildTargets?.length ? { failedBuildTargets: detail.failedBuildTargets } : {}),
+  };
+  final.reason = 'counterfactual-replay-unavailable';
+  final.packageCauseKind = '';
+  // Replay diagnostics stay under the counterfactual/baselineReplay fields;
+  // the Final-A error remains the authoritative primary failure.
+  applyFailureDetail(final, detail, { preserveExisting: true });
+  final.baselineReplay = { ...replayAttempt, directory };
+}
+
 /**
  * Re-run a failed Final-A shared target against Baseline-B's resolved config.
  *
@@ -892,6 +961,10 @@ async function replaySharedTarget(baseline, final) {
 
   final.sharedTarget = target;
   final.sharedTargetOwnership = final.buildTargetOwnership?.[target] || [];
+  // Capture Final-A before any replay branch can attach diagnostics or
+  // replace its primary error.  This also covers missing B config, workspace
+  // bootstrap failures, and Runner exceptions where no Make stage is reached.
+  preserveFinalFailure(final);
   // `make prepare` is itself the shared Target build.  When B completed it
   // and A fails inside the generic Target namespace, the B execution is a
   // sufficient counterfactual; do not force a package-root replay.
@@ -927,6 +1000,7 @@ async function replaySharedTarget(baseline, final) {
   const replayAttempt = {
     phase: 'baseline-replay', target, stages: {}, serialRetries: [],
     replayDirectories: replayWorkspace.paths,
+    replayRequiredStamps: replayWorkspace.requiredStamps || {},
   };
   if (!replayWorkspace.ok) {
     replayAttempt.stages.replayBootstrap = { status: 'failure', reason: replayWorkspace.reason };
@@ -939,10 +1013,13 @@ async function replaySharedTarget(baseline, final) {
     final.baselineReplay = { ...replayAttempt, directory: replayDirectory };
     return { applied: true, result: 'unresolved', target, reason: replayWorkspace.reason };
   }
+  replayAttempt.stages.replayBootstrap = { status: 'success' };
   const replayConfig = join(replayDirectory, '.config');
   const topLevelConfig = join(WORKDIR, '.config');
   let originalConfig = null;
   let originalConfigCaptured = false;
+  let replayPrepareStarted = false;
+  let replayTargetStarted = false;
   const env = { KCONFIG_CONFIG: replayConfig, KCONFIG_OVERWRITECONFIG: '1', PROBE_REPLAY: 'true' };
   const variables = replayMakeVariables(replayDirectory);
   const options = { cwd: WORKDIR, env };
@@ -959,25 +1036,33 @@ async function replaySharedTarget(baseline, final) {
     // when KCONFIG_CONFIG is set.  Keep that file aligned for the duration
     // of the replay and always restore Final-A afterwards.
     copyFileSync(replayConfig, topLevelConfig);
+    replayPrepareStarted = true;
     prep = await makeWithSerialRetry(['prepare', ...variables], 'Baseline shared-target replay preparation', replayAttempt, options);
-    replayAttempt.stages.targetPrepare = { status: prep.ok ? 'success' : 'failure' };
+    replayAttempt.stages.replayPrepare = { status: prep.ok ? 'success' : 'failure' };
     if (!prep.ok) {
       const detail = counterfactualFailureDetail(prep);
       const infrastructure = isCommandInfrastructureFailure(prep);
       applyFailureDetail(replayAttempt, detail);
       replayAttempt.failedBuildTargets = detail.failedBuildTargets;
       replayAttempt.failureFingerprint = detail.failureFingerprint;
+      preserveFinalFailure(final);
+      if (!infrastructure && isKnownReplayCapabilityFailure(detail, 'prepare')) {
+        setReplayUnavailable(final, target, 'prepare', detail, replayAttempt, replayDirectory);
+        final.failureFingerprint = final.originalFailure?.failureFingerprint || final.failureFingerprint || '';
+        return { applied: true, result: 'unavailable', target, reason: 'counterfactual-replay-unavailable' };
+      }
       final.counterfactual = {
-        type: 'shared-target', target, mode: 'isolated-replay',
-        result: 'unresolved',
+        type: 'shared-target', target, mode: 'isolated-replay', result: 'unresolved', stage: 'prepare',
         // B already passed prepare.  A fresh replay prepare failure proves
         // only that the replay harness/environment diverged; the shared
         // target was never entered, so it cannot establish a Base Profile
         // blocker.
         reason: infrastructure ? 'replay-prepare-infrastructure' : 'replay-prepare-unresolved', ...detail,
       };
-      applyFailureDetail(final, detail);
-      final.failureFingerprint = detail.failureFingerprint || final.failureFingerprint || '';
+      applyFailureDetail(final, detail, { preserveExisting: true });
+      final.failureFingerprint = final.originalFailure?.failureFingerprint || final.failureFingerprint || '';
+      final.replayFailedBuildTargets = detail.failedBuildTargets || [];
+      final.replayPrerequisiteCause = detail.cause || '';
       if (detail.failedBuildTargets.length) final.failedBuildTargets = detail.failedBuildTargets;
       if (detail.cause) final.targetPrerequisiteCause = detail.cause;
       final.packageCauseKind = '';
@@ -985,8 +1070,9 @@ async function replaySharedTarget(baseline, final) {
       return { applied: true, result: 'unresolved', target,
         reason: infrastructure ? 'replay-prepare-infrastructure' : 'replay-prepare-unresolved' };
     }
+    replayTargetStarted = true;
     targetResult = await makeWithSerialRetry([`${target}/compile`, ...variables], 'Baseline shared-target replay', replayAttempt, options);
-    replayAttempt.stages.targetReplay = { status: targetResult.ok ? 'success' : 'failure' };
+    replayAttempt.stages.replayTarget = { status: targetResult.ok ? 'success' : 'failure' };
     if (targetResult.ok) {
       final.counterfactual = { type: 'shared-target', target, mode: 'isolated-replay', result: 'passed', directory: replayDirectory };
       final.packageCauseKind = 'shared';
@@ -1001,7 +1087,8 @@ async function replaySharedTarget(baseline, final) {
         reason: 'replay-infrastructure-failure', directory: replayDirectory, ...detail,
       };
       final.reason = 'counterfactual-unresolved';
-      applyFailureDetail(final, detail);
+      preserveFinalFailure(final);
+      applyFailureDetail(final, detail, { preserveExisting: true });
       return { applied: true, result: 'unresolved', target, reason: 'replay-infrastructure-failure' };
     }
     if (!hasDeterministicCounterfactualFailure(detail)) {
@@ -1011,9 +1098,10 @@ async function replaySharedTarget(baseline, final) {
       };
       final.packageCauseKind = '';
       final.reason = 'counterfactual-unresolved';
-      applyFailureDetail(final, detail);
-      final.failedBuildTargets = detail.failedBuildTargets.length ? detail.failedBuildTargets : final.failedBuildTargets;
-      final.failureFingerprint = detail.failureFingerprint || final.failureFingerprint || '';
+      preserveFinalFailure(final);
+      applyFailureDetail(final, detail, { preserveExisting: true });
+      final.replayFailedBuildTargets = detail.failedBuildTargets || [];
+      final.replayFailureFingerprint = detail.failureFingerprint || '';
       return { applied: true, result: 'unresolved', target, reason: 'replay-target-unresolved' };
     }
     final.counterfactual = {
@@ -1023,11 +1111,24 @@ async function replaySharedTarget(baseline, final) {
     final.packageCauseKind = '';
     final.result = 'blocked';
     final.reason = 'base-profile-build-failure';
-    applyFailureDetail(final, detail);
-    final.failedBuildTargets = detail.failedBuildTargets.length ? detail.failedBuildTargets : final.failedBuildTargets;
-    final.failureFingerprint = detail.failureFingerprint || final.failureFingerprint || '';
+    preserveFinalFailure(final);
+    applyFailureDetail(final, detail, { preserveExisting: true });
+    final.replayFailedBuildTargets = detail.failedBuildTargets || [];
+    final.replayFailureFingerprint = detail.failureFingerprint || '';
     return { applied: true, result: 'base-profile-build-failure', target };
   } catch (error) {
+    // A thrown file/Runner error is a replay-bootstrap or replay-target
+    // capability failure, never evidence that the Base Profile failed.  Mark
+    // the stage explicitly so downstream evidence can distinguish it from a
+    // missing/failed Make result while retaining the original Final-A error.
+    if (!replayPrepareStarted) {
+      replayAttempt.stages.replayBootstrap = { status: 'failure', reason: 'replay-runner-failure' };
+    } else if (!replayTargetStarted) {
+      replayAttempt.stages.replayPrepare = { status: 'failure', reason: 'replay-runner-failure' };
+    } else {
+      replayAttempt.stages.replayTarget = { status: 'failure', reason: 'replay-runner-failure' };
+    }
+    preserveFinalFailure(final);
     final.counterfactual = {
       type: 'shared-target', target, mode: 'isolated-replay', result: 'unresolved',
       reason: 'replay-runner-failure', error: String(error?.message || error), directory: replayDirectory,

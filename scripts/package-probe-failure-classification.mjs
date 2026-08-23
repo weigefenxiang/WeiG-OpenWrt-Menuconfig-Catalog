@@ -17,6 +17,7 @@ export const TARGET_PREREQUISITE_CAUSES = Object.freeze([
   // part of the classifier contract.
   'kernel-kconfig-sync-eof',
   'package-output-missing',
+  'target-artifact-missing',
   'target-build',
 ]);
 
@@ -77,24 +78,16 @@ function causeFromLines(lines) {
   if (lines.some((line) => /\b(?:Patch failed|Hunk(?:\s+#?\d+)?\s+FAILED|can't find file to patch)\b/i.test(line))) {
     return 'patch-apply';
   }
-  if (substantiveLines.some((line) => /available\s+kernel headers are (?:older|too old)/i.test(line))) {
-    return 'toolchain-kernel-version';
+  // Keep concrete kernel/module and Target artifact failures ahead of the
+  // broad host-toolchain matcher.  Old trees often print a generic compiler
+  // or DTC wrapper after the real `.ko`/firmware output is missing; the
+  // concrete observation is the attribution boundary.
+  if (lines.some((line) => /(?:\bmodule\b|\bkmod[-_A-Za-z0-9./+@:-]*\b)[^\n]*(?:(?:\.ko\b)[^\n]*(?:missing|not found|does not exist)|(?:missing|not found|does not exist)[^\n]*(?:\.ko\b))/i.test(line) ||
+      /\.ko\b[^\n]*(?:missing|not found|does not exist)/i.test(line))) {
+    return 'kernel-prerequisite';
   }
-  // Old upstream trees can fail before their selected package is reached
-  // because the host-side libc/toolchain requires newer Linux headers.  The
-  // wording varies between build systems; classify the relationship rather
-  // than a concrete kernel version or distribution.
-  if (substantiveLines.some((line) => /(?:linux|kernel)\s+headers?[^\n]*(?:older|too old|outdated|minimum|required|unsupported|not supported)/i.test(line) ||
-      /(?:minimum|required|supported|unsupported)[^\n]*(?:linux|kernel)\s+headers?/i.test(line))) {
-    return 'legacy-host-headers';
-  }
-  // A host toolchain incompatibility is deterministic when the build
-  // explicitly reports an unsupported host compiler/header/toolchain or a
-  // required host capability/version.  Keep the matcher intentionally broad
-  // so it applies equally to every Source/Branch and host tool.
-  if (substantiveLines.some((line) => /(?:host|build-host|toolchain)[^\n]*(?:incompatible|unsupported|not supported|requires|cannot|can't|failed|version)/i.test(line) ||
-      /(?:compiler|standard library|build tool)[^\n]*(?:incompatible|unsupported|not supported|requires|cannot|can't|failed|version)/i.test(line))) {
-    return 'host-toolchain-compatibility';
+  if (lines.some((line) => /(?:target|firmware|image|artifact)[^\n]*(?:(?:\.bin\b|\.img\b|\.itb\b|\.dtb\b)[^\n]*(?:missing|not\s+found|does\s+not\s+exist)|(?:missing|not\s+found|does\s+not\s+exist)[^\n]*(?:\.bin\b|\.img\b|\.itb\b|\.dtb\b))/i.test(line))) {
+    return 'target-artifact-missing';
   }
   if (lines.some((line) =>
     /(?:output|artifact|generated\s+(?:file|module)|image)\b[^\n]*(?:is\s+)?(?:missing|not\s+found|does\s+not\s+exist)\b/i.test(line) ||
@@ -104,6 +97,34 @@ function causeFromLines(lines) {
   if (lines.some((line) => /\bmodule(?:\s+['"]?[A-Za-z0-9_./+@:-]+['"]?)?\s+is\s+missing\b/i.test(line) ||
     /\bSOURCE_DATE_EPOCH\s*:\s*not found\b/i.test(line))) {
     return 'kernel-prerequisite';
+  }
+  // Old upstream trees can fail before their selected package is reached
+  // because the host-side libc/toolchain requires newer Linux headers.  The
+  // wording varies between build systems; classify the relationship rather
+  // than a concrete kernel version or distribution.  These checks come after
+  // concrete output/module evidence so a wrapper cannot hide the missing
+  // artifact that actually determines the result.
+  if (substantiveLines.some((line) => /available\s+kernel headers are (?:older|too old)/i.test(line))) {
+    return 'toolchain-kernel-version';
+  }
+  if (substantiveLines.some((line) => /(?:linux|kernel)\s+headers?[^\n]*(?:older|too old|outdated|minimum|required|unsupported|not supported)/i.test(line) ||
+      /(?:minimum|required|supported|unsupported)[^\n]*(?:linux|kernel)\s+headers?/i.test(line))) {
+    return 'legacy-host-headers';
+  }
+  // DTC/yylloc and similar host-side linker failures are deterministic host
+  // compatibility failures, but only after concrete output/module checks
+  // above have had a chance to identify the real missing artifact.
+  if (substantiveLines.some((line) => /(?:\bdtc\b|device\s+tree\s+compiler|\byylloc\b)[^\n]*(?:undefined|incompatible|unsupported|not\s+supported|requires|cannot|can't|failed|version|multiple\s+definition|duplicate\s+symbol)/i.test(line) ||
+      /(?:multiple\s+definition|duplicate\s+symbol)[^\n]*\byylloc\b/i.test(line))) {
+    return 'host-toolchain-compatibility';
+  }
+  // A host toolchain incompatibility is deterministic when the build
+  // explicitly reports an unsupported host compiler/header/toolchain or a
+  // required host capability/version.  Keep the matcher intentionally broad
+  // so it applies equally to every Source/Branch and host tool.
+  if (substantiveLines.some((line) => /(?:host|build-host|toolchain)[^\n]*(?:incompatible|unsupported|not supported|requires|cannot|can't|failed|version)/i.test(line) ||
+      /(?:compiler|standard library|build tool)[^\n]*(?:incompatible|unsupported|not supported|requires|cannot|can't|failed|version)/i.test(line))) {
+    return 'host-toolchain-compatibility';
   }
   if (lines.some((line) => /No rule to make target\b/i.test(line))) {
     return 'target-build';
@@ -270,6 +291,25 @@ export function classifyTargetPrerequisiteFailure(value) {
     failureFingerprint: detail.failureFingerprint };
 }
 
+// A replay can be unable to reproduce the shared target because its isolated
+// workspace does not satisfy a known Make-directory contract.  This is a
+// complete transport/capability observation (not compatibility evidence),
+// but it is safe to report as a green structured result when the stage, target,
+// and error are all present.  Unknown failures must continue through the red
+// unresolved path.
+export function isReportedCounterfactualReplayUnavailable(row) {
+  if (row?.result !== 'inconclusive' || row?.reason !== 'counterfactual-replay-unavailable') return false;
+  const counterfactual = row?.counterfactual || {};
+  const stage = String(counterfactual.stage || '');
+  const target = String(counterfactual.target || '').trim();
+  const errorSummary = String(counterfactual.errorSummary || counterfactual.error || row?.errorSummary || '').trim();
+  if (counterfactual.result !== 'unavailable' || !['bootstrap', 'prepare'].includes(stage) || !target || !errorSummary) return false;
+  if (!Array.isArray(row?.issues)) return !('conclusion' in (row || {})) && !('schema' in (row || {}));
+  return row.issues.some((issue) => issue?.type === 'counterfactual-replay-unavailable' &&
+    String(issue.stage || '') === stage && String(issue.target || '') === target &&
+    String(issue.errorSummary || '').trim() === errorSummary);
+}
+
 function hasMatchingStructuredIssue(row, reason, cause, failedTargets, errorSummary) {
   // Runtime attempts are intentionally compact and do not carry normalized
   // issues; the evidence writer is the boundary that must materialize them.
@@ -286,6 +326,7 @@ function hasMatchingStructuredIssue(row, reason, cause, failedTargets, errorSumm
 export function isReportedInconclusive(row) {
   if (row?.result !== 'inconclusive') return false;
   const reason = String(row?.reason || '');
+  if (reason === 'counterfactual-replay-unavailable') return isReportedCounterfactualReplayUnavailable(row);
   // A paired run exposes a Baseline-B transport wrapper when B fails before
   // Final-A can start.  The wrapper is reportable only when its inner phase
   // carries one of the explicitly allowed upstream prerequisite causes.

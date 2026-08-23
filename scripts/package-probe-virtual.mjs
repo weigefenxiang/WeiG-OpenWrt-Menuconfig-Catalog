@@ -240,16 +240,21 @@ export function detectQemuStartInterface(qemustart) {
 
 function selectFirmwareArtifacts(workdir, targetSystem, subtarget, qemuInterface) {
   const scanned = scanFirmwareArtifacts(workdir, targetSystem, subtarget);
-  const combined = scanned.artifacts.find((entry) => ['combined', 'efi'].includes(entry.kind));
+  // A combined/EFI image is a partitioned disk image, not a raw filesystem.
+  // Passing it through qemustart's --rootfs makes the guest mount the whole
+  // disk (for example /dev/vda) and creates a false Baseline-B boot blocker.
+  // Only an explicitly rootfs-only artifact is safe for --rootfs.  Combined,
+  // factory, sysupgrade, and opaque vendor blobs remain inventory evidence;
+  // without an upstream option that proves a safe disk/partition consumer the
+  // virtual phase is an honest capability skip at L4.
   const rootfs = scanned.artifacts.find((entry) => entry.kind === 'rootfs');
-  const diskImage = scanned.artifacts.find((entry) => entry.kind === 'disk-image');
   const kernel = scanned.artifacts.find((entry) => entry.kind === 'kernel');
-  // Never hand an arbitrary .bin (for example a vendor U-Boot or calibration
-  // blob) to a --rootfs parser.  It must carry an explicit disk-image/rootfs
-  // semantic in its filename, or be a known combined/EFI output.
-  const selectedRootfs = combined || rootfs || (qemuInterface.rootfsOption ? diskImage : null);
-  if (!selectedRootfs && !kernel) return { ...scanned, selectedRootfs: null, selectedKernel: null };
-  return { ...scanned, selectedRootfs, selectedKernel: kernel };
+  const selectedRootfs = qemuInterface.rootfsOption ? (rootfs || null) : null;
+  // A kernel is only meaningful to this adapter together with a verified
+  // rootfs path.  A kernel-only qemustart may fall back to its own prefix-based
+  // disk lookup, which is precisely the unsafe behavior this scanner avoids.
+  const selectedKernel = selectedRootfs && qemuInterface.kernelOption ? kernel : null;
+  return { ...scanned, selectedRootfs, selectedKernel };
 }
 
 async function virtualArtifacts(options, qemustart, targetSystem, subtarget) {
@@ -350,7 +355,7 @@ export async function runVirtualProbe(options = {}) {
   capabilities.qemustartOptions = artifacts.qemuInterface.options || [];
   capabilities.artifactDirectory = artifacts.selectedRootfs?.path || artifacts.selectedKernel?.path || '';
   capabilities.firmware = Boolean(artifacts.selectedRootfs || artifacts.selectedKernel);
-  if (!artifacts.qemuInterface.supported || (!artifacts.selectedRootfs && !artifacts.selectedKernel)) {
+  if (!artifacts.qemuInterface.supported || !artifacts.selectedRootfs) {
     return { result: 'skipped', reason: 'virtual-boot-unsupported', deepestPassedLevel: 4, runtimeCovered: false, stages, capabilities, logFile,
       firmwareDirectory: artifacts.scanned.directory, firmwareArtifacts: artifacts.scanned.artifacts || [] };
   }

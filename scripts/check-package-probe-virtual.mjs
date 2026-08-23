@@ -108,6 +108,7 @@ async function scenario(mode, depth, phase = 'final', captureArgs = false) {
     mkdirSync(join(directory, 'scripts'));
     mkdirSync(join(directory, 'bin', 'targets', 'x86', '64'), { recursive: true });
     writeFileSync(join(directory, 'bin', 'targets', 'x86', '64', 'lede-x86-64-generic-squashfs-combined.img.gz'), gzipSync(Buffer.from('firmware-fixture')));
+    writeFileSync(join(directory, 'bin', 'targets', 'x86', '64', 'lede-x86-64-generic-squashfs-rootfs.img.gz'), gzipSync(Buffer.from('rootfs-fixture')));
     const script = join(directory, 'scripts', 'qemustart');
     writeFileSync(script, fixtureScript(mode));
     chmodSync(script, 0o755);
@@ -160,6 +161,23 @@ try {
   rmSync(unsupportedDirectory, { recursive: true, force: true });
 }
 
+const combinedOnlyDirectory = mkdtempSync(join(tmpdir(), 'probe-virtual-combined-only-'));
+try {
+  mkdirSync(join(combinedOnlyDirectory, 'scripts'));
+  mkdirSync(join(combinedOnlyDirectory, 'bin', 'targets', 'x86', '64'), { recursive: true });
+  writeFileSync(join(combinedOnlyDirectory, 'bin', 'targets', 'x86', '64', 'immortalwrt-x86-64-generic-squashfs-combined.img'), 'whole-disk-fixture');
+  const script = join(combinedOnlyDirectory, 'scripts', 'qemustart');
+  writeFileSync(script, '#!/usr/bin/env bash\nwhile [ "$#" -gt 0 ]; do\n  case "$1" in\n    --rootfs) shift 2 ;;\n    *) shift ;;\n  esac\ndone\necho "Please press Enter to activate this console."\n');
+  chmodSync(script, 0o755);
+  const combinedOnly = await runVirtualProbe({ mode: 'boot-smoke', workdir: combinedOnlyDirectory, targetSystem: 'x86', subtarget: '64' });
+  assert.equal(combinedOnly.result, 'skipped');
+  assert.equal(combinedOnly.reason, 'virtual-boot-unsupported');
+  assert.equal(combinedOnly.deepestPassedLevel, 4);
+  assert.equal(combinedOnly.capabilities.firmware, false, 'combined-only images must not be treated as raw rootfs firmware');
+} finally {
+  rmSync(combinedOnlyDirectory, { recursive: true, force: true });
+}
+
 const nonFirmwareDirectory = mkdtempSync(join(tmpdir(), 'probe-virtual-nonfirmware-'));
 try {
   mkdirSync(join(nonFirmwareDirectory, 'scripts'));
@@ -192,6 +210,8 @@ assert(boot.capturedArgs[rootfsArgument + 1] && !boot.capturedArgs[rootfsArgumen
   'qemustart must receive the decompressed firmware path');
 assert(boot.capturedArgs[rootfsArgument + 1].includes('.probe-artifacts'),
   'qemustart must receive a path in the Probe-owned artifact directory');
+assert(boot.capturedArgs[rootfsArgument + 1].includes('rootfs'),
+  'qemustart --rootfs must receive an explicitly rootfs-only artifact');
 
 const runtime = await scenario('success', 'runtime-health');
 assert.equal(runtime.result, 'compatible');

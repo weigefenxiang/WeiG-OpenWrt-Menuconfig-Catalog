@@ -366,6 +366,61 @@
       "zh-CN": "执行预览",
       "zh-TW": "執行預覽"
     },
+    "comparison": {
+      "en": "A/B comparison",
+      "zh-CN": "A/B 对照",
+      "zh-TW": "A/B 對照"
+    },
+    "comparisonHelp": {
+      "en": "Optional A/B mode runs Baseline B first, excluding the selected packages, then Final A with the selected packages and upstream dependency resolution. Disable it for Final-only.",
+      "zh-CN": "可选 A/B 模式先运行不含本次选中插件的基线 B，再运行加入插件并由上游解析依赖的 Final A；关闭后仅运行 Final-only。",
+      "zh-TW": "可選 A/B 模式會先執行不含本次選取套件的基線 B，再執行加入套件並由上游解析相依的 Final A；關閉後僅執行 Final-only。"
+    },
+    "comparisonPreviewTitle": {
+      "en": "A/B comparison plan",
+      "zh-CN": "A/B 对照计划",
+      "zh-TW": "A/B 對照計畫"
+    },
+    "comparisonMatrix": {
+      "en": "Each environment still uses one Matrix Job; A/B does not double the matrix.",
+      "zh-CN": "每个环境仍只占用一个 Matrix Job；A/B 不会让矩阵翻倍。",
+      "zh-TW": "每個環境仍只使用一個 Matrix Job；A/B 不會讓矩陣加倍。"
+    },
+    "comparisonShared": {
+      "en": "Bootstrap, source clone, and feeds are shared within the same Job.",
+      "zh-CN": "同一个 Job 共用 bootstrap、源码克隆和 feeds。",
+      "zh-TW": "同一個 Job 共用 bootstrap、原始碼 clone 與 feeds。"
+    },
+    "comparisonOrder": {
+      "en": "Order: B (selected packages excluded) → A (selected packages added and dependencies resolved upstream).",
+      "zh-CN": "顺序：B（排除选中插件）→ A（加入选中插件并由上游解析依赖）。",
+      "zh-TW": "順序：B（排除選取套件）→ A（加入選取套件並由上游解析相依）。"
+    },
+    "comparisonShortCircuit": {
+      "en": "If B is blocked or unresolved, A is not used to hide that Base Profile result.",
+      "zh-CN": "如果 B 阻断或未定，A 不会用来掩盖该基线结果。",
+      "zh-TW": "如果 B 被阻斷或未定，A 不會用來掩蓋該基線結果。"
+    },
+    "comparisonSampling": {
+      "en": "Coverage sampling chooses environments first, then runs B→A in each selected environment.",
+      "zh-CN": "先抽取覆盖环境，再在每个选中环境执行 B→A。",
+      "zh-TW": "先抽取覆蓋環境，再在每個選取環境執行 B→A。"
+    },
+    "comparisonL1": {
+      "en": "L1: compare configuration resolution only.",
+      "zh-CN": "L1：仅比较配置求解。",
+      "zh-TW": "L1：僅比較設定求解。"
+    },
+    "comparisonDeep": {
+      "en": "L2-L7: run the selected depth; B→A shares common preparation within one Job.",
+      "zh-CN": "L2-L7：执行所选深度；B→A 在同一 Job 内共用公共准备阶段。",
+      "zh-TW": "L2-L7：執行所選深度；B→A 在同一個 Job 內共用公共準備階段。"
+    },
+    "comparisonCaveat": {
+      "en": "A/B attribution is reported only with complete evidence; replay capability gaps remain inconclusive and are not counted as compatible.",
+      "zh-CN": "只有证据完整时才进行 A/B 归因；回放能力缺口仍记为未定，不计为兼容。",
+      "zh-TW": "只有證據完整時才進行 A/B 歸因；回放能力缺口仍記為未定，不計為相容。"
+    },
     "loadingEnvironments": {
       "en": "Loading Target structures for Source / Branch entries…",
       "zh-CN": "正在读取各 Source / Branch 的 Target 结构…",

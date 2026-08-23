@@ -688,11 +688,17 @@ function manualRequest(env, maximumBytes, policy) {
   const mode = env.PROBE_MODE || 'config-resolve';
   const coverageMode = env.COVERAGE_MODE || 'auto';
   const explicitLimit = String(env.COVERAGE_LIMIT || '').trim();
+  // Manual workflow dispatches default to the approved paired B→A contract.
+  // An explicit false remains a supported Final-only diagnostic mode.  Issue
+  // requests carry an explicit normalized comparison (or intentionally retain
+  // the legacy final-only shape) and do not pass through this default.
+  const pairingInput = String(env.PROBE_PAIRED_COMPARISON ?? '').trim().toLowerCase();
+  const pairedComparison = pairingInput === '' || pairingInput === 'true';
   return normalizeProbeRequest({
     schema: 3, channel: env.CODE_REF || env.GITHUB_REF_NAME || 'main', mode,
     useDefconfig: true, baselinePackageConfig: baseline.packageConfig,
     packageConfig: final.packageConfig, packageIntent: intent,
-    ...(String(env.PROBE_PAIRED_COMPARISON || '').toLowerCase() === 'true' ? {
+    ...(pairedComparison ? {
       comparison: { mode: 'paired-exclusion', executionOrder: ['baseline', 'final'] },
     } : {}),
     environmentScope: {

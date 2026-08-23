@@ -33,6 +33,8 @@ const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.
 assert.equal(probeUi.strings?.configResolve?.['zh-CN'], '官方配置求解');
 assert.equal(probeUi.strings?.environmentLimit?.en, 'Probe environments');
 assert.match(probeUi.strings?.sourceExcluded?.en || '', /hanwckf/);
+assert.equal(probeUi.strings?.comparison?.['zh-CN'], 'A/B 对照');
+assert.match(probeUi.strings?.comparisonHelp?.en || '', /Final-only/);
 const probeDepthUi = [
   ['depth1Short', 'L1 插件', 'configResolve', 'configResolveHelp'],
   ['depth2Short', 'L2 编译', 'packageCompile', 'packageCompileHelp'],
@@ -294,6 +296,7 @@ assert(issueForm.includes('id: state') && !issueForm.includes('type: upload') &&
 for (const input of ['baseline_package_config:', 'roots:', 'target_system:', 'subtarget:', 'target_profile:', 'coverage_mode:', 'display_context:', 'batch_index:', 'sampling_seed:', 'data_commit:']) assert(workflow.includes(input), `workflow missing ${input}`);
 const workflowInputs = workflow.slice(workflow.indexOf('workflow_dispatch:'), workflow.indexOf('\npermissions:'));
 assert(!/\n\s+use_defconfig:/.test(workflowInputs), 'Defconfig must not remain a manual Probe switch');
+assert.match(workflowInputs, /paired_comparison:[\s\S]*?default:\s*true/, 'manual Probe A/B comparison must default to enabled');
 for (const [mode, level] of [['config-resolve', 'L1'], ['package-compile', 'L2'], ['rootfs-integration', 'L3'], ['firmware-integration', 'L4'], ['boot-smoke', 'L5'], ['runtime-health', 'L6'], ['reboot-validation', 'L7']]) {
   assert(workflow.includes(`inputs.mode == '${mode}' && '${level}'`), `run name must map ${mode} to ${level}`);
 }

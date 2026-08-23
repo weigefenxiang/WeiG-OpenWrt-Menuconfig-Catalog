@@ -5,7 +5,8 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
-import { classifyTargetPrerequisiteFailure, isAllowedTargetPrerequisiteCause, isMemoryExhaustion, isReportedInconclusive } from './package-probe-failure-classification.mjs';
+import { classifyTargetPrerequisiteFailure, isAllowedTargetPrerequisiteCause, isMemoryExhaustion,
+  isReportedCounterfactualReplayUnavailable, isReportedInconclusive } from './package-probe-failure-classification.mjs';
 
 const packageName = (value) => String(value || '').replace(/-[0-9][A-Za-z0-9.+:~_-]*$/, '');
 
@@ -91,7 +92,13 @@ const STRUCTURED_PACKAGE_FAILURE_REASONS = new Set([
 
 function appendStructuredAttemptIssue(issues, attempt) {
   const reason = String(attempt?.reason || '');
-  if (STRUCTURED_INFRASTRUCTURE_REASONS.has(reason)) {
+  if (reason === 'counterfactual-replay-unavailable') {
+    const counterfactual = attempt?.counterfactual || {};
+    issues.push({ type: 'counterfactual-replay-unavailable', reason,
+      stage: String(counterfactual.stage || ''), target: String(counterfactual.target || ''),
+      ...(counterfactual.errorSummary || counterfactual.error || attempt?.errorSummary
+        ? { errorSummary: String(counterfactual.errorSummary || counterfactual.error || attempt?.errorSummary || '') } : {}) });
+  } else if (STRUCTURED_INFRASTRUCTURE_REASONS.has(reason)) {
     issues.push({ type: 'infrastructure-failure', reason });
   } else if (reason === 'target-prerequisite-failure') {
     issues.push({ type: 'target-prerequisite-failure', reason,
@@ -114,12 +121,17 @@ function appendBlockedAttemptIssue(issues, attempt) {
   if (String(attempt?.result || '') !== 'blocked' &&
       !String(attempt?.reason || '').startsWith('base-profile-') &&
       String(attempt?.reason || '') !== 'baseline-failure') return;
+  const counterfactual = attempt?.counterfactual || {};
+  const replayError = counterfactual.result === 'failed'
+    ? String(counterfactual.errorSummary || counterfactual.terminalError || '').trim() : '';
+  const replayTargets = counterfactual.result === 'failed' && Array.isArray(counterfactual.failedBuildTargets)
+    ? counterfactual.failedBuildTargets : (attempt?.replayFailedBuildTargets || []);
   issues.push({ type: 'base-profile-failure', reason: attempt?.reason || 'base-profile-failure', pluginEvaluated: false,
     ...(attempt?.cause ? { cause: attempt.cause } : {}),
     ...(attempt?.targetPrerequisiteCause ? { cause: attempt.targetPrerequisiteCause } : {}),
     ...(attempt?.prerequisiteCause ? { cause: attempt.prerequisiteCause } : {}),
-    ...(attempt?.errorSummary ? { errorSummary: attempt.errorSummary } : {}),
-    ...(attempt?.failedBuildTargets?.length ? { targets: attempt.failedBuildTargets } : {}) });
+    ...(replayError || attempt?.errorSummary ? { errorSummary: replayError || attempt.errorSummary } : {}),
+    ...(replayTargets.length ? { targets: replayTargets } : (attempt?.failedBuildTargets?.length ? { targets: attempt.failedBuildTargets } : {})) });
 }
 
 export function createEvidence({ log, config = '', runtime = null, env = {}, attempt: selectedAttempt = null }) {
@@ -266,6 +278,9 @@ export function createEvidence({ log, config = '', runtime = null, env = {}, att
     pairId: attempt.pairId || '',
     pairConclusion: attempt.pairConclusion || '',
     packageCauseKind: attempt.packageCauseKind || '',
+    originalFailure: attempt.originalFailure || attempt.final?.originalFailure || null,
+    counterfactual: attempt.counterfactual || null,
+    baselineReplay: attempt.baselineReplay || null,
     preflight: attempt.preflight || null,
     preflightResult: attempt.preflightResult || '',
     preflightReason: attempt.preflightReason || '',
@@ -414,6 +429,9 @@ function conclusionStats(rows) {
   const baselineFailure = rows.filter((row) => row.conclusion === 'inconclusive' &&
     (row.pairConclusion === 'baseline-failure' || row.reason === 'baseline-failure') &&
     !reportedTargetPrerequisiteCause(row) && !reportedPackagePrerequisiteCause(row)).length;
+  const counterfactualReplayUnavailable = rows.filter((row) => isReportedCounterfactualReplayUnavailable({
+    ...row, result: row?.conclusion,
+  })).length;
   const baselineBlocked = rows.filter((row) => row.conclusion === 'blocked' &&
     (row.pairedComparison === true || row.pairConclusion) &&
     (String(row.pairConclusion || '').startsWith('blocked-') || row.final?.reason === 'baseline-blocked' || row.final?.result === 'not-run')).length;
@@ -422,7 +440,7 @@ function conclusionStats(rows) {
   const infraInconclusive = rows.filter((row) => row.conclusion === 'inconclusive' && !reportedTargetPrerequisiteCause(row) &&
     !reportedPackagePrerequisiteCause(row) &&
     (row.issues || []).some((issue) => INFRASTRUCTURE_ISSUE_TYPES.has(issue.type))).length;
-  const unattributedInconclusive = Math.max(0, inconclusive - baselineFailure - reportedTargetPrerequisite - reportedPackagePrerequisite - infraInconclusive);
+  const unattributedInconclusive = Math.max(0, inconclusive - baselineFailure - reportedTargetPrerequisite - reportedPackagePrerequisite - infraInconclusive - counterfactualReplayUnavailable);
   const conclusive = compatible + incompatible;
   const applicable = compatible + incompatible + blocked + inconclusive;
   const successRate = applicable ? compatible / applicable : null;
@@ -431,7 +449,7 @@ function conclusionStats(rows) {
   const virtualUnsupported = rows.filter(isVirtualUnsupported).length;
   return { attempted: rows.length, applicable, compatible, incompatible, blocked, skipped, inconclusive, preflightSkipped, reportedTargetPrerequisite,
     reportedPackagePrerequisite,
-    baselineFailure, baselineBlocked, metadataUnresolved, infraInconclusive, unattributedInconclusive, conclusive,
+    baselineFailure, baselineBlocked, metadataUnresolved, infraInconclusive, counterfactualReplayUnavailable, unattributedInconclusive, conclusive,
     successRate, evaluatedCompatibility, evaluationCoverage, compatibilityRate: evaluatedCompatibility, virtualUnsupported };
 }
 
@@ -586,7 +604,8 @@ function formatSelectedPackagePrimaryRate(scope) {
 function scopeResultLabel(scope, exhaustive) {
   if (scope.inconclusive > 0) {
     if (scope.conclusive > 0 || scope.skipped > 0 || scope.baselineFailure > 0 ||
-        scope.reportedTargetPrerequisite > 0 || scope.reportedPackagePrerequisite > 0) return 'INCOMPLETE';
+        scope.reportedTargetPrerequisite > 0 || scope.reportedPackagePrerequisite > 0 ||
+        scope.counterfactualReplayUnavailable > 0) return 'INCOMPLETE';
     return scope.infraInconclusive === scope.inconclusive ? 'INFRA ERROR' : 'ERROR';
   }
   if (scope.blocked > 0) return scope.conclusive > 0 ? 'MIXED/BLOCKED' : 'BLOCKED';
@@ -628,6 +647,9 @@ function scopeNote(scope) {
     if (scope.metadataUnresolved > 0) {
       const details = [...new Set(['metadata-unresolved', ...(scope.metadataRefreshErrors || [])].filter(Boolean))].join('; ');
       notes.push(`After-Feeds metadata refresh failed / Feeds 后元数据刷新失败: ${scope.metadataUnresolved} (${details})`);
+    }
+    if (scope.counterfactualReplayUnavailable > 0) {
+      notes.push(`Counterfactual replay unavailable; compatibility not evaluated / 反事实回放能力不可用，未评价插件: ${scope.counterfactualReplayUnavailable}`);
     }
     const otherInfraInconclusive = Math.max(0, Number(scope.infraInconclusive || 0) - Number(scope.metadataUnresolved || 0));
     if (otherInfraInconclusive > 0) {
@@ -705,7 +727,8 @@ export function aggregateRunStatus(env = {}, evidenceInput = 0) {
       return { state: evidenceCount ? 'execution-collected-with-failures' : 'execution-failure', planResult, probeResult, execute };
     }
     const structured = evidence && evidence.length > 0 && evidence.every((row) =>
-      ['compatible', 'incompatible', 'blocked', 'skipped'].includes(String(row?.conclusion || '')));
+      ['compatible', 'incompatible', 'blocked', 'skipped'].includes(String(row?.conclusion || '')) ||
+      isReportedInconclusive({ ...row, result: row?.conclusion }));
     if (probeResult === 'success') {
       if (!evidenceCount) return { state: 'execution-evidence-missing', planResult, probeResult, execute };
       if (evidence && !structured) return { state: 'execution-incomplete', planResult, probeResult, execute };

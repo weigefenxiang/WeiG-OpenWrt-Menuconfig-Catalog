@@ -50,15 +50,25 @@ if (process.env.PROBE_REPLAY === 'true' && args.includes('prepare') && process.e
   const required = { build_dir: 'BUILD_DIR', staging_dir: 'STAGING_DIR', staging_dir_host: 'STAGING_DIR_HOST', tmp: 'TMP_DIR', bin: 'BIN_DIR' };
   const variables = Object.fromEntries(args.filter((arg) => arg.includes('=')).map((arg) => arg.split(/=(.*)/s).slice(0, 2)));
   const missing = Object.entries(required).filter(([, variable]) => !variables[variable] || !existsSync(variables[variable]) || !statSync(variables[variable]).isDirectory()).map(([name]) => name);
-  appendFileSync(process.env.FAKE_REPLAY_LAYOUT_LOG, JSON.stringify({ missing }) + '\\n');
-  if (missing.length) {
+  const stamps = { tmpBuild: join(variables.TMP_DIR || '', '.build'), stagingHostPrereq: join(variables.STAGING_DIR_HOST || '', '.prereq-build') };
+  const stampKinds = Object.fromEntries(Object.entries(stamps).map(([name, path]) => [name,
+    !existsSync(path) ? 'missing' : statSync(path).isFile() ? 'file' : statSync(path).isDirectory() ? 'directory' : 'other']));
+  const invalidStamps = Object.entries(stampKinds).filter(([, kind]) => kind !== 'file').map(([name]) => name);
+  appendFileSync(process.env.FAKE_REPLAY_LAYOUT_LOG, JSON.stringify({ missing, stampKinds }) + '\\n');
+  if (missing.length || invalidStamps.length) {
     console.error('ERROR: replay workspace is incomplete');
     process.exit(2);
   }
 }
 if (process.env.FAKE_SHARED_REPLAY_PREPARE_FAIL === 'true' && process.env.PROBE_REPLAY === 'true' && args.includes('prepare')) {
+  if (process.env.FAKE_SHARED_REPLAY_PREPARE_CAPABILITY === 'true') {
+    console.error("No rule to make target '/tmp/.probe-replays/tmp/.build'");
+    process.exit(2);
+  }
   if (process.env.FAKE_SHARED_REPLAY_PREPARE_INFRA === 'true') {
     console.error('curl: (6) Could not resolve host: replay.example.invalid');
+  } else if (process.env.FAKE_SHARED_REPLAY_PREPARE_PATH_UNKNOWN === 'true') {
+    console.error('ERROR: replay helper /tmp/.probe-replays/prepare-helper failed');
   } else {
     console.error('ERROR: module replay-base.ko is missing');
     console.error('ERROR: target/linux failed to build');
@@ -151,6 +161,7 @@ if ((process.env.FAKE_VIRTUAL_ARTIFACT === 'true' || process.env.FAKE_VIRTUAL_AR
     const artifactDirectory = join(process.cwd(), 'bin', 'targets', 'x86', '64');
     mkdirSync(artifactDirectory, { recursive: true });
     writeFileSync(join(artifactDirectory, 'test-combined.img'), 'fake firmware');
+    writeFileSync(join(artifactDirectory, 'test-squashfs-rootfs.img'), 'fake rootfs');
   }
 }
 if (process.env.FAKE_FAIL_PARALLEL === 'true' && rootCompile && args[0] !== '-j1') process.exitCode = 1;
@@ -289,7 +300,9 @@ function scenario(mode, options = {}) {
          FAKE_SHARED_REPLAY_FAIL: String(options.failSharedReplay === true),
          FAKE_SHARED_REPLAY_UNATTRIBUTED: String(options.failSharedReplayUnattributed === true),
         FAKE_SHARED_REPLAY_PREPARE_FAIL: String(options.failSharedReplayPrepare === true),
-        FAKE_SHARED_REPLAY_PREPARE_INFRA: String(options.failSharedReplayPrepareInfrastructure === true),
+         FAKE_SHARED_REPLAY_PREPARE_INFRA: String(options.failSharedReplayPrepareInfrastructure === true),
+         FAKE_SHARED_REPLAY_PREPARE_CAPABILITY: String(options.failSharedReplayPrepareCapability === true),
+         FAKE_SHARED_REPLAY_PREPARE_PATH_UNKNOWN: String(options.failSharedReplayPreparePathUnknown === true),
         FAKE_REPLAY_LAYOUT_LOG: replayLayoutLog,
         FAKE_FAIL_INNER_KERNEL_WRAPPER: String(options.failInnerKernelWrapper === true),
         FAKE_FAIL_INNER_KERNEL_MAKE_ONLY: String(options.failInnerKernelMakeOnly === true),
@@ -596,6 +609,31 @@ assert.equal(pairedReplayPrepareBlocked.runtime.attempts[0].targetPrerequisiteCa
 assert.deepEqual(pairedReplayPrepareBlocked.runtime.attempts[0].failedBuildTargets, ['target/linux']);
 assert.match(pairedReplayPrepareBlocked.runtime.attempts[0].failureFingerprint, /^[a-f0-9]{64}$/);
 
+const pairedReplayPreparePathUnknown = scenario('package-compile', {
+  paired: true, failSharedTarget: true, failSharedReplayPrepare: true, failSharedReplayPreparePathUnknown: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y', expectedStatus: 1,
+});
+assert.equal(pairedReplayPreparePathUnknown.runtime.attempts[0].result, 'inconclusive',
+  'a generic replay script failure must remain unresolved even when its path contains .probe-replays');
+assert.equal(pairedReplayPreparePathUnknown.runtime.attempts[0].reason, 'counterfactual-unresolved');
+assert.equal(pairedReplayPreparePathUnknown.runtime.attempts[0].counterfactual.reason, 'replay-prepare-unresolved');
+
+const pairedReplayCapabilityUnavailable = scenario('package-compile', {
+  paired: true, failSharedTarget: true, failSharedReplayPrepare: true, failSharedReplayPrepareCapability: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y', expectedStatus: 0,
+});
+assert.equal(pairedReplayCapabilityUnavailable.runtime.attempts[0].result, 'inconclusive',
+  'a recognized replay workspace capability gap must remain unresolved without becoming a blocker');
+assert.equal(pairedReplayCapabilityUnavailable.runtime.attempts[0].reason, 'counterfactual-replay-unavailable');
+assert.equal(pairedReplayCapabilityUnavailable.runtime.attempts[0].counterfactual.result, 'unavailable');
+assert.equal(pairedReplayCapabilityUnavailable.runtime.attempts[0].counterfactual.stage, 'prepare');
+assert.match(pairedReplayCapabilityUnavailable.runtime.attempts[0].final.originalFailure.terminalError,
+  /package\/network\/shared\/compile/,
+  'Final-A primary error evidence must remain the failed shared target');
+assert.equal(pairedReplayCapabilityUnavailable.runtime.attempts[0].final.errorSummary,
+  pairedReplayCapabilityUnavailable.runtime.attempts[0].final.originalFailure.errorSummary,
+  'replay diagnostics must not overwrite Final-A primary error evidence');
+
 const pairedReplayDirectories = scenario('package-compile', {
   paired: true, failSharedTarget: true, targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
 });
@@ -604,6 +642,12 @@ assert(pairedReplayDirectories.runtime.attempts[0].baselineReplay.replayDirector
   'isolated replay must record each private build directory');
 assert.match(pairedReplayDirectories.replayLayout, /"missing":\[\]/,
   'isolated replay must create and verify all private build directories before prepare');
+const replayLayoutRecord = JSON.parse(pairedReplayDirectories.replayLayout.trim().split(/\r?\n/)[0]);
+assert.deepEqual(replayLayoutRecord.stampKinds, { tmpBuild: 'file', stagingHostPrereq: 'file' },
+  'replay Make stamp paths must be files under tmp/.build and staging_dir/host/.prereq-build');
+assert(pairedReplayDirectories.runtime.attempts[0].baselineReplay.replayDirectories.staging_dir_host.endsWith('staging_dir/host') ||
+  pairedReplayDirectories.runtime.attempts[0].baselineReplay.replayDirectories.staging_dir_host.endsWith('staging_dir\\host'),
+  'STAGING_DIR_HOST must map to staging_dir/host, not a sibling staging_dir_host tree');
 
 const pairedReplayBootstrapUnresolved = scenario('package-compile', {
   paired: true, failSharedTarget: true, replayPathConflict: true,
@@ -830,6 +874,24 @@ assert.deepEqual(syncconfig.failedBuildTargets, ['target/linux']);
 const missingArtifact = classifyPrerequisiteFailure('ERROR: generated module output is missing\nERROR: package/kernel/linux failed to build');
 assert.equal(missingArtifact.cause, 'package-output-missing',
   'generic missing build artifacts must have a stable cause');
+const targetArtifact = classifyPrerequisiteFailure('ERROR: target firmware image.bin is missing\nERROR: target/linux failed to build');
+assert.equal(targetArtifact.cause, 'target-artifact-missing',
+  'a missing Target firmware artifact must outrank the generic host/toolchain classifier');
+const targetArtifactPostfix = classifyPrerequisiteFailure('ERROR: target artifact is missing: firmware.itb\nERROR: target/linux failed to build');
+assert.equal(targetArtifactPostfix.cause, 'target-artifact-missing',
+  'Target artifact errors must remain specific when the filename follows the missing marker');
+const kernelModule = classifyPrerequisiteFailure('ERROR: kmod-crypto-core.ko is missing\nERROR: target/linux failed to build');
+assert.equal(kernelModule.cause, 'kernel-prerequisite',
+  'a missing kernel module must outrank the generic host/toolchain classifier');
+const kernelModulePostfix = classifyPrerequisiteFailure('ERROR: kmod module missing: crypto-core.ko\nERROR: target/linux failed to build');
+assert.equal(kernelModulePostfix.cause, 'kernel-prerequisite',
+  'kmod missing errors must remain specific when the module filename follows the missing marker');
+const dtcCompatibility = classifyPrerequisiteFailure('dtc: undefined reference to yylloc\nERROR: target/linux failed to build');
+assert.equal(dtcCompatibility.cause, 'host-toolchain-compatibility',
+  'DTC host compatibility must retain its concrete host-toolchain cause');
+const dtcMultipleDefinition = classifyPrerequisiteFailure("multiple definition of 'yylloc'\nERROR: target/linux failed to build");
+assert.equal(dtcMultipleDefinition.cause, 'host-toolchain-compatibility',
+  'DTC duplicate yylloc definitions must retain the host-toolchain cause');
 const fallbackErrors = extractFailureErrors([
   'curl: (22) The requested URL returned error: 404',
   'Trying fallback mirror',
@@ -957,6 +1019,24 @@ const finalizeReported = evaluateFinalize({
   evidence: [finalizeEvidence],
 });
 assert.equal(finalizeReported.ok, true, 'Finalize must accept complete LEDE prerequisite evidence');
+const finalizeReplayUnavailableAttempt = {
+  ...finalizeIdentity, result: 'inconclusive', reason: 'counterfactual-replay-unavailable',
+  counterfactual: { result: 'unavailable', stage: 'prepare', target: 'package/network/shared',
+    errorSummary: "No rule to make target '/tmp/.probe-replays/tmp/.build'" },
+};
+const finalizeReplayUnavailableEvidence = {
+  ...finalizeIdentity, schema: 5, conclusion: 'inconclusive', result: 'inconclusive',
+  reason: finalizeReplayUnavailableAttempt.reason, counterfactual: finalizeReplayUnavailableAttempt.counterfactual,
+  issues: [{ type: 'counterfactual-replay-unavailable', reason: finalizeReplayUnavailableAttempt.reason,
+    stage: 'prepare', target: 'package/network/shared', errorSummary: "No rule to make target '/tmp/.probe-replays/tmp/.build'" }],
+};
+assert.equal(probeResultExitCode([finalizeReplayUnavailableAttempt]), 0,
+  'recognized replay capability gaps must be reportable without compatibility attribution');
+const finalizeReplayUnavailable = evaluateFinalize({
+  env: finalizeBaseEnv, runtime: { attempts: [finalizeReplayUnavailableAttempt] }, evidence: [finalizeReplayUnavailableEvidence],
+});
+assert.equal(finalizeReplayUnavailable.ok, true,
+  'Finalize must accept complete counterfactual replay-unavailable evidence');
 const finalizeBlockedAttempt = {
   ...finalizeIdentity, result: 'blocked', reason: 'base-profile-prepare-failure',
   failedBuildTargets: ['target/linux'], errorSummary: 'kernel Kconfig syncconfig failed before Final A',

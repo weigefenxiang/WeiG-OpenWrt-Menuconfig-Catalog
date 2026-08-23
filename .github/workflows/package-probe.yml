@@ -78,7 +78,7 @@ on:
         description: "Run baseline B before Final A in the same environment job / 在同一环境 Job 内先运行基线 B 再运行 Final A"
         required: false
         type: boolean
-        default: false
+        default: true
       issue_number:
         description: "Gateway Issue number / 网关 Issue 编号"
         required: false

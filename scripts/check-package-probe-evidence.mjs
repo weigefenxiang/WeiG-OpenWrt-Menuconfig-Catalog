@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import {
   aggregateEvidence, aggregateRunStatus, aggregateScopeConclusions, createEvidence, evidenceSummaryLines, parseProbeLog,
 } from './write-package-probe-evidence.mjs';
+import { isReportedCounterfactualReplayUnavailable, isReportedInconclusive } from './package-probe-failure-classification.mjs';
 
 const state = (env, count = 0) => aggregateRunStatus(env, count).state;
 assert.equal(state({ PLAN_RESULT: 'failure', PROBE_RESULT: 'skipped' }), 'plan-failure');
@@ -19,6 +20,17 @@ for (const conclusion of ['compatible', 'incompatible', 'blocked', 'skipped']) {
 }
 assert.equal(aggregateRunStatus({ PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true' }, [{ conclusion: 'inconclusive' }]).state,
   'execution-incomplete', 'unresolved evidence must not be reported as a successful execution');
+const replayUnavailableRow = {
+  schema: 5, conclusion: 'inconclusive', result: 'inconclusive', reason: 'counterfactual-replay-unavailable',
+  counterfactual: { result: 'unavailable', stage: 'prepare', target: 'package/network/shared',
+    errorSummary: "No rule to make target '/tmp/.probe-replays/tmp/.build'" },
+  issues: [{ type: 'counterfactual-replay-unavailable', reason: 'counterfactual-replay-unavailable', stage: 'prepare',
+    target: 'package/network/shared', errorSummary: "No rule to make target '/tmp/.probe-replays/tmp/.build'" }],
+};
+assert.equal(isReportedCounterfactualReplayUnavailable(replayUnavailableRow), true);
+assert.equal(isReportedInconclusive(replayUnavailableRow), true);
+assert.equal(aggregateRunStatus({ PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true' }, [replayUnavailableRow]).state,
+  'execution-success', 'known replay capability gaps are green transport results but not compatibility successes');
 assert.equal(aggregateRunStatus({ PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true' }, []).state,
   'execution-evidence-missing', 'a successful Runner with no evidence must remain incomplete');
 assert.equal(aggregateRunStatus({ PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true' }, [{ conclusion: 'contradictory' }]).state,
@@ -688,6 +700,18 @@ try {
   assert(error.lines.some((line) => line.includes('| OpenWrt | 1 | **50%** | 0 | 0 | 1 | **—** | 0 | Infrastructure incomplete / 基础设施未完成: 1 (timeout); Passed tests / 通过测试: 1/2 |')),
     'one infrastructure failure must remain inconclusive without erasing the valid compatible result');
   assert(error.lines.some((line) => line.includes('Evaluated compatibility / 已评价兼容率')), 'compatibility percentage must be labeled as evaluated-only');
+
+  const replayUnavailableDir = join(dir, 'replay-unavailable'); mkdirSync(replayUnavailableDir);
+  { const sub = join(replayUnavailableDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({
+      ...row('OpenWrt', 'main', 'inconclusive'), ...replayUnavailableRow,
+    })); }
+  const replayUnavailable = aggregateEvidence(replayUnavailableDir, { PLAN_RESULT: 'success', PROBE_RESULT: 'success', EXECUTE: 'true', AUTHORIZED: 'true',
+    COVERAGE_TOTAL: '1', COVERAGE_PLANNED: '1', COVERAGE_SAMPLED: 'false', BATCH_COUNT: '1' });
+  assert.equal(replayUnavailable.runStatus.state, 'execution-success');
+  assert.equal(replayUnavailable.overallStats.counterfactualReplayUnavailable, 1);
+  assert.equal(replayUnavailable.overallStats.compatible, 0, 'replay-unavailable must never count as compatible');
+  assert.equal(replayUnavailable.overallStats.successRate, 0);
+  assert(replayUnavailable.lines.some((line) => line.includes('Counterfactual replay unavailable; compatibility not evaluated / 反事实回放能力不可用，未评价插件: 1')));
 
   const baselineFailureDir = join(dir, 'baseline-failure'); mkdirSync(baselineFailureDir);
   { const sub = join(baselineFailureDir, '0'); mkdirSync(sub); writeFileSync(join(sub, 'evidence.json'), JSON.stringify({
