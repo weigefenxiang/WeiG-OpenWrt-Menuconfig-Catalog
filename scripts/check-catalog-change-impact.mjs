@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import {
   assertPromotionPushReusesSnapshot,
   catalogChangeImpact,
@@ -36,9 +37,20 @@ assert.equal(pushBeforeSha({ before: 'A'.repeat(40) }), 'a'.repeat(40));
 assert.equal(pushBeforeSha({ before: '0'.repeat(40) }), '');
 assert.equal(pushBeforeSha({ before: 'bad' }), '');
 
-assert.deepEqual(configuredReuseSourceForCodeRef('dev'), {
-  codeRef: 'dev', dataBranch: 'catalog-dev',
-}, 'dev promotion must use the canonical catalog-dev fallback when no explicit reuse marker exists');
+const markerlessCwd = mkdtempSync(join(tmpdir(), 'catalog-change-impact-markerless-'));
+const markedCwd = mkdtempSync(join(tmpdir(), 'catalog-change-impact-marked-'));
+try {
+  assert.deepEqual(configuredReuseSourceForCodeRef('dev', { cwd: markerlessCwd }), {
+    codeRef: 'dev', dataBranch: 'catalog-dev',
+  }, 'dev promotion must use the canonical catalog-dev fallback when no explicit reuse marker exists');
+  writeFileSync(join(markedCwd, '.catalog-reuse-source'), 'catalog-fix-change-impact-marker\n');
+  assert.deepEqual(configuredReuseSourceForCodeRef('dev', { cwd: markedCwd }), {
+    codeRef: 'fix-change-impact-marker', dataBranch: 'catalog-fix-change-impact-marker',
+  }, 'dev promotion must honor a valid explicit reuse marker');
+} finally {
+  rmSync(markerlessCwd, { recursive: true, force: true });
+  rmSync(markedCwd, { recursive: true, force: true });
+}
 assert.deepEqual(configuredReuseSourceForCodeRef('staging'), {
   codeRef: 'dev', dataBranch: 'catalog-dev',
 }, 'staging promotion must preserve the canonical catalog-dev predecessor');
