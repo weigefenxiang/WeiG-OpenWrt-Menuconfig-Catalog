@@ -59,7 +59,7 @@ if (args.includes('prepare')) {
     for (const tool of ['mkhash', 'gzip']) {
       const toolPath = join(variables.STAGING_DIR_HOST || '', 'bin', tool);
       if (!existsSync(toolPath)) {
-        console.error(`bash: line 1: ${toolPath}: No such file or directory`);
+        console.error('bash: line 1: ' + toolPath + ': No such file or directory');
         console.error('make[3] -C tools/libdeflate compile');
         console.error('ERROR: tools/libdeflate failed to build.');
         process.exit(2);
@@ -84,8 +84,8 @@ if (process.env.PROBE_REPLAY === 'true' && args.includes('prepare') && process.e
 if (process.env.FAKE_SHARED_REPLAY_PREPARE_FAIL === 'true' && process.env.PROBE_REPLAY === 'true' && args.includes('prepare')) {
   if (process.env.FAKE_SHARED_REPLAY_PREPARE_HOST_TOOLS === 'true') {
     const host = '/tmp/.probe-replays/replay/staging_dir/host';
-    console.error(`bash: line 1: ${host}/bin/mkhash: No such file or directory`);
-    console.error(`bash: line 1: ${host}/bin/gzip: No such file or directory`);
+    console.error('bash: line 1: ' + host + '/bin/mkhash: No such file or directory');
+    console.error('bash: line 1: ' + host + '/bin/gzip: No such file or directory');
     console.error('make[3] -C tools/libdeflate compile');
     console.error('ERROR: tools/libdeflate failed to build.');
   } else if (process.env.FAKE_SHARED_REPLAY_PREPARE_CAPABILITY === 'true') {
