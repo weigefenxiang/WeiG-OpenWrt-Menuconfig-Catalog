@@ -46,6 +46,27 @@ if (args.includes('prepare-tmpinfo')) {
     ? 'Source-Makefile: package/network/beta/Makefile\\nPackage: beta\\n'
     : 'Source-Makefile: ' + rootSource + '\\nPackage: ${rootPackage}\\n');
 }
+if (args.includes('prepare')) {
+  const variables = Object.fromEntries(args.filter((arg) => arg.includes('=')).map((arg) => arg.split(/=(.*)/s).slice(0, 2)));
+  if (process.env.PROBE_REPLAY !== 'true') {
+    const hostStaging = join(process.cwd(), 'staging_dir', 'host');
+    mkdirSync(join(hostStaging, 'bin'), { recursive: true });
+    writeFileSync(join(hostStaging, '.prereq-build'), 'baseline host tools\\n');
+    writeFileSync(join(hostStaging, 'bin', 'mkhash'), '#!/bin/sh\\n');
+    writeFileSync(join(hostStaging, 'bin', 'gzip'), '#!/bin/sh\\n');
+  }
+  if (process.env.PROBE_REPLAY === 'true' && process.env.FAKE_REPLAY_HOST_TOOLS_REQUIRED === 'true') {
+    for (const tool of ['mkhash', 'gzip']) {
+      const toolPath = join(variables.STAGING_DIR_HOST || '', 'bin', tool);
+      if (!existsSync(toolPath)) {
+        console.error(`bash: line 1: ${toolPath}: No such file or directory`);
+        console.error('make[3] -C tools/libdeflate compile');
+        console.error('ERROR: tools/libdeflate failed to build.');
+        process.exit(2);
+      }
+    }
+  }
+}
 if (process.env.PROBE_REPLAY === 'true' && args.includes('prepare') && process.env.FAKE_REPLAY_LAYOUT_LOG) {
   const required = { build_dir: 'BUILD_DIR', staging_dir: 'STAGING_DIR', staging_dir_host: 'STAGING_DIR_HOST', tmp: 'TMP_DIR', bin: 'BIN_DIR' };
   const variables = Object.fromEntries(args.filter((arg) => arg.includes('=')).map((arg) => arg.split(/=(.*)/s).slice(0, 2)));
@@ -61,7 +82,13 @@ if (process.env.PROBE_REPLAY === 'true' && args.includes('prepare') && process.e
   }
 }
 if (process.env.FAKE_SHARED_REPLAY_PREPARE_FAIL === 'true' && process.env.PROBE_REPLAY === 'true' && args.includes('prepare')) {
-  if (process.env.FAKE_SHARED_REPLAY_PREPARE_CAPABILITY === 'true') {
+  if (process.env.FAKE_SHARED_REPLAY_PREPARE_HOST_TOOLS === 'true') {
+    const host = '/tmp/.probe-replays/replay/staging_dir/host';
+    console.error(`bash: line 1: ${host}/bin/mkhash: No such file or directory`);
+    console.error(`bash: line 1: ${host}/bin/gzip: No such file or directory`);
+    console.error('make[3] -C tools/libdeflate compile');
+    console.error('ERROR: tools/libdeflate failed to build.');
+  } else if (process.env.FAKE_SHARED_REPLAY_PREPARE_CAPABILITY === 'true') {
     console.error("No rule to make target '/tmp/.probe-replays/tmp/.build'");
     process.exit(2);
   }
@@ -303,6 +330,8 @@ function scenario(mode, options = {}) {
          FAKE_SHARED_REPLAY_PREPARE_INFRA: String(options.failSharedReplayPrepareInfrastructure === true),
          FAKE_SHARED_REPLAY_PREPARE_CAPABILITY: String(options.failSharedReplayPrepareCapability === true),
          FAKE_SHARED_REPLAY_PREPARE_PATH_UNKNOWN: String(options.failSharedReplayPreparePathUnknown === true),
+        FAKE_SHARED_REPLAY_PREPARE_HOST_TOOLS: String(options.failSharedReplayPrepareHostTools === true),
+        FAKE_REPLAY_HOST_TOOLS_REQUIRED: String(options.requireReplayHostTools === true),
         FAKE_REPLAY_LAYOUT_LOG: replayLayoutLog,
         FAKE_FAIL_INNER_KERNEL_WRAPPER: String(options.failInnerKernelWrapper === true),
         FAKE_FAIL_INNER_KERNEL_MAKE_ONLY: String(options.failInnerKernelMakeOnly === true),
@@ -576,6 +605,22 @@ assert.equal(pairedSharedReplay.runtime.attempts[0].counterfactual.target, 'pack
 assert(pairedSharedReplay.calls.some((args) => args.includes('package/network/shared/compile')),
   'A/B counterfactual must invoke the exact shared target');
 
+const pairedReplayHostBootstrap = scenario('package-compile', {
+  paired: true, failSharedTarget: true, requireReplayHostTools: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
+});
+assert.equal(pairedReplayHostBootstrap.status, 0,
+  'a replay must reuse Baseline-B host tools instead of failing before the shared target');
+assert.equal(pairedReplayHostBootstrap.runtime.attempts[0].result, 'incompatible');
+assert.equal(pairedReplayHostBootstrap.runtime.attempts[0].counterfactual.result, 'passed');
+assert.equal(pairedReplayHostBootstrap.runtime.attempts[0].baselineReplay.replayHostToolchain.shared, true);
+assert.equal(pairedReplayHostBootstrap.runtime.attempts[0].baselineReplay.replayHostToolchain.source,
+  'baseline-staging_dir/host');
+assert(pairedReplayHostBootstrap.calls
+  .filter((args) => args.includes('package/network/shared/compile'))
+  .every((args) => args.some((arg) => arg.startsWith('STAGING_DIR_HOST=') && arg.endsWith('staging_dir/host'))),
+  'replay must pass the prepared baseline staging_dir/host for host tools');
+
 const pairedSharedBlocked = scenario('package-compile', {
   paired: true, failSharedTarget: true, failSharedReplay: true,
   targetConfigExtra: 'CONFIG_PACKAGE_shared=y',
@@ -633,6 +678,22 @@ assert.match(pairedReplayCapabilityUnavailable.runtime.attempts[0].final.origina
 assert.equal(pairedReplayCapabilityUnavailable.runtime.attempts[0].final.errorSummary,
   pairedReplayCapabilityUnavailable.runtime.attempts[0].final.originalFailure.errorSummary,
   'replay diagnostics must not overwrite Final-A primary error evidence');
+
+const pairedReplayHostToolsUnavailable = scenario('package-compile', {
+  paired: true, failSharedTarget: true, failSharedReplayPrepare: true,
+  failSharedReplayPrepareHostTools: true,
+  targetConfigExtra: 'CONFIG_PACKAGE_shared=y', expectedStatus: 0,
+});
+assert.equal(pairedReplayHostToolsUnavailable.runtime.attempts[0].result, 'inconclusive');
+assert.equal(pairedReplayHostToolsUnavailable.runtime.attempts[0].reason, 'counterfactual-replay-unavailable',
+  'known missing replay host tools must be reportable without compatibility attribution');
+assert.equal(pairedReplayHostToolsUnavailable.runtime.attempts[0].counterfactual.result, 'unavailable');
+assert.equal(pairedReplayHostToolsUnavailable.runtime.attempts[0].counterfactual.stage, 'prepare');
+assert.match(pairedReplayHostToolsUnavailable.runtime.attempts[0].counterfactual.errorSummary,
+  /tools\/libdeflate failed to build/);
+assert.match(pairedReplayHostToolsUnavailable.runtime.attempts[0].final.originalFailure.terminalError,
+  /package\/network\/shared\/compile/,
+  'real replay host-tool errors must preserve the Final-A primary failure');
 
 const pairedReplayDirectories = scenario('package-compile', {
   paired: true, failSharedTarget: true, targetConfigExtra: 'CONFIG_PACKAGE_shared=y',

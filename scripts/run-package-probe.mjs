@@ -821,20 +821,31 @@ async function runDepthPhase({ phase, roots, requestedStates, finalStates, basel
   return completedPhaseAttempt(attempt, result, startedAt, started);
 }
 
-function replayMakeVariables(directory) {
+function replayMakeVariables(directory, hostToolchain = null) {
   const paths = replayDirectoryPaths(directory);
+  // OpenWrt's host tools are prerequisites of `make prepare` itself.  A
+  // fresh STAGING_DIR_HOST cannot build tools such as mkhash/gzip because
+  // those tools are needed before the first replay tool can be prepared.
+  // Reuse the already prepared Baseline-B host tree explicitly while the
+  // target-side build/staging/tmp/bin trees remain private to the replay.
+  const sharedHost = typeof hostToolchain === 'string' ? hostToolchain : hostToolchain?.stagingDir;
+  const hostBuildDir = typeof hostToolchain === 'object' ? hostToolchain?.buildDir : '';
+  const stagingDirHost = sharedHost || paths.staging_dir_host;
   return [
     `BUILD_DIR=${paths.build_dir}`,
+    ...(hostBuildDir ? [`BUILD_DIR_HOST=${hostBuildDir}`] : []),
     `STAGING_DIR=${paths.staging_dir}`,
-    `STAGING_DIR_HOST=${paths.staging_dir_host}`,
+    `STAGING_DIR_HOST=${stagingDirHost}`,
     `TMP_DIR=${paths.tmp}`,
     `BIN_DIR=${paths.bin}`,
   ];
 }
 
 // OpenWrt derives STAGING_DIR_HOST from STAGING_DIR as `staging_dir/host`.
-// Keep that relationship in the replay instead of inventing a sibling
-// `staging_dir_host` tree which the upstream Makefiles never inspect.
+// Keep the logical replay directory in that shape; replayMakeVariables then
+// explicitly points STAGING_DIR_HOST at Baseline-B's prepared host tree so
+// `make prepare` can invoke host tools before bootstrapping a fresh target
+// staging tree.
 const REPLAY_DIRECTORY_NAMES = Object.freeze(['build_dir', 'staging_dir', 'tmp', 'bin']);
 
 function replayDirectoryPaths(directory) {
@@ -845,13 +856,30 @@ function replayDirectoryPaths(directory) {
 
 function prepareReplayWorkspace(directory) {
   const paths = replayDirectoryPaths(directory);
+  const hostToolchain = {
+    stagingDir: join(WORKDIR, 'staging_dir', 'host'),
+    buildDir: join(WORKDIR, 'build_dir', 'host'),
+    source: 'baseline-staging_dir/host',
+    shared: true,
+  };
   const requiredStamps = {
     tmpBuild: join(paths.tmp, '.build'),
-    stagingHostPrereq: join(paths.staging_dir_host, '.prereq-build'),
+    // STAGING_DIR_HOST is intentionally the prepared Baseline-B host tree;
+    // record the actual stamp path used by Make rather than the empty logical
+    // replay/staging_dir/host directory.
+    stagingHostPrereq: join(hostToolchain.stagingDir, '.prereq-build'),
   };
   try {
     mkdirSync(directory, { recursive: true });
     for (const path of Object.values(paths)) mkdirSync(path, { recursive: true });
+    if (!existsSync(hostToolchain.stagingDir) || !statSync(hostToolchain.stagingDir).isDirectory()) {
+      return {
+        ok: false,
+        reason: 'replay-host-toolchain-unavailable',
+        error: `baseline host toolchain is missing or not a directory: ${hostToolchain.stagingDir}`,
+        paths, requiredStamps, hostToolchain,
+      };
+    }
     // These are Make stamp files, not directories.  A directory at either
     // path makes `touch`/file prerequisites fail with an opaque replay error;
     // reject that shape rather than deleting or masking an existing path.
@@ -860,7 +888,7 @@ function prepareReplayWorkspace(directory) {
       .map(([name]) => name);
     if (stampConflicts.length) {
       return { ok: false, reason: 'replay-bootstrap-failure',
-        error: `replay stamp paths are not files: ${stampConflicts.join(', ')}`, paths, requiredStamps };
+        error: `replay stamp paths are not files: ${stampConflicts.join(', ')}`, paths, requiredStamps, hostToolchain };
     }
     for (const path of Object.values(requiredStamps)) writeFileSync(path, '', { flag: 'a' });
     for (const name of ['.packageinfo', '.targetinfo']) {
@@ -870,15 +898,15 @@ function prepareReplayWorkspace(directory) {
     }
     const missing = Object.entries(paths).filter(([, path]) => !existsSync(path) || !statSync(path).isDirectory()).map(([name]) => name);
     if (missing.length) {
-      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay directories are missing or not directories: ${missing.join(', ')}`, paths, requiredStamps };
+      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay directories are missing or not directories: ${missing.join(', ')}`, paths, requiredStamps, hostToolchain };
     }
     const nonFiles = Object.entries(requiredStamps).filter(([, path]) => !existsSync(path) || !statSync(path).isFile()).map(([name]) => name);
     if (nonFiles.length) {
-      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay stamp paths are missing or not files: ${nonFiles.join(', ')}`, paths, requiredStamps };
+      return { ok: false, reason: 'replay-bootstrap-failure', error: `replay stamp paths are missing or not files: ${nonFiles.join(', ')}`, paths, requiredStamps, hostToolchain };
     }
-    return { ok: true, paths, requiredStamps };
+    return { ok: true, paths, requiredStamps, hostToolchain };
   } catch (error) {
-    return { ok: false, reason: 'replay-bootstrap-failure', error: String(error?.message || error), paths, requiredStamps };
+    return { ok: false, reason: 'replay-bootstrap-failure', error: String(error?.message || error), paths, requiredStamps, hostToolchain };
   }
 }
 
@@ -911,7 +939,9 @@ function isKnownReplayCapabilityFailure(detail, replayStage) {
   // compiler error remains the red `counterfactual-unresolved` result.
   const stampPath = '(?:tmp[\\/]\\.build|staging_dir(?:[\\/]host|_host)[\\/]\\.prereq-build)';
   const missing = '(?:missing|not\\s+found|does\\s+not\\s+exist|incomplete)';
-  return new RegExp(`(?:no\\s+rule\\s+to\\s+make\\s+target[^\\n]*${stampPath}|${stampPath}[^\\n]*${missing}|(?:BUILD_DIR|STAGING_DIR(?:_HOST)?|TMP_DIR|BIN_DIR)[^\\n]*${missing})`, 'i').test(text);
+  const replayHostBinary = '[^\\n]*\\.probe-replays[\\/][^\\n]*?staging_dir[\\/]host[\\/]bin[\\/][A-Za-z0-9._+-]+';
+  const missingHostBinary = `(?:${replayHostBinary})[^\\n]*(?:no such file or directory|${missing})`;
+  return new RegExp(`(?:no\\s+rule\\s+to\\s+make\\s+target[^\\n]*${stampPath}|${stampPath}[^\\n]*${missing}|(?:BUILD_DIR|STAGING_DIR(?:_HOST)?|TMP_DIR|BIN_DIR)[^\\n]*${missing}|${missingHostBinary})`, 'i').test(text);
 }
 
 function preserveFinalFailure(final) {
@@ -1001,10 +1031,23 @@ async function replaySharedTarget(baseline, final) {
     phase: 'baseline-replay', target, stages: {}, serialRetries: [],
     replayDirectories: replayWorkspace.paths,
     replayRequiredStamps: replayWorkspace.requiredStamps || {},
+    replayHostToolchain: replayWorkspace.hostToolchain || null,
   };
   if (!replayWorkspace.ok) {
     replayAttempt.stages.replayBootstrap = { status: 'failure', reason: replayWorkspace.reason };
     replayAttempt.error = replayWorkspace.error;
+    if (replayWorkspace.reason === 'replay-host-toolchain-unavailable') {
+      preserveFinalFailure(final);
+      final.counterfactual = {
+        type: 'shared-target', target, mode: 'isolated-replay', result: 'unavailable',
+        reason: 'counterfactual-replay-unavailable', stage: 'bootstrap',
+        error: replayWorkspace.error, directory: replayDirectory,
+      };
+      final.reason = 'counterfactual-replay-unavailable';
+      final.packageCauseKind = '';
+      final.baselineReplay = { ...replayAttempt, directory: replayDirectory };
+      return { applied: true, result: 'unavailable', target, reason: 'counterfactual-replay-unavailable' };
+    }
     final.counterfactual = {
       type: 'shared-target', target, mode: 'isolated-replay', result: 'unresolved',
       reason: replayWorkspace.reason, error: replayWorkspace.error, directory: replayDirectory,
@@ -1021,7 +1064,7 @@ async function replaySharedTarget(baseline, final) {
   let replayPrepareStarted = false;
   let replayTargetStarted = false;
   const env = { KCONFIG_CONFIG: replayConfig, KCONFIG_OVERWRITECONFIG: '1', PROBE_REPLAY: 'true' };
-  const variables = replayMakeVariables(replayDirectory);
+  const variables = replayMakeVariables(replayDirectory, replayWorkspace.hostToolchain);
   const options = { cwd: WORKDIR, env };
   let prep;
   let targetResult;
