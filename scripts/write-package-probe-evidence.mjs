@@ -118,15 +118,19 @@ function appendStructuredAttemptIssue(issues, attempt) {
 // was already known to be broken.  Keep the evidence structured so the
 // finalizer can distinguish this from an unresolved/runner failure.
 function appendBlockedAttemptIssue(issues, attempt) {
+  const reason = String(attempt?.reason || '');
   if (String(attempt?.result || '') !== 'blocked' &&
-      !String(attempt?.reason || '').startsWith('base-profile-') &&
-      String(attempt?.reason || '') !== 'baseline-failure') return;
+      !reason.startsWith('base-profile-') && reason !== 'baseline-failure') return;
   const counterfactual = attempt?.counterfactual || {};
   const replayError = counterfactual.result === 'failed'
     ? String(counterfactual.errorSummary || counterfactual.terminalError || '').trim() : '';
   const replayTargets = counterfactual.result === 'failed' && Array.isArray(counterfactual.failedBuildTargets)
     ? counterfactual.failedBuildTargets : (attempt?.replayFailedBuildTargets || []);
-  issues.push({ type: 'base-profile-failure', reason: attempt?.reason || 'base-profile-failure', pluginEvaluated: false,
+  const rebootStage = reason === 'base-profile-reboot-failure'
+    ? (attempt?.stages?.secondBoot?.status === 'failure' ? 'secondBoot' :
+      attempt?.stages?.secondRuntimeHealth?.status === 'failure' ? 'secondRuntimeHealth' : '') : '';
+  issues.push({ type: 'base-profile-failure', reason: reason || 'base-profile-failure', pluginEvaluated: false,
+    ...(rebootStage ? { stage: rebootStage } : {}),
     ...(attempt?.cause ? { cause: attempt.cause } : {}),
     ...(attempt?.targetPrerequisiteCause ? { cause: attempt.targetPrerequisiteCause } : {}),
     ...(attempt?.prerequisiteCause ? { cause: attempt.prerequisiteCause } : {}),

@@ -258,7 +258,11 @@ while IFS= read -r line; do
   case "$line" in
     '') echo 'root@OpenWrt:~#' ;;
     *__WEIG_HEALTH_BEGIN_1__*) echo '__WEIG_HEALTH_PASS_1__' ;;
-    *__WEIG_REBOOT_REQUEST__*) echo 'reboot: Restarting system'; sleep 0.05; echo 'Please press Enter to activate this console.' ;;
+    *__WEIG_REBOOT_REQUEST__*)
+      echo 'reboot: Restarting system'
+      sleep 0.05
+      if [ "\${FAKE_QEMU_FAIL_AFTER_REBOOT:-false}" = "true" ]; then continue; fi
+      echo 'Please press Enter to activate this console.' ;;
     *__WEIG_HEALTH_BEGIN_2__*) echo '__WEIG_HEALTH_PASS_2__' ;;
   esac
 done
@@ -346,6 +350,7 @@ function scenario(mode, options = {}) {
          FAKE_VIRTUAL_ARTIFACT_FINAL_ONLY: String(options.virtualArtifactFinalOnly === true),
          FAKE_QEMU_ALWAYS_FAIL: String(options.virtualBootAlwaysFail === true),
          FAKE_QEMU_FAIL_AFTER_FIRST: String(options.virtualBootFailAfterFirst === true),
+         FAKE_QEMU_FAIL_AFTER_REBOOT: String(options.virtualBootFailAfterReboot === true),
          FAKE_QEMU_COUNTER_FILE: join(directory, 'qemu-counter'),
          FAKE_QEMU_LOG: join(directory, 'qemu.jsonl'),
         FAKE_FAIL_TARGET_PREREQUISITE: String(options.failTargetPrerequisite === true),
@@ -470,6 +475,18 @@ assert.equal(pairedBaselineBootFailure.status, 0, 'a deterministic Baseline-B gu
 assert.equal(pairedBaselineBootFailure.runtime.attempts[0].baseline.result, 'blocked');
 assert.equal(pairedBaselineBootFailure.runtime.attempts[0].baseline.reason, 'base-profile-boot-failure');
 assert.equal(pairedBaselineBootFailure.runtime.attempts[0].final.result, 'not-run');
+
+const pairedBaselineRebootFailure = scenario('reboot-validation', {
+  paired: true, virtualArtifact: true, virtualBootFailAfterReboot: true, expectedStatus: 0,
+});
+const pairedBaselineRebootAttempt = pairedBaselineRebootFailure.runtime.attempts[0];
+assert.equal(pairedBaselineRebootAttempt.baseline.result, 'blocked',
+  'a complete Baseline-B reboot failure must be a reportable Base Profile blocker');
+assert.equal(pairedBaselineRebootAttempt.baseline.reason, 'base-profile-reboot-failure');
+assert.equal(pairedBaselineRebootAttempt.baseline.deepestPassedLevel, 6,
+  'a Baseline-B reboot blocker must preserve the deepest completed runtime level');
+assert.equal(pairedBaselineRebootAttempt.final.result, 'not-run',
+  'Final-A must not run after a Baseline-B reboot blocker');
 
 const pairedFinalBootFailure = scenario('boot-smoke', {
   paired: true, virtualArtifact: true, virtualBootFailAfterFirst: true, expectedStatus: 0,

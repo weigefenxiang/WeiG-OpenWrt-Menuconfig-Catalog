@@ -678,6 +678,25 @@ function hasDeterministicBaselineEvidence(attempt, result) {
   return !isGenericFailureWrapper(terminalError);
 }
 
+// A virtual Baseline-B reboot failure is a domain blocker only after the
+// guest has already crossed every preceding runtime boundary.  In
+// particular, a missing/partial stage record must stay unresolved: it cannot
+// prove that the Base Profile, rather than the Runner, prevented A/B from
+// starting.  The virtual runner uses these two reasons for failures after a
+// successful first boot/reboot; keep the check reason- and stage-based, never
+// source/target/package-specific.
+function hasCompleteBaselineRebootFailure(attempt, result) {
+  const reason = String(result?.reason || '');
+  if (!['incompatible', 'inconclusive'].includes(String(result?.result || '')) ||
+      !['final-reboot-failed', 'final-reboot-health-failed'].includes(reason)) return false;
+  const stages = attempt?.stages || {};
+  const enteredReboot = ['boot', 'runtimeHealth', 'reboot']
+    .every((name) => stages[name]?.status === 'success');
+  const secondPhaseFailed = ['secondBoot', 'secondRuntimeHealth']
+    .some((name) => stages[name]?.status === 'failure');
+  return enteredReboot && secondPhaseFailed;
+}
+
 /**
  * Give Baseline-B the same result vocabulary at every depth.  A failed B is
  * a Base Profile blocker only when the Runner captured deterministic failure
@@ -687,6 +706,11 @@ function hasDeterministicBaselineEvidence(attempt, result) {
 function normalizeBaselinePhaseResult(attempt, result) {
   if (result?.result === 'compatible' || result?.result === 'skipped' || result?.result === 'blocked') return result;
   const reason = String(result?.reason || '');
+  if (hasCompleteBaselineRebootFailure(attempt, result)) {
+    attempt.baselineBlockReason = 'base-profile-reboot-failure';
+    attempt.packageCauseKind = '';
+    return { ...result, result: 'blocked', reason: 'base-profile-reboot-failure' };
+  }
   if (isOperationalPhaseReason(reason)) {
     return { ...result, result: 'inconclusive', reason: reason || 'baseline-unresolved' };
   }
