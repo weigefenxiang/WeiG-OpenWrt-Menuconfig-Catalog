@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "openwrt-25.12"
   },
-  "generatedAt": "2026-08-16T04:49:41.341Z",
+  "generatedAt": "2026-08-23T03:50:40.675Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 9796,
+  "options": 9799,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -4615,6 +4615,13 @@
       "promptEn": "Maximum rotation count for /var/log/messages log file",
       "path": [
         "Administration"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_apboot-aruba-ipq806x",
+      "promptEn": "Patched Aruba APBoot for AP-32x",
+      "path": [
+        "Boot Loaders"
       ]
     },
     {
@@ -61716,6 +61723,14 @@
       ]
     },
     {
+      "symbol": "SINGBOX_WITH_CCM",
+      "promptEn": "Build with Claude Code Multiplexer service support",
+      "path": [
+        "Network",
+        "Select build options"
+      ]
+    },
+    {
       "symbol": "SINGBOX_WITH_CLASH_API",
       "promptEn": "Build with Clash API support",
       "path": [
@@ -61750,6 +61765,14 @@
     {
       "symbol": "SINGBOX_WITH_GVISOR",
       "promptEn": "Build with gVisor support",
+      "path": [
+        "Network",
+        "Select build options"
+      ]
+    },
+    {
+      "symbol": "SINGBOX_WITH_OCM",
+      "promptEn": "Build with OpenAI Codex Multiplexer service support",
       "path": [
         "Network",
         "Select build options"
