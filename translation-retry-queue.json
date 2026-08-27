@@ -5,59 +5,79 @@
       {
         "id": "3d8f33c09b6778562f18652ea18c1e74135682b7fce27a55b594a97ed3993588",
         "text": "This enables further checks in the kernel address sanitizer, for now\nit only includes the address-use-after-scope check that can lead\nto excessive kernel stack usage, frame size warnings and longer\ncompile time.\nhttps://gcc.gnu.org/bugzilla/show_bug.cgi?id=81715 has more",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "a671349a6888f0bf9d62947d6395879a760b1aaf6ae47d6077a69a1db2a9d1bf",
         "text": "Common needed files for attendedsysupgrade tool Manages dependencies and brings settings used by clients. UCI options: * attendedsysupgrade.server.url URL of compatible upgrade server [1] * attendedsysupgrade.client.upgrade_packages Client should request image also if no new release but new packages upgrade are available. * attendedsysupgrade.client.advanced_mode Offer advanced options like editing packages before request and show additional information. * attendedsysupgrade.client.auto_search Tells the client to automattically search for upgrades [1]: https://github.com/aparcar/asu",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "32de673bcc2fe336b3f78955f9944bd9586fedc724763bbe6c81dd722bef6a59",
         "text": "Intel Wireless Wi-Fi 5150AGN firmware",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "27e32500fc1abf7f9043bb7ec48323bf6b8e68d7ad2a0abfa498869b956bbff9",
         "text": "This enables use of hardware acceleration through OpenBSD\nCryptodev API (/dev/crypto) interface.\nEven though configuration is not strictly needed, it is worth seeing\nhttps://openwrt.org/docs/techref/hardware/cryptographic.hardware.accelerators\nfor information on how to configure the engine.",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "0558d4129f7785c6708796e0b71ed63a665d352a411d89e458ff166bdec431ce",
         "text": "This option prepares the library to accept engine support\nfor Russian GOST crypto algorithms.\nThe gost engine is not included in standard openwrt feeds.\nTo build such engine yourself, see:\nhttps://github.com/gost-engine/engine",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "930c95f53a5f8e05d5f5576a116020f7d1a2df76dda84cd5e44af30f8b8d8829",
         "text": "Enable JIT (Just-In-Time) compiler support.\nJust-in-time compiling is a heavyweight optimization that can greatly\nspeed up pattern matching. However, it comes at the cost of extra\nprocessing before the match is performed, so it is of most benefit when\nthe same pattern is going to be matched many times. This does not\nnecessarily mean many calls of a matching function; if the pattern is\nnot anchored, matching attempts may take place many times at various\npositions in the subject, even for a single call. Therefore, if the\nsubject string is very long, it may still pay to use JIT even for\none-off matches. JIT support is available for all of the 8-bit, 16-bit\nand 32-bit PCRE2 libraries and adds about 100KB to the resulting\nlibpcre2.so. JIT support applies only to the traditional Perl-compatible\nmatching function. It does not apply when the DFA matching function is\nbeing used.\nEnabling this option can give an about 10x performance increase on JIT\noperations. It can be desireable for e.g. high performance Apache\nmod_rewrite or HA-Proxy reqrep operations.\nHowever, JIT should _only_ be enabled on architectures that are supported.\nEnabling JIT on unsupported platforms will result in a compilation\nfailure. A list of supported architectures can be found here:\nhttps://pcre.org/current/doc/html/pcre2jit.html#SEC2",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "f5440159307befefaea2d10fec6dd95a5e5752989bcc87ec04b2f3dec2c0f648",
         "text": "LuCI Administration - full-featured for full control",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "e73060e8e0ef6a90e236cc8e58153757582f23760ca796b97b70847703d8a227",
         "text": "LuCI Essentials - stripped down and user-friendly",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "a4df3892d04e4ff31bca75f5b922876d024b76ee4a9ba66bedc470e7b68fab4e",
         "text": "LuCI RPC - JSON-RPC API",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "d914f35f5307060e212da24c6b6e84a1d4edcb8aaec3e32874bc27d46e765280",
         "text": "LuCI modern OpenWrt theme",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       },
       {
         "id": "07498696f1ac1b3035c02aa51116dd4e931a9b0fcd46b2bbf0a161ed070ee1ff",
         "text": "OpenSSH version 8.2 added two new ssh authentication methods,\nnamely `ecdsa_sk` and `ed25519_sk`. These two methods make use\nof hardware keys that implement the FIDO and FIDO2 protocols.\nIn order to use these two types, libfido2 is required.",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
+      },
+      {
+        "id": "6243cabf92d538190ddf4210039eea64626be2fbbb6281b0a1ebb8e6697cc102",
+        "text": "This enables the dynamic security modes documented at\nhttps://mosquitto.org/documentation/dynamic-security/\nbut does add ~88kB.  If you're not using it, you can disable it",
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
+      },
+      {
+        "id": "8b32cdb5586077f2497db737d7c7af76ebcb4d27313995ba55cf67ac59d302a6",
+        "text": "installs: smbd (nmbd) smbpasswd pdbedit testparm (nmblookup) (smbcacls sharesec) (samba samba-tool ntlm_auth samba-gpupdate samba_dnsupdate samba_kcc samba_spnupdate samba_upgradedns samba_downgrade_db) This provides the basic fileserver service and is the minimum needed to serve file shares. HINT: https://fitzcarraldoblog.wordpress.com/2016/10/17/a-correct-method-of-configuring-samba-for-browsing-smb-shares-in-a-home-network/",
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
+      },
+      {
+        "id": "6d0942744be641d06c6ff2f57bfdf1449c39a9563ba85692a2e660a97182b389",
+        "text": "Generic OpenWrt 3G/4G proto handler",
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
+      },
+      {
+        "id": "d43b972b8a173216a9b52a5527597888fa61439183481dedc4c69560f8b5a9a8",
+        "text": "Installs the scctl command. See the following link for more info:\nhttp://www.lesbonscomptes.com/upmpdcli/scmulti.html",
+        "reason": "Batch incomplete: translated 485/500 queued descriptions"
       }
     ]
   },
-  "updatedAt": "2026-08-27T00:11:31.473Z"
+  "updatedAt": "2026-08-27T00:15:52.293Z"
 }
