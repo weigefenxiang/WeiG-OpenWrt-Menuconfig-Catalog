@@ -28,11 +28,6 @@
         "reason": "Batch incomplete: translated 489/500 queued descriptions"
       },
       {
-        "id": "693c5a95a7d21632d7c10dc9e1e04e9726409eeeb3be43ddf9966665e7017aa9",
-        "text": "IPFS (the InterPlanetary File System) is the Distributed Web. Specs, docs, sources, links: https://ipfs.io/ and https://github.com/ipfs. This is Vasil Dimov's C++ IPFS HTTP API client library. This package contains shared library.",
-        "reason": "Batch incomplete: translated 489/500 queued descriptions"
-      },
-      {
         "id": "930c95f53a5f8e05d5f5576a116020f7d1a2df76dda84cd5e44af30f8b8d8829",
         "text": "Enable JIT (Just-In-Time) compiler support.\nJust-in-time compiling is a heavyweight optimization that can greatly\nspeed up pattern matching. However, it comes at the cost of extra\nprocessing before the match is performed, so it is of most benefit when\nthe same pattern is going to be matched many times. This does not\nnecessarily mean many calls of a matching function; if the pattern is\nnot anchored, matching attempts may take place many times at various\npositions in the subject, even for a single call. Therefore, if the\nsubject string is very long, it may still pay to use JIT even for\none-off matches. JIT support is available for all of the 8-bit, 16-bit\nand 32-bit PCRE2 libraries and adds about 100KB to the resulting\nlibpcre2.so. JIT support applies only to the traditional Perl-compatible\nmatching function. It does not apply when the DFA matching function is\nbeing used.\nEnabling this option can give an about 10x performance increase on JIT\noperations. It can be desireable for e.g. high performance Apache\nmod_rewrite or HA-Proxy reqrep operations.\nHowever, JIT should _only_ be enabled on architectures that are supported.\nEnabling JIT on unsupported platforms will result in a compilation\nfailure. A list of supported architectures can be found here:\nhttps://pcre.org/current/doc/html/pcre2jit.html#SEC2",
         "reason": "Batch incomplete: translated 489/500 queued descriptions"
@@ -56,8 +51,13 @@
         "id": "d914f35f5307060e212da24c6b6e84a1d4edcb8aaec3e32874bc27d46e765280",
         "text": "LuCI modern OpenWrt theme",
         "reason": "Batch incomplete: translated 489/500 queued descriptions"
+      },
+      {
+        "id": "07498696f1ac1b3035c02aa51116dd4e931a9b0fcd46b2bbf0a161ed070ee1ff",
+        "text": "OpenSSH version 8.2 added two new ssh authentication methods,\nnamely `ecdsa_sk` and `ed25519_sk`. These two methods make use\nof hardware keys that implement the FIDO and FIDO2 protocols.\nIn order to use these two types, libfido2 is required.",
+        "reason": "Batch incomplete: translated 489/500 queued descriptions"
       }
     ]
   },
-  "updatedAt": "2026-08-25T21:23:16.367Z"
+  "updatedAt": "2026-08-27T00:04:28.316Z"
 }
