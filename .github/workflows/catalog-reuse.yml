@@ -49,11 +49,12 @@ jobs:
             if [[ "$GITHUB_REF_NAME" == fix-* ]] &&
                git ls-remote --exit-code --heads origin "refs/heads/$target_data_branch" >/dev/null 2>&1; then
               source_data_branch="$target_data_branch"
-            elif [[ "$GITHUB_REF_NAME" == fix-* && -f .catalog-reuse-source ]]; then
-              source_data_branch="$(tr -d '[:space:]' < .catalog-reuse-source)"
-              [[ -n "$source_data_branch" ]] || { echo ".catalog-reuse-source is empty"; exit 1; }
             else
               eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+              if ! git ls-remote --exit-code --heads origin "refs/heads/$source_data_branch" >/dev/null 2>&1; then
+                echo "Configured Catalog reuse source is absent; using the canonical predecessor: $source_data_branch"
+                eval "$(node scripts/catalog-channels.mjs default-reuse-source "$GITHUB_REF_NAME")"
+              fi
             fi
           fi
           node scripts/catalog-channels.mjs validate-promotion "$GITHUB_REF_NAME" "$source_data_branch" | tee "$RUNNER_TEMP/promotion.outputs"

@@ -116,6 +116,10 @@ requireText(reuse, 'scripts/catalog-channels.mjs validate-promotion', 'reuse wor
 requireText(reuse, 'scripts/catalog-change-impact.mjs', 'reuse workflow must gate on data impact');
 requireText(reuse, 'source_data_branch="$target_data_branch"', 'fix reuse must prefer its existing isolated runtime snapshot');
 requireText(reuse, 'refs/heads/$target_data_branch', 'fix reuse must verify the isolated runtime branch exists before self-reuse');
+requireText(reuse, 'scripts/catalog-channels.mjs default-reuse-source',
+  'a missing configured marker branch must fall back to the canonical predecessor');
+requireText(catalog, 'scripts/catalog-channels.mjs default-reuse-source',
+  'fast root-asset publication must recover from a deleted configured marker branch');
 requireText(reuse, 'EXPECTED_ASSET_REF', 'reuse workflow must pin immutable asset identity');
 
 requireText(translation, 'default: candidate', 'translation default must be candidate');

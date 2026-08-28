@@ -187,6 +187,12 @@ function printResult(mode, value, extra = '') {
     process.stdout.write(`source_code_ref=${source.codeRef}\nsource_data_branch=${source.dataBranch}\n`);
     return;
   }
+  if (mode === 'default-reuse-source') {
+    const source = defaultReuseSourceForCodeRef(value);
+    if (!source) throw new Error(`unsupported Catalog default reuse code ref: ${value}`);
+    process.stdout.write(`source_code_ref=${source.codeRef}\nsource_data_branch=${source.dataBranch}\n`);
+    return;
+  }
   if (mode === 'validate-promotion') {
     const result = validatePromotionSource(value, extra);
     process.stdout.write(`source_code_ref=${result.sourceCodeRef}\nsource_data_branch=${result.sourceDataBranch}\ntarget_data_branch=${result.targetDataBranch}\n`);

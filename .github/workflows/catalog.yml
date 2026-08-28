@@ -330,6 +330,10 @@ jobs:
             git clone --filter=blob:none --no-checkout --single-branch --branch "$CATALOG_DATA_BRANCH" "$remote" previous
           else
             eval "$(node scripts/catalog-channels.mjs reuse-source "$GITHUB_REF_NAME")"
+            if ! git ls-remote --exit-code --heads "$remote" "refs/heads/$source_data_branch" >/dev/null 2>&1; then
+              echo "Configured Catalog reuse source is absent; using the canonical predecessor: $source_data_branch"
+              eval "$(node scripts/catalog-channels.mjs default-reuse-source "$GITHUB_REF_NAME")"
+            fi
             node scripts/catalog-channels.mjs validate-promotion "$GITHUB_REF_NAME" "$source_data_branch" >/dev/null
             git clone --filter=blob:none --no-checkout --single-branch --branch "$source_data_branch" "$remote" previous
             git -C previous checkout -b "$CATALOG_DATA_BRANCH"
