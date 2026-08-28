@@ -1,7 +1,10 @@
 import { matchPattern, sourceBranchPatterns } from './source-policy.mjs';
 
 const DOCUMENT_KEYS = new Set(['schema', 'rules']);
-const RULE_KEYS = new Set(['id', 'issue', 'match', 'scope', 'if', 'packages', 'paths', 'refs']);
+const RULE_KEYS_V2 = new Set(['id', 'issue', 'match', 'scope', 'if', 'packages', 'paths', 'refs']);
+const RULE_KEYS_V3 = new Set([...RULE_KEYS_V2, 'sourceCommits', 'targetScope', 'failure']);
+const TARGET_SCOPE_KEYS = new Set(['system', 'subtarget', 'profile']);
+const FAILURE_KEYS = new Set(['phase', 'cause', 'code', 'observed']);
 const RULE_ID_RE = /^[A-Z][A-Z0-9-]{2,31}$/;
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
 const SOURCE_RE = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -10,6 +13,12 @@ const BRANCH_PATTERN_RE = /^(?:\*|[A-Za-z0-9._/-]*\*[A-Za-z0-9._/-]*|[A-Za-z0-9.
 const PATH_RE = /^\/(?!.*(?:^|\/)\.\.(?:\/|$))[^\0\r\n]{1,255}$/;
 const REF_RE = /^[A-Za-z0-9][A-Za-z0-9+_.:/@#-]{0,255}$/;
 const CONDITION_RE = /^[A-Za-z0-9_().!&|=<>+\-\s\"']{1,512}$/;
+const COMMIT_RE = /^[a-f0-9]{40}$/;
+const TARGET_RE = /^[A-Za-z0-9_+@./-]{1,160}$/;
+const FAILURE_CODE_RE = /^[a-z][a-z0-9-]{2,95}$/;
+const OBSERVED_KEY_RE = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
+const FAILURE_PHASES = new Set(['config-resolve', 'package-compile', 'rootfs-install', 'file-install', 'link', 'image-build']);
+const FAILURE_CAUSES = new Set(['package-caused', 'dependency-caused', 'base-profile', 'infrastructure']);
 const MAX_DOCUMENT_BYTES = 512 * 1024;
 
 function plainObject(value) {
@@ -60,6 +69,45 @@ function normalizeScope(value, sourcePolicy, label) {
   return result;
 }
 
+function normalizeTargetScope(value, label) {
+  if (!plainObject(value) || !Object.keys(value).length) throw new Error(`${label} must be a non-empty object`);
+  rejectUnknownKeys(value, TARGET_SCOPE_KEYS, label);
+  const result = {};
+  for (const key of TARGET_SCOPE_KEYS) {
+    if (value[key] === undefined) continue;
+    result[key] = uniqueStrings(value[key], { label: `${label}.${key}`, min: 1, max: 32, pattern: TARGET_RE });
+  }
+  if (!Object.keys(result).length) throw new Error(`${label} must contain at least one target selector`);
+  return result;
+}
+
+function normalizeObserved(value, label) {
+  if (!plainObject(value) || !Object.keys(value).length || Object.keys(value).length > 16) {
+    throw new Error(`${label} must contain 1-16 evidence fields`);
+  }
+  const result = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!OBSERVED_KEY_RE.test(key)) throw new Error(`${label} contains an invalid evidence field`);
+    if (typeof raw === 'string' && raw.trim() && raw.length <= 512) result[key] = raw.trim();
+    else if (Array.isArray(raw)) {
+      result[key] = uniqueStrings(raw, { label: `${label}.${key}`, min: 1, max: 32, pattern: /^[^\0\r\n]{1,256}$/ });
+    } else throw new Error(`${label}.${key} must be a non-empty string or string array`);
+  }
+  return result;
+}
+
+function normalizeFailure(value, label) {
+  if (!plainObject(value)) throw new Error(`${label} must be an object`);
+  rejectUnknownKeys(value, FAILURE_KEYS, label);
+  const phase = String(value.phase || '');
+  const cause = String(value.cause || '');
+  const code = String(value.code || '');
+  if (!FAILURE_PHASES.has(phase)) throw new Error(`${label}.phase is invalid`);
+  if (!FAILURE_CAUSES.has(cause)) throw new Error(`${label}.cause is invalid`);
+  if (!FAILURE_CODE_RE.test(code)) throw new Error(`${label}.code is invalid`);
+  return { phase, cause, code, ...(value.observed === undefined ? {} : { observed: normalizeObserved(value.observed, `${label}.observed`) }) };
+}
+
 export function compatibilityScopeMatches(scope, source, branch) {
   const patterns = scope?.[source] || scope?.['*'] || [];
   return patterns.some((pattern) => matchPattern(branch, pattern));
@@ -69,15 +117,15 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
   if (!plainObject(raw)) throw new Error('compatibility document must be an object');
   rejectUnknownKeys(raw, DOCUMENT_KEYS, 'compatibility document');
   const schema = Number(raw.schema);
-  if (schema !== 2 || !Array.isArray(raw.rules)) {
-    throw new Error('compatibility document requires schema 2 and a rules array');
+  if (![2, 3].includes(schema) || !Array.isArray(raw.rules)) {
+    throw new Error('compatibility document requires schema 2 or 3 and a rules array');
   }
   const sourcePolicy = new Map((policy.sources || []).map((source) => [source.id, source]));
   const seen = new Set();
   const rules = raw.rules.map((rule, index) => {
     const label = `compatibility.rules[${index}]`;
     if (!plainObject(rule)) throw new Error(`${label} must be an object`);
-    rejectUnknownKeys(rule, RULE_KEYS, label);
+    rejectUnknownKeys(rule, schema === 2 ? RULE_KEYS_V2 : RULE_KEYS_V3, label);
     const id = String(rule.id || '').trim();
     if (!RULE_ID_RE.test(id)) throw new Error(`${label}.id is invalid`);
     if (seen.has(id)) throw new Error(`duplicate compatibility rule id: ${id}`);
@@ -103,14 +151,25 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
       packages: uniqueStrings(rule.packages, { label: `${id}.packages`, min: 1, max: 16, pattern: PACKAGE_RE }),
       refs: uniqueStrings(rule.refs, { label: `${id}.refs`, min: 1, max: 8, pattern: REF_RE }),
     };
+    if (schema === 3 && rule.sourceCommits !== undefined) {
+      normalized.sourceCommits = uniqueStrings(rule.sourceCommits, {
+        label: `${id}.sourceCommits`, min: 1, max: 32, pattern: COMMIT_RE,
+      });
+    }
+    if (schema === 3 && rule.targetScope !== undefined) {
+      normalized.targetScope = normalizeTargetScope(rule.targetScope, `${id}.targetScope`);
+    }
     if (issue === 'file-ownership') {
       normalized.paths = uniqueStrings(rule.paths, { label: `${id}.paths`, min: 1, max: 16, pattern: PATH_RE });
+      if (schema === 3 && rule.failure !== undefined) throw new Error(`${id}.failure is only valid for build-failure`);
     } else if (rule.paths !== undefined) {
       throw new Error(`${id}.paths is only valid for file-ownership`);
+    } else if (schema === 3) {
+      normalized.failure = normalizeFailure(rule.failure, `${id}.failure`);
     }
     return normalized;
   });
-  const result = { schema: 2, rules };
+  const result = { schema, rules };
   if (Buffer.byteLength(JSON.stringify(result)) > MAX_DOCUMENT_BYTES) {
     throw new Error(`compatibility document exceeds ${MAX_DOCUMENT_BYTES} bytes`);
   }

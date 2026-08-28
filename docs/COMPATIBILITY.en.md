@@ -2,9 +2,15 @@
 
 `compatibility.json` records only compatibility facts that upstream Kconfig/Catalog cannot currently express and real builds have confirmed. It is not a second dependency database and does not store symbol types, N/M/Y, names, translations, dependencies, providers, hashes, or timestamps.
 
-## Schema 2
+## Schema 3
 
-Publishers and readers accept schema 2 only. The document has `schema` and `rules`; each rule has:
+Publishers emit schema 3 while readers remain compatible with schema 2. The document still has only `schema` and `rules`; schema 3 adds:
+
+- `sourceCommits`: optional full 40-character source commits, allowing a temporary upstream failure to stop matching when the source advances.
+- `targetScope`: optional exact Target `system`/`subtarget`/`profile` scope. When omitted, the rule covers every environment in the Source/Branch where the real package is present.
+- `failure`: required structured evidence for `build-failure`, containing `phase`, `cause`, a stable `code`, and optional `observed` details. It explains evidence and never drives dependencies or rewrites configuration.
+
+Legacy schema-2 rules keep the following fields:
 
 - `id`: stable ID. Use `OWN-xxxx` for ownership and `BLD-xxxx` for known build failures.
 - `issue`: `file-ownership` or `build-failure`.
@@ -22,6 +28,8 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 ```
 
 Rules cannot contain commands, patches, or package-specific executors. The build backend cannot turn them into locks or configuration rewrites. Users may apply the recommendation, choose N/M/Y, or force continuation after a second confirmation.
+
+`sourceCommits` is the expiry boundary for temporary failure rules. Target-independent package-script failures such as `dockerd`/`containerd` omit `targetScope`, while still triggering only when the effective configuration selects the real package. RootFS capacity, Runner, network, and disk failures do not belong in this document.
 
 Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only through an explicit future schema migration when that limit becomes relevant; do not pre-create parallel datasets.
 
@@ -53,6 +61,22 @@ Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only 
 - Evidence: Run `31382119111`.
 - Handling: the recommendation uses generic `applyUserIntent()` only to set the package to N; force does not patch upstream source.
 - Removal: delete after an upstream fix passes both a package probe and a real build.
+
+### BLD-0003 / BLD-0004
+
+- Scope: exact source commit `6081813a…` on ImmortalWrt `openwrt-25.12`, without a Target/Profile restriction.
+- Trigger: the effective configuration selects `dockerd`, or selects `containerd`, whose build dependency invokes `dockerd`.
+- Problem: Moby 29.6.1 passes an empty `command -v` result to `cp` while copying nested executables.
+- Evidence: Runs `33091565296`, `32703315265`, `32702715228`, and `32719724510`.
+- Removal: the rule stops matching when the source commit advances; delete it after a real build confirms the new source is fixed.
+
+### BLD-0005
+
+- Scope: exact source commit `bb287c19…` on LEDE `master`, without a Target/Profile restriction.
+- Trigger: `luci-app-passwall=M/Y`.
+- Problem: rootfs installation lacks matching feed packages such as `ipt2socks`, `shadowsocks-rust-*`, `simple-obfs-client`, and `v2ray-plugin`.
+- Evidence: Run `32929550697`.
+- Removal: delete after matching Passwall LuCI/packages feeds pass a real build.
 
 ## Maintenance, probes, and publication
 

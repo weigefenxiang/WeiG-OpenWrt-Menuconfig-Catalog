@@ -170,13 +170,20 @@ const sizeRows = buildCatalogSizeReport([{ source: { id: 'fixture', branch: 'tes
 assert.equal(sizeRows[0].initialReductionPercent, 70);
 assert.equal(sizeRows[0].relationsReductionPercent, 75);
 
-// Compatibility is evidence schema 2 only and bounded by the Catalog source policy.
+// Compatibility v3 adds bounded failure evidence while v2 remains readable.
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
-assert.equal(normalizedCompatibility.schema, 2);
-assert.equal(normalizedCompatibility.rules.length, 3);
+assert.equal(normalizedCompatibility.schema, 3);
+assert.equal(normalizedCompatibility.rules.length, 6);
 assert.equal(normalizedCompatibility.rules[0]?.id, 'OWN-0001');
 assert.equal(normalizedCompatibility.rules[0]?.issue, 'file-ownership');
 assert.throws(() => normalizeCompatibilityDocument({ schema: 1, rules: [] }, policy));
+assert.equal(normalizeCompatibilityDocument({ schema: 2, rules: [] }, policy).schema, 2);
+assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0003')?.sourceCommits?.[0],
+  '6081813a7ec91aba6555a74dc3f4d34f504f8a53');
+assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0004')?.failure?.cause,
+  'dependency-caused');
+assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0005')?.failure?.phase,
+  'rootfs-install');
 
 // Public translation and automation policy contracts.
 assert.deepEqual(translations.policy?.languages, ['en', 'zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']);
