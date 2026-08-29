@@ -30,6 +30,8 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 规则不得包含命令、补丁或专用执行逻辑。构建端不得据此锁包或改写用户配置。浏览器可以把 `buildDependency` 作为证据交给通用推荐规划器，规划器仍只通过现有 Kconfig relations 和 `applyUserIntent()` 生成最少合法操作。用户可应用推荐方案、自定义 N/M/Y，或二次确认后强制继续。
 
+对于带 `buildDependency` 的规则，消费方必须把 `rule.packages`、`buildDependency.package` 和 `buildDependency.triggerPackages` 的去重并集视为完整参与集合。初始配置中每个仍匹配规则的参与包都是明确的兼容性取消目标，不能因执行其他目标后可能被 Kconfig 连带关闭，就把它降级为“自动联动变化”或从方案中省略。Kconfig relations 只用于寻找合法操作顺序、解除 selector，并计算参与集合之外的真实联动变化；最终方案必须确认所有初始活动参与者均不再匹配规则。
+
 `sourceCommits` 是临时故障规则的失效边界；`buildDependency` 只能用于具有完整精确提交边界的规则。与 Target 无关的 `dockerd` 构建脚本故障应省略 `targetScope`，但仍只在有效配置真实选择失败目标或直接触发入口时触发。Kconfig relations 已表达的间接入口（例如 `docker-compose` 和 LuCI Docker 包）不重复写入 `triggerPackages`。RootFS 容量、Runner、网络和磁盘问题不得写入本文件。
 
 规范化 JSON 未压缩上限 512 KiB。只有接近上限时才通过明确 schema 迁移按 Source/Branch 拆分；禁止提前维护平行数据集。
