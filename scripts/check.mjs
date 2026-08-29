@@ -156,12 +156,14 @@ assert(curatedDocument.items.every((row) => row.id && row.titleZh && row.usageZh
 assert.equal(new Set(curated.flatMap((row) => row.packages || [])).size,
   curated.reduce((count, row) => count + (row.packages?.length || 0), 0));
 
-const opkg = parseOpkgPackages('Package: luci-app-demo\nSize: 100\nDepends: demo-lib (>= 1), +demo-data\n\n' +
+const opkg = parseOpkgPackages('Package: luci-app-demo\nSize: 100\nInstalled-Size: 250\nDepends: demo-lib (>= 1), +demo-data\n\n' +
   'Package: demo-lib\nSize: 20\n\nPackage: demo-data\nSize: 5\n');
 const apk = parseApkDump({ packages: [
-  { info: { name: 'luci-app-demo', file_size: 120, depends: ['demo-lib>=1'] } },
+  { info: { name: 'luci-app-demo', file_size: 120, installed_size: 280, depends: ['demo-lib>=1'] } },
   { info: { name: 'demo-lib', file_size: 30, depends: [] } },
 ] });
+assert.equal(opkg[0].installedSize, 250);
+assert.equal(apk[0].installedSize, 280);
 const sizes = aggregateCuratedSizes(['luci-app-demo'], [{ source: 'opkg', packages: opkg }, { source: 'apk', packages: apk }]);
 assert.equal(sizes.bytes['luci-app-demo'], 150);
 assert.equal(sizes.coverage['luci-app-demo']?.length, 2);

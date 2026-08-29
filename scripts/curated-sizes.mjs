@@ -18,8 +18,14 @@ export function parseOpkgPackages(text) {
     }
     const name = fields.Package || '';
     const size = Number(fields.Size || 0);
+    const installedSize = Number(fields['Installed-Size'] || 0);
     return name && Number.isSafeInteger(size) && size >= 0
-      ? { name, size, depends: dependencyNames(fields.Depends) }
+      ? {
+        name,
+        size,
+        installedSize: Number.isSafeInteger(installedSize) && installedSize >= 0 ? installedSize : 0,
+        depends: dependencyNames(fields.Depends),
+      }
       : null;
   }).filter(Boolean);
 }
@@ -31,8 +37,14 @@ export function parseApkDump(value) {
     const info = row.info && typeof row.info === 'object' ? row.info : row;
     const name = String(info.name || info.package || info.pkgname || '');
     const size = Number(info.file_size ?? info['file-size'] ?? info.size ?? info.archive_size ?? 0);
+    const installedSize = Number(info.installed_size ?? info['installed-size'] ?? info.installedSize ?? 0);
     return name && Number.isSafeInteger(size) && size >= 0
-      ? { name, size, depends: dependencyNames(info.depends || info.dependencies || []) }
+      ? {
+        name,
+        size,
+        installedSize: Number.isSafeInteger(installedSize) && installedSize >= 0 ? installedSize : 0,
+        depends: dependencyNames(info.depends || info.dependencies || []),
+      }
       : null;
   }).filter(Boolean);
 }

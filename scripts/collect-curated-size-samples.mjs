@@ -8,9 +8,24 @@ import { gunzipSync } from 'node:zlib';
 import { parseApkDump, parseOpkgPackages } from './curated-sizes.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const output = resolve(process.argv[2] || join(ROOT, 'size-samples'));
+const cli = new Map();
+const positional = [];
+for (let index = 2; index < process.argv.length; index++) {
+  const token = process.argv[index];
+  if (token.startsWith('--')) {
+    const next = process.argv[index + 1];
+    if (!next || next.startsWith('--')) throw new Error(`${token} requires a value`);
+    cli.set(token.slice(2), next);
+    index++;
+  } else positional.push(token);
+}
+const output = resolve(positional[0] || join(ROOT, 'size-samples'));
+const outputFile = cli.get('output-file') ? resolve(cli.get('output-file')) : '';
+const selectedSource = String(cli.get('source') || '');
+const selectedBranch = String(cli.get('branch') || '');
 const config = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
 mkdirSync(output, { recursive: true });
+if (outputFile) mkdirSync(dirname(outputFile), { recursive: true });
 const temp = mkdtempSync(join(tmpdir(), 'weig-curated-size-'));
 
 async function fetchBytes(url) {
@@ -20,7 +35,22 @@ async function fetchBytes(url) {
 }
 
 try {
-  for (const source of config.curatedSizeSources || []) {
+  const configured = (config.curatedSizeSources || []).filter((source) =>
+    (!selectedSource || source.id === selectedSource) && (!selectedBranch || source.branch === selectedBranch));
+  if (selectedSource && selectedBranch && configured.length === 0 && outputFile) {
+    writeFileSync(outputFile, JSON.stringify({
+      schema: 2,
+      generatedAt: new Date().toISOString(),
+      source: selectedSource,
+      branch: selectedBranch,
+      available: false,
+      reason: 'no-exact-official-index-source',
+      packages: [],
+      failures: [],
+    }) + '\n');
+    console.log(`${selectedSource}/${selectedBranch}: no exact official package-index source`);
+  }
+  for (const source of configured) {
     const packages = new Map();
     const failures = [];
     for (const feed of source.feeds || []) {
@@ -46,18 +76,39 @@ try {
         failures.push({ feed, url, error: String(error.message || error) });
       }
     }
-    if (!packages.size) throw new Error(`${source.id}/${source.branch}: every size index failed`);
+    if (!packages.size) {
+      if (!outputFile) throw new Error(`${source.id}/${source.branch}: every size index failed`);
+      writeFileSync(outputFile, JSON.stringify({
+        schema: 2,
+        generatedAt: new Date().toISOString(),
+        source: source.id,
+        branch: source.branch,
+        architecture: source.architecture,
+        format: source.format,
+        baseUrl: source.baseUrl,
+        available: false,
+        reason: 'official-package-index-unavailable',
+        packages: [],
+        failures,
+      }) + '\n');
+      console.warn(`${source.id}/${source.branch}: every size index failed; publish unknown sizes`);
+      continue;
+    }
     const sample = {
-      schema: 1,
+      schema: 2,
       generatedAt: new Date().toISOString(),
       source: source.id,
       branch: source.branch,
       architecture: source.architecture,
+      format: source.format,
+      baseUrl: source.baseUrl,
+      available: true,
       packages: [...packages.values()].sort((a, b) => a.name.localeCompare(b.name)),
       failures,
     };
-    writeFileSync(join(output, `${source.id}--${source.branch}.json`.replace(/[^A-Za-z0-9_.-]/g, '-')),
-      JSON.stringify(sample) + '\n');
+    const destination = outputFile || join(output,
+      `${source.id}--${source.branch}.json`.replace(/[^A-Za-z0-9_.-]/g, '-'));
+    writeFileSync(destination, JSON.stringify(sample) + '\n');
     console.log(`${source.id}/${source.branch}: packages=${packages.size} failed-feeds=${failures.length}`);
   }
 } finally {

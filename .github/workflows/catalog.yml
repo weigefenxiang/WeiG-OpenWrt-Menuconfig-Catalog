@@ -216,6 +216,15 @@ jobs:
         timeout-minutes: 15
         working-directory: work/upstream
         run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" metadata bash "$GITHUB_WORKSPACE/scripts/prepare-metadata.sh" "${{ matrix.metadataCompat }}"
+      - name: Collect exact package-size observation
+        id: package_sizes
+        continue-on-error: true
+        timeout-minutes: 8
+        run: |
+          node scripts/collect-curated-size-samples.mjs work/size-samples \
+            --source "${{ matrix.source }}" \
+            --branch "${{ matrix.branch }}" \
+            --output-file work/package-size-sample.json
       - name: Extract catalog
         id: extract
         timeout-minutes: 5
@@ -227,6 +236,7 @@ jobs:
             --branch "${{ matrix.branch }}" \
             --legacy "${{ matrix.legacy }}" \
             --tree work/upstream \
+            --size-sample work/package-size-sample.json \
             --out dist
       - name: Verify Target/Profile Kconfig contracts
         id: kconfig_contract
