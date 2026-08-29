@@ -2,13 +2,14 @@
 
 `compatibility.json` 只记录上游 Kconfig/Catalog 当前无法表达、但真实构建已经确认的兼容性事实。它不是第二套 dependency 数据库，不保存 symbol 类型、N/M/Y、名称、翻译、依赖、provider、hash 或生成时间。
 
-## Schema 3
+## Schema 4
 
-发布端生成 schema 3，读取端继续兼容 schema 2。文档仍只有 `schema` 和 `rules`；schema 3 在原规则上增加：
+发布端生成 schema 4，读取端继续兼容 schema 2 和 schema 3。文档仍只有 `schema` 和 `rules`；schema 4 在原规则上增加：
 
 - `sourceCommits`：可选完整 40 位源码提交列表，使临时上游故障在源码前进后自动失效。
 - `targetScope`：可选 Target `system`/`subtarget`/`profile` 精确范围；省略时覆盖该 Source/Branch 中所有真实包含目标包的环境。
 - `failure`：`build-failure` 必需的结构化证据，包含 `phase`、`cause`、稳定 `code` 与可选 `observed`；只负责说明，不驱动依赖或改写配置。
+- `buildDependency`：`build-failure` 可选的、有界构建触发证据，严格包含 `package` 和 `triggerPackages`。`package` 是实际失败的构建目标，`triggerPackages` 是已在同一精确 `sourceCommits` 范围验证、会触发该目标编译的直接入口。它不是通用 dependency 数据，也不能出现在 `file-ownership` 规则中。
 
 schema 2 旧规则继续按以下字段读取：
 
@@ -27,9 +28,9 @@ schema 2 旧规则继续按以下字段读取：
 evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 ```
 
-规则不得包含命令、补丁或专用执行逻辑。构建端不得据此锁包或改写用户配置。用户可应用推荐方案、自定义 N/M/Y，或二次确认后强制继续。
+规则不得包含命令、补丁或专用执行逻辑。构建端不得据此锁包或改写用户配置。浏览器可以把 `buildDependency` 作为证据交给通用推荐规划器，规划器仍只通过现有 Kconfig relations 和 `applyUserIntent()` 生成最少合法操作。用户可应用推荐方案、自定义 N/M/Y，或二次确认后强制继续。
 
-`sourceCommits` 是临时故障规则的失效边界。与 Target 无关的 `dockerd`/`containerd` 包构建脚本故障应省略 `targetScope`，但仍只在有效配置真实选择对应包时触发。RootFS 容量、Runner、网络和磁盘问题不得写入本文件。
+`sourceCommits` 是临时故障规则的失效边界；`buildDependency` 只能用于具有完整精确提交边界的规则。与 Target 无关的 `dockerd` 构建脚本故障应省略 `targetScope`，但仍只在有效配置真实选择失败目标或直接触发入口时触发。Kconfig relations 已表达的间接入口（例如 `docker-compose` 和 LuCI Docker 包）不重复写入 `triggerPackages`。RootFS 容量、Runner、网络和磁盘问题不得写入本文件。
 
 规范化 JSON 未压缩上限 512 KiB。只有接近上限时才通过明确 schema 迁移按 Source/Branch 拆分；禁止提前维护平行数据集。
 
@@ -62,12 +63,13 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 - 处理：推荐方案只通过通用 `applyUserIntent()` 把该包调整为 N；强制继续不会修补上游源码。
 - 删除条件：上游修复并经包级探测与真实构建确认后删除。
 
-### BLD-0003 / BLD-0004
+### BLD-0003
 
 - 范围：ImmortalWrt `openwrt-25.12` 的精确源码提交 `6081813a…`，不限制 Target/Profile。
-- 触发：有效配置真实选择 `dockerd`，或选择具有 `dockerd` 构建依赖的 `containerd`。
+- 失败目标：`dockerd`。
+- 直接构建触发入口：`docker`、`containerd`、`runc`、`tini`；规则不会把 `docker-compose` 或 LuCI Docker 包重复写入此列表，它们的间接关系由 Catalog relations 解析。
 - 问题：Moby 29.6.1 在复制嵌套可执行文件时把空的 `command -v` 结果传给 `cp`。
-- 证据：Runs `33091565296`、`32703315265`、`32702715228`、`32719724510`。
+- 证据：Runs `33091565296`、`32703315265`、`32702715228`、`32719724510`、`33229690268`、`33230123378`。
 - 删除条件：源码提交前进后规则自动不匹配；新提交经真实构建确认修复后删除旧规则。
 
 ### BLD-0005

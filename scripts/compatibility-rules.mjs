@@ -3,8 +3,10 @@ import { matchPattern, sourceBranchPatterns } from './source-policy.mjs';
 const DOCUMENT_KEYS = new Set(['schema', 'rules']);
 const RULE_KEYS_V2 = new Set(['id', 'issue', 'match', 'scope', 'if', 'packages', 'paths', 'refs']);
 const RULE_KEYS_V3 = new Set([...RULE_KEYS_V2, 'sourceCommits', 'targetScope', 'failure']);
+const RULE_KEYS_V4 = new Set([...RULE_KEYS_V3, 'buildDependency']);
 const TARGET_SCOPE_KEYS = new Set(['system', 'subtarget', 'profile']);
 const FAILURE_KEYS = new Set(['phase', 'cause', 'code', 'observed']);
+const BUILD_DEPENDENCY_KEYS = new Set(['package', 'triggerPackages']);
 const RULE_ID_RE = /^[A-Z][A-Z0-9-]{2,31}$/;
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
 const SOURCE_RE = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -108,6 +110,40 @@ function normalizeFailure(value, label) {
   return { phase, cause, code, ...(value.observed === undefined ? {} : { observed: normalizeObserved(value.observed, `${label}.observed`) }) };
 }
 
+function normalizePackageId(value, label) {
+  if (typeof value !== 'string' || !PACKAGE_RE.test(value.trim())) {
+    throw new Error(`${label} must be a valid package ID`);
+  }
+  return value.trim();
+}
+
+function normalizePackageIds(value, label) {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 16) {
+    throw new Error(`${label} must contain 1-16 package IDs`);
+  }
+  const result = value.map((item, index) => normalizePackageId(item, `${label}[${index}]`));
+  if (new Set(result).size !== result.length) throw new Error(`${label} contains duplicate package IDs`);
+  return result;
+}
+
+function normalizeBuildDependency(value, label, packages, sourceCommits) {
+  if (!plainObject(value)) throw new Error(`${label} must be an object`);
+  rejectUnknownKeys(value, BUILD_DEPENDENCY_KEYS, label);
+  if (!Array.isArray(sourceCommits) || sourceCommits.length === 0 ||
+      sourceCommits.some((commit) => !COMMIT_RE.test(commit))) {
+    throw new Error(`${label} requires exact sourceCommits`);
+  }
+  const packageId = normalizePackageId(value.package, `${label}.package`);
+  if (!packages.includes(packageId)) {
+    throw new Error(`${label}.package must be listed in the rule packages`);
+  }
+  const triggerPackages = normalizePackageIds(value.triggerPackages, `${label}.triggerPackages`);
+  if (triggerPackages.includes(packageId)) {
+    throw new Error(`${label}.triggerPackages must not include the failed package`);
+  }
+  return { package: packageId, triggerPackages };
+}
+
 export function compatibilityScopeMatches(scope, source, branch) {
   const patterns = scope?.[source] || scope?.['*'] || [];
   return patterns.some((pattern) => matchPattern(branch, pattern));
@@ -117,15 +153,15 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
   if (!plainObject(raw)) throw new Error('compatibility document must be an object');
   rejectUnknownKeys(raw, DOCUMENT_KEYS, 'compatibility document');
   const schema = Number(raw.schema);
-  if (![2, 3].includes(schema) || !Array.isArray(raw.rules)) {
-    throw new Error('compatibility document requires schema 2 or 3 and a rules array');
+  if (![2, 3, 4].includes(schema) || !Array.isArray(raw.rules)) {
+    throw new Error('compatibility document requires schema 2, 3, or 4 and a rules array');
   }
   const sourcePolicy = new Map((policy.sources || []).map((source) => [source.id, source]));
   const seen = new Set();
   const rules = raw.rules.map((rule, index) => {
     const label = `compatibility.rules[${index}]`;
     if (!plainObject(rule)) throw new Error(`${label} must be an object`);
-    rejectUnknownKeys(rule, schema === 2 ? RULE_KEYS_V2 : RULE_KEYS_V3, label);
+    rejectUnknownKeys(rule, schema === 2 ? RULE_KEYS_V2 : schema === 3 ? RULE_KEYS_V3 : RULE_KEYS_V4, label);
     const id = String(rule.id || '').trim();
     if (!RULE_ID_RE.test(id)) throw new Error(`${label}.id is invalid`);
     if (seen.has(id)) throw new Error(`duplicate compatibility rule id: ${id}`);
@@ -151,21 +187,32 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
       packages: uniqueStrings(rule.packages, { label: `${id}.packages`, min: 1, max: 16, pattern: PACKAGE_RE }),
       refs: uniqueStrings(rule.refs, { label: `${id}.refs`, min: 1, max: 8, pattern: REF_RE }),
     };
-    if (schema === 3 && rule.sourceCommits !== undefined) {
+    if (schema >= 3 && rule.sourceCommits !== undefined) {
       normalized.sourceCommits = uniqueStrings(rule.sourceCommits, {
         label: `${id}.sourceCommits`, min: 1, max: 32, pattern: COMMIT_RE,
       });
     }
-    if (schema === 3 && rule.targetScope !== undefined) {
+    if (schema >= 3 && rule.targetScope !== undefined) {
       normalized.targetScope = normalizeTargetScope(rule.targetScope, `${id}.targetScope`);
     }
     if (issue === 'file-ownership') {
       normalized.paths = uniqueStrings(rule.paths, { label: `${id}.paths`, min: 1, max: 16, pattern: PATH_RE });
-      if (schema === 3 && rule.failure !== undefined) throw new Error(`${id}.failure is only valid for build-failure`);
+      if (schema >= 3 && rule.failure !== undefined) throw new Error(`${id}.failure is only valid for build-failure`);
+      if (schema === 4 && rule.buildDependency !== undefined) {
+        throw new Error(`${id}.buildDependency is only valid for build-failure`);
+      }
     } else if (rule.paths !== undefined) {
       throw new Error(`${id}.paths is only valid for file-ownership`);
-    } else if (schema === 3) {
+    } else if (schema >= 3) {
       normalized.failure = normalizeFailure(rule.failure, `${id}.failure`);
+      if (schema === 4 && rule.buildDependency !== undefined) {
+        normalized.buildDependency = normalizeBuildDependency(
+          rule.buildDependency,
+          `${id}.buildDependency`,
+          normalized.packages,
+          normalized.sourceCommits,
+        );
+      }
     }
     return normalized;
   });

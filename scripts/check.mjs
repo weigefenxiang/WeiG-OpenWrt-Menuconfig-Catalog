@@ -170,20 +170,54 @@ const sizeRows = buildCatalogSizeReport([{ source: { id: 'fixture', branch: 'tes
 assert.equal(sizeRows[0].initialReductionPercent, 70);
 assert.equal(sizeRows[0].relationsReductionPercent, 75);
 
-// Compatibility v3 adds bounded failure evidence while v2 remains readable.
+// Compatibility v4 adds bounded build-dependency evidence while v2/v3 remain readable.
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
-assert.equal(normalizedCompatibility.schema, 3);
-assert.equal(normalizedCompatibility.rules.length, 6);
+assert.equal(normalizedCompatibility.schema, 4);
+assert.equal(normalizedCompatibility.rules.length, 5);
 assert.equal(normalizedCompatibility.rules[0]?.id, 'OWN-0001');
 assert.equal(normalizedCompatibility.rules[0]?.issue, 'file-ownership');
 assert.throws(() => normalizeCompatibilityDocument({ schema: 1, rules: [] }, policy));
 assert.equal(normalizeCompatibilityDocument({ schema: 2, rules: [] }, policy).schema, 2);
+assert.equal(normalizeCompatibilityDocument({ schema: 3, rules: [] }, policy).schema, 3);
 assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0003')?.sourceCommits?.[0],
   '6081813a7ec91aba6555a74dc3f4d34f504f8a53');
-assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0004')?.failure?.cause,
-  'dependency-caused');
+const dockerdRule = normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0003');
+assert.deepEqual(dockerdRule?.buildDependency, {
+  package: 'dockerd', triggerPackages: ['docker', 'containerd', 'runc', 'tini'],
+});
+assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0004'), undefined);
 assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0005')?.failure?.phase,
   'rootfs-install');
+assert(!dockerdRule.buildDependency.triggerPackages.includes('docker-compose'));
+assert(!dockerdRule.buildDependency.triggerPackages.some((packageId) => packageId.startsWith('luci-')));
+
+// Schema-4 build dependency evidence is strict, bounded by exact source commits,
+// and unavailable to file-ownership or legacy schema-3 rules.
+const rawDockerdRule = compatibility.rules.find((rule) => rule.id === 'BLD-0003');
+const withBuildDependency = (buildDependency, overrides = {}) => ({
+  ...rawDockerdRule, ...overrides, buildDependency,
+});
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 4, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker'], extra: true })],
+}, policy), /buildDependency contains unsupported field: extra/);
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 4, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker'] }, { sourceCommits: undefined })],
+}, policy), /buildDependency requires exact sourceCommits/);
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 4, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker/compose'] })],
+}, policy), /triggerPackages\[0\] must be a valid package ID/);
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 4, rules: [withBuildDependency({ package: 'not-dockerd', triggerPackages: ['docker'] })],
+}, policy), /buildDependency\.package must be listed in the rule packages/);
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 4, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['dockerd'] })],
+}, policy), /triggerPackages must not include the failed package/);
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 4, rules: [{ ...compatibility.rules[0], buildDependency: { package: 'openvpn-openssl', triggerPackages: ['openvpn-openssl'] } }],
+}, policy), /buildDependency is only valid for build-failure/);
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 3, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker'] })],
+}, policy), /contains unsupported field: buildDependency/);
 
 // Public translation and automation policy contracts.
 assert.deepEqual(translations.policy?.languages, ['en', 'zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']);

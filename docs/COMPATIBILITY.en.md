@@ -2,13 +2,14 @@
 
 `compatibility.json` records only compatibility facts that upstream Kconfig/Catalog cannot currently express and real builds have confirmed. It is not a second dependency database and does not store symbol types, N/M/Y, names, translations, dependencies, providers, hashes, or timestamps.
 
-## Schema 3
+## Schema 4
 
-Publishers emit schema 3 while readers remain compatible with schema 2. The document still has only `schema` and `rules`; schema 3 adds:
+Publishers emit schema 4 while readers remain compatible with schemas 2 and 3. The document still has only `schema` and `rules`; schema 4 adds:
 
 - `sourceCommits`: optional full 40-character source commits, allowing a temporary upstream failure to stop matching when the source advances.
 - `targetScope`: optional exact Target `system`/`subtarget`/`profile` scope. When omitted, the rule covers every environment in the Source/Branch where the real package is present.
 - `failure`: required structured evidence for `build-failure`, containing `phase`, `cause`, a stable `code`, and optional `observed` details. It explains evidence and never drives dependencies or rewrites configuration.
+- `buildDependency`: optional, bounded build-trigger evidence for `build-failure`, strictly containing `package` and `triggerPackages`. `package` is the actual failed build target; `triggerPackages` are direct entry packages verified to invoke that target within the same exact `sourceCommits` boundary. It is not a general dependency database and is forbidden on `file-ownership` rules.
 
 Legacy schema-2 rules keep the following fields:
 
@@ -27,9 +28,9 @@ The only browser execution chain is:
 evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 ```
 
-Rules cannot contain commands, patches, or package-specific executors. The build backend cannot turn them into locks or configuration rewrites. Users may apply the recommendation, choose N/M/Y, or force continuation after a second confirmation.
+Rules cannot contain commands, patches, or package-specific executors. The build backend cannot turn them into locks or configuration rewrites. The browser may pass `buildDependency` evidence to the generic recommendation planner; that planner still uses only existing Kconfig relations and `applyUserIntent()` to produce minimal legal operations. Users may apply the recommendation, choose N/M/Y, or force continuation after a second confirmation.
 
-`sourceCommits` is the expiry boundary for temporary failure rules. Target-independent package-script failures such as `dockerd`/`containerd` omit `targetScope`, while still triggering only when the effective configuration selects the real package. RootFS capacity, Runner, network, and disk failures do not belong in this document.
+`sourceCommits` is the expiry boundary for temporary failure rules; `buildDependency` is allowed only on rules with a full exact commit boundary. Target-independent `dockerd` package-script failures omit `targetScope`, while still triggering only when the effective configuration selects the failed target or a direct trigger. Indirect entries already expressed by Kconfig relations, such as `docker-compose` and LuCI Docker packages, are not duplicated in `triggerPackages`. RootFS capacity, Runner, network, and disk failures do not belong in this document.
 
 Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only through an explicit future schema migration when that limit becomes relevant; do not pre-create parallel datasets.
 
@@ -62,12 +63,13 @@ Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only 
 - Handling: the recommendation uses generic `applyUserIntent()` only to set the package to N; force does not patch upstream source.
 - Removal: delete after an upstream fix passes both a package probe and a real build.
 
-### BLD-0003 / BLD-0004
+### BLD-0003
 
 - Scope: exact source commit `6081813a…` on ImmortalWrt `openwrt-25.12`, without a Target/Profile restriction.
-- Trigger: the effective configuration selects `dockerd`, or selects `containerd`, whose build dependency invokes `dockerd`.
+- Failed target: `dockerd`.
+- Direct build triggers: `docker`, `containerd`, `runc`, and `tini`. The rule does not duplicate `docker-compose` or LuCI Docker packages; their indirect relationships are resolved from Catalog relations.
 - Problem: Moby 29.6.1 passes an empty `command -v` result to `cp` while copying nested executables.
-- Evidence: Runs `33091565296`, `32703315265`, `32702715228`, and `32719724510`.
+- Evidence: Runs `33091565296`, `32703315265`, `32702715228`, `32719724510`, `33229690268`, and `33230123378`.
 - Removal: the rule stops matching when the source commit advances; delete it after a real build confirms the new source is fixed.
 
 ### BLD-0005
