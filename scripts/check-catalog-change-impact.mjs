@@ -192,6 +192,16 @@ assert.match(reuseWorkflow, /git fetch --no-tags --filter=blob:none --depth="\$d
   'snapshot reuse ancestry recovery must remain bounded and blobless');
 assert(!reuseWorkflow.includes('--unshallow'),
   'snapshot reuse must not fetch the complete Catalog history');
+assert.match(reuseWorkflow, /for depth in 32 128 512; do\s+git fetch --no-tags --filter=blob:none --depth="\$depth" origin \\\s+"\+refs\/heads\/\$GITHUB_REF_NAME:refs\/remotes\/origin\/\$GITHUB_REF_NAME" \\\s+"\+refs\/heads\/dev:refs\/remotes\/origin\/dev"/,
+  'new fix-* reuse pushes must fetch bounded current-fix and origin/dev lineages');
+assert.match(reuseWorkflow, /base_sha="\$\(git merge-base "\$GITHUB_SHA" origin\/dev 2>\/dev\/null \|\| true\)"/,
+  'merge-base lookup must remain non-fatal under set -e while the bounded fallback retries');
+assert.match(reuseWorkflow, /\[\[ "\$base_sha" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| \{\s+echo "Unable to determine the merge-base/,
+  'an unresolved merge-base must fail closed instead of bypassing the impact guard');
+assert.match(reuseWorkflow, /mapfile -t changed < <\(git diff --name-only "\$base_sha" "\$GITHUB_SHA"\)/,
+  'reuse impact must classify the merge-base-to-target delta after before fallback');
+assert.match(reuseWorkflow, /\[\[ "\$\(sed -n 's\/\^mode=\/\/p' "\$RUNNER_TEMP\/catalog-reuse-impact\.outputs"\)" == none \]\]/,
+  'cumulative reuse verification must remain fail-closed for root-assets/full impact');
 
 const coverage = catalogImpactRegistryCoverage();
 assert.deepEqual(coverage.missing, []);

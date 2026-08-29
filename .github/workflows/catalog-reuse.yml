@@ -67,14 +67,35 @@ jobs:
         run: |
           set -euo pipefail
           mode=none
-          if [[ "$GITHUB_EVENT_NAME" == push && "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
-                "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]]; then
-            if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-              git fetch --no-tags --filter=blob:none --depth=1 origin "$BEFORE_SHA"
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            base_sha=
+            if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ &&
+                  "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]]; then
+              if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+                git fetch --no-tags --filter=blob:none --depth=1 origin "$BEFORE_SHA"
+              fi
+              base_sha="$BEFORE_SHA"
+            elif [[ "$GITHUB_REF_NAME" == fix-* ]]; then
+              for depth in 32 128 512; do
+                git fetch --no-tags --filter=blob:none --depth="$depth" origin \
+                  "+refs/heads/$GITHUB_REF_NAME:refs/remotes/origin/$GITHUB_REF_NAME" \
+                  "+refs/heads/dev:refs/remotes/origin/dev"
+                base_sha="$(git merge-base "$GITHUB_SHA" origin/dev 2>/dev/null || true)"
+                if [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]]; then
+                  break
+                fi
+                base_sha=
+              done
+              [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "Unable to determine the merge-base of the new fix-* branch and origin/dev."
+                exit 1
+              }
             fi
-            mapfile -t changed < <(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
-            node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"
-            mode="$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
+            if [[ -n "$base_sha" ]]; then
+              mapfile -t changed < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
+              node scripts/catalog-change-impact.mjs "${changed[@]}" | tee "$RUNNER_TEMP/catalog-impact.outputs"
+              mode="$(sed -n 's/^mode=//p' "$RUNNER_TEMP/catalog-impact.outputs")"
+            fi
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
