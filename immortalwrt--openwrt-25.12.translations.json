@@ -4,7 +4,7 @@
     "id": "ImmortalWrt",
     "branch": "openwrt-25.12"
   },
-  "generatedAt": "2026-08-23T03:49:39.143Z",
+  "generatedAt": "2026-08-30T02:50:20.673Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10313,
+  "options": 10315,
   "translatedZhCN": 185,
   "missingZhCN": [
     {
@@ -4645,6 +4645,13 @@
       "promptEn": "Maximum rotation count for /var/log/messages log file",
       "path": [
         "Administration"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_apboot-aruba-ipq806x",
+      "promptEn": "Patched Aruba APBoot for AP-32x",
+      "path": [
+        "Boot Loaders"
       ]
     },
     {
@@ -67563,6 +67570,14 @@
     {
       "symbol": "PACKAGE_px5g-mbedtls",
       "promptEn": "X.509 certificate generator (using mbedtls)",
+      "path": [
+        "Utilities",
+        "Encryption"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_px5g-openssl",
+      "promptEn": "X.509 certificate generator (using OpenSSL)",
       "path": [
         "Utilities",
         "Encryption"
