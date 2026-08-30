@@ -4,7 +4,7 @@
     "id": "lede",
     "branch": "master"
   },
-  "generatedAt": "2026-08-23T03:49:29.295Z",
+  "generatedAt": "2026-08-30T02:50:00.696Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,8 +18,8 @@
     "fr",
     "vi"
   ],
-  "options": 9974,
-  "translatedZhCN": 195,
+  "options": 9976,
+  "translatedZhCN": 196,
   "missingZhCN": [
     {
       "symbol": "TARGET_silicon",
@@ -6224,6 +6224,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ipq-wifi-askey_sbe1v1k",
+      "promptEn": "board-2.bin Overrides for Askey SBE1V1K",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ipq-wifi-asus_rt-ax89x",
       "promptEn": "board-2.bin Overrides for Asus RT-AX89X",
       "path": [
@@ -10665,14 +10673,6 @@
     {
       "symbol": "PACKAGE_kmod-i2c-algo-pcf",
       "promptEn": "I2C PCF 8584 interfaces",
-      "path": [
-        "Kernel modules",
-        "I2C support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-i2c-an7581",
-      "promptEn": "Airoha I2C Controller",
       "path": [
         "Kernel modules",
         "I2C support"
@@ -16090,8 +16090,8 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-pwm-an7581",
-      "promptEn": "Airoha EN7581 PWM",
+      "symbol": "PACKAGE_kmod-pwm-airoha",
+      "promptEn": "Airoha AN7581 and AN7583 PWM",
       "path": [
         "Kernel modules",
         "Other modules"
@@ -19804,6 +19804,14 @@
     {
       "symbol": "PACKAGE_kmod-ath12k",
       "promptEn": "Qualcomm 802.11be wireless chipset support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "ATH12K_THERMAL",
+      "promptEn": "Enable ath12k thermal sensor support",
       "path": [
         "Kernel modules",
         "Wireless Drivers"
