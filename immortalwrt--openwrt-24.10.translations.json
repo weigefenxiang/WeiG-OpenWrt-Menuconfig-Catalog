@@ -4,7 +4,7 @@
     "id": "ImmortalWrt",
     "branch": "openwrt-24.10"
   },
-  "generatedAt": "2026-08-23T03:49:46.388Z",
+  "generatedAt": "2026-08-30T02:50:19.889Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10011,
+  "options": 10013,
   "translatedZhCN": 190,
   "missingZhCN": [
     {
@@ -66006,6 +66006,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_px5g-openssl",
+      "promptEn": "X.509 certificate generator (using OpenSSL)",
+      "path": [
+        "Utilities",
+        "Encryption"
+      ]
+    },
+    {
       "symbol": "PACKAGE_px5g-standalone",
       "promptEn": "X.509 certificate generator (standalone)",
       "path": [
@@ -71049,6 +71057,13 @@
     {
       "symbol": "PACKAGE_librespeed-cli",
       "promptEn": "Command line client for LibreSpeed",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_librespeed-cli-rust",
+      "promptEn": "Command line client for LibreSpeed (Rust)",
       "path": [
         "Utilities"
       ]

@@ -4,7 +4,7 @@
     "id": "ImmortalWrt",
     "branch": "master"
   },
-  "generatedAt": "2026-08-23T03:49:46.308Z",
+  "generatedAt": "2026-08-30T02:50:31.691Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10495,
+  "options": 10521,
   "translatedZhCN": 185,
   "missingZhCN": [
     {
@@ -6469,6 +6469,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ipq-wifi-askey_sbe1v1k",
+      "promptEn": "board-2.bin Overrides for Askey SBE1V1K",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ipq-wifi-asus_rt-ax89x",
       "promptEn": "board-2.bin Overrides for Asus RT-AX89X",
       "path": [
@@ -11844,6 +11852,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-leds-lp5521",
+      "promptEn": "LED driver for LP5521 controllers",
+      "path": [
+        "Kernel modules",
+        "LED modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-leds-lp5523",
       "promptEn": "LED driver for LP5523/LP55231 controllers",
       "path": [
@@ -13476,6 +13492,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-dsa-mt7620",
+      "promptEn": "MediaTek MT7620 integrated switch DSA support",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-dsa-mv88e6060",
       "promptEn": "Marvell MV88E6060 DSA Switch",
       "path": [
@@ -14780,14 +14804,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-switch-rtl8367s",
-      "promptEn": "Realtek RTL8367S switch support",
-      "path": [
-        "Kernel modules",
-        "Network Devices"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-tg3",
       "promptEn": "Broadcom Tigon3 Gigabit Ethernet",
       "path": [
@@ -14894,6 +14910,62 @@
     {
       "symbol": "PACKAGE_kmod-atmtcp",
       "promptEn": "ATM over TCP",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-batman-adv",
+      "promptEn": "B.A.T.M.A.N. Adv",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_BATMAN_V",
+      "promptEn": "B.A.T.M.A.N. V protocol",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_BLA",
+      "promptEn": "Bridge Loop Avoidance",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_DAT",
+      "promptEn": "Distributed ARP Table",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_MCAST",
+      "promptEn": "Multicast optimisation",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_DEBUG",
+      "promptEn": "B.A.T.M.A.N. debugging",
+      "path": [
+        "Kernel modules",
+        "Network Support"
+      ]
+    },
+    {
+      "symbol": "BATMAN_ADV_TRACING",
+      "promptEn": "B.A.T.M.A.N. tracing support",
       "path": [
         "Kernel modules",
         "Network Support"
@@ -21435,7 +21507,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26",
+      "symbol": "PACKAGE_golang1.27",
       "promptEn": "Go programming language (compiler)",
       "path": [
         "Languages",
@@ -21443,7 +21515,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-doc",
+      "symbol": "PACKAGE_golang1.27-doc",
       "promptEn": "Go programming language (documentation)",
       "path": [
         "Languages",
@@ -21451,7 +21523,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-misc",
+      "symbol": "PACKAGE_golang1.27-misc",
       "promptEn": "Go programming language (misc source files)",
       "path": [
         "Languages",
@@ -21459,7 +21531,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-src",
+      "symbol": "PACKAGE_golang1.27-src",
       "promptEn": "Go programming language (source files)",
       "path": [
         "Languages",
@@ -21467,7 +21539,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-tests",
+      "symbol": "PACKAGE_golang1.27-tests",
       "promptEn": "Go programming language (compiler tests)",
       "path": [
         "Languages",
@@ -25567,22 +25639,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_pipx",
-      "promptEn": "Install/Run Python Applications in Isolated Environments",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_pipx-src",
-      "promptEn": "Install/Run Python Applications in Isolated Environments (sources)",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
       "symbol": "PACKAGE_python3",
       "promptEn": "Python 3.14 programming language",
       "path": [
@@ -28819,22 +28875,6 @@
     {
       "symbol": "PACKAGE_python3-urllib3-src",
       "promptEn": "Sanity-friendly HTTP client (sources)",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_python3-userpath",
-      "promptEn": "Cross-platform tool for modifying a user's PATH",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_python3-userpath-src",
-      "promptEn": "Cross-platform tool for modifying a user's PATH (sources)",
       "path": [
         "Languages",
         "Python"
@@ -37872,6 +37912,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libextractor-plugin-msoffice",
+      "promptEn": "GNU Libextractor (msoffice plugin)",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libextractor-plugin-nsf",
       "promptEn": "GNU Libextractor (nsf plugin)",
       "path": [
@@ -37916,6 +37963,13 @@
     {
       "symbol": "PACKAGE_libextractor-plugin-riff",
       "promptEn": "GNU Libextractor (riff plugin)",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libextractor-plugin-rtf",
+      "promptEn": "GNU Libextractor (rtf plugin)",
       "path": [
         "Libraries"
       ]
@@ -39671,8 +39725,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libjuice",
+      "promptEn": "UDP Interactive Connectivity Establishment (ICE) library",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libjwt",
       "promptEn": "libjwt",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libkcp",
+      "promptEn": "KCP - A Fast and Reliable ARQ Protocol",
       "path": [
         "Libraries"
       ]
@@ -39895,6 +39963,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libmonocypher",
+      "promptEn": "Small, auditable, portable cryptographic library",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libmosquitto-nossl",
       "promptEn": "mosquitto - client library (Without SSL Support)",
       "path": [
@@ -39976,6 +40051,14 @@
       "promptEn": "Terminal handling library (Unicode)",
       "path": [
         "Libraries"
+      ]
+    },
+    {
+      "symbol": "LIBNCURSES_TERMINFO",
+      "promptEn": "extra terminfo files",
+      "path": [
+        "Libraries",
+        "Configuration"
       ]
     },
     {
@@ -43132,6 +43215,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-app-fancontrol",
+      "promptEn": "LuCI support for the generic PWM fan controller",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
       "symbol": "PACKAGE_luci-app-passwall_INCLUDE_Haproxy",
       "promptEn": "Include Haproxy",
       "path": [
@@ -43315,6 +43406,14 @@
     {
       "symbol": "PACKAGE_luci-theme-bootstrap",
       "promptEn": "Bootstrap Theme (default)",
+      "path": [
+        "LuCI",
+        "4. Themes"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-theme-footstrap",
+      "promptEn": "Footstrap Theme",
       "path": [
         "LuCI",
         "4. Themes"
@@ -45176,6 +45275,14 @@
     {
       "symbol": "PACKAGE_nodogsplash",
       "promptEn": "Open public network gateway daemon",
+      "path": [
+        "Network",
+        "Captive Portals"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_opennds",
+      "promptEn": "open Network Demarcation Service",
       "path": [
         "Network",
         "Captive Portals"
@@ -49524,6 +49631,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_mesh11sd",
+      "promptEn": "Dynamic 802.11s Mesh Management Daemon",
+      "path": [
+        "Network",
+        "Mesh"
+      ]
+    },
+    {
       "symbol": "PACKAGE_meshtasticd-avahi-service",
       "promptEn": "Meshtastic daemon (avahi service)",
       "path": [
@@ -50666,6 +50781,14 @@
     {
       "symbol": "PACKAGE_autossh",
       "promptEn": "Autossh client",
+      "path": [
+        "Network",
+        "SSH"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_comrade",
+      "promptEn": "Serverless peer-to-peer terminal sharing",
       "path": [
         "Network",
         "SSH"
@@ -62123,6 +62246,62 @@
       ]
     },
     {
+      "symbol": "PACKAGE_alfred",
+      "promptEn": "A.L.F.R.E.D. - Almighty Lightweight Fact Remote Exchange Daemon",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ALFRED_VIS",
+      "promptEn": "enable vis server for alfred",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ALFRED_BATHOSTS",
+      "promptEn": "enable autogeneration of /etc/bat-hosts",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ALFRED_GPSD",
+      "promptEn": "enable gpsd service for alfred",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_batctl-default",
+      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Default)",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_batctl-full",
+      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Full)",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_batctl-tiny",
+      "promptEn": "B.A.T.M.A.N. Advanced user space configuration tool (Minimal)",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
       "symbol": "PACKAGE_dawn",
       "promptEn": "Decentralized wifi controller",
       "path": [
@@ -64879,6 +65058,20 @@
     {
       "symbol": "NUT_SSL",
       "promptEn": "Build with support for OpenSSL",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "NUT_SSL_NSS",
+      "promptEn": "Build with support for NSS for SSL",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "NUT_SSL_CERTVERIFY",
+      "promptEn": "Build with support for certificate verification when using SSL",
       "path": [
         "Network"
       ]
@@ -72682,6 +72875,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_fancontrol",
+      "promptEn": "Generic hwmon PWM fan controller",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_fbtest",
       "promptEn": "Frame buffer device testing tool",
       "path": [
@@ -79273,6 +79473,7 @@
     "Instant Messaging",
     "Linux ATM tools",
     "LoRaWAN",
+    "Mesh",
     "Meshtastic",
     "NMAP Suite",
     "NTRIP",

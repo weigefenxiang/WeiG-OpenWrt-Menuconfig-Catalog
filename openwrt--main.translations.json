@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-23T03:50:50.466Z",
+  "generatedAt": "2026-08-30T02:50:43.797Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10000,
+  "options": 10001,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -6404,6 +6404,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ipq-wifi-askey_sbe1v1k",
+      "promptEn": "board-2.bin Overrides for Askey SBE1V1K",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ipq-wifi-asus_rt-ax89x",
       "promptEn": "board-2.bin Overrides for Asus RT-AX89X",
       "path": [
@@ -11644,6 +11652,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-leds-lp5521",
+      "promptEn": "LED driver for LP5521 controllers",
+      "path": [
+        "Kernel modules",
+        "LED modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-leds-lp5523",
       "promptEn": "LED driver for LP5523/LP55231 controllers",
       "path": [
@@ -14934,14 +14950,6 @@
     {
       "symbol": "PACKAGE_kmod-l2tp-ip",
       "promptEn": "L2TP IP encapsulation for L2TPv3",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-macremapper",
-      "promptEn": "Dual Channel Wi-Fi macremapper Module",
       "path": [
         "Kernel modules",
         "Network Support"
@@ -21155,7 +21163,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26",
+      "symbol": "PACKAGE_golang1.27",
       "promptEn": "Go programming language (compiler)",
       "path": [
         "Languages",
@@ -21163,7 +21171,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-doc",
+      "symbol": "PACKAGE_golang1.27-doc",
       "promptEn": "Go programming language (documentation)",
       "path": [
         "Languages",
@@ -21171,7 +21179,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-misc",
+      "symbol": "PACKAGE_golang1.27-misc",
       "promptEn": "Go programming language (misc source files)",
       "path": [
         "Languages",
@@ -21179,7 +21187,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-src",
+      "symbol": "PACKAGE_golang1.27-src",
       "promptEn": "Go programming language (source files)",
       "path": [
         "Languages",
@@ -21187,7 +21195,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_golang1.26-tests",
+      "symbol": "PACKAGE_golang1.27-tests",
       "promptEn": "Go programming language (compiler tests)",
       "path": [
         "Languages",
@@ -32352,22 +32360,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_libdcwproto",
-      "promptEn": "Dual-Channel WiFi messaging library",
-      "path": [
-        "Libraries",
-        "Networking"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_libdcwsocket",
-      "promptEn": "Dual-Channel socket library",
-      "path": [
-        "Libraries",
-        "Networking"
-      ]
-    },
-    {
       "symbol": "PACKAGE_libnetsnmp-nossl",
       "promptEn": "net-snmp - client library (without SSL Support)",
       "path": [
@@ -36018,6 +36010,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libextractor-plugin-msoffice",
+      "promptEn": "GNU Libextractor (msoffice plugin)",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libextractor-plugin-nsf",
       "promptEn": "GNU Libextractor (nsf plugin)",
       "path": [
@@ -36062,6 +36061,13 @@
     {
       "symbol": "PACKAGE_libextractor-plugin-riff",
       "promptEn": "GNU Libextractor (riff plugin)",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libextractor-plugin-rtf",
+      "promptEn": "GNU Libextractor (rtf plugin)",
       "path": [
         "Libraries"
       ]
@@ -41241,6 +41247,14 @@
     {
       "symbol": "PACKAGE_luci-app-sfp-info",
       "promptEn": "SFP/QSFP Transceiver Diagnostics",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-shunt",
+      "promptEn": "LuCI support for shunt",
       "path": [
         "LuCI",
         "3. Applications"
@@ -47557,22 +47571,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_dcstad",
-      "promptEn": "Dual-Channel WiFi client daemon",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_dcwapd",
-      "promptEn": "Dual-Channel WiFi AP daemon",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
       "symbol": "PACKAGE_devlink",
       "promptEn": "Network devlink utility",
       "path": [
@@ -47936,14 +47934,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_mrmctl",
-      "promptEn": "Dual-Channel WiFi macremapper utility",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
       "symbol": "PACKAGE_mwan3",
       "promptEn": "Multiwan hotplug script with connection tracking support",
       "path": [
@@ -48258,6 +48248,14 @@
     {
       "symbol": "PACKAGE_comrade",
       "promptEn": "Serverless peer-to-peer terminal sharing",
+      "path": [
+        "Network",
+        "SSH"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_comrade-tests",
+      "promptEn": "Serverless peer-to-peer terminal sharing (test suite)",
       "path": [
         "Network",
         "SSH"
@@ -63015,6 +63013,13 @@
     {
       "symbol": "PACKAGE_ser2net",
       "promptEn": "Serial to Network Proxy",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shunt",
+      "promptEn": "Policy based routing via passive DNS observation",
       "path": [
         "Network"
       ]
