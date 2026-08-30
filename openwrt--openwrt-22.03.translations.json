@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "openwrt-22.03"
   },
-  "generatedAt": "2026-08-29T21:45:53.936Z",
+  "generatedAt": "2026-08-30T02:51:26.083Z",
   "languages": [
     "en",
     "zh-CN",
@@ -65365,84 +65365,5 @@
       "id": "choice-56",
       "promptEn": "stack tracing support"
     }
-  ],
-  "automation": {
-    "generatedAt": "2026-08-29T22:56:43.994Z",
-    "catalogs": 17,
-    "cachedTexts": 28489,
-    "trigger": "schedule",
-    "phase": "zh-CN-usage",
-    "activeLanguage": "zh-CN",
-    "nextLanguage": "zh-CN",
-    "rotationLanguages": [
-      "ru",
-      "es",
-      "pt",
-      "ja",
-      "ko",
-      "de",
-      "fr",
-      "vi"
-    ],
-    "frozenLanguages": [
-      "zh-TW"
-    ],
-    "batchNumber": 3,
-    "batchCount": 5,
-    "queuedThisRun": 317,
-    "retryQueuedAfter": 37,
-    "batchLimit": 500,
-    "queuedCharacters": 24279,
-    "requestedCharactersThisRun": 0,
-    "runCharacterBudget": null,
-    "translatedThisRun": 280,
-    "targetPendingBefore": 317,
-    "targetPendingAfter": 37,
-    "localizedFields": 202918,
-    "pendingFields": 2932562,
-    "localizedByLanguage": {
-      "zh-CN": 159930,
-      "zh-TW": 5187,
-      "ru": 5187,
-      "es": 5153,
-      "pt": 5170,
-      "ja": 5187,
-      "ko": 5187,
-      "de": 5132,
-      "fr": 5170,
-      "vi": 5166
-    },
-    "pendingByLanguage": {
-      "zh-CN": 161056,
-      "zh-TW": 315799,
-      "ru": 315799,
-      "es": 315833,
-      "pt": 315816,
-      "ja": 315799,
-      "ko": 315799,
-      "de": 315854,
-      "fr": 315816,
-      "vi": 315820
-    },
-    "uniqueDescriptionPendingByLanguage": {
-      "zh-CN": 37,
-      "zh-TW": 13517,
-      "ru": 13517,
-      "es": 13517,
-      "pt": 13517,
-      "ja": 13517,
-      "ko": 13517,
-      "de": 13517,
-      "fr": 13517,
-      "vi": 13517
-    },
-    "provider": "argos",
-    "providerConfigured": true,
-    "translationEnabled": true,
-    "model": "en-zh:installed",
-    "rejected": 37,
-    "timedOut": false,
-    "apiError": "",
-    "warning": "Batch incomplete: translated 280/317 queued descriptions"
-  }
+  ]
 }
