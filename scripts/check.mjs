@@ -172,18 +172,23 @@ const sizeRows = buildCatalogSizeReport([{ source: { id: 'fixture', branch: 'tes
 assert.equal(sizeRows[0].initialReductionPercent, 70);
 assert.equal(sizeRows[0].relationsReductionPercent, 75);
 
-// Compatibility v4 adds bounded build-dependency evidence while v2/v3 remain readable.
+// Compatibility v5 separates a global preventive applicability policy from exact evidence.
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
-assert.equal(normalizedCompatibility.schema, 4);
+assert.equal(normalizedCompatibility.schema, 5);
 assert.equal(normalizedCompatibility.rules.length, 5);
 assert.equal(normalizedCompatibility.rules[0]?.id, 'OWN-0001');
 assert.equal(normalizedCompatibility.rules[0]?.issue, 'file-ownership');
 assert.throws(() => normalizeCompatibilityDocument({ schema: 1, rules: [] }, policy));
 assert.equal(normalizeCompatibilityDocument({ schema: 2, rules: [] }, policy).schema, 2);
 assert.equal(normalizeCompatibilityDocument({ schema: 3, rules: [] }, policy).schema, 3);
-assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0003')?.sourceCommits?.[0],
-  '6081813a7ec91aba6555a74dc3f4d34f504f8a53');
+assert.equal(normalizeCompatibilityDocument({ schema: 4, rules: [] }, policy).schema, 4);
 const dockerdRule = normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0003');
+assert.equal(dockerdRule?.policy, 'preventive');
+assert.deepEqual(dockerdRule?.environments, [{
+  source: '*', branch: '*', packageAvailability: 'if-present', targetScope: {},
+}]);
+assert.equal(dockerdRule?.evidence?.[0]?.sourceCommit,
+  '6081813a7ec91aba6555a74dc3f4d34f504f8a53');
 assert.deepEqual(dockerdRule?.buildDependency, {
   package: 'dockerd', triggerPackages: ['docker', 'containerd', 'runc', 'tini'],
 });
@@ -196,8 +201,16 @@ assert(!dockerdRule.buildDependency.triggerPackages.some((packageId) => packageI
 // Schema-4 build dependency evidence is strict, bounded by exact source commits,
 // and unavailable to file-ownership or legacy schema-3 rules.
 const rawDockerdRule = compatibility.rules.find((rule) => rule.id === 'BLD-0003');
+const { policy: ignoredPolicy, environments: ignoredEnvironments, evidence: exactEvidence,
+  ...legacyDockerdFields } = rawDockerdRule;
+const legacyDockerdRule = {
+  ...legacyDockerdFields,
+  scope: { ImmortalWrt: ['openwrt-25.12'] },
+  sourceCommits: exactEvidence.map((row) => row.sourceCommit),
+  refs: [...new Set(exactEvidence.flatMap((row) => row.refs))],
+};
 const withBuildDependency = (buildDependency, overrides = {}) => ({
-  ...rawDockerdRule, ...overrides, buildDependency,
+  ...legacyDockerdRule, ...overrides, buildDependency,
 });
 assert.throws(() => normalizeCompatibilityDocument({
   schema: 4, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker'], extra: true })],
@@ -220,6 +233,16 @@ assert.throws(() => normalizeCompatibilityDocument({
 assert.throws(() => normalizeCompatibilityDocument({
   schema: 3, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker'] })],
 }, policy), /contains unsupported field: buildDependency/);
+const preventiveWithoutEvidence = structuredClone(rawDockerdRule);
+delete preventiveWithoutEvidence.evidence;
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 5, rules: [preventiveWithoutEvidence],
+}, policy), /evidence/);
+const preventiveWithLegacyScope = structuredClone(rawDockerdRule);
+preventiveWithLegacyScope.scope = { '*': ['*'] };
+assert.throws(() => normalizeCompatibilityDocument({
+  schema: 5, rules: [preventiveWithLegacyScope],
+}, policy), /preventive policy uses environments and evidence/);
 
 // Public translation and automation policy contracts.
 assert.deepEqual(translations.policy?.languages, ['en', 'zh-CN', 'zh-TW', 'ru', 'es', 'pt', 'ja', 'ko', 'de', 'fr', 'vi']);

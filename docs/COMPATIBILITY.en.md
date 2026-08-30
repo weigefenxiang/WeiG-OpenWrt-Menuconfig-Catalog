@@ -2,9 +2,15 @@
 
 `compatibility.json` records only compatibility facts that upstream Kconfig/Catalog cannot currently express and real builds have confirmed. It is not a second dependency database and does not store symbol types, N/M/Y, names, translations, dependencies, providers, hashes, or timestamps.
 
-## Schema 4
+## Schema 5
 
-Publishers emit schema 4 while readers remain compatible with schemas 2 and 3. The document still has only `schema` and `rules`; schema 4 adds:
+Publishers emit schema 5 while readers remain compatible with schemas 2, 3, and 4. The document still has only `schema` and `rules`. Schema 4 retains the existing meanings of `sourceCommits`, `targetScope`, `failure`, and `buildDependency`; schema 5 additionally permits explicitly reviewed global preventive rules:
+
+- `policy: "preventive"` declares an applicability policy without extrapolating evidence from one environment into a claim that every upstream was observed failing.
+- `environments` defines the Source/Branch/Target applicability range. `source` and `branch` may be `*`; `packageAvailability: "if-present"` makes a missing failed package not applicable rather than an error.
+- `evidence` keeps the exact Source, Branch, 40-character source commit, Target scope, and short references where the failure was actually observed. Evidence boundaries remain separate from policy applicability.
+
+Schema 4 added:
 
 - `sourceCommits`: optional full 40-character source commits, allowing a temporary upstream failure to stop matching when the source advances.
 - `targetScope`: optional exact Target `system`/`subtarget`/`profile` scope. When omitted, the rule covers every environment in the Source/Branch where the real package is present.
@@ -32,7 +38,7 @@ Rules cannot contain commands, patches, or package-specific executors. The build
 
 For a rule with `buildDependency`, consumers must treat the deduplicated union of `rule.packages`, `buildDependency.package`, and `buildDependency.triggerPackages` as the complete participant set. Every participant that still matches the rule in the initial configuration is an explicit compatibility cancellation target; a consumer must not demote it to an automatic linkage change or omit it merely because Kconfig may turn it off after another target is applied. Kconfig relations are used only to find legal operation order, release selectors, and compute genuine linkage changes outside the participant set. The final plan must confirm that every initially active participant no longer matches the rule.
 
-`sourceCommits` is the expiry boundary for temporary failure rules; `buildDependency` is allowed only on rules with a full exact commit boundary. Target-independent `dockerd` package-script failures omit `targetScope`, while still triggering only when the effective configuration selects the failed target or a direct trigger. Indirect entries already expressed by Kconfig relations, such as `docker-compose` and LuCI Docker packages, are not duplicated in `triggerPackages`. RootFS capacity, Runner, network, and disk failures do not belong in this document.
+Ordinary temporary-failure rules still use `sourceCommits` as their expiry boundary and may use `buildDependency` only with a full exact commit boundary. An explicitly approved schema-5 `preventive` rule instead keeps exact facts in `evidence` and controls preventive applicability independently through `environments`. With `packageAvailability: "if-present"`, a missing failed target skips the rule, while missing trigger entries are ignored. The rule triggers only when the effective configuration selects a failed target or trigger that actually exists in the current Catalog; the recommendation likewise targets only participants that both exist and are active. RootFS capacity, Runner, network, and disk failures do not belong in this document.
 
 Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only through an explicit future schema migration when that limit becomes relevant; do not pre-create parallel datasets.
 
@@ -67,12 +73,12 @@ Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only 
 
 ### BLD-0003
 
-- Scope: exact source commit `6081813a…` on ImmortalWrt `openwrt-25.12`, without a Target/Profile restriction.
+- Policy scope: every Source, Branch, and Target/Profile, but only where the current Catalog actually provides `dockerd`; environments without `dockerd` are skipped.
 - Failed target: `dockerd`.
-- Direct build triggers: `docker`, `containerd`, `runc`, and `tini`. The rule does not duplicate `docker-compose` or LuCI Docker packages; their indirect relationships are resolved from Catalog relations.
+- Direct build triggers: `docker`, `containerd`, `runc`, and `tini`. A trigger absent from the current environment is ignored; every present and active trigger, plus `dockerd`, is an explicit recommendation target.
 - Problem: Moby 29.6.1 passes an empty `command -v` result to `cp` while copying nested executables.
-- Evidence: Runs `33091565296`, `32703315265`, `32702715228`, `32719724510`, `33229690268`, and `33230123378`.
-- Removal: the rule stops matching when the source commit advances; delete it after a real build confirms the new source is fixed.
+- Exact evidence: ImmortalWrt `openwrt-25.12` commit `6081813a…` in Runs `33091565296`, `32703315265`, `32702715228`, `32719724510`, `33229690268`, and `33230123378`, plus commit `1d34e7b…` in Run `33293241107`. This evidence does not claim that other Sources or Branches were observed failing.
+- Removal: narrow or delete `environments` only when the global preventive policy is explicitly withdrawn. Exact evidence remains maintained as exact evidence and must not be fabricated to mirror the broader policy scope.
 
 ### BLD-0005
 
