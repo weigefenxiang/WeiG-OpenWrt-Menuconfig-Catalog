@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { gzipSync } from 'node:zlib';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -124,6 +124,26 @@ if (curatedCandidates.some((candidate) => !candidate || typeof candidate !== 'ob
 const packageSymbols = new Set(allMenuOptions
   .filter((option) => option.symbol.startsWith('PACKAGE_'))
   .map((option) => option.symbol.slice('PACKAGE_'.length)));
+const curatedByPackage = new Map(curatedCandidates.flatMap((candidate) =>
+  (candidate.packages || []).map((packageName) => [packageName, candidate])));
+const luciApplicationOptions = allMenuOptions.filter((option) =>
+  /^PACKAGE_luci-app-[A-Za-z0-9_.+@-]+$/.test(String(option.symbol || '')))
+  .sort((a, b) => a.symbol.localeCompare(b.symbol));
+const applicationRows = luciApplicationOptions.map((option) => {
+  const packageName = option.symbol.slice('PACKAGE_'.length);
+  const curated = curatedByPackage.get(packageName);
+  const path = (option.path || []).map((part) => String(part || '').trim()).filter(Boolean);
+  const luciIndex = path.findIndex((part) => /^luci$/i.test(part));
+  const derivedGroup = path[luciIndex + 1] || path.at(-1) || 'Applications';
+  return [option.symbol, packageName, curated?.group || derivedGroup, curated?.hot === true ? 1 : 0];
+});
+const branchApplications = {
+  schema: 1,
+  kind: 'branch-applications',
+  encoding: 'positional-rows-v1',
+  fields: ['symbol', 'package', 'group', 'hot'],
+  rows: applicationRows,
+};
 const resolveCandidate = (candidate) => resolvePackageOption(candidate, packageSymbols);
 const candidateRows = curatedCandidates.map((candidate) => {
   const packageName = resolveCandidate(candidate);
@@ -134,9 +154,7 @@ const candidateRows = curatedCandidates.map((candidate) => {
     available: Boolean(packageName),
   };
 });
-const luciApplications = packages.filter((item) => item.category === 'LuCI' &&
-  (item.submenu === 'Applications' || item.name.startsWith('luci-app-')))
-  .map((item) => item.name).sort();
+const luciApplications = applicationRows.map((row) => row[1]);
 const candidateReport = {
   schema: 1, source, generatedAt: new Date().toISOString(),
   curated: candidateRows,
@@ -249,6 +267,7 @@ const payload = {
     profiles: selectableTargets.reduce((n, item) => n + item.profiles.length, 0),
     menuOptions: compactMenu.options.length, hiddenMenuOptions: relationOptions.length - compactMenu.options.length,
     packages: packages.length,
+    applications: branchApplications.rows.length,
     translatedZhCN: translationReport.translatedZhCN,
     missingZhCN: missingTranslations.length,
   },
@@ -263,6 +282,7 @@ const payload = {
     translatedZhCN: translationReport.translatedZhCN,
     missingZhCN: missingTranslations.length,
   },
+  applications: branchApplications,
 };
 
 function summarizeText(value, max = 240) {
@@ -298,6 +318,8 @@ const corePayload = {
     'compact-relations-v3',
     'split-catalog-assets-v1',
     'lazy-menu-v1',
+    'branch-applications-v1',
+    'package-sizes-v1',
   ],
   engine: payload.engine,
   generatedAt,
@@ -307,6 +329,7 @@ const corePayload = {
   targetSelectors,
   targetTree,
   targets,
+  applications: branchApplications,
   translation: payload.translation,
 };
 const graphPayload = { schema: 6, kind: 'graph', generatedAt, source, relations: compact };
@@ -391,6 +414,51 @@ const languagePayloads = Object.fromEntries(translationReport.languages.filter((
   }).filter(Boolean),
 }]));
 
+function packageSizeDocument() {
+  let sample = null;
+  const samplePath = args['size-sample'] ? resolve(args['size-sample']) : '';
+  if (samplePath && existsSync(samplePath)) {
+    try { sample = JSON.parse(readFileSync(samplePath, 'utf8')); } catch { sample = null; }
+  }
+  const exact = sample?.source === source.id && sample?.branch === source.branch && sample?.available === true;
+  const observed = new Map((exact && Array.isArray(sample.packages) ? sample.packages : [])
+    .filter((row) => row && typeof row.name === 'string')
+    .map((row) => [row.name, row]));
+  const names = [...packageSymbols].sort((a, b) => a.localeCompare(b));
+  const rows = names.flatMap((name) => {
+    const row = observed.get(name);
+    if (!row || !Number.isSafeInteger(Number(row.size)) || Number(row.size) < 0) return [];
+    const installed = Number(row.installedSize);
+    return [[name, Number(row.size), Number.isSafeInteger(installed) && installed > 0 ? installed : null]];
+  });
+  return {
+    schema: 1,
+    kind: 'package-sizes',
+    encoding: 'positional-rows-v1',
+    fields: ['package', 'archiveBytes', 'installedBytes'],
+    metric: {
+      archiveBytes: 'compressed package archive bytes',
+      installedBytes: 'installed bytes when published by the package index',
+    },
+    generatedAt,
+    source,
+    observation: exact ? {
+      generatedAt: sample.generatedAt || '',
+      architecture: sample.architecture || '',
+      format: sample.format || '',
+      baseUrl: sample.baseUrl || '',
+      match: 'exact-source-branch',
+    } : {
+      architecture: '',
+      match: 'unavailable',
+      reason: sample?.reason || 'no-exact-official-index-observation',
+    },
+    coverage: { known: rows.length, total: names.length, unknown: names.length - rows.length },
+    rows,
+  };
+}
+const packageSizesPayload = packageSizeDocument();
+
 const assets = {};
 for (const contract of [
   writeGzipAsset('core', `${slug}.core.json.gz`, corePayload),
@@ -399,6 +467,15 @@ for (const contract of [
   writeGzipAsset('hidden', `${slug}.hidden.json.gz`, hiddenPayload),
   writeGzipAsset('help', `${slug}.help.json.gz`, helpPayload),
 ]) assets[contract.logical] = contract;
+const packageSizesContract = writeGzipAsset('packageSizes', `${slug}.package-sizes.json.gz`, packageSizesPayload);
+Object.assign(packageSizesContract, {
+  schema: packageSizesPayload.schema,
+  kind: packageSizesPayload.kind,
+  items: packageSizesPayload.rows.length,
+  totalPackages: packageSizesPayload.coverage.total,
+  architecture: packageSizesPayload.observation.architecture || '',
+});
+assets.packageSizes = packageSizesContract;
 for (const [lang, value] of Object.entries(languagePayloads)) {
   const logical = `menu:${lang}`;
   assets[logical] = writeGzipAsset(logical, `${slug}.menu.${safeSlug(lang)}.json.gz`, value);
