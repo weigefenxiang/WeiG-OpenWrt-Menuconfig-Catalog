@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "ImmortalWrt",
+    "label": "ImmortalWrt",
+    "repo": "immortalwrt/immortalwrt",
+    "branch": "openwrt-24.10",
+    "commit": "99ca94091f673607bdcb92ba1f93bda1e811fc93",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-30T02:50:19.476Z",
+  "summary": {
+    "targets": 141,
+    "selectableTargets": 95,
+    "unavailableTargets": 6,
+    "abstractTargets": 40
+  },
+  "unavailable": [
+    {
+      "target": "bmips",
+      "board": "bmips",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "imx",
+      "board": "imx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Target-Arch",
+        "Target-Arch-Packages"
+      ]
+    },
+    {
+      "target": "omap",
+      "board": "omap",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "pistachio",
+      "board": "pistachio",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "realtek",
+      "board": "realtek",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "sunxi",
+      "board": "sunxi",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    }
+  ],
+  "kconfigProbe": {
+    "schema": 1,
+    "mode": "target-chain-and-representative-profile",
+    "generatedAt": "2026-08-30T02:50:24.815Z",
+    "targets": 95,
+    "passed": 95,
+    "passedScope": "target chain plus one representative profile; all siblings remain hidden on failure",
+    "quarantined": []
+  }
+}

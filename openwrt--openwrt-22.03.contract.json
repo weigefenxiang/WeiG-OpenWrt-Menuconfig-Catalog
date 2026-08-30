@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "OpenWrt",
+    "label": "OpenWrt",
+    "repo": "openwrt/openwrt",
+    "branch": "openwrt-22.03",
+    "commit": "4e1d1b7df0ce6fa96d7462dc883917682f428046",
+    "legacy": false
+  },
+  "generatedAt": "2026-08-30T02:51:25.769Z",
+  "summary": {
+    "targets": 110,
+    "selectableTargets": 76,
+    "unavailableTargets": 5,
+    "abstractTargets": 29
+  },
+  "unavailable": [
+    {
+      "target": "bcm63xx",
+      "board": "bcm63xx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "bmips",
+      "board": "bmips",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "imx",
+      "board": "imx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "realtek",
+      "board": "realtek",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "sunxi",
+      "board": "sunxi",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    }
+  ],
+  "kconfigProbe": {
+    "schema": 1,
+    "mode": "target-chain-and-representative-profile",
+    "generatedAt": "2026-08-30T02:51:29.632Z",
+    "targets": 76,
+    "passed": 76,
+    "passedScope": "target chain plus one representative profile; all siblings remain hidden on failure",
+    "quarantined": []
+  }
+}
