@@ -4,7 +4,7 @@
     "id": "lede",
     "branch": "master"
   },
-  "generatedAt": "2026-08-30T02:50:00.696Z",
+  "generatedAt": "2026-09-01T01:30:16.358Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,17 +18,12 @@
     "fr",
     "vi"
   ],
-  "options": 9976,
-  "translatedZhCN": 196,
+  "options": 10120,
+  "translatedZhCN": 197,
   "missingZhCN": [
     {
       "symbol": "TARGET_silicon",
       "promptEn": "Apple Silicon family",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta",
-      "promptEn": "MIPS Malta CoreLV board (qemu)",
       "path": []
     },
     {
@@ -42,53 +37,18 @@
       "path": []
     },
     {
-      "symbol": "TARGET_malta_le",
-      "promptEn": "Little Endian",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta_be",
-      "promptEn": "Big Endian",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta_le64",
-      "promptEn": "Little Endian (64-bits)",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta_be64",
-      "promptEn": "Big Endian (64-bits)",
-      "path": []
-    },
-    {
       "symbol": "TARGET_silicon_armv8",
       "promptEn": "Apple Silicon family",
       "path": []
     },
     {
+      "symbol": "TARGET_uml_generic",
+      "promptEn": "Generic",
+      "path": []
+    },
+    {
       "symbol": "TARGET_MULTI_PROFILE",
       "promptEn": "Multiple devices",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta_le_Default",
-      "promptEn": "Default",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta_be_Default",
-      "promptEn": "Default",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta_le64_Default",
-      "promptEn": "Default",
-      "path": []
-    },
-    {
-      "symbol": "TARGET_malta_be64_Default",
-      "promptEn": "Default",
       "path": []
     },
     {
@@ -102,7 +62,7 @@
       "path": []
     },
     {
-      "symbol": "TARGET_uml_Default",
+      "symbol": "TARGET_uml_generic_Default",
       "promptEn": "Default",
       "path": []
     },
@@ -2783,91 +2743,629 @@
       ]
     },
     {
-      "symbol": "DROPBEAR_CURVE25519",
-      "promptEn": "Curve25519 support",
+      "symbol": "DROPBEAR_STATIC_BUILD",
+      "promptEn": "Build static binaries",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
       ]
     },
     {
-      "symbol": "DROPBEAR_ECC",
-      "promptEn": "Elliptic curve cryptography (ECC)",
+      "symbol": "DROPBEAR_LEGACY_COMPAT",
+      "promptEn": "Enable legacy options and features",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
       ]
     },
     {
-      "symbol": "DROPBEAR_ECC_FULL",
-      "promptEn": "Elliptic curve cryptography (ECC), full support",
+      "symbol": "DROPBEAR_SMALL_CODE",
+      "promptEn": "Small code",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
       ]
     },
     {
-      "symbol": "DROPBEAR_ED25519",
-      "promptEn": "Ed25519 support",
+      "symbol": "DROPBEAR_DEBUG_TRACE",
+      "promptEn": "Verbose debug log level",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
       ]
     },
     {
-      "symbol": "DROPBEAR_CHACHA20POLY1305",
-      "promptEn": "Chacha20-Poly1305 support",
+      "symbol": "DROPBEAR_LOG_COMMANDS",
+      "promptEn": "Log commands",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
       ]
     },
     {
-      "symbol": "DROPBEAR_ZLIB",
-      "promptEn": "Enable compression",
+      "symbol": "DROPBEAR_INETD_MODE",
+      "promptEn": "inetd mode",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DO_HOST_LOOKUP",
+      "promptEn": "Reverse DNS",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SVR_PUBKEY_OPTIONS",
+      "promptEn": "Options in authorized_keys file",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_LASTLOG",
+      "promptEn": "Write lastlog",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_LASTLOG_PATH",
+      "promptEn": "lastlog path:",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_LOGINFUNC",
+      "promptEn": "Use login() and logout() functions",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_WTMP",
+      "promptEn": "Write wtmp",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_WTMP_PATH",
+      "promptEn": "wtmp path:",
+      "path": [
+        "Base system"
       ]
     },
     {
       "symbol": "DROPBEAR_UTMP",
-      "promptEn": "Utmp support",
+      "promptEn": "Write utmp",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_UTMP_PATH",
+      "promptEn": "utmp path:",
+      "path": [
+        "Base system"
       ]
     },
     {
       "symbol": "DROPBEAR_PUTUTLINE",
-      "promptEn": "Pututline support",
+      "promptEn": "Use pututline() to write to utmp",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
       ]
     },
     {
-      "symbol": "DROPBEAR_DBCLIENT",
-      "promptEn": "Build dropbear with dbclient",
+      "symbol": "DROPBEAR_REEXEC",
+      "promptEn": "ASLR for each connection",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ZLIB",
+      "promptEn": "Compression",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DELAY_HOSTKEY",
+      "promptEn": "Auto-generate host keys (-R)",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SVR_AGENTFWD",
+      "promptEn": "Authentication agent forwarding [SECURITY]",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SVR_REMOTETCPFWD",
+      "promptEn": "Remote port forwarding: server -> client",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SVR_LOCALTCPFWD",
+      "promptEn": "Local port forwarding: client -> server",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SVR_LOCALSTREAMFWD",
+      "promptEn": "Local port forwarding: client TCP socket -> server unix socket",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_X11FWD",
+      "promptEn": "X11 forwarding",
+      "path": [
+        "Base system"
       ]
     },
     {
       "symbol": "DROPBEAR_SCP",
-      "promptEn": "Build dropbear with scp",
+      "promptEn": "SCP file transfer program",
       "path": [
-        "Base system",
-        "Configuration"
+        "Base system"
       ]
     },
     {
-      "symbol": "DROPBEAR_ASKPASS",
-      "promptEn": "Enable askpass helper support",
+      "symbol": "DROPBEAR_SFTPSERVER",
+      "promptEn": "Support external SFTP server",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DBCLIENT",
+      "promptEn": "dbclient (Dropbear SSH client)",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_USER_ALGO_LIST",
+      "promptEn": "Let user choose ciphers and MACs",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_USE_SSH_CONFIG",
+      "promptEn": "Use ssh_config",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_IMMEDIATE_AUTH",
+      "promptEn": "Send auth request immediately [COMPATIBILITY]",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_USE_PASSWORD_ENV",
+      "promptEn": "Use env password",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_ASKPASS_HELPER",
+      "promptEn": "Support askpass helper",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_AGENTFWD",
+      "promptEn": "Authentication agent forwarding [SECURITY]",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_LOCALTCPFWD",
+      "promptEn": "Local port forwarding (-L)",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_REMOTETCPFWD",
+      "promptEn": "Remote port forwarding (-R)",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_PROXYCMD",
+      "promptEn": "Proxy command (-J)",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_NETCAT",
+      "promptEn": "Netcat-alike forwarding (-B)",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CLI_MULTIHOP",
+      "promptEn": "Multi-hop support",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_KEX_REKEY_TIMEOUT",
+      "promptEn": "Rekey limit (seconds)",
       "path": [
         "Base system",
-        "Configuration"
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_KEX_REKEY_DATA",
+      "promptEn": "Rekey limit (bytes)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_AUTH_TIMEOUT",
+      "promptEn": "Unauthenticated timeout (seconds)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_MAX_AUTH_TRIES",
+      "promptEn": "Max. failed authentications",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_MAX_PUBKEY_QUERIES",
+      "promptEn": "Max. public key queries per session",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_UNAUTH_CLOSE_DELAY",
+      "promptEn": "Delay closing unauth. connections (seconds)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_MAX_UNAUTH_PER_IP",
+      "promptEn": "Max. unauthenticated connections per IP",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_MAX_UNAUTH_CLIENTS",
+      "promptEn": "Max. unauthenticated connections (total)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DEFAULT_RECV_WINDOW",
+      "promptEn": "Default TCP receive window size (bytes)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DEFAULT_KEEPALIVE",
+      "promptEn": "Default KeepAlive interval (seconds)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DEFAULT_KEEPALIVE_LIMIT",
+      "promptEn": "Default KeepAlive limit",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DEFAULT_IDLE_TIMEOUT",
+      "promptEn": "Default idle timeout (seconds)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DEFAULT_MAX_DURATION",
+      "promptEn": "Default max. session duration (seconds)",
+      "path": [
+        "Base system",
+        "Resource limits"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_3DES",
+      "promptEn": "3DES [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_AES128",
+      "promptEn": "AES128",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_AES256",
+      "promptEn": "AES256",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CHACHA20POLY1305",
+      "promptEn": "ChaCha20-Poly1305",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ENABLE_CTR_MODE",
+      "promptEn": "CTR, Counter mode",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ENABLE_CBC_MODE",
+      "promptEn": "CBC, Cipher Block Chaining mode [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ENABLE_GCM_MODE",
+      "promptEn": "GCM, Galois-Counter mode [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SHA1_96_HMAC",
+      "promptEn": "SHA1-96-HMAC [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SHA1_HMAC",
+      "promptEn": "SHA1-HMAC [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SHA2_256_HMAC",
+      "promptEn": "SHA256-HMAC",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SHA2_512_HMAC",
+      "promptEn": "SHA512-HMAC",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DSS",
+      "promptEn": "DSS [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_RSA_SHA1",
+      "promptEn": "RSA-SHA1 [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_RSA",
+      "promptEn": "RSA-SHA256",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DEFAULT_RSA_SIZE",
+      "promptEn": "Default RSA key size",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ECDSA",
+      "promptEn": "ECDSA",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ED25519",
+      "promptEn": "Ed25519",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DH_GROUP1",
+      "promptEn": "DH group1: SHA1, 1024 bit [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DH_GROUP1_CLIENTONLY",
+      "promptEn": "DH group1 only for Dropbear client",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DH_GROUP14_SHA1",
+      "promptEn": "DH group14: SHA1, 2048 bit [WEAK]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DH_GROUP14_SHA256",
+      "promptEn": "DH group14: SHA2-256, 2048 bit",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_DH_GROUP16",
+      "promptEn": "DH group16: SHA2-512, 4096 bit",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ECDH",
+      "promptEn": "ECDH",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_CURVE25519",
+      "promptEn": "Curve25519",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_MLKEM768",
+      "promptEn": "mlkem768 [POST-QUANTUM]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SNTRUP761",
+      "promptEn": "sntrup761 [POST-QUANTUM]",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ECC_256",
+      "promptEn": "256-bit curve",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ECC_384",
+      "promptEn": "384-bit curve",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_ECC_521",
+      "promptEn": "521-bit curve",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SK_KEYS",
+      "promptEn": "FIDO/U2F security keys",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SK_ECDSA",
+      "promptEn": "FIDO/U2F with ECDSA",
+      "path": [
+        "Base system",
+        "Encryption options"
+      ]
+    },
+    {
+      "symbol": "DROPBEAR_SK_ED25519",
+      "promptEn": "FIDO/U2F with Ed25519",
+      "path": [
+        "Base system",
+        "Encryption options"
       ]
     },
     {
@@ -3542,6 +4040,27 @@
       ]
     },
     {
+      "symbol": "PACKAGE_wifi-scripts",
+      "promptEn": "Wi-Fi configuration scripts",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "WIFI_SCRIPTS_UCODE",
+      "promptEn": "Use new ucode based scripts",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
+      "symbol": "WIFI_SCRIPTS_WPS_BUTTON_DISABLED",
+      "promptEn": "Disable WPS button handling",
+      "path": [
+        "Base system"
+      ]
+    },
+    {
       "symbol": "PACKAGE_wireless-tools",
       "promptEn": "Tools for manipulating Linux Wireless Extensions",
       "path": [
@@ -3770,6 +4289,20 @@
       ]
     },
     {
+      "symbol": "PACKAGE_audit-utils",
+      "promptEn": "Audit (utilities)",
+      "path": [
+        "Administration"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_auditd",
+      "promptEn": "Audit (daemon)",
+      "path": [
+        "Administration"
+      ]
+    },
+    {
       "symbol": "PACKAGE_backuppc",
       "promptEn": "high-performance, enterprise-grade system for backing up PCs",
       "path": [
@@ -3970,6 +4503,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_gnu-efi-programs",
+      "promptEn": "Various EFI programs",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_grub2",
       "promptEn": "GRand Unified Bootloader (pc)",
       "path": [
@@ -4096,104 +4636,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_tfa-ls1012a-frdm",
-      "promptEn": "NXP LS1012AFRDM Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1012a-frwy-sdboot",
-      "promptEn": "NXP LS1012AFRWY Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1012a-rdb",
-      "promptEn": "NXP LS1012ARDB Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1043a-rdb",
-      "promptEn": "NXP LS1043ARDB Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1043a-rdb-sdboot",
-      "promptEn": "NXP LS1043ARDB SD Boot Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1046a-frwy",
-      "promptEn": "NXP LS1046AFRWY Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1046a-frwy-sdboot",
-      "promptEn": "NXP LS1046AFRWY SD Boot Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1046a-rdb",
-      "promptEn": "NXP LS1046ARDB Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1046a-rdb-sdboot",
-      "promptEn": "NXP LS1046ARDB SD Boot Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1088a-rdb",
-      "promptEn": "NXP LS1088ARDB Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls1088a-rdb-sdboot",
-      "promptEn": "NXP LS1088ARDB SD Boot Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-ls2088a-rdb",
-      "promptEn": "NXP LS2088ARDB Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-lx2160a-rdb",
-      "promptEn": "NXP LX2160ARDB Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_tfa-lx2160a-rdb-sdboot",
-      "promptEn": "NXP LX2160ARDB SD Boot Trusted Firmware",
-      "path": [
-        "Boot Loaders"
-      ]
-    },
-    {
       "symbol": "PACKAGE_trusted-firmware-a-espressobin-512mb",
       "promptEn": "Trusted-Firmware-A for Marvell ESPRESSObin (512MB)",
       "path": [
@@ -4231,6 +4673,125 @@
     {
       "symbol": "PACKAGE_trusted-firmware-a-espressobin-v7-2gb",
       "promptEn": "Trusted-Firmware-A for Marvell ESPRESSObin V7 (2GB)",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ev23x71a",
+      "promptEn": "Trusted-Firmware-A for Microchip EV23X71A",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1012a-frdm",
+      "promptEn": "Trusted-Firmware-A for NXP LS1012AFRDM",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1012a-frwy-sdboot",
+      "promptEn": "Trusted-Firmware-A for NXP LS1012AFRWY",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1012a-rdb",
+      "promptEn": "Trusted-Firmware-A for NXP LS1012ARDB",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1028a-rdb",
+      "promptEn": "Trusted-Firmware-A for ",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1028a-rdb-sdboot",
+      "promptEn": "Trusted-Firmware-A for ",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1043a-rdb",
+      "promptEn": "Trusted-Firmware-A for NXP LS1043ARDB",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1043a-rdb-sdboot",
+      "promptEn": "Trusted-Firmware-A for NXP LS1043ARDB SD Boot",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1046a-frwy",
+      "promptEn": "Trusted-Firmware-A for NXP LS1046AFRWY",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1046a-frwy-sdboot",
+      "promptEn": "Trusted-Firmware-A for NXP LS1046AFRWY SD Boot",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1046a-rdb",
+      "promptEn": "Trusted-Firmware-A for NXP LS1046ARDB",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1046a-rdb-sdboot",
+      "promptEn": "Trusted-Firmware-A for NXP LS1046ARDB SD Boot",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1088a-rdb",
+      "promptEn": "Trusted-Firmware-A for NXP LS1088ARDB",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls1088a-rdb-sdboot",
+      "promptEn": "Trusted-Firmware-A for NXP LS1088ARDB SD Boot",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-ls2088a-rdb",
+      "promptEn": "Trusted-Firmware-A for NXP LS2088ARDB",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-lx2160a-rdb",
+      "promptEn": "Trusted-Firmware-A for NXP LX2160ARDB",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-lx2160a-rdb-sdboot",
+      "promptEn": "Trusted-Firmware-A for NXP LX2160ARDB SD Boot",
       "path": [
         "Boot Loaders"
       ]
@@ -4698,6 +5259,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_trusted-firmware-a-tactical-1000",
+      "promptEn": "Trusted-Firmware-A for Novarq Tactical 1000",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_trusted-firmware-a-udpu",
       "promptEn": "Trusted-Firmware-A for Methode uDPU",
       "path": [
@@ -4908,6 +5476,20 @@
       ]
     },
     {
+      "symbol": "PACKAGE_u-boot-dir-885l",
+      "promptEn": "U-Boot for D-Link DIR-885L",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_u-boot-dir-890l",
+      "promptEn": "U-Boot for D-Link DIR-890L",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_u-boot-dockstar",
       "promptEn": "U-Boot for Seagate DockStar",
       "path": [
@@ -5064,6 +5646,20 @@
     {
       "symbol": "PACKAGE_u-boot-fsl_ls1021a-twr-sdboot",
       "promptEn": "U-Boot for NXP LS1021ATWR SD Card Boot",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_u-boot-fsl_ls1028a-rdb",
+      "promptEn": "U-Boot for NXP LS1028ARDB",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_u-boot-fsl_ls1028a-rdb-sdboot",
+      "promptEn": "U-Boot for NXP LS1028ARDB SD Card Boot",
       "path": [
         "Boot Loaders"
       ]
@@ -6162,7 +6758,7 @@
     },
     {
       "symbol": "PACKAGE_tang",
-      "promptEn": "tang v11 - daemon for binding data to the presence of a third party",
+      "promptEn": "tang v15 - daemon for binding data to the presence of a third party",
       "path": [
         "Extra packages"
       ]
@@ -7050,7 +7646,7 @@
     },
     {
       "symbol": "PACKAGE_airoha-en7581-npu-firmware",
-      "promptEn": "Airoha EN7581 NPU firmware",
+      "promptEn": "Airoha EN7581+MT7992 NPU firmware",
       "path": [
         "Firmware"
       ]
@@ -7078,7 +7674,7 @@
     },
     {
       "symbol": "PACKAGE_ar3k-firmware",
-      "promptEn": "ath3k firmware",
+      "promptEn": "Firmware for Qualcomm/Atheros AR3011/AR3012 Bluetooth ICs",
       "path": [
         "Firmware"
       ]
@@ -7393,14 +7989,14 @@
     },
     {
       "symbol": "PACKAGE_ath6k-firmware",
-      "promptEn": "AR600X firmware",
+      "promptEn": "Firmware for Qualcomm/Atheros AR600x SDIO WiFi ICs",
       "path": [
         "Firmware"
       ]
     },
     {
       "symbol": "PACKAGE_ath9k-htc-firmware",
-      "promptEn": "AR9271/AR7010 firmware",
+      "promptEn": "Firmware for Qualcomm/Atheros AR9271/AR7010 USB WiFi adapters",
       "path": [
         "Firmware"
       ]
@@ -7526,7 +8122,7 @@
     },
     {
       "symbol": "PACKAGE_carl9170-firmware",
-      "promptEn": "AR9170 firmware",
+      "promptEn": "Firmware for Qualcomm/Atheros AR9170 USB WiFi adapters",
       "path": [
         "Firmware"
       ]
@@ -7701,7 +8297,7 @@
     },
     {
       "symbol": "PACKAGE_e100-firmware",
-      "promptEn": "Intel e100",
+      "promptEn": "Firmware for Intel e100 PCI 10/100 Ethernet chipsets",
       "path": [
         "Firmware"
       ]
@@ -7722,7 +8318,7 @@
     },
     {
       "symbol": "PACKAGE_eip197-mini-firmware",
-      "promptEn": "Inside Secure EIP197 mini firmware",
+      "promptEn": "Inside Secure EIP197 mini cryptographic accelerator IP block firmware",
       "path": [
         "Firmware"
       ]
@@ -8036,13 +8632,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_layerscape-rcw",
-      "promptEn": "NXP Layerscape RCW binaries",
-      "path": [
-        "Firmware"
-      ]
-    },
-    {
       "symbol": "PACKAGE_libertas-sdio-firmware",
       "promptEn": "Marvell 8385/8686/8688 SDIO firmware",
       "path": [
@@ -8058,7 +8647,7 @@
     },
     {
       "symbol": "PACKAGE_libertas-usb-firmware",
-      "promptEn": "Marvell 8388/8682 USB firmware",
+      "promptEn": "Firmware for Marvell 88W8388/88W8682 USB WiFi ICs",
       "path": [
         "Firmware"
       ]
@@ -8170,21 +8759,21 @@
     },
     {
       "symbol": "PACKAGE_mwifiex-pcie-firmware",
-      "promptEn": "Marvell 8897 firmware",
+      "promptEn": "Firmware for Marvell/NXP 88W8897 PCIe Bluetooth/NFC/WiFi ICs",
       "path": [
         "Firmware"
       ]
     },
     {
       "symbol": "PACKAGE_mwifiex-sdio-firmware",
-      "promptEn": "Marvell 8887/8897/8997 firmware",
+      "promptEn": "Firmware for Marvell/NXP 88W8887/88W8997 SDIO Bluetooth/WiFi ICs",
       "path": [
         "Firmware"
       ]
     },
     {
       "symbol": "PACKAGE_mwl8k-firmware",
-      "promptEn": "Marvell 8366/8687 firmware",
+      "promptEn": "Firmware for Marvell 88W8366/88W8687 TopDog PCIe WiFi ICs",
       "path": [
         "Firmware"
       ]
@@ -8268,7 +8857,7 @@
     },
     {
       "symbol": "PACKAGE_qed-firmware",
-      "promptEn": "=QLogic FastLinQ 41xxx firmware",
+      "promptEn": "QLogic FastLinQ 41xxx firmware",
       "path": [
         "Firmware"
       ]
@@ -8463,6 +9052,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_rtl8814a-firmware",
+      "promptEn": "RealTek RTL8814AU firmware",
+      "path": [
+        "Firmware"
+      ]
+    },
+    {
       "symbol": "PACKAGE_rtl8821ae-firmware",
       "promptEn": "RealTek RTL8821AE firmware",
       "path": [
@@ -8548,7 +9144,7 @@
     },
     {
       "symbol": "PACKAGE_wil6210-firmware",
-      "promptEn": "wil6210 firmware",
+      "promptEn": "Firmware for Qualcomm Atheros Wilocity 60GHz band 802.11ad WiGig ICs",
       "path": [
         "Firmware"
       ]
@@ -8809,6 +9405,14 @@
     {
       "symbol": "PACKAGE_kmod-ata-core",
       "promptEn": "Serial and Parallel ATA support",
+      "path": [
+        "Kernel modules",
+        "Block Devices"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-ata-dwc",
+      "promptEn": "DesignWare Cores SATA support",
       "path": [
         "Kernel modules",
         "Block Devices"
@@ -9727,6 +10331,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-hw-crypto-4xx",
+      "promptEn": "Driver AMCC PPC4xx crypto accelerator",
+      "path": [
+        "Kernel modules",
+        "Cryptographic API modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-ltq-deu-ar9",
       "promptEn": "deu driver for ar9",
       "path": [
@@ -10231,6 +10843,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-hasivo-mcu-sensor",
+      "promptEn": "Hasivo management MCU sensor driver",
+      "path": [
+        "Kernel modules",
+        "Hardware Monitoring Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-hwmon-ad7418",
       "promptEn": "AD741x monitoring support",
       "path": [
@@ -10649,6 +11269,14 @@
     {
       "symbol": "PACKAGE_kmod-at91-i2c",
       "promptEn": "I2C (TWI) master driver for Atmel AT91",
+      "path": [
+        "Kernel modules",
+        "I2C support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-bcm27xx-i2c",
+      "promptEn": "I2C support for bcm27xx boards",
       "path": [
         "Kernel modules",
         "I2C support"
@@ -11231,6 +11859,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-bcm27xx-hid",
+      "promptEn": "USB HID support for bcm27xx boards",
+      "path": [
+        "Kernel modules",
+        "Input modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-hid",
       "promptEn": "HID Devices",
       "path": [
@@ -11551,6 +12187,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-ledtrig-network",
+      "promptEn": "LED Network Trigger",
+      "path": [
+        "Kernel modules",
+        "LED modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-ledtrig-oneshot",
       "promptEn": "LED One-Shot Trigger",
       "path": [
@@ -11692,6 +12336,14 @@
       "path": [
         "Kernel modules",
         "Libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-mfd-hasivo-stc8",
+      "promptEn": "Hasivo STC8 microcontroller support",
+      "path": [
+        "Kernel modules",
+        "MultiFunction Device (MFD) Support"
       ]
     },
     {
@@ -11991,14 +12643,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-ipt-compat-xtables",
-      "promptEn": "API compatibilty layer netfilter module",
-      "path": [
-        "Kernel modules",
-        "Netfilter Extensions"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-ipt-condition",
       "promptEn": "Condition netfilter module",
       "path": [
@@ -12249,14 +12893,6 @@
     {
       "symbol": "PACKAGE_kmod-ipt-nat6",
       "promptEn": "IPv6 NAT targets",
-      "path": [
-        "Kernel modules",
-        "Netfilter Extensions"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-ipt-nathelper-rtsp",
-      "promptEn": "RTSP Conntrack and NAT netfilter module",
       "path": [
         "Kernel modules",
         "Netfilter Extensions"
@@ -12521,6 +13157,14 @@
     {
       "symbol": "PACKAGE_kmod-nf-nathelper-extra",
       "promptEn": "Extra Conntrack and NAT helpers",
+      "path": [
+        "Kernel modules",
+        "Netfilter Extensions"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-nf-nathelper-rtsp",
+      "promptEn": "Conntrack and NAT for rtsp",
       "path": [
         "Kernel modules",
         "Netfilter Extensions"
@@ -12903,6 +13547,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-dsa-gswip",
+      "promptEn": "Lantiq xRx200/xRx300/xRx330 switch support",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-dsa-mv88e6xxx",
       "promptEn": "Marvell MV88E6XXX DSA Switch",
       "path": [
@@ -12967,8 +13619,24 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-dwmac-renesas-gbeth",
+      "promptEn": "Renesas GBETH Ethernet",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-dwmac-rockchip",
       "promptEn": "Rockchip RK3328/RK3399/RK3568 Ethernet",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-dwmac-sun55i",
+      "promptEn": "Allwinner A523 (sun55i) Ethernet",
       "path": [
         "Kernel modules",
         "Network Devices"
@@ -13001,6 +13669,14 @@
     {
       "symbol": "PACKAGE_kmod-e1000e",
       "promptEn": "Intel(R) PRO/1000 PCIe cards kernel support",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-econet-eth",
+      "promptEn": "EcoNet EN751221 Ethernet Driver",
       "path": [
         "Kernel modules",
         "Network Devices"
@@ -13377,6 +14053,22 @@
     {
       "symbol": "PACKAGE_kmod-ltq-vdsl-vr9-mei",
       "promptEn": "mei driver for vdsl",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-ltq-vectoring",
+      "promptEn": "driver for sending vectoring error samples",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-ltq-vectoring-test",
+      "promptEn": "driver for testing the vectoring driver",
       "path": [
         "Kernel modules",
         "Network Devices"
@@ -14474,6 +15166,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-r8168-rss",
+      "promptEn": "Realtek RTL8168 PCI Gigabit Ethernet driver (RSS)",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-r8169",
       "promptEn": "RealTek RTL-8169 PCI Gigabit Ethernet Adapter kernel support",
       "path": [
@@ -14484,6 +15184,14 @@
     {
       "symbol": "PACKAGE_kmod-renesas-net-avb",
       "promptEn": "Renesas network drivers",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-renesas-rzn-pcs",
+      "promptEn": "Renesas RZ/N and RZ/T2H MII controller",
       "path": [
         "Kernel modules",
         "Network Devices"
@@ -16194,6 +16902,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-rp1-pio-uart",
+      "promptEn": "RP1 PIO-based UART support",
+      "path": [
+        "Kernel modules",
+        "Other modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-rtc-ac100",
       "promptEn": "X-Powers AC100 RTC support",
       "path": [
@@ -16300,6 +17016,14 @@
     {
       "symbol": "PACKAGE_kmod-st-thermal",
       "promptEn": "Thermal sensors on STMicroelectronics STi series of SoCs",
+      "path": [
+        "Kernel modules",
+        "Other modules"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-stm32-omm",
+      "promptEn": "STM32 Octo Memory Manager",
       "path": [
         "Kernel modules",
         "Other modules"
@@ -16690,6 +17414,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-bcm27xx-spi",
+      "promptEn": "SPI support for bcm27xx boards",
+      "path": [
+        "Kernel modules",
+        "SPI Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-mmc-spi",
       "promptEn": "MMC/SD over SPI Support",
       "path": [
@@ -16759,6 +17491,30 @@
       "path": [
         "Kernel modules",
         "SPI Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-spi-stm32-ospi",
+      "promptEn": "STMicroelectronics STM32 OCTO SPI controller",
+      "path": [
+        "Kernel modules",
+        "SPI Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-spi-stm32-qspi",
+      "promptEn": "STMicroelectronics STM32 QUAD SPI controller",
+      "path": [
+        "Kernel modules",
+        "SPI Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-bcm27xx-sound",
+      "promptEn": "Onboard audio support for bcm27xx boards",
+      "path": [
+        "Kernel modules",
+        "Sound Support"
       ]
     },
     {
@@ -17682,6 +18438,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-usb-fotg210",
+      "promptEn": "Support for FOTG210 USB host and device controllers",
+      "path": [
+        "Kernel modules",
+        "USB Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-usb-gadget-cdc-composite",
       "promptEn": "USB CDC Composite (Ethernet + ACM)",
       "path": [
@@ -18362,22 +19126,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-camera-bcm2835",
-      "promptEn": "BCM2835 Camera",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-codec-bcm2835",
-      "promptEn": "BCM2835 Video Codec",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-drm-amdgpu",
       "promptEn": "AMDGPU DRM support",
       "path": [
@@ -18498,14 +19246,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-drm-phytium",
-      "promptEn": "DRM Support for Phytium Graphics Card",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-drm-radeon",
       "promptEn": "Radeon DRM support",
       "path": [
@@ -18514,56 +19254,8 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-drm-rockchip",
-      "promptEn": "Rockchip DRM support",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rocket",
-      "promptEn": "Rockchip NPU support",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rp1-dpi",
-      "promptEn": "RP1 Display Parallel Interface for Video",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rp1-dsi",
-      "promptEn": "RP1 Display Serial Interface for Video",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rp1-vec",
-      "promptEn": "RP1 Display Composite Video",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-drm-ttm",
       "promptEn": "GPU memory management subsystem",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-vc4",
-      "promptEn": "Broadcom VC4 Graphics",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -18674,6 +19366,86 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-camera-bcm2835",
+      "promptEn": "BCM2835 Camera",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-codec-bcm2835",
+      "promptEn": "BCM2835 Video Codec",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-phytium",
+      "promptEn": "DRM Support for Phytium Graphics Card",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rockchip",
+      "promptEn": "Rockchip DRM support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rocket",
+      "promptEn": "Rockchip NPU support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rp1-dpi",
+      "promptEn": "RP1 Display Parallel Interface for Video",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rp1-dsi",
+      "promptEn": "RP1 Display Serial Interface for Video",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rp1-vec",
+      "promptEn": "RP1 Display Composite Video",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-v3d",
+      "promptEn": "Broadcom V3D Graphics",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-vc4",
+      "promptEn": "Broadcom VC4 Graphics",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-isp-bcm2835",
       "promptEn": "BCM2835 ISP",
       "path": [
@@ -18684,6 +19456,46 @@
     {
       "symbol": "PACKAGE_kmod-rp1-cfe",
       "promptEn": "RP1 Camera Front-End",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rp1-cfe-downstream",
+      "promptEn": "RP1 Camera Front-End using DOWNSTREAM",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rp1-hevc-dec",
+      "promptEn": "Rasperry Pi HEVC decoder",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rpi-panel-7inch-touchscreen",
+      "promptEn": "Raspberry Pi 7-inch touchscreen panel",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rpi-panel-attiny-regulator",
+      "promptEn": "Raspberry Pi 7-inch touchscreen panel ATTINY regulator",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-stm32-csi",
+      "promptEn": "STM32 Camera Serial Interface (CSI) support",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -19386,6 +20198,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-oslec",
+      "promptEn": "Open Source Line Echo Canceller",
+      "path": [
+        "Kernel modules",
+        "Voice over IP"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-w1",
       "promptEn": "Dallas's 1-wire support",
       "path": [
@@ -19583,6 +20403,14 @@
       "path": [
         "Kernel modules",
         "WWAN Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-hasivo-mcu-wdt",
+      "promptEn": "Hasivo MCU watchdog driver",
+      "path": [
+        "Kernel modules",
+        "Watchdog Timer Support"
       ]
     },
     {
@@ -22010,6 +22838,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-rt61-pci",
+      "promptEn": "Ralink Drivers for RT2x00 cards (RT2x61 PCI)",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rt73-usb",
+      "promptEn": "Ralink Drivers for RT2x00 cards (RT73 USB)",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-rtl8192ce",
       "promptEn": "Realtek RTL8192CE/RTL8188CE support",
       "path": [
@@ -22028,6 +22872,14 @@
     {
       "symbol": "PACKAGE_kmod-rtl8192de",
       "promptEn": "Realtek RTL8192DE/RTL8188DE support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rtl8192du",
+      "promptEn": "Realtek RTL8192DU support",
       "path": [
         "Kernel modules",
         "Wireless Drivers"
@@ -22162,6 +23014,38 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-rtw88-8812au",
+      "promptEn": "Realtek RTL8812AU support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rtw88-8814ae",
+      "promptEn": "Realtek RTL8814AE support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rtw88-8814au",
+      "promptEn": "Realtek RTL8814AU support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rtw88-8821au",
+      "promptEn": "Realtek RTL8821AU support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-rtw88-8821ce",
       "promptEn": "Realtek RTL8821CE support",
       "path": [
@@ -22196,6 +23080,14 @@
     {
       "symbol": "PACKAGE_kmod-rtw88-8822ce",
       "promptEn": "Realtek RTL8822CE support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rtw88-8822cs",
+      "promptEn": "Realtek RTL8822CS support",
       "path": [
         "Kernel modules",
         "Wireless Drivers"
@@ -22260,6 +23152,14 @@
     {
       "symbol": "PACKAGE_kmod-rtw89-8852ce",
       "promptEn": "Realtek RTL8852CE support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-rtw89-8922ae",
+      "promptEn": "Realtek RTL8922AE support",
       "path": [
         "Kernel modules",
         "Wireless Drivers"
@@ -22848,6 +23748,14 @@
     {
       "symbol": "PACKAGE_lua-mosquitto",
       "promptEn": "Lua-mosquitto",
+      "path": [
+        "Languages",
+        "Lua"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_lua-neturl",
+      "promptEn": "URL and Query string parser, builder, normalizer for Lua",
       "path": [
         "Languages",
         "Lua"
@@ -27421,22 +28329,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_python3-pkg-resources",
-      "promptEn": "Package resource API",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_python3-pkg-resources-src",
-      "promptEn": "Package resource API (sources)",
-      "path": [
-        "Languages",
-        "Python"
-      ]
-    },
-    {
       "symbol": "PACKAGE_python3-platformdirs",
       "promptEn": "Determine appropriate platform-specific dirs",
       "path": [
@@ -29839,6 +30731,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ucode-mod-io",
+      "promptEn": "Tiny scripting and templating language (io module)",
+      "path": [
+        "Languages",
+        "ucode"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ucode-mod-log",
       "promptEn": "Tiny scripting and templating language (log module)",
       "path": [
@@ -29913,6 +30813,14 @@
     {
       "symbol": "PACKAGE_ucode-mod-uloop",
       "promptEn": "Tiny scripting and templating language (uloop module)",
+      "path": [
+        "Languages",
+        "ucode"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ucode-mod-zlib",
+      "promptEn": "Tiny scripting and templating language (zlib module)",
       "path": [
         "Languages",
         "ucode"
@@ -30409,16 +31317,32 @@
       ]
     },
     {
-      "symbol": "PACKAGE_libxtables",
-      "promptEn": "IPv4/IPv6 firewall - shared xtables library",
+      "symbol": "PACKAGE_libiptext",
+      "promptEn": "IPv4 firewall - shared libiptext library",
       "path": [
         "Libraries",
         "Firewall"
       ]
     },
     {
-      "symbol": "PACKAGE_libxtables-nft",
-      "promptEn": "IPv4/IPv6 firewall - shared xtables nft library",
+      "symbol": "PACKAGE_libiptext-nft",
+      "promptEn": "IPv4/IPv6 firewall - shared libiptext nft library",
+      "path": [
+        "Libraries",
+        "Firewall"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libiptext6",
+      "promptEn": "IPv6 firewall - shared libiptext library",
+      "path": [
+        "Libraries",
+        "Firewall"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libxtables",
+      "promptEn": "IPv4/IPv6 firewall - shared xtables library",
       "path": [
         "Libraries",
         "Firewall"
@@ -35316,14 +36240,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_libfreetdm-ftmod-pritap",
-      "promptEn": "PRI tapping FreeTDM module",
-      "path": [
-        "Libraries",
-        "Telephony"
-      ]
-    },
-    {
       "symbol": "PACKAGE_libfreetdm-ftmod-skel",
       "promptEn": "Skeleton FreeTDM module",
       "path": [
@@ -35444,14 +36360,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_librem",
-      "promptEn": "Audio and video processing media library",
-      "path": [
-        "Libraries",
-        "Telephony"
-      ]
-    },
-    {
       "symbol": "PACKAGE_libspandsp",
       "promptEn": "spandsp library",
       "path": [
@@ -35524,6 +36432,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_abseil-cpp",
+      "promptEn": "Collection of C++ code designed to augment the C++ standard library",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_acsccid",
       "promptEn": "PCSC driver for ACS USB CCID smart card readers",
       "path": [
@@ -35540,6 +36455,13 @@
     {
       "symbol": "PACKAGE_argp-standalone",
       "promptEn": "Hierarchial argument parsing broken out from glibc",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_bcm27xx-utils-libpiolib",
+      "promptEn": "Raspberry Pi PIO userspace library (libpiolib)",
       "path": [
         "Libraries"
       ]
@@ -36057,6 +36979,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_gnulib-l10n",
+      "promptEn": "GNU Gnulib localization translation files",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_google-authenticator-libpam",
       "promptEn": "Google Authenticator PAM module",
       "path": [
@@ -36268,14 +37197,14 @@
     },
     {
       "symbol": "PACKAGE_libaudit",
-      "promptEn": "Linux Auditing Framework (shared library)",
+      "promptEn": "Audit (libaudit)",
       "path": [
         "Libraries"
       ]
     },
     {
       "symbol": "PACKAGE_libauparse",
-      "promptEn": "Audit Daemon (parsing shared library)",
+      "promptEn": "Audit (libauparse)",
       "path": [
         "Libraries"
       ]
@@ -36893,6 +37822,13 @@
     {
       "symbol": "PACKAGE_libdw",
       "promptEn": "ELF manipulation libraries (libdw)",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libe2p",
+      "promptEn": "ext2fs userspace programs utility library",
       "path": [
         "Libraries"
       ]
@@ -38620,6 +39556,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libgudev",
+      "promptEn": "GObject udev library",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libh2o",
       "promptEn": "H2O Library compiled with libuv",
       "path": [
@@ -39128,6 +40071,14 @@
       "promptEn": "Terminal handling library (Unicode)",
       "path": [
         "Libraries"
+      ]
+    },
+    {
+      "symbol": "LIBNCURSES_TERMINFO",
+      "promptEn": "extra terminfo files",
+      "path": [
+        "Libraries",
+        "Configuration"
       ]
     },
     {
@@ -41915,6 +42866,166 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-app-ssr-plus_Iptables_Transparent_Proxy",
+      "promptEn": "Iptables Transparent Proxy",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_Nftables_Transparent_Proxy",
+      "promptEn": "Nftables Transparent Proxy",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Client",
+      "promptEn": "None",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Client",
+      "promptEn": "Shadowsocks Rust",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Server",
+      "promptEn": "None",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Server",
+      "promptEn": "Shadowsocks Rust",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_NONE_V2RAY",
+      "promptEn": "None",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Xray",
+      "promptEn": "Xray-core",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_ChinaDNS_NG",
+      "promptEn": "Include ChinaDNS-NG",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_MosDNS",
+      "promptEn": "Include MosDNS",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Http_Proxy",
+      "promptEn": "Include HTTP(S) Proxy Server",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Mihomo",
+      "promptEn": "Include Mihomo (Clash Support)",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_GeoData",
+      "promptEn": "Include GeoData (GeoIP and GeoSite)",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Shadow_TLS",
+      "promptEn": "Include Shadow-TLS",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Kcptun",
+      "promptEn": "Include Kcptun",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_NaiveProxy",
+      "promptEn": "Include NaiveProxy",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Simple_Obfs",
+      "promptEn": "Include Shadowsocks Simple Obfs Plugin",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_V2ray_Plugin",
+      "promptEn": "Include Shadowsocks V2ray Plugin",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Client",
+      "promptEn": "Include ShadowsocksR Libev Client",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Server",
+      "promptEn": "Include ShadowsocksR Libev Server",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
       "symbol": "PACKAGE_TURBOACC_INCLUDE_NO_FASTPATH",
       "promptEn": "Use NSS ECM",
       "path": [
@@ -43012,20 +44123,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_grilo-plugins-opensubtitles",
-      "promptEn": "Open subtitles provider plugin",
-      "path": [
-        "Multimedia"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_grilo-plugins-raitv",
-      "promptEn": "Rai.tv sharing plugin",
-      "path": [
-        "Multimedia"
-      ]
-    },
-    {
       "symbol": "PACKAGE_grilo-plugins-shoutcast",
       "promptEn": "SHOUTcast sharing plugin",
       "path": [
@@ -43044,542 +44141,6 @@
       "promptEn": "GStreamer Libav plugin",
       "path": [
         "Multimedia"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_IPV6",
-      "promptEn": "Enable IPv6",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PATENTED",
-      "promptEn": "Include patented codecs and technologies",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GET_LIBAV_COMMON_AV_SUPPORT",
-      "promptEn": "Include support for common audio/video decoders",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_ac3",
-      "promptEn": "AC3",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_jpegls",
-      "promptEn": "JPEG-LS",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_mpeg1video",
-      "promptEn": "MPEG-1 Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_mpeg2video",
-      "promptEn": "MPEG-2 Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_mpeg4",
-      "promptEn": "MPEG-4",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_pcm_s16be",
-      "promptEn": "PCM signed 16-bit big-endian",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_pcm_s16le",
-      "promptEn": "PCM signed 16-bit little-endian",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_png",
-      "promptEn": "PNG",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_vorbis",
-      "promptEn": "Vorbis",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_ENCODER_zlib",
-      "promptEn": "Zlib",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_aac",
-      "promptEn": "AAC (Advanced Audio Coding)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_ac3",
-      "promptEn": "AC3",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_atrac3",
-      "promptEn": "ATRAC3",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_gif",
-      "promptEn": "GIF",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_h264",
-      "promptEn": "H.264",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_jpegls",
-      "promptEn": "JPEG-LS",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_mp2",
-      "promptEn": "MP2 (MPEG Audio Layer 2)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_mp3",
-      "promptEn": "MP3 (MPEG Audio Layer 2)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_mpegvideo",
-      "promptEn": "MPEG Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_mpeg1video",
-      "promptEn": "MPEG-1 Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_mpeg2video",
-      "promptEn": "MPEG-2 Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_mpeg4",
-      "promptEn": "MPEG-4",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_mpeg4aac",
-      "promptEn": "MPEG-4 (AAC)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_pcm_s16be",
-      "promptEn": "PCM signed 16-bit big-endian",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_pcm_s16le",
-      "promptEn": "PCM signed 16-bit little-endian",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_png",
-      "promptEn": "PNG",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_vorbis",
-      "promptEn": "Vorbis",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_wmav1",
-      "promptEn": "WMAv1",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_wmav2",
-      "promptEn": "WMAv2",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DECODER_zlib",
-      "promptEn": "Zlib",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_ac3",
-      "promptEn": "AC3",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_ffm",
-      "promptEn": "FFM (ffserver live feed)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_h264",
-      "promptEn": "H.264",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_mp3",
-      "promptEn": "MP3 (MPEG Audio Layer 3)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_mp4",
-      "promptEn": "MP4",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_mpeg1video",
-      "promptEn": "MPEG-1 Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_mpeg2video",
-      "promptEn": "MPEG-2 Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_mpegts",
-      "promptEn": "MPEG-2 (TS)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_ogg",
-      "promptEn": "Ogg",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_oss",
-      "promptEn": "OSS (Open Sound System playback)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_MUXER_rtp",
-      "promptEn": "RTP",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_ac3",
-      "promptEn": "AC3",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_ffm",
-      "promptEn": "FFM (ffserver live feed)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_h264",
-      "promptEn": "H.264",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_mp3",
-      "promptEn": "MP3 (MPEG Audio Layer 3)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_mpegvideo",
-      "promptEn": "MPEG Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_mpegps",
-      "promptEn": "MPEG-2 (PS)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_mpegts",
-      "promptEn": "MPEG-2 (TS)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_ogg",
-      "promptEn": "Ogg",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_rm",
-      "promptEn": "RM",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_rtsp",
-      "promptEn": "RTSP",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_DEMUXER_sdp",
-      "promptEn": "SDP",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PARSER_aac",
-      "promptEn": "AAC (Advanced Audio Coding)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PARSER_ac3",
-      "promptEn": "AC3",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PARSER_h264",
-      "promptEn": "H.264",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PARSER_mpegaudio",
-      "promptEn": "MPEG Audio",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PARSER_mpegvideo",
-      "promptEn": "MPEG Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PARSER_mpeg4video",
-      "promptEn": "MPEG-4 Video",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PROTOCOL_file",
-      "promptEn": "file:",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PROTOCOL_http",
-      "promptEn": "http:",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PROTOCOL_pipe",
-      "promptEn": "pipe:",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PROTOCOL_rtp",
-      "promptEn": "rtp:",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PROTOCOL_tcp",
-      "promptEn": "tcp:",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
-      ]
-    },
-    {
-      "symbol": "GST1_LIBAV_PROTOCOL_udp",
-      "promptEn": "udp:",
-      "path": [
-        "Multimedia",
-        "Select GStreamer libav configuration options"
       ]
     },
     {
@@ -43653,24 +44214,8 @@
       ]
     },
     {
-      "symbol": "PACKAGE_libgst1photography",
-      "promptEn": "GStreamer photography library (base)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer bad modules and libraries"
-      ]
-    },
-    {
       "symbol": "PACKAGE_libgst1basecamerabinsrc",
       "promptEn": "GStreamer basecamerabinsrc library (base)",
-      "path": [
-        "Multimedia",
-        "Select GStreamer bad modules and libraries"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_libgst1uridownloader",
-      "promptEn": "GStreamer uridownloader library (base)",
       "path": [
         "Multimedia",
         "Select GStreamer bad modules and libraries"
@@ -43685,8 +44230,56 @@
       ]
     },
     {
+      "symbol": "PACKAGE_libgst1codecs",
+      "promptEn": "GStreamer codecs library (base)",
+      "path": [
+        "Multimedia",
+        "Select GStreamer bad modules and libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_libgst1mpegts",
       "promptEn": "GStreamer mpegts library (base)",
+      "path": [
+        "Multimedia",
+        "Select GStreamer bad modules and libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libgst1photography",
+      "promptEn": "GStreamer photography library (base)",
+      "path": [
+        "Multimedia",
+        "Select GStreamer bad modules and libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libgst1play",
+      "promptEn": "GStreamer play library (base)",
+      "path": [
+        "Multimedia",
+        "Select GStreamer bad modules and libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libgst1player",
+      "promptEn": "GStreamer player library (base)",
+      "path": [
+        "Multimedia",
+        "Select GStreamer bad modules and libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libgst1uridownloader",
+      "promptEn": "GStreamer uridownloader library (base)",
+      "path": [
+        "Multimedia",
+        "Select GStreamer bad modules and libraries"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_libgst1transcoder",
+      "promptEn": "GStreamer transcoder library (base)",
       "path": [
         "Multimedia",
         "Select GStreamer bad modules and libraries"
@@ -43980,15 +44573,15 @@
       ]
     },
     {
-      "symbol": "TVHEADEND_TRACE",
-      "promptEn": "Low level debug trace",
+      "symbol": "TVHEADEND_MEMORYINFO",
+      "promptEn": "Memory info",
       "path": [
         "Multimedia"
       ]
     },
     {
-      "symbol": "TVHEADEND_AVAHI_SUPPORT",
-      "promptEn": "Avahi client",
+      "symbol": "TVHEADEND_TRACE",
+      "promptEn": "Low level debug trace",
       "path": [
         "Multimedia"
       ]
@@ -44001,13 +44594,6 @@
       ]
     },
     {
-      "symbol": "TVHEADEND_REGEX_PCRE",
-      "promptEn": "PCRE (libpcre)",
-      "path": [
-        "Multimedia"
-      ]
-    },
-    {
       "symbol": "TVHEADEND_REGEX_PCRE2",
       "promptEn": "PCRE2 (libpcre2)",
       "path": [
@@ -44015,8 +44601,15 @@
       ]
     },
     {
-      "symbol": "TVHEADEND_IMAGECACHE",
-      "promptEn": "Image cache",
+      "symbol": "TVHEADEND_AVAHI_SUPPORT",
+      "promptEn": "Avahi client",
+      "path": [
+        "Multimedia"
+      ]
+    },
+    {
+      "symbol": "TVHEADEND_TIMESHIFT",
+      "promptEn": "Timeshift",
       "path": [
         "Multimedia"
       ]
@@ -44064,6 +44657,20 @@
       ]
     },
     {
+      "symbol": "TVHEADEND_HDHOMERUN_SERVER",
+      "promptEn": "HDHomeRun server emulation",
+      "path": [
+        "Multimedia"
+      ]
+    },
+    {
+      "symbol": "TVHEADEND_DVB_DDCI",
+      "promptEn": "DVB CI cards from Digital Devices",
+      "path": [
+        "Multimedia"
+      ]
+    },
+    {
       "symbol": "TVHEADEND_CSA",
       "promptEn": "CSA decoding",
       "path": [
@@ -44079,7 +44686,7 @@
     },
     {
       "symbol": "TVHEADEND_CAPMT",
-      "promptEn": "CWC capmt client",
+      "promptEn": "capmt client",
       "path": [
         "Multimedia"
       ]
@@ -44695,6 +45302,22 @@
     {
       "symbol": "PACKAGE_lftp",
       "promptEn": "a sophisticated file transfer program with command line interface.",
+      "path": [
+        "Network",
+        "File Transfer"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_onionshare-cli",
+      "promptEn": "Secure chat, web and file sharing",
+      "path": [
+        "Network",
+        "File Transfer"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_onionshare-cli-src",
+      "promptEn": "Secure chat, web and file sharing (sources)",
       "path": [
         "Network",
         "File Transfer"
@@ -46363,6 +46986,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_dns2socks-rust",
+      "promptEn": "DNS forwards to SOCKS5 server",
+      "path": [
+        "Network",
+        "IP Addresses and Names"
+      ]
+    },
+    {
       "symbol": "PACKAGE_dns2tcp",
       "promptEn": "utility to convert dns query from udp to tcp",
       "path": [
@@ -46397,15 +47028,15 @@
     },
     {
       "symbol": "PACKAGE_dnsdist",
-      "promptEn": "dnsdist DNS-, DOS- and abuse-aware loadbalancer",
+      "promptEn": "dnsdist DNS-, DOS- and abuse-aware loadbalancer - minimal version with a restricted feature set",
       "path": [
         "Network",
         "IP Addresses and Names"
       ]
     },
     {
-      "symbol": "DNSDIST_OPENSSL",
-      "promptEn": "OpenSSL",
+      "symbol": "DNSDIST_GNUTLS",
+      "promptEn": "GnuTLS",
       "path": [
         "Network",
         "IP Addresses and Names",
@@ -46413,8 +47044,8 @@
       ]
     },
     {
-      "symbol": "DNSDIST_GNUTLS",
-      "promptEn": "GnuTLS",
+      "symbol": "DNSDIST_OPENSSL",
+      "promptEn": "OpenSSL",
       "path": [
         "Network",
         "IP Addresses and Names",
@@ -46440,15 +47071,6 @@
       ]
     },
     {
-      "symbol": "DNSDIST_DNS_OVER_HTTPS_OUTGOING",
-      "promptEn": "Outgoing DNS over HTTPS Support",
-      "path": [
-        "Network",
-        "IP Addresses and Names",
-        "Configuration"
-      ]
-    },
-    {
       "symbol": "DNSDIST_DNS_OVER_TLS",
       "promptEn": "DNS over TLS Support",
       "path": [
@@ -46458,8 +47080,8 @@
       ]
     },
     {
-      "symbol": "DNSDIST_NET_SNMP",
-      "promptEn": "Net-SNMP support",
+      "symbol": "DNSDIST_CARBON",
+      "promptEn": "CARBON support",
       "path": [
         "Network",
         "IP Addresses and Names",
@@ -46467,8 +47089,44 @@
       ]
     },
     {
-      "symbol": "DNSDIST_RE2",
-      "promptEn": "RE2 support",
+      "symbol": "DNSDIST_LMDB",
+      "promptEn": "LMDB support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_COMPLETION",
+      "promptEn": "Console completion support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_DEBUG_SYMBOLS",
+      "promptEn": "Debug symbols",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_DELAY_PIPE",
+      "promptEn": "Delay action support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_DYNBLOCKS",
+      "promptEn": "Dynamic blocks support",
       "path": [
         "Network",
         "IP Addresses and Names",
@@ -46485,12 +47143,173 @@
       ]
     },
     {
+      "symbol": "DNSDIST_EBPF",
+      "promptEn": "eBPF support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_ECS_ACTIONS",
+      "promptEn": "ECS actions",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_HASHED",
+      "promptEn": "Hashed credentials",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_IPCIPHER",
+      "promptEn": "IP cipher support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_LIBEDIT",
+      "promptEn": "Build with libedit",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_LUA_ADVANCED",
+      "promptEn": "Lua advanced bindings",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_MAC",
+      "promptEn": "MAC address support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_NET_SNMP",
+      "promptEn": "Net-SNMP support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_OCSP_STAPLING",
+      "promptEn": "OCSP Stapling support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_PIE",
+      "promptEn": "Position Independent Executable",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_PROTOBUF",
+      "promptEn": "Protobuf support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_PROMETHEUS",
+      "promptEn": "Prometheus support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_RE2",
+      "promptEn": "RE2 support",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_RULES_ALTER",
+      "promptEn": "Rules altering queries",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_SECPOLL",
+      "promptEn": "Security polling",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
       "symbol": "DNSDIST_SODIUM",
       "promptEn": "Build with libsodium",
       "path": [
         "Network",
         "IP Addresses and Names",
         "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_TOP_N",
+      "promptEn": "Top N bindings",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "DNSDIST_WEB",
+      "promptEn": "Internal web server",
+      "path": [
+        "Network",
+        "IP Addresses and Names",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_dnsdist-full",
+      "promptEn": "dnsdist DNS-, DOS- and abuse-aware loadbalancer - full version with all the features built in",
+      "path": [
+        "Network",
+        "IP Addresses and Names"
       ]
     },
     {
@@ -46750,8 +47569,32 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kea-dhcp4-helper",
+      "promptEn": "ISC Kea DHCP Server v4 importer of legacy UCI configs and Bind helper",
+      "path": [
+        "Network",
+        "IP Addresses and Names"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kea-dhcp6",
       "promptEn": "ISC Kea DHCP Server v6",
+      "path": [
+        "Network",
+        "IP Addresses and Names"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kea-hook-ha",
+      "promptEn": "ISC Kea High Availability hook library",
+      "path": [
+        "Network",
+        "IP Addresses and Names"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kea-hook-lease-cmds",
+      "promptEn": "ISC Kea Lease Commands hook library",
       "path": [
         "Network",
         "IP Addresses and Names"
@@ -46784,6 +47627,14 @@
     {
       "symbol": "PACKAGE_kea-shell",
       "promptEn": "ISC Kea shell",
+      "path": [
+        "Network",
+        "IP Addresses and Names"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kea-uci",
+      "promptEn": "ISC Kea UCI support",
       "path": [
         "Network",
         "IP Addresses and Names"
@@ -48489,6 +49340,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_dcb",
+      "promptEn": "Network DCB (Data Center Bridging) utility",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
       "symbol": "PACKAGE_dcstad",
       "promptEn": "Dual-Channel WiFi client daemon",
       "path": [
@@ -49260,14 +50119,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_tc-mod-iptables",
-      "promptEn": "Traffic control module - iptables action",
-      "path": [
-        "Network",
-        "Routing and Redirection"
-      ]
-    },
-    {
       "symbol": "PACKAGE_tc-tiny",
       "promptEn": "Traffic control utility (minimal)",
       "path": [
@@ -49446,6 +50297,14 @@
     {
       "symbol": "PACKAGE_thc-ipv6-alive6",
       "promptEn": "THC-IPv6 alive6 utility",
+      "path": [
+        "Network",
+        "THC-IPv6 attack and analyzing toolkit"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_thc-ipv6-connect6",
+      "promptEn": "THC-IPv6 connect6 utility",
       "path": [
         "Network",
         "THC-IPv6 attack and analyzing toolkit"
@@ -49684,6 +50543,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_thc-ipv6-flood-unreach6",
+      "promptEn": "THC-IPv6 flood_unreach6 utility",
+      "path": [
+        "Network",
+        "THC-IPv6 attack and analyzing toolkit"
+      ]
+    },
+    {
       "symbol": "PACKAGE_thc-ipv6-fragmentation6",
       "promptEn": "THC-IPv6 fragmentation6 utility",
       "path": [
@@ -49838,6 +50705,14 @@
     {
       "symbol": "PACKAGE_thc-ipv6-toobig6",
       "promptEn": "THC-IPv6 toobig6 utility",
+      "path": [
+        "Network",
+        "THC-IPv6 attack and analyzing toolkit"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_thc-ipv6-toobigsniff6",
+      "promptEn": "THC-IPv6 toobigsniff6 utility",
       "path": [
         "Network",
         "THC-IPv6 attack and analyzing toolkit"
@@ -52366,14 +53241,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-amr",
-      "promptEn": "Adaptive Multi-Rate [AMR] audio codec",
-      "path": [
-        "Network",
-        "Telephony"
-      ]
-    },
-    {
       "symbol": "PACKAGE_baresip-mod-aubridge",
       "promptEn": "Audio bridge module",
       "path": [
@@ -52382,8 +53249,24 @@
       ]
     },
     {
+      "symbol": "PACKAGE_baresip-mod-auconv",
+      "promptEn": "Audio format conversion",
+      "path": [
+        "Network",
+        "Telephony"
+      ]
+    },
+    {
       "symbol": "PACKAGE_baresip-mod-aufile",
       "promptEn": "Audio module for using a WAV-file as audio input",
+      "path": [
+        "Network",
+        "Telephony"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_baresip-mod-auresamp",
+      "promptEn": "Audio resampler",
       "path": [
         "Network",
         "Telephony"
@@ -52406,16 +53289,16 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-avformat",
-      "promptEn": "Video source using FFmpeg",
+      "symbol": "PACKAGE_baresip-mod-avfilter",
+      "promptEn": "Video filter using FFmpeg",
       "path": [
         "Network",
         "Telephony"
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-b2bua",
-      "promptEn": "Back-to-Back User-Agent module",
+      "symbol": "PACKAGE_baresip-mod-avformat",
+      "promptEn": "Video source using FFmpeg",
       "path": [
         "Network",
         "Telephony"
@@ -52430,7 +53313,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-ctrl-dbus",
+      "symbol": "PACKAGE_baresip-mod-ctrl_dbus",
       "promptEn": "DBus control interface",
       "path": [
         "Network",
@@ -52438,7 +53321,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-ctrl-tcp",
+      "symbol": "PACKAGE_baresip-mod-ctrl_tcp",
       "promptEn": "TCP control interface",
       "path": [
         "Network",
@@ -52446,7 +53329,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-debug-cmd",
+      "symbol": "PACKAGE_baresip-mod-debug_cmd",
       "promptEn": "Debug commands",
       "path": [
         "Network",
@@ -52454,7 +53337,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-dtls-srtp",
+      "symbol": "PACKAGE_baresip-mod-dtls_srtp",
       "promptEn": "DTLS-SRTP end-to-end encryption",
       "path": [
         "Network",
@@ -52526,14 +53409,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-gst-video",
-      "promptEn": "Video codecs using Gstreamer 1.0",
-      "path": [
-        "Network",
-        "Telephony"
-      ]
-    },
-    {
       "symbol": "PACKAGE_baresip-mod-httpd",
       "promptEn": "HTTP webserver UI-module",
       "path": [
@@ -52566,16 +53441,16 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-mqtt",
-      "promptEn": "Message Queue Telemetry Transport [MQTT] client",
+      "symbol": "PACKAGE_baresip-mod-mixminus",
+      "promptEn": "Mixes N-1 audio streams for conferencing",
       "path": [
         "Network",
         "Telephony"
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-multicast",
-      "promptEn": "Multicast support",
+      "symbol": "PACKAGE_baresip-mod-mqtt",
+      "promptEn": "Message Queue Telemetry Transport [MQTT] client",
       "path": [
         "Network",
         "Telephony"
@@ -52598,6 +53473,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_baresip-mod-netroam",
+      "promptEn": "Network roaming module",
+      "path": [
+        "Network",
+        "Telephony"
+      ]
+    },
+    {
       "symbol": "PACKAGE_baresip-mod-opus",
       "promptEn": "OPUS Interactive audio codec",
       "path": [
@@ -52606,7 +53489,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-opus-multistream",
+      "symbol": "PACKAGE_baresip-mod-opus_multistream",
       "promptEn": "Opus Multistream Audio Codec",
       "path": [
         "Network",
@@ -52614,8 +53497,8 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-oss",
-      "promptEn": "OSS audio driver",
+      "symbol": "PACKAGE_baresip-mod-pcp",
+      "promptEn": "Port Control Protocol for Media NAT-traversal",
       "path": [
         "Network",
         "Telephony"
@@ -52694,14 +53577,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-speex-pp",
-      "promptEn": "Speex Pre-processor",
-      "path": [
-        "Network",
-        "Telephony"
-      ]
-    },
-    {
       "symbol": "PACKAGE_baresip-mod-srtp",
       "promptEn": "Secure RTP module using libre",
       "path": [
@@ -52712,6 +53587,14 @@
     {
       "symbol": "PACKAGE_baresip-mod-stdio",
       "promptEn": "Standard input/output UI driver",
+      "path": [
+        "Network",
+        "Telephony"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_baresip-mod-swscale",
+      "promptEn": "Video filter for scaling by FFmpeg",
       "path": [
         "Network",
         "Telephony"
@@ -52742,14 +53625,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_baresip-mod-v4l2-codec",
-      "promptEn": "Video4Linux2 video codec module",
-      "path": [
-        "Network",
-        "Telephony"
-      ]
-    },
-    {
       "symbol": "PACKAGE_baresip-mod-vidbridge",
       "promptEn": "Video bridge module",
       "path": [
@@ -52760,14 +53635,6 @@
     {
       "symbol": "PACKAGE_baresip-mod-vidinfo",
       "promptEn": "Video-info filter",
-      "path": [
-        "Network",
-        "Telephony"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_baresip-mod-vidloop",
-      "promptEn": "Video-loop test module",
       "path": [
         "Network",
         "Telephony"
@@ -57341,14 +58208,6 @@
       ]
     },
     {
-      "symbol": "OPENVPN_mbedtls_ENABLE_MULTIHOME",
-      "promptEn": "Enable multi-homed UDP server support (--multihome)",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "OPENVPN_mbedtls_ENABLE_PORT_SHARE",
       "promptEn": "Enable TCP server port-share support (--port-share)",
       "path": [
@@ -57357,24 +58216,16 @@
       ]
     },
     {
-      "symbol": "OPENVPN_mbedtls_ENABLE_DEF_AUTH",
-      "promptEn": "Enable deferred authentication",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "OPENVPN_mbedtls_ENABLE_PF",
-      "promptEn": "Enable internal packet filter",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "OPENVPN_mbedtls_ENABLE_IPROUTE2",
       "promptEn": "Enable support for iproute2",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
+      "symbol": "OPENVPN_mbedtls_ENABLE_DCO",
+      "promptEn": "Enable support for data channel offload",
       "path": [
         "Network",
         "VPN"
@@ -57437,14 +58288,6 @@
       ]
     },
     {
-      "symbol": "OPENVPN_openssl_ENABLE_MULTIHOME",
-      "promptEn": "Enable multi-homed UDP server support (--multihome)",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "OPENVPN_openssl_ENABLE_PORT_SHARE",
       "promptEn": "Enable TCP server port-share support (--port-share)",
       "path": [
@@ -57453,24 +58296,16 @@
       ]
     },
     {
-      "symbol": "OPENVPN_openssl_ENABLE_DEF_AUTH",
-      "promptEn": "Enable deferred authentication",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "OPENVPN_openssl_ENABLE_PF",
-      "promptEn": "Enable internal packet filter",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "OPENVPN_openssl_ENABLE_IPROUTE2",
       "promptEn": "Enable support for iproute2",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
+      "symbol": "OPENVPN_openssl_ENABLE_DCO",
+      "promptEn": "Enable support for data channel offload",
       "path": [
         "Network",
         "VPN"
@@ -57486,7 +58321,7 @@
     },
     {
       "symbol": "PACKAGE_openvpn-wolfssl",
-      "promptEn": "Open source VPN solution using WolfSSL \\(experimental\\)",
+      "promptEn": "Open source VPN solution using WolfSSL",
       "path": [
         "Network",
         "VPN"
@@ -57533,14 +58368,6 @@
       ]
     },
     {
-      "symbol": "OPENVPN_wolfssl_ENABLE_MULTIHOME",
-      "promptEn": "Enable multi-homed UDP server support (--multihome)",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "OPENVPN_wolfssl_ENABLE_PORT_SHARE",
       "promptEn": "Enable TCP server port-share support (--port-share)",
       "path": [
@@ -57549,24 +58376,16 @@
       ]
     },
     {
-      "symbol": "OPENVPN_wolfssl_ENABLE_DEF_AUTH",
-      "promptEn": "Enable deferred authentication",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "OPENVPN_wolfssl_ENABLE_PF",
-      "promptEn": "Enable internal packet filter",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "OPENVPN_wolfssl_ENABLE_IPROUTE2",
       "promptEn": "Enable support for iproute2",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
+      "symbol": "OPENVPN_wolfssl_ENABLE_DCO",
+      "promptEn": "Enable support for data channel offload",
       "path": [
         "Network",
         "VPN"
@@ -57685,6 +58504,14 @@
       ]
     },
     {
+      "symbol": "STRONGSWAN_INCLUDE_INSECURE",
+      "promptEn": "Include cryptographically weak protocols",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
       "symbol": "PACKAGE_strongswan-charon",
       "promptEn": "StrongSwan IKEv1/IKEv2 keying daemon",
       "path": [
@@ -57741,14 +58568,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_strongswan-libnttfft",
-      "promptEn": "StrongSwan nttfft library",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "PACKAGE_strongswan-libtls",
       "promptEn": "StrongSwan libtls",
       "path": [
@@ -57781,14 +58600,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_strongswan-mod-af-alg",
-      "promptEn": "StrongSwan AF_ALG crypto interface to Linux Crypto API plugin",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "PACKAGE_strongswan-mod-agent",
       "promptEn": "StrongSwan SSH agent signing plugin",
       "path": [
@@ -57807,14 +58618,6 @@
     {
       "symbol": "PACKAGE_strongswan-mod-attr-sql",
       "promptEn": "StrongSwan SQL based config plugin",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_strongswan-mod-bliss",
-      "promptEn": "StrongSwan BLISS crypto plugin",
       "path": [
         "Network",
         "VPN"
@@ -57935,6 +58738,14 @@
     {
       "symbol": "PACKAGE_strongswan-mod-duplicheck",
       "promptEn": "StrongSwan advanced duplicate checking plugin",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_strongswan-mod-eap-dynamic",
+      "promptEn": "StrongSwan EAP dynamic selector plugin",
       "path": [
         "Network",
         "VPN"
@@ -58101,6 +58912,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_strongswan-mod-lookip",
+      "promptEn": "StrongSwan enable fast virtual IP lookup and notification plugin",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
       "symbol": "PACKAGE_strongswan-mod-md4",
       "promptEn": "StrongSwan MD4 crypto plugin",
       "path": [
@@ -58127,30 +58946,6 @@
     {
       "symbol": "PACKAGE_strongswan-mod-mysql",
       "promptEn": "StrongSwan MySQL database interface plugin",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_strongswan-mod-newhope",
-      "promptEn": "StrongSwan New Hope crypto plugin",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_strongswan-mod-nonce",
-      "promptEn": "StrongSwan nonce genereation plugin",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_strongswan-mod-ntru",
-      "promptEn": "StrongSwan NTRU crypto plugin",
       "path": [
         "Network",
         "VPN"
@@ -58349,14 +59144,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_strongswan-mod-uci",
-      "promptEn": "StrongSwan UCI config interface plugin",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
       "symbol": "PACKAGE_strongswan-mod-unity",
       "promptEn": "StrongSwan Cisco Unity extension plugin",
       "path": [
@@ -58383,6 +59170,14 @@
     {
       "symbol": "PACKAGE_strongswan-mod-whitelist",
       "promptEn": "StrongSwan peer identity whitelisting plugin",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_strongswan-mod-wolfssl",
+      "promptEn": "StrongSwan WolfSSL crypto plugin",
       "path": [
         "Network",
         "VPN"
@@ -58423,14 +59218,6 @@
     {
       "symbol": "PACKAGE_strongswan-pki",
       "promptEn": "StrongSwan PKI tool",
-      "path": [
-        "Network",
-        "VPN"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_strongswan-scepclient",
-      "promptEn": "StrongSwan SCEP client",
       "path": [
         "Network",
         "VPN"
@@ -59129,6 +59916,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ipt2socks-rs",
+      "promptEn": "Convert iptables/nftables to SOCKS5",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kcptun-client",
       "promptEn": "KCP-based Secure Tunnel client",
       "path": [
@@ -59555,6 +60350,14 @@
     {
       "symbol": "PACKAGE_microsocks",
       "promptEn": "SOCKS5 TCP/IP only proxy",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_naiveproxy",
+      "promptEn": "Make a fortune quietly",
       "path": [
         "Network",
         "Web Servers/Proxies"
@@ -60255,6 +61058,150 @@
       ]
     },
     {
+      "symbol": "PACKAGE_redsocks2",
+      "promptEn": "Redirect any TCP connection to a SOCKS or HTTPS proxy server",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadow-tls",
+      "promptEn": "A proxy to expose real tls handshake to the firewall",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-libev-config",
+      "promptEn": "shadowsocks-libev config scripts",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-libev-ss-local",
+      "promptEn": "shadowsocks-libev ss-local",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-libev-ss-redir",
+      "promptEn": "shadowsocks-libev ss-redir",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-libev-ss-rules",
+      "promptEn": "shadowsocks-libev ss-rules",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-libev-ss-server",
+      "promptEn": "shadowsocks-libev ss-server",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-libev-ss-tunnel",
+      "promptEn": "shadowsocks-libev ss-tunnel",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-rust-sslocal",
+      "promptEn": "shadowsocks-rust sslocal",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-rust-ssmanager",
+      "promptEn": "shadowsocks-rust ssmanager",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-rust-ssserver",
+      "promptEn": "shadowsocks-rust ssserver",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-rust-ssservice",
+      "promptEn": "shadowsocks-rust ssservice",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocks-rust-ssurl",
+      "promptEn": "shadowsocks-rust ssurl",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocksr-libev-ssr-check",
+      "promptEn": "shadowsocksr-libev ssr-check",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocksr-libev-ssr-local",
+      "promptEn": "shadowsocksr-libev ssr-local",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocksr-libev-ssr-nat",
+      "promptEn": "shadowsocksr-libev ssr-nat",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocksr-libev-ssr-redir",
+      "promptEn": "shadowsocksr-libev ssr-redir",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_shadowsocksr-libev-ssr-server",
+      "promptEn": "shadowsocksr-libev ssr-server",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
       "symbol": "PACKAGE_sing-box",
       "promptEn": "The universal proxy platform",
       "path": [
@@ -60543,6 +61490,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_tuic-client",
+      "promptEn": "TUIC proxy protocol client",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
       "symbol": "PACKAGE_uhttpd",
       "promptEn": "uHTTPd - tiny, single threaded HTTP server",
       "path": [
@@ -60639,6 +61594,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_v2ray-plugin",
+      "promptEn": "SIP003 plugin for shadowsocks, based on v2ray",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
       "symbol": "PACKAGE_v2raya",
       "promptEn": "A Linux web GUI client of Project V",
       "path": [
@@ -60649,6 +61612,14 @@
     {
       "symbol": "PACKAGE_xfrpc",
       "promptEn": "C language fast reverse proxy client",
+      "path": [
+        "Network",
+        "Web Servers/Proxies"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_xray-plugin",
+      "promptEn": "SIP003 plugin for Shadowsocks, based on Xray",
       "path": [
         "Network",
         "Web Servers/Proxies"
@@ -62209,6 +63180,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_hysteria",
+      "promptEn": "A feature-packed network utility optimized for networks of poor quality",
+      "path": [
+        "Network"
+      ]
+    },
+    {
       "symbol": "PACKAGE_i2pd",
       "promptEn": "full-featured C++ implementation of I2P client",
       "path": [
@@ -62309,6 +63287,13 @@
     {
       "symbol": "PACKAGE_ipset-dns",
       "promptEn": "A lightweight DNS forwarder to populate ipsets",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ipt2socks",
+      "promptEn": "Convert iptables to socks5",
       "path": [
         "Network"
       ]
@@ -62663,7 +63648,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_ltq-vdsl-mei-test",
+      "symbol": "PACKAGE_ltq-vdsl-vr9-mei-test",
       "promptEn": "Lantiq mei driver test tool",
       "path": [
         "Network"
@@ -62733,6 +63718,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_mausezahn",
+      "promptEn": "mausezahn",
+      "path": [
+        "Network"
+      ]
+    },
+    {
       "symbol": "PACKAGE_mbusd",
       "promptEn": "Modbus TCP gateway",
       "path": [
@@ -62749,6 +63741,13 @@
     {
       "symbol": "PACKAGE_mentohust",
       "promptEn": "A Ruijie Client Daemon",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_mihomo",
+      "promptEn": "A rule based proxy in Go.",
       "path": [
         "Network"
       ]
@@ -63126,6 +64125,13 @@
     {
       "symbol": "NPS_COMPRESS_UPX",
       "promptEn": "Compress executable files with UPX",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_nqptp",
+      "promptEn": "Not Quite Peer-to-Peer",
       "path": [
         "Network"
       ]
@@ -63637,20 +64643,6 @@
     {
       "symbol": "PACKAGE_omcproxy",
       "promptEn": "IGMPv3 and MLDv2 Multicast Proxy",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_onionshare-cli",
-      "promptEn": "Secure chat, web and file sharing",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_onionshare-cli-src",
-      "promptEn": "Secure chat, web and file sharing (sources)",
       "path": [
         "Network"
       ]
@@ -64454,28 +65446,28 @@
     },
     {
       "symbol": "PACKAGE_samba4-admin",
-      "promptEn": "Samba 4.17.2 admin tools",
+      "promptEn": "Samba 4.24.6 admin tools",
       "path": [
         "Network"
       ]
     },
     {
       "symbol": "PACKAGE_samba4-client",
-      "promptEn": "Samba 4.17.2 client",
+      "promptEn": "Samba 4.24.6 client",
       "path": [
         "Network"
       ]
     },
     {
       "symbol": "PACKAGE_samba4-libs",
-      "promptEn": "Samba 4.17.2 libs",
+      "promptEn": "Samba 4.24.6 libs",
       "path": [
         "Network"
       ]
     },
     {
       "symbol": "PACKAGE_samba4-server",
-      "promptEn": "Samba 4.17.2 server",
+      "promptEn": "Samba 4.24.6 server",
       "path": [
         "Network"
       ]
@@ -64497,6 +65489,13 @@
     {
       "symbol": "SAMBA4_SERVER_AVAHI",
       "promptEn": "Avahi support",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "SAMBA4_SERVER_QUOTAS",
+      "promptEn": "Quotas support",
       "path": [
         "Network"
       ]
@@ -64524,7 +65523,7 @@
     },
     {
       "symbol": "PACKAGE_samba4-utils",
-      "promptEn": "Samba 4.17.2 utils",
+      "promptEn": "Samba 4.24.6 utils",
       "path": [
         "Network"
       ]
@@ -64567,6 +65566,20 @@
     {
       "symbol": "PACKAGE_simple-adblock",
       "promptEn": "Simple AdBlock Service",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_simple-obfs-client",
+      "promptEn": "A simple obfuscating tool (client)",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_simple-obfs-server",
+      "promptEn": "A simple obfuscating tool (server)",
       "path": [
         "Network"
       ]
@@ -64728,6 +65741,20 @@
     {
       "symbol": "PACKAGE_tgt",
       "promptEn": "userspace iSCSI target",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_tgt_without_aio",
+      "promptEn": "Build without AIO support",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_tgt_without_sheepdog",
+      "promptEn": "Build without Sheepdog support",
       "path": [
         "Network"
       ]
@@ -65001,6 +66028,20 @@
     {
       "symbol": "PACKAGE_uugamebooster",
       "promptEn": "NetEase UU Game Booster",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_v2ray-core",
+      "promptEn": "A proxy platform to bypass network restrictions",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_v2ray-extra",
+      "promptEn": "A proxy platform to bypass network restrictions (extra resources)",
       "path": [
         "Network"
       ]
@@ -65332,6 +66373,13 @@
     {
       "symbol": "PACKAGE_mpg123",
       "promptEn": "fast console mpeg audio player",
+      "path": [
+        "Sound"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_openal-soft",
+      "promptEn": "OpenAL Soft",
       "path": [
         "Sound"
       ]
@@ -66545,6 +67593,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_integritysetup",
+      "promptEn": "integritysetup",
+      "path": [
+        "Utilities",
+        "Encryption"
+      ]
+    },
+    {
       "symbol": "PACKAGE_keyctl",
       "promptEn": "keyctl",
       "path": [
@@ -66587,6 +67643,14 @@
     {
       "symbol": "PACKAGE_stoken",
       "promptEn": "tokencode generator compatible with RSA SecurID 128-bit (AES)",
+      "path": [
+        "Utilities",
+        "Encryption"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_veritysetup",
+      "promptEn": "veritysetup",
       "path": [
         "Utilities",
         "Encryption"
@@ -67963,20 +69027,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_audit",
-      "promptEn": "Audit Daemon (daemon)",
-      "path": [
-        "Utilities"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_audit-utils",
-      "promptEn": "Audit Daemon (utilities)",
-      "path": [
-        "Utilities"
-      ]
-    },
-    {
       "symbol": "PACKAGE_augeas",
       "promptEn": "A configuration editing tool",
       "path": [
@@ -68056,6 +69106,13 @@
     {
       "symbol": "PACKAGE_bcm27xx-eeprom",
       "promptEn": "BCM27xx EEPROM tools",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_bcm27xx-utils-rpi-fw-crypto",
+      "promptEn": "BCM27xx rpi-fw-crypto application",
       "path": [
         "Utilities"
       ]
@@ -69050,6 +70107,20 @@
     {
       "symbol": "PACKAGE_collectd-mod-write-http",
       "promptEn": "HTTP POST output plugin",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_colrm",
+      "promptEn": "colrm removes selected columns from a file",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_column",
+      "promptEn": "column formats input into multiple columns",
       "path": [
         "Utilities"
       ]
@@ -70084,6 +71155,13 @@
       ]
     },
     {
+      "symbol": "DTC_STATIC_BUILD",
+      "promptEn": "Build dtc as static binary",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_dumb-init",
       "promptEn": "dumb-init",
       "path": [
@@ -70574,6 +71652,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kdump",
+      "promptEn": "Kernel crash analysis",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kexec",
       "promptEn": "Kernel boots kernel",
       "path": [
@@ -70591,6 +71676,14 @@
     {
       "symbol": "KEXEC_LZMA",
       "promptEn": "lzma support",
+      "path": [
+        "Utilities",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "KEXEC_ZSTD",
+      "promptEn": "zstd support",
       "path": [
         "Utilities",
         "Configuration"
@@ -70620,6 +71713,13 @@
     {
       "symbol": "PACKAGE_kobs-ng",
       "promptEn": "Application for writing bootstreams to NAND flash",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_last",
+      "promptEn": "display history of user logins and logout sessions",
       "path": [
         "Utilities"
       ]
@@ -70681,8 +71781,8 @@
       ]
     },
     {
-      "symbol": "LCD4LINUX_CUSTOM_DRIVER_dpf",
-      "promptEn": "dpf",
+      "symbol": "LCD4LINUX_CUSTOM_DRIVER_DPF",
+      "promptEn": "DPF",
       "path": [
         "Utilities"
       ]
@@ -73510,6 +74610,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_rev",
+      "promptEn": "Reverse lines characterwise",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ripgrep",
       "promptEn": "ripgrep (rg) regex grep",
       "path": [
@@ -75228,6 +76335,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_wdctl",
+      "promptEn": "show hardware watchdog status",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_whereis",
       "promptEn": "locate the binary, source, and manual page files for a command",
       "path": [
@@ -75365,6 +76479,8 @@
   "missingMenusZhCN": [
     "Kernel build options",
     "Filesystem ACL and attr support options",
+    "Resource limits",
+    "Encryption options",
     "Configuration",
     "Zabbix",
     "openwisp",
@@ -75382,6 +76498,7 @@
     "Industrial I/O Modules",
     "Input modules",
     "LED modules",
+    "MultiFunction Device (MFD) Support",
     "Multiplexer Support",
     "Native Language Support",
     "Netfilter Extensions",
@@ -75399,6 +76516,7 @@
     "W1 support",
     "WPAN 802.15.4 Support",
     "WWAN Support",
+    "Watchdog Timer Support",
     "Wireless Drivers",
     "WiFi Generic Feature Options",
     "WiFi Operation Modes",
@@ -75442,7 +76560,6 @@
     "6. Libraries",
     "Select dovecot build options",
     "Streaming",
-    "Select GStreamer libav configuration options",
     "Select GStreamer libraries",
     "Select GStreamer bad modules and libraries",
     "Select GStreamer base modules and libraries",
@@ -75733,31 +76850,31 @@
     },
     {
       "id": "choice-56",
-      "promptEn": "FastPath Engine"
+      "promptEn": "Transparent Proxy Backend"
     },
     {
       "id": "choice-57",
-      "promptEn": "TLS Provider"
+      "promptEn": "Shadowsocks Client Selection"
     },
     {
       "id": "choice-58",
-      "promptEn": "Regular Expression"
+      "promptEn": "Shadowsocks Server Selection"
     },
     {
       "id": "choice-59",
-      "promptEn": "SSL library"
+      "promptEn": "V2ray-core Selection"
     },
     {
       "id": "choice-60",
-      "promptEn": "SSL Library"
+      "promptEn": "FastPath Engine"
     },
     {
       "id": "choice-61",
-      "promptEn": "Crypto Library"
+      "promptEn": "TLS Provider"
     },
     {
       "id": "choice-62",
-      "promptEn": "XML Library"
+      "promptEn": "Regular Expression"
     },
     {
       "id": "choice-63",
@@ -75765,15 +76882,15 @@
     },
     {
       "id": "choice-64",
-      "promptEn": "Selected SSL library"
+      "promptEn": "SSL Library"
     },
     {
       "id": "choice-65",
-      "promptEn": "Selected SSL MD5 library"
+      "promptEn": "Crypto Library"
     },
     {
       "id": "choice-66",
-      "promptEn": "Enable SNMP support"
+      "promptEn": "XML Library"
     },
     {
       "id": "choice-67",
@@ -75781,22 +76898,38 @@
     },
     {
       "id": "choice-68",
-      "promptEn": "SSL library"
+      "promptEn": "Selected SSL library"
     },
     {
       "id": "choice-69",
-      "promptEn": "Choose SSL Library"
+      "promptEn": "Selected SSL MD5 library"
     },
     {
       "id": "choice-70",
-      "promptEn": "Select SSL library"
+      "promptEn": "Enable SNMP support"
     },
     {
       "id": "choice-71",
-      "promptEn": "Select command-line editing support"
+      "promptEn": "SSL library"
     },
     {
       "id": "choice-72",
+      "promptEn": "SSL library"
+    },
+    {
+      "id": "choice-73",
+      "promptEn": "Choose SSL Library"
+    },
+    {
+      "id": "choice-74",
+      "promptEn": "Select SSL library"
+    },
+    {
+      "id": "choice-75",
+      "promptEn": "Select command-line editing support"
+    },
+    {
+      "id": "choice-76",
       "promptEn": "stack tracing support"
     }
   ]
