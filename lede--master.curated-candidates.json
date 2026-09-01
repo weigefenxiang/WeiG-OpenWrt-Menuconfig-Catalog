@@ -5,10 +5,10 @@
     "label": "Lean LEDE",
     "repo": "coolsnowwolf/lede",
     "branch": "master",
-    "commit": "d45599b9a9f46b7e4a1791ffbf007b8c9ad2448f",
+    "commit": "225a47e34bae357ab76bf62252177b0c15c8ebba",
     "legacy": false
   },
-  "generatedAt": "2026-08-30T02:50:00.338Z",
+  "generatedAt": "2026-09-01T01:30:15.905Z",
   "curated": [
     {
       "id": "3cat",
@@ -1783,8 +1783,8 @@
       "packages": [
         "luci-app-ssr-plus"
       ],
-      "package": "",
-      "available": false
+      "package": "luci-app-ssr-plus",
+      "available": true
     },
     {
       "id": "ssrserver-python",
@@ -2388,6 +2388,7 @@
     "luci-app-sqm",
     "luci-app-squid",
     "luci-app-sshtunnel",
+    "luci-app-ssr-plus",
     "luci-app-statistics",
     "luci-app-strongswan-swanctl",
     "luci-app-syncdial",
@@ -2503,7 +2504,6 @@
     "ssocks",
     "ssr-libev-server",
     "ssr-mudb-server",
-    "ssr-plus",
     "ssrserver-python",
     "trojan-server",
     "turboacc-mtk",
@@ -2527,8 +2527,8 @@
     "yggdrasil"
   ],
   "applications": {
-    "count": 202,
-    "unique": 202,
+    "count": 223,
+    "unique": 223,
     "names": [
       "luci-app-3cat",
       "luci-app-3ginfo-lite",
@@ -2696,6 +2696,27 @@
       "luci-app-sqm",
       "luci-app-squid",
       "luci-app-sshtunnel",
+      "luci-app-ssr-plus",
+      "luci-app-ssr-plus_INCLUDE_ChinaDNS_NG",
+      "luci-app-ssr-plus_INCLUDE_GeoData",
+      "luci-app-ssr-plus_INCLUDE_Http_Proxy",
+      "luci-app-ssr-plus_INCLUDE_Kcptun",
+      "luci-app-ssr-plus_INCLUDE_Mihomo",
+      "luci-app-ssr-plus_INCLUDE_MosDNS",
+      "luci-app-ssr-plus_INCLUDE_NaiveProxy",
+      "luci-app-ssr-plus_INCLUDE_NONE_V2RAY",
+      "luci-app-ssr-plus_INCLUDE_Shadow_TLS",
+      "luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Client",
+      "luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Server",
+      "luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Client",
+      "luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Server",
+      "luci-app-ssr-plus_INCLUDE_Shadowsocks_Simple_Obfs",
+      "luci-app-ssr-plus_INCLUDE_Shadowsocks_V2ray_Plugin",
+      "luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Client",
+      "luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Server",
+      "luci-app-ssr-plus_INCLUDE_Xray",
+      "luci-app-ssr-plus_Iptables_Transparent_Proxy",
+      "luci-app-ssr-plus_Nftables_Transparent_Proxy",
       "luci-app-statistics",
       "luci-app-strongswan-swanctl",
       "luci-app-syncdial",

@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-08-30T02:50:43.797Z",
+  "generatedAt": "2026-09-01T01:30:39.329Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10001,
+  "options": 10003,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -10638,6 +10638,14 @@
     {
       "symbol": "PACKAGE_kmod-hwmon-ltc4151",
       "promptEn": "LTC4151 monitoring support",
+      "path": [
+        "Kernel modules",
+        "Hardware Monitoring Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-hwmon-max6650",
+      "promptEn": "MAX6650/6651 fan controller",
       "path": [
         "Kernel modules",
         "Hardware Monitoring Support"
@@ -63656,6 +63664,13 @@
     {
       "symbol": "PACKAGE_umdns",
       "promptEn": "OpenWrt Multicast DNS Daemon",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_uneighbord",
+      "promptEn": "802.11k Neighbor Report synchronizer",
       "path": [
         "Network"
       ]
