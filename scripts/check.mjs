@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   buildTargetTree,
   incompleteSelectableTargets,
+  lintKconfigOptions,
   parseInfoRecords,
   parseKconfigTree,
   parsePackageInfo,
@@ -142,6 +143,71 @@ assert.equal(duplicate.validation.duplicateCount, 1);
 assert.equal(duplicate.validation.conflicts.length, 0);
 const hardDuplicate = parseKconfigTree(join(ROOT, 'tests', 'duplicate-hard'));
 assert(hardDuplicate.validation.conflicts.length > 0);
+
+// Kconfig scope semantics: comments and visibility guards must never become
+// value dependencies of the preceding or following symbol.
+const semantics = parseKconfigTree(join(ROOT, 'tests', 'kconfig-semantics'));
+const semanticOption = (symbol) => semantics.allOptions.find((row) => row.symbol === symbol);
+const ifOption = semanticOption('IF_OPTION');
+assert.deepEqual(ifOption?.inheritedDepends, ['OUTER_GATE', 'IF_GATE']);
+assert.deepEqual(ifOption?.directDepends, ['DIRECT_GATE']);
+assert.deepEqual(ifOption?.depends, ['OUTER_GATE', 'IF_GATE', 'DIRECT_GATE']);
+assert.deepEqual(ifOption?.promptIf, ['PROMPT_GATE']);
+assert(!ifOption?.depends.includes('PROMPT_GATE'));
+assert.deepEqual(ifOption?.menuVisibleIf, ['OUTER_VISIBLE']);
+assert(!ifOption?.depends.includes('OUTER_VISIBLE'));
+const nestedOption = semanticOption('NESTED_OPTION');
+assert(nestedOption?.depends.includes('NESTED_GATE'));
+assert(!nestedOption?.depends.includes('NESTED_VISIBLE'));
+assert.deepEqual(nestedOption?.visibleIf, ['OUTER_VISIBLE', 'NESTED_VISIBLE']);
+assert.deepEqual(semanticOption('AFTER_COMMENT')?.depends, ['OUTER_GATE', 'IF_GATE']);
+const semanticWarning = semantics.comments.find((row) => row.prompt === 'A warning must not modify IF_OPTION');
+assert.deepEqual(semanticWarning?.directDepends, ['!IF_OPTION']);
+assert.deepEqual(semanticWarning?.depends, ['OUTER_GATE', 'IF_GATE', '!IF_OPTION']);
+assert(!semanticOption('IF_OPTION')?.depends.includes('!IF_OPTION'));
+const trailingOption = semanticOption('TRAILING_OPTION');
+assert.equal(trailingOption?.type, 'bool');
+assert.deepEqual(trailingOption?.defaults, ['y']);
+assert.deepEqual(trailingOption?.depends, ['OUTER_GATE', 'TRAILING_GATE']);
+assert(!trailingOption?.depends.includes('TRAILING_VISIBLE'));
+assert.equal(semantics.comments.length, 3);
+assert(semantics.menus.some((row) => row.prompt === 'Nested menu' && row.directDepends.includes('NESTED_GATE')));
+assert(semantics.menus.some((row) => row.prompt === 'Nested menu' && row.directVisibleIf.includes('NESTED_VISIBLE')));
+assert.equal(semantics.validation.semantic.valid, true);
+const semanticChoice = semantics.choices.find((row) => row.prompt === 'Choice');
+assert.deepEqual(semanticChoice?.directDepends, ['CHOICE_GATE']);
+assert.deepEqual(semanticOption('CHOICE_A')?.inheritedDepends, ['OUTER_GATE', 'CHOICE_GATE']);
+assert.deepEqual(semanticOption('CHOICE_A')?.menuVisibleIf, ['OUTER_VISIBLE']);
+assert.deepEqual(semanticOption('CHOICE_A')?.visibleIf, ['OUTER_VISIBLE', 'CHOICE_VISIBLE']);
+assert.deepEqual(semanticOption('NESTED_CHOICE')?.inheritedDepends, ['OUTER_GATE', 'IF_GATE']);
+
+// The eight Dropbear options and NASM are real-world regression cases for
+// comment bleed and prompt-if handling.  Their warning comments are retained
+// separately, while the options keep only their actual Kconfig relations.
+const dropbear = parseKconfigTree(join(ROOT, 'tests', 'kconfig-dropbear'));
+const dropbearSymbols = [
+  'DROPBEAR_CHACHA20POLY1305', 'DROPBEAR_CLI_NETCAT', 'DROPBEAR_ECC_521',
+  'DROPBEAR_ED25519', 'DROPBEAR_ENABLE_GCM_MODE', 'DROPBEAR_SHA2_512_HMAC',
+  'DROPBEAR_SK_ED25519', 'DROPBEAR_SNTRUP761',
+];
+for (const symbol of dropbearSymbols) {
+  const option = dropbear.allOptions.find((row) => row.symbol === symbol);
+  assert(option, `missing Dropbear regression symbol: ${symbol}`);
+  assert(!option.depends.some((expression) => expression.includes(`!${symbol}`)));
+  assert(!option.depends.some((expression) => expression.includes(symbol) && expression.includes('= n')));
+}
+const nasm = dropbear.allOptions.find((row) => row.symbol === 'NASM');
+assert.deepEqual(nasm?.depends, ['(i386 || x86_64)']);
+assert.deepEqual(nasm?.promptIf, ['TOOLCHAINOPTS']);
+assert(!nasm?.depends.includes('TOOLCHAINOPTS'));
+assert.equal(dropbear.validation.semantic.valid, true);
+assert.equal(dropbear.comments.length, 9);
+const dropbearWarning = dropbear.comments.find((row) => row.prompt === 'KEX warning');
+assert.deepEqual(dropbearWarning?.depends, ['PACKAGE_dropbear', '!DROPBEAR_CHACHA20POLY1305']);
+assert(!dropbear.allOptions.find((row) => row.symbol === 'DROPBEAR_CHACHA20POLY1305')?.depends
+  .includes('!DROPBEAR_CHACHA20POLY1305'));
+assert.equal(lintKconfigOptions([{ symbol: 'SELF', type: 'bool', depends: ['!SELF'], defaults: ['y'] }]).valid, false);
+assert.equal(lintKconfigOptions([{ symbol: 'SAFE', type: 'bool', depends: ['OTHER'], defaults: ['y'] }]).valid, true);
 
 // Curated applications/groups and size aggregation remain generic data contracts.
 const curated = policy.curatedApplications || [];

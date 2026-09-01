@@ -329,32 +329,132 @@ function addImplicitMenuParents(options) {
   }
 }
 
+function parsePromptClause(text) {
+  const value = String(text || '');
+  const match = value.match(/"((?:[^"\\]|\\.)*)"/);
+  if (!match) return { prompt: '', condition: '' };
+  const prompt = match[1].replace(/\\"/g, '"');
+  const suffix = value.slice(match.index + match[0].length).trim();
+  const condition = suffix.match(/^if\s+(.+)$/)?.[1]?.trim() || '';
+  return { prompt, condition };
+}
+
+function selfNegativeDependency(expression, symbol) {
+  const tokens = String(expression || '').match(/\|\||&&|!=|=|!|\(|\)|"[^"\\]*(?:\\.[^"\\]*)*"|[A-Za-z0-9_+./@-]+/g) || [];
+  for (let index = 0; index < tokens.length; index++) {
+    if (tokens[index] !== symbol) continue;
+    const previous = tokens[index - 1] || '';
+    const next = tokens[index + 1] || '';
+    const value = tokens[index + 2] || '';
+    if (previous === '!' || (next === '=' && value !== 'y') || (next === '!=' && value === 'y')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Diagnose parser output for relations that deserve source review. The check
+ * is intentionally syntax-based and generic: it never names a package,
+ * source, branch, or target. Findings are high-confidence diagnostics, not a
+ * hard gate: unusual upstream constructs still require source-level review.
+ */
+export function lintKconfigOptions(options = []) {
+  const findings = [];
+  for (const option of options) {
+    const symbol = String(option?.symbol || '').trim();
+    if (!symbol) continue;
+    const expressions = [...new Set([
+      ...(option.depends || []),
+      ...(option.directDepends || []),
+      ...(option.inheritedDepends || []),
+      ...(option.dependsVariants || []).flat(),
+    ].map((value) => String(value || '').trim()).filter(Boolean))];
+    const negative = expressions.filter((expression) => selfNegativeDependency(expression, symbol));
+    if (!negative.length) continue;
+    const defaultY = (option.defaults || []).some((value) => /^y(?:\s+if\s+|$)/.test(String(value).trim()));
+    findings.push({
+      kind: defaultY ? 'default-y-self-negative-dependency' : 'self-negative-dependency',
+      symbol,
+      expressions: negative,
+      defaultY,
+    });
+  }
+  return {
+    valid: findings.length === 0,
+    findings,
+    counts: {
+      selfNegativeDependency: findings.filter((item) => item.kind === 'self-negative-dependency').length,
+      defaultYSelfNegativeDependency: findings.filter((item) => item.kind === 'default-y-self-negative-dependency').length,
+    },
+  };
+}
+
 export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   const options = [];
   const choices = [];
+  const comments = [];
+  const menus = [];
   const seen = new Set();
   let choiceSeq = 0;
 
-  function parseFile(file, inheritedPath = [], inheritedDepends = [], inheritedChoice = '') {
+  function parseFile(file, inheritedPath = [], inheritedDepends = [], inheritedChoice = '', inheritedVisibleIf = [], inheritedMenuVisibleIf = []) {
     file = normalize(file);
-    const seenKey = `${file}\0${inheritedPath.join('/')}\0${inheritedDepends.join('&&')}`;
+    const seenKey = `${file}\0${inheritedPath.join('/')}\0${inheritedDepends.join('&&')}\0${inheritedVisibleIf.join('&&')}\0${inheritedMenuVisibleIf.join('&&')}\0${inheritedChoice}`;
     if (seen.has(seenKey) || !existsSync(file)) return;
     seen.add(seenKey);
     const lines = readFileSync(file, 'utf8').replace(/\\\r?\n/g, ' ').replace(/\r\n/g, '\n').split('\n');
     const menuPath = [...inheritedPath];
     const conditions = [...inheritedDepends];
+    const visibilityConditions = [...inheritedVisibleIf];
+    const menuVisibilityConditions = [...inheritedMenuVisibleIf];
     const choiceStack = inheritedChoice ? [inheritedChoice] : [];
+    const ifFrames = [];
+    const menuFrames = [];
+    const choiceFrames = [];
     let current = null;
     let currentChoice = null;
+    let currentComment = null;
     let help = false;
     let helpIndent = -1;
     const indentWidth = (raw) => {
       const prefix = raw.match(/^\s*/)?.[0] || '';
       return [...prefix].reduce((total, char) => total + (char === '\t' ? 8 : 1), 0);
     };
+    const finishComment = () => {
+      if (!currentComment) return;
+      currentComment.directDepends = [...new Set((currentComment.directDepends || []).filter(Boolean))];
+      currentComment.inheritedDepends = [...new Set((currentComment.inheritedDepends || []).filter(Boolean))];
+      currentComment.depends = [...new Set([
+        ...currentComment.inheritedDepends,
+        ...currentComment.directDepends,
+      ].filter(Boolean))];
+      currentComment.promptIf = [...new Set((currentComment.promptIf || []).filter(Boolean))];
+      currentComment.visibleIf = [...new Set((currentComment.visibleIf || []).filter(Boolean))];
+      comments.push(currentComment);
+      currentComment = null;
+    };
     const finish = () => {
       if (!current) return;
-      current.depends = [...new Set(current.depends.filter(Boolean))];
+      current.directDepends = [...new Set((current.directDepends || []).filter(Boolean))];
+      current.inheritedDepends = [...new Set((current.inheritedDepends || []).filter(Boolean))];
+      current.depends = [...new Set([
+        ...current.inheritedDepends,
+        ...current.directDepends,
+      ].filter(Boolean))];
+      current.promptIf = [...new Set((current.promptIf || []).filter(Boolean))];
+      current.promptConditions = [...current.promptIf];
+      current.inheritedVisibleIf = [...new Set((current.inheritedVisibleIf || []).filter(Boolean))];
+      current.menuVisibleIf = [...new Set((current.menuVisibleIf || []).filter(Boolean))];
+      current.visibleIf = [...new Set([
+        ...current.inheritedVisibleIf,
+        ...(current.directVisibleIf || []),
+      ].filter(Boolean))];
+      current.visibility = {
+        promptIf: [...current.promptIf],
+        menuVisibleIf: [...current.menuVisibleIf],
+        effective: [...current.visibleIf],
+      };
       if (current.symbol) {
         current.visible = Boolean(current.prompt);
         current.hidden = !current.visible;
@@ -364,6 +464,15 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       current = null;
       help = false;
       helpIndent = -1;
+    };
+    const finishNode = () => {
+      finish();
+      finishComment();
+    };
+    const prompt = (node, value) => {
+      const parsed = parsePromptClause(value);
+      if (parsed.prompt) node.prompt = parsed.prompt;
+      if (parsed.condition) node.promptIf.push(parsed.condition);
     };
 
     for (let index = 0; index < lines.length; index++) {
@@ -377,11 +486,15 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       help = false;
       helpIndent = -1;
       if (/^(config|menuconfig)\s+/.test(line)) {
-        finish();
+        finishNode();
         const [, kind, symbol] = line.match(/^(config|menuconfig)\s+(\S+)/);
         current = {
           symbol, kind, type: '', prompt: '', path: [...menuPath],
-          depends: [...conditions], defaults: [], selects: [], implies: [], ranges: [],
+          depends: [...conditions], directDepends: [], inheritedDepends: [...conditions],
+          directVisibleIf: [], inheritedVisibleIf: [...visibilityConditions],
+          inheritedMenuVisibleIf: [...menuVisibilityConditions],
+          menuVisibleIf: [...menuVisibilityConditions], visibleIf: [],
+          promptIf: [], defaults: [], selects: [], implies: [], ranges: [],
           choice: choiceStack.at(-1) || '',
           source: relativeSource(topdir, file),
           location: { file: relativeSource(topdir, file), line: index + 1 },
@@ -389,62 +502,163 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
         continue;
       }
       if (/^mainmenu\s+"/.test(line)) {
-        finish();
+        finishNode();
         continue;
       }
       if (/^menu\s+"/.test(line)) {
-        finish();
-        menuPath.push(quoted(line));
+        finishNode();
+        const label = quoted(line);
+        const frame = {
+          pathLength: menuPath.length,
+          dependsLength: conditions.length,
+          visibleLength: visibilityConditions.length,
+          menuVisibleLength: menuVisibilityConditions.length,
+          directDepends: [],
+          directVisibleIf: [],
+          prompt: label,
+          path: [...menuPath, label],
+          source: relativeSource(topdir, file),
+          location: { file: relativeSource(topdir, file), line: index + 1 },
+        };
+        menuFrames.push(frame);
+        menuPath.push(label);
+        menus.push(frame);
         continue;
       }
-      if (line === 'endmenu') {
-        finish();
-        if (menuPath.length > inheritedPath.length) menuPath.pop();
+      if (/^endmenu\b/.test(line)) {
+        finishNode();
+        const frame = menuFrames.pop();
+        if (frame) {
+          conditions.length = frame.dependsLength;
+          visibilityConditions.length = frame.visibleLength;
+          menuVisibilityConditions.length = frame.menuVisibleLength;
+          menuPath.length = frame.pathLength;
+        }
         continue;
       }
       if (line.startsWith('if ')) {
-        finish();
+        finishNode();
+        ifFrames.push({ dependsLength: conditions.length });
         conditions.push(line.slice(3).trim());
         continue;
       }
-      if (line === 'endif') {
-        finish();
-        if (conditions.length > inheritedDepends.length) conditions.pop();
+      if (/^endif\b/.test(line)) {
+        finishNode();
+        const frame = ifFrames.pop();
+        if (frame) conditions.length = frame.dependsLength;
         continue;
       }
       if (line === 'choice' || line.startsWith('choice ')) {
-        finish();
+        finishNode();
         const id = `choice-${++choiceSeq}`;
-        currentChoice = { id, prompt: '', type: 'bool', depends: [...conditions], defaults: [] };
+        const choice = {
+          id, prompt: parsePromptClause(line.slice('choice'.length)).prompt,
+          type: 'bool', depends: [...conditions], directDepends: [], inheritedDepends: [...conditions],
+          promptIf: [], directVisibleIf: [], inheritedVisibleIf: [...visibilityConditions],
+          inheritedMenuVisibleIf: [...menuVisibilityConditions],
+          visibleIf: [...visibilityConditions], menuVisibleIf: [...menuVisibilityConditions], defaults: [],
+          source: relativeSource(topdir, file),
+          location: { file: relativeSource(topdir, file), line: index + 1 },
+        };
+        const initialPrompt = parsePromptClause(line.slice('choice'.length));
+        if (initialPrompt.condition) choice.promptIf.push(initialPrompt.condition);
+        currentChoice = choice;
         choices.push(currentChoice);
+        choiceFrames.push({ choice, menuDepth: menuFrames.length,
+          dependsLength: conditions.length, visibleLength: visibilityConditions.length,
+          menuVisibleLength: menuVisibilityConditions.length });
         choiceStack.push(id);
         continue;
       }
-      if (line === 'endchoice') {
-        finish();
+      if (/^endchoice\b/.test(line)) {
+        finishNode();
+        const frame = choiceFrames.pop();
+        if (frame) {
+          frame.choice.directDepends = [...new Set(frame.choice.directDepends.filter(Boolean))];
+          frame.choice.inheritedDepends = [...new Set(frame.choice.inheritedDepends.filter(Boolean))];
+          frame.choice.depends = [...new Set([...frame.choice.inheritedDepends, ...frame.choice.directDepends].filter(Boolean))];
+          frame.choice.visibleIf = [...new Set([...frame.choice.inheritedVisibleIf, ...frame.choice.directVisibleIf].filter(Boolean))];
+          frame.choice.menuVisibleIf = [...frame.choice.inheritedMenuVisibleIf];
+          frame.choice.promptConditions = [...frame.choice.promptIf];
+          frame.choice.visibility = {
+            promptIf: [...frame.choice.promptIf],
+            menuVisibleIf: [...frame.choice.menuVisibleIf],
+            effective: [...frame.choice.visibleIf],
+          };
+          conditions.length = frame.dependsLength;
+          visibilityConditions.length = frame.visibleLength;
+          menuVisibilityConditions.length = frame.menuVisibleLength;
+        }
         choiceStack.pop();
-        currentChoice = null;
+        currentChoice = choiceFrames.at(-1)?.choice || null;
         continue;
       }
       const sourceMatch = line.match(/^((?:o|r|or)?source)\s+"([^"]+)"/);
       if (sourceMatch) {
-        finish();
+        finishNode();
         const relativeBase = sourceMatch[1].includes('rsource') ? dirname(file) : topdir;
         for (const child of expandSource(sourceMatch[2], topdir, relativeBase)) {
-          parseFile(child, menuPath, conditions, choiceStack.at(-1) || '');
+          parseFile(child, menuPath, conditions, choiceStack.at(-1) || '', visibilityConditions, menuVisibilityConditions);
         }
         continue;
       }
-      if (!current && currentChoice) {
+      if (line.startsWith('comment ')) {
+        finishNode();
+        const parsed = parsePromptClause(line.slice('comment'.length));
+        currentComment = {
+          prompt: parsed.prompt,
+          path: [...menuPath],
+          directDepends: [],
+          inheritedDepends: [...conditions],
+          depends: [...conditions],
+          promptIf: parsed.condition ? [parsed.condition] : [],
+          visibleIf: [...visibilityConditions],
+          source: relativeSource(topdir, file),
+          location: { file: relativeSource(topdir, file), line: index + 1 },
+        };
+        continue;
+      }
+      if (currentComment) {
+        if (line.startsWith('depends on ')) currentComment.directDepends.push(line.slice(11).trim());
+        else if (line.startsWith('visible if ')) currentComment.visibleIf.push(line.slice(11).trim());
+        else if (line.startsWith('prompt ')) {
+          const parsed = parsePromptClause(line);
+          if (parsed.condition) currentComment.promptIf.push(parsed.condition);
+        }
+        continue;
+      }
+      if (!current && currentChoice && menuFrames.length === (choiceFrames.at(-1)?.menuDepth ?? menuFrames.length)) {
         if (/^(bool|tristate|string|int|hex)\b/.test(line)) {
           currentChoice.type = line.match(/^(\w+)/)[1];
-          currentChoice.prompt ||= quoted(line);
-        } else if (line.startsWith('prompt ')) currentChoice.prompt = quoted(line);
-        else if (line.startsWith('depends on ')) currentChoice.depends.push(line.slice(11).trim());
+          prompt(currentChoice, line.replace(/^(bool|tristate|string|int|hex)\b/, ''));
+        } else if (line.startsWith('prompt ')) prompt(currentChoice, line);
+        else if (line.startsWith('depends on ')) {
+          const expression = line.slice(11).trim();
+          currentChoice.directDepends.push(expression);
+          currentChoice.depends.push(expression);
+          conditions.push(expression);
+        } else if (line.startsWith('visible if ')) {
+          const expression = line.slice(11).trim();
+          currentChoice.directVisibleIf.push(expression);
+          currentChoice.visibleIf.push(expression);
+          visibilityConditions.push(expression);
+        }
         else if (line.startsWith('default ')) currentChoice.defaults.push(line.slice(8).trim());
         continue;
       }
-      if (!current) continue;
+      if (!current) {
+        if (menuFrames.length && line.startsWith('depends on ')) {
+          const expression = line.slice(11).trim();
+          menuFrames.at(-1).directDepends.push(expression);
+          conditions.push(expression);
+        } else if (menuFrames.length && line.startsWith('visible if ')) {
+          const expression = line.slice(11).trim();
+          menuFrames.at(-1).directVisibleIf.push(expression);
+          visibilityConditions.push(expression);
+          menuVisibilityConditions.push(expression);
+        }
+        continue;
+      }
       if (line === 'help' || line === '---help---') {
         help = true;
         helpIndent = indentWidth(raw);
@@ -453,24 +667,35 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       const typeMatch = line.match(/^(bool|tristate|string|int|hex)\b(.*)$/);
       if (typeMatch) {
         current.type = typeMatch[1];
-        current.prompt ||= quoted(typeMatch[2]);
-      } else if (line.startsWith('prompt ')) current.prompt = quoted(line);
-      else if (line.startsWith('depends on ')) current.depends.push(line.slice(11).trim());
-      else if (line.startsWith('visible if ')) current.depends.push(line.slice(11).trim());
+        prompt(current, typeMatch[2]);
+      } else if (line.startsWith('prompt ')) prompt(current, line);
+      else if (line.startsWith('depends on ')) current.directDepends.push(line.slice(11).trim());
+      else if (line.startsWith('visible if ')) current.directVisibleIf.push(line.slice(11).trim());
       else if (line.startsWith('default ')) current.defaults.push(line.slice(8).trim());
+      else if (line.startsWith('def_bool ')) {
+        current.type ||= 'bool';
+        current.defaults.push(line.slice(9).trim());
+      } else if (line.startsWith('def_tristate ')) {
+        current.type ||= 'tristate';
+        current.defaults.push(line.slice(13).trim());
+      }
       else if (line.startsWith('select ')) current.selects.push(line.slice(7).trim());
       else if (line.startsWith('imply ')) current.implies.push(line.slice(6).trim());
       else if (line.startsWith('range ')) current.ranges.push(line.slice(6).trim());
     }
-    finish();
+    finishNode();
   }
 
   parseFile(entry);
   const validation = mergeKconfigOptions(options);
   addImplicitMenuParents(validation.options);
+  const semantic = lintKconfigOptions(validation.options);
   const visibleOptions = validation.options.filter((item) => item.visible !== false);
   const categories = [...new Set(visibleOptions.map((item) => item.path[0] || 'Other'))];
-  return { categories, options: visibleOptions, allOptions: validation.options, choices, validation };
+  return {
+    categories, options: visibleOptions, allOptions: validation.options, choices, comments, menus,
+    validation: { ...validation, semantic },
+  };
 }
 
 function relativeSource(topdir, file) {
@@ -504,6 +729,13 @@ function mergeKconfigOptions(rawOptions) {
   const nodeSnapshot = (node) => ({
     kind: node.kind, type: node.type, symbol: node.symbol, prompt: node.prompt,
     path: [...(node.path || [])], depends: [...(node.depends || [])],
+    directDepends: [...(node.directDepends || [])],
+    inheritedDepends: [...(node.inheritedDepends || [])],
+    directVisibleIf: [...(node.directVisibleIf || [])],
+    inheritedVisibleIf: [...(node.inheritedVisibleIf || [])],
+    inheritedMenuVisibleIf: [...(node.inheritedMenuVisibleIf || [])],
+    visibleIf: [...(node.visibleIf || [])], menuVisibleIf: [...(node.menuVisibleIf || [])],
+    promptIf: [...(node.promptIf || [])],
     defaults: [...(node.defaults || [])], selects: [...(node.selects || [])],
     implies: [...(node.implies || [])], ranges: [...(node.ranges || [])],
     choice: node.choice || '', help: node.help || '', source: node.source || '',
@@ -537,6 +769,15 @@ function mergeKconfigOptions(rawOptions) {
       // other definition is retained in the node/variant arrays below instead
       // of incorrectly turning conditional alternatives into one AND clause.
       depends: [...(first.depends || [])],
+      directDepends: [...(first.directDepends || [])],
+      inheritedDepends: [...(first.inheritedDepends || [])],
+      directVisibleIf: [...(first.directVisibleIf || [])],
+      inheritedVisibleIf: [...(first.inheritedVisibleIf || [])],
+      inheritedMenuVisibleIf: [...(first.inheritedMenuVisibleIf || [])],
+      visibleIf: [...(first.visibleIf || [])],
+      menuVisibleIf: [...(first.menuVisibleIf || [])],
+      promptIf: [...(first.promptIf || [])],
+      promptConditions: [...(first.promptConditions || first.promptIf || [])],
       defaults: unique(nodes.flatMap((node) => node.defaults || [])),
       selects: unique(nodes.flatMap((node) => node.selects || [])),
       implies: unique(nodes.flatMap((node) => node.implies || [])),
@@ -544,6 +785,11 @@ function mergeKconfigOptions(rawOptions) {
       conflicts: symbolConflicts,
       variants,
       dependsVariants: nodes.map((node) => [...(node.depends || [])]),
+      directDependsVariants: nodes.map((node) => [...(node.directDepends || [])]),
+      inheritedDependsVariants: nodes.map((node) => [...(node.inheritedDepends || [])]),
+      visibleIfVariants: nodes.map((node) => [...(node.visibleIf || [])]),
+      menuVisibleIfVariants: nodes.map((node) => [...(node.menuVisibleIf || [])]),
+      promptIfVariants: nodes.map((node) => [...(node.promptIf || [])]),
       defaultsVariants: nodes.map((node) => [...(node.defaults || [])]),
       selectsVariants: nodes.map((node) => [...(node.selects || [])]),
       impliesVariants: nodes.map((node) => [...(node.implies || [])]),

@@ -1,0 +1,18 @@
+comment "Nested file comment"
+	depends on !NESTED_OPTION
+
+menu "Nested menu"
+depends on NESTED_GATE
+visible if NESTED_VISIBLE
+config NESTED_OPTION
+	bool "Nested option" if NESTED_PROMPT
+	default y
+help
+	A help paragraph that includes config, visible if and default words.
+endmenu
+
+choice
+	prompt "Nested choice"
+config NESTED_CHOICE
+	bool "Nested choice item"
+endchoice

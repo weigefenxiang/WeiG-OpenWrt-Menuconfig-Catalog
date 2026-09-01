@@ -1,0 +1,63 @@
+mainmenu "Dropbear and host tools"
+
+menu "Dropbear"
+if PACKAGE_dropbear
+
+config DROPBEAR_CHACHA20POLY1305
+	bool "ChaCha20-Poly1305"
+	default y
+comment "KEX warning"
+	depends on !DROPBEAR_CHACHA20POLY1305
+
+config DROPBEAR_CLI_NETCAT
+	bool "CLI netcat"
+	default y
+comment "CLI warning"
+	depends on !DROPBEAR_CLI_NETCAT
+
+config DROPBEAR_ECC_521
+	bool "ECC 521"
+	default y
+comment "ECC warning"
+	depends on !DROPBEAR_ECC_521
+
+config DROPBEAR_ED25519
+	bool "Ed25519"
+	default y
+comment "Ed25519 warning"
+	depends on !DROPBEAR_ED25519
+
+config DROPBEAR_ENABLE_GCM_MODE
+	bool "GCM mode"
+	default y
+comment "GCM warning"
+	depends on !DROPBEAR_ENABLE_GCM_MODE
+
+config DROPBEAR_SHA2_512_HMAC
+	bool "SHA2-512 HMAC"
+	default y
+comment "HMAC warning"
+	depends on !DROPBEAR_SHA2_512_HMAC
+
+config DROPBEAR_SK_ED25519
+	bool "SK Ed25519"
+	depends on DROPBEAR_SK_KEYS
+	default y
+comment "SK warning"
+	depends on !DROPBEAR_SK_ED25519
+
+config DROPBEAR_SNTRUP761
+	bool "SNTRUP761"
+	default y
+comment "SNTRUP warning"
+	depends on !DROPBEAR_SNTRUP761
+
+endif
+endmenu
+
+config NASM
+	bool "Build nasm" if TOOLCHAINOPTS
+	depends on (i386 || x86_64)
+	default y
+comment "C Library"
+	depends on TOOLCHAINOPTS

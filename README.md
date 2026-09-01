@@ -16,6 +16,13 @@ JavaScript 中写死分支、Target 或菜单项目。
 - The visible menu and the complete symbol table are separate: no-prompt/hidden Kconfig symbols remain out of the normal tree but are published for Advanced search and validation.
 - Runtime relations use `relations.schema=3`: array records, string/expression pools, bit flags and integer adjacency lists retain every non-Target Kconfig symbol plus packageinfo-only packages without repeating object keys and symbol strings. A schema-2 readable graph is generated only for explicit diagnostics.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
+  The parser keeps effective `depends` for existing consumers and also exposes the source
+  boundary as `directDepends` plus `inheritedDepends`; prompt guards are kept separately in
+  `promptIf`, and menu/choice visibility in `visibleIf` (with menu-only `menuVisibleIf`).
+  A `comment` is a standalone Kconfig node, so its conditions can never leak into the
+  preceding or following symbol. These fields are source/parser metadata; the compact
+  relations schema currently serializes value relations only and must not treat a prompt or
+  visibility condition as a value dependency.
 - Repeated Kconfig definitions are merged by symbol. Only explicit, incompatible types are hard conflicts; split declarations such as `tristate` in one file and `prompt` in another are legal and retained as one option.
 - Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
@@ -67,6 +74,11 @@ The refresh tool verifies every selected menu shard from the chosen Catalog data
 - 顶层 `make menuconfig` 中可见的 bool、tristate、choice、string、int、hex，以及无 prompt 的隐藏 Kconfig 符号
 - 可见菜单与完整符号集合分离；隐藏项不会污染普通菜单，但会进入 Advanced 搜索和配置验证
 - `depends on`、`select`、`imply`、`default`、`range`、choice、provider、冲突、反向依赖与菜单路径
+- 解析器区分有效依赖 `depends`、当前声明的 `directDepends`、作用域继承的
+  `inheritedDepends`，并把 `prompt ... if` 保存为 `promptIf`、菜单/choice 的可见条件保存为
+  `visibleIf`（仅菜单条件为 `menuVisibleIf`）。`comment` 是独立的 Kconfig 节点，其条件
+  不会串入前后配置项。上述字段属于源码解析元数据；当前 compact relations 只序列化取值
+  关系，使用方不得把 prompt 或可见条件当成取值依赖。
 - `menu/endmenu` 显式层级，以及 `menuconfig` 通过正向 `if/depends` 形成的隐式父子层级
 - 软件包 Kconfig 选项及其依赖关系
 

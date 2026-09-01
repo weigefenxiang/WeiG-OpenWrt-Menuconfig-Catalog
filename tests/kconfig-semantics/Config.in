@@ -1,0 +1,50 @@
+mainmenu "Kconfig semantic boundaries"
+
+menu "Outer menu"
+depends on OUTER_GATE
+visible if OUTER_VISIBLE
+
+config OUTER_OPTION
+	bool "Outer option"
+	default y
+
+if IF_GATE
+config IF_OPTION
+	bool "Prompt guarded option" if PROMPT_GATE
+	depends on DIRECT_GATE
+	default y
+
+comment "A warning must not modify IF_OPTION"
+	depends on !IF_OPTION
+
+source "nested.in"
+
+config AFTER_COMMENT
+	bool "After comment"
+	default y
+endif
+
+choice
+	prompt "Choice"
+	depends on CHOICE_GATE
+	visible if CHOICE_VISIBLE
+	default CHOICE_A
+config CHOICE_A
+	bool "Choice A"
+config CHOICE_B
+	bool "Choice B"
+endchoice
+
+comment "A comment followed by a menu"
+	depends on !AFTER_COMMENT
+
+menu "Trailing menu"
+depends on TRAILING_GATE
+visible if TRAILING_VISIBLE
+config TRAILING_OPTION
+	def_bool y
+help
+	The words menu, source, choice and depends on here are help text.
+endmenu
+
+endmenu
