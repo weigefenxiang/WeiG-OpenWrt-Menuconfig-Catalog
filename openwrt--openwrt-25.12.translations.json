@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "openwrt-25.12"
   },
-  "generatedAt": "2026-08-30T02:50:41.743Z",
+  "generatedAt": "2026-09-01T01:30:38.926Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 9799,
+  "options": 9800,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -62311,6 +62311,13 @@
     {
       "symbol": "PACKAGE_umdns",
       "promptEn": "OpenWrt Multicast DNS Daemon",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_uneighbord",
+      "promptEn": "802.11k Neighbor Report synchronizer",
       "path": [
         "Network"
       ]
