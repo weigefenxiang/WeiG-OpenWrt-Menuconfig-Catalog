@@ -36,6 +36,9 @@ const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
 let menu = parseKconfigTree(tree);
 if (menu.validation.dynamicExpressions.length) {
+  // Preserve the actual source locations before a native backend can reject
+  // an unsupported dialect. A backend error alone hides the causal input.
+  console.log('Native Kconfig expansion required:', JSON.stringify(menu.validation.dynamicExpressions.slice(0, 20)));
   const events = traceNativeKconfig(tree);
   menu = parseKconfigTree(tree, join(tree, 'Config.in'), {
     nativeReplay: createNativeExpansionReplay(tree, events),

@@ -33,6 +33,11 @@ assert.equal(menu.choices[0]?.resetIfAst?.[0]?.complete, true);
 const relations = buildKconfigRelations(menu.allOptions, [], menu.choices, {
   parserValidation: menu.validation,
 });
+for (const symbol of ['LATE_BOOL', 'LATE_TRI', 'LATE_STRING', 'LATE_INT', 'LATE_HEX']) {
+  const option = menu.allOptions.find((row) => row.symbol === symbol);
+  assert(option.type, 'merged symbol has its later declared type');
+  assert.equal(option.defaultsTyped[0].type, '', 'first untyped definition stays explicit');
+}
 const relationDuplicate = relations.records.find((row) => row.configSymbol === 'ROUNDTRIP_DUP');
 assert.equal(relationDuplicate?.nodes.length, 2);
 assert.equal(relations.records.find((row) => row.configSymbol === 'ROUNDTRIP_TYPED')?.defaults[0],

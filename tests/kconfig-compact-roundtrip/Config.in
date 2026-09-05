@@ -37,3 +37,28 @@ config ROUNDTRIP_CHOICE_A
 config ROUNDTRIP_CHOICE_B
 	bool "Roundtrip choice B"
 endchoice
+
+# Real generated metadata can add defaults before a later type declaration.
+config LATE_BOOL
+ default y
+config LATE_TRI
+ default m
+config LATE_STRING
+ default "first"
+config LATE_INT
+ default 7
+ range 1 16
+config LATE_HEX
+ default 0x2a
+ range 0x1 0xff
+
+config LATE_BOOL
+ bool "Late bool"
+config LATE_TRI
+ tristate "Late tristate"
+config LATE_STRING
+ string "Late string"
+config LATE_INT
+ int "Late int"
+config LATE_HEX
+ hex "Late hex"

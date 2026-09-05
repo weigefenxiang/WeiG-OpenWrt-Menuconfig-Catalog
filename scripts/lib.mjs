@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, normalize, resolve } from 'node:path';
+import { hasNativeLiteralQuotedDollars } from './native-kconfig-preprocess.mjs';
 
 export const safeSlug = (value) => String(value).toLowerCase()
   .replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'item';
@@ -1019,7 +1020,8 @@ function validateParsedKconfigOutput(options = [], choices = []) {
   return { valid: missing.length === 0, capabilityMatrix, missing, observed };
 }
 
-export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in'), { nativeReplay = null } = {}) {
+export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in'), { nativeReplay = null, implementation = topdir } = {}) {
+  const literalQuotedDollars = hasNativeLiteralQuotedDollars(implementation);
   const options = [];
   const choices = [];
   const comments = [];
@@ -1078,7 +1080,9 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in'), { na
     let helpTarget = null;
     const indentWidth = (raw) => {
       const prefix = raw.match(/^\s*/)?.[0] || '';
-      return [...prefix].reduce((total, char) => total + (char === '\t' ? 8 : 1), 0);
+      // Native lexer advances to the next tab stop; a tab is not always
+      // eight additional columns (e.g. tab-space-tab and tab-tab both = 16).
+      return [...prefix].reduce((total, char) => char === '\t' ? (Math.floor(total / 8) + 1) * 8 : total + 1, 0);
     };
     const resetHelp = () => {
       help = false;
@@ -1112,7 +1116,13 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in'), { na
       return true;
     };
     const recordDynamicExpression = (text, lineNumber) => {
-      const value = String(text || '').replace(/\\./g, '');
+      let value = stripKconfigInlineComment(text);
+      if (literalQuotedDollars && !/^(?:source|rsource|osource|orsource|mainmenu)\b/.test(value)) {
+        // Only mask complete quoted tokens. Conditions/unquoted macros still
+        // require native evaluation; the actual stored values remain intact.
+        value = value.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, '""');
+      }
+      value = value.replace(/\\./g, '');
       // Known source-root variables are expanded above. All other $(...)
       // forms (notably $(shell,...)) require Kconfig's evaluator and must be
       // preserved as an explicit fail-closed diagnostic, never guessed.

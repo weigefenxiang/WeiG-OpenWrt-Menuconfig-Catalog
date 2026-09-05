@@ -92,7 +92,10 @@ function expressionVariantsId(record, key, strings, expressions, expressionLists
 }
 
 function normalizedTypedDefault(row, fallbackType, strings, expressions) {
-  const type = String(row?.type || fallbackType || '');
+  // Empty type is explicit provenance of an untyped definition, not missing
+  // data. A later definition may type the symbol, but compression must not
+  // rewrite the earlier typed row with the merged symbol type.
+  const type = String(row?.type ?? fallbackType ?? '');
   const valueKind = String(row?.valueKind || 'unknown');
   return {
     typeCode: TYPE_CODES[type] ?? 0,
@@ -106,7 +109,7 @@ function normalizedTypedDefault(row, fallbackType, strings, expressions) {
 }
 
 function normalizedTypedRange(row, fallbackType, strings, expressions) {
-  const type = String(row?.type || fallbackType || '');
+  const type = String(row?.type ?? fallbackType ?? '');
   return {
     typeCode: TYPE_CODES[type] ?? 0,
     min: row?.min === undefined ? String(row?.minRaw ?? '') : row.min,

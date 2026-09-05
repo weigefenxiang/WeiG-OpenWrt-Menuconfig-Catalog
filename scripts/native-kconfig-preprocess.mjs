@@ -3,6 +3,24 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 
+// Recognize the legacy lexer's positive literal-string rule, not a branch or
+// package name. Missing/unknown implementations stay conservative. In this
+// dialect '$' in a quoted value is ordinary text; source/mainmenu have a
+// separate symbol expansion path and are deliberately NOT covered here.
+export function hasNativeLiteralQuotedDollars(implementation) {
+  const source = join(implementation, 'scripts', 'config');
+  const lexer = join(source, 'zconf.l');
+  if (!existsSync(lexer) || existsSync(join(source, 'preprocess.c')) ||
+      existsSync(join(source, 'lexer.l'))) return false;
+  const text = readFileSync(lexer, 'utf8');
+  if (/\b(?:expand_dollar|expand_one_token|variable_add)\s*\(/.test(text)) return false;
+  const strings = text.match(/<STRING>\s*\{([\s\S]*?)\n\}\s*\n/)?.[1] || '';
+  const literalRule = String.raw`[^'"\\\n]+`;
+  return strings.includes(literalRule) &&
+    strings.includes('append_string(yytext, yyleng);') &&
+    strings.includes('return T_WORD_QUOTE;') && !strings.includes('$');
+}
+
 // No macro interpreter here: use the exact source tree's lexer, parser and
 // preprocessor together, with the same variable assignment order and cwd.
 export function traceNativeKconfig(tree, entry = join(tree, 'Config.in'), implementation = tree) {
