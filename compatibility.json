@@ -89,13 +89,7 @@
         "dockerd"
       ],
       "buildDependency": {
-        "package": "dockerd",
-        "triggerPackages": [
-          "docker",
-          "containerd",
-          "runc",
-          "tini"
-        ]
+        "package": "dockerd"
       },
       "evidence": [
         {

@@ -9,6 +9,9 @@ import { dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runVirtualProbe } from './package-probe-virtual.mjs';
 import { buildFailureFingerprint, classifyPrerequisiteFailure, classifyTargetPrerequisiteFailure, extractFailedBuildTargets, isCommandInfrastructureFailure, isMakeInfrastructureFailure, probeResultExitCode } from './package-probe-failure-classification.mjs';
+import { parsePackageInfo } from './lib.mjs';
+import { derivePackageDependencyClosure, validatePackageClosureGraph } from './kconfig-relations.mjs';
+import { applicableBuildDependencies, normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_RE = /^[A-Za-z0-9][A-Za-z0-9+_.@-]{0,95}$/;
@@ -41,6 +44,20 @@ const MAKE_PREFIX = String(process.env.PROBE_MAKE_ARGUMENT || '').trim();
 const requestedJobs = Number(process.env.PROBE_JOBS || 0);
 const JOBS = Number.isSafeInteger(requestedJobs) && requestedJobs > 0 ? requestedJobs : Math.max(1, availableParallelism() + 1);
 const COMMAND_OUTPUT_LIMIT = 256 * 1024;
+
+function loadCompatibilityDocument() {
+  try {
+    const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
+    const raw = JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8'));
+    return normalizeCompatibilityDocument(raw, policy);
+  } catch (error) {
+    // Do not turn a malformed reviewed rule document into an untracked
+    // package list.  The caller records this as an inconclusive gate.
+    return { error: String(error?.message || error), rules: [] };
+  }
+}
+
+const COMPATIBILITY_DOCUMENT = loadCompatibilityDocument();
 
 const MODE_LEVELS = Object.freeze({
   'config-resolve': 1,
@@ -500,6 +517,77 @@ function packageNamesFromInfo(text) {
   return new Set([...String(text || '').matchAll(/^Package:\s*(\S+)$/gm)].map((match) => match[1]));
 }
 
+function applicableProbeBuildDependencies(packageInfo) {
+  if (COMPATIBILITY_DOCUMENT.error) return {
+    packages: [], rules: [], unresolved: [{ reason: 'compatibility-document-invalid', error: COMPATIBILITY_DOCUMENT.error }],
+  };
+  const availablePackages = parsePackageInfo(packageInfo).map((item) => item.name);
+  return applicableBuildDependencies(COMPATIBILITY_DOCUMENT, {
+    source: SOURCE,
+    branch: BRANCH,
+    upstreamCommit: String(process.env.PROBE_UPSTREAM_COMMIT || '').toLowerCase(),
+    system: TARGET_SYSTEM,
+    targetSystem: TARGET_SYSTEM,
+    subtarget: SUBTARGET,
+    profile: PROFILE,
+    availablePackages,
+  });
+}
+
+function packageClosureGate(attempt, packageInfo, roots, phase) {
+  const dependencySet = applicableProbeBuildDependencies(packageInfo);
+  attempt.packageClosure = { ...dependencySet, phase, roots: [...roots] };
+  if (dependencySet.unresolved.length) {
+    attempt.stages.packageClosure = {
+      status: 'failure', reason: 'compatibility-rule-unresolved',
+      unresolved: dependencySet.unresolved,
+    };
+    log(`INCONCLUSIVE: compatibility build-dependency rules unresolved: ${JSON.stringify(dependencySet.unresolved)}`);
+    return { result: 'inconclusive', reason: 'compatibility-rule-unresolved' };
+  }
+  if (!dependencySet.packages.length) {
+    attempt.packageClosureCapability = {
+      complete: false,
+      capabilities: [],
+      validation: { format: 'openwrt-packageinfo-v1', reasons: ['no-applicable-build-dependency'] },
+    };
+    attempt.stages.packageClosure = { status: 'success', result: 'not-run', failedPackages: [] };
+    return { result: 'clear', reason: '' };
+  }
+  const packageRows = parsePackageInfo(packageInfo);
+  const packageCapability = validatePackageClosureGraph(packageRows);
+  attempt.packageClosureCapability = packageCapability;
+  if (!packageCapability.complete) {
+    attempt.stages.packageClosure = {
+      status: 'failure', result: 'inconclusive', reason: 'package-closure-capability-unavailable',
+      failedPackages: dependencySet.packages, validation: packageCapability.validation,
+    };
+    log(`INCONCLUSIVE: package-info closure capability unavailable: ${JSON.stringify(packageCapability.validation)}`);
+    return { result: 'inconclusive', reason: 'package-closure-capability-unavailable' };
+  }
+  const closure = derivePackageDependencyClosure(parsePackageInfo(packageInfo), roots, dependencySet.packages, {
+    selectedPackages: enabledPackageNames(attempt.resolvedPackageStates),
+  });
+  attempt.packageClosure = { ...attempt.packageClosure, ...closure };
+  attempt.stages.packageClosure = {
+    status: closure.result === 'reachable' ? 'failure' : closure.result === 'inconclusive' ? 'failure' : 'success',
+    result: closure.result, failedPackages: dependencySet.packages,
+    paths: closure.paths, unknown: closure.unknown,
+  };
+  if (closure.result === 'reachable') {
+    attempt.packageCauseKind = roots.some((root) => closure.paths.some((row) => row.root === root && row.target === root))
+      ? 'direct' : 'dependency';
+    attempt.failureCause = 'package-closure-failure';
+    for (const row of closure.paths) log(`FAIL: package closure reaches failed package ${row.target}: ${row.path.join(' -> ')}`);
+    return { result: 'incompatible', reason: 'package-closure-failure' };
+  }
+  if (closure.result === 'inconclusive') {
+    log(`INCONCLUSIVE: package closure unresolved: ${JSON.stringify(closure.unknown)}`);
+    return { result: 'inconclusive', reason: 'package-closure-unknown' };
+  }
+  return { result: 'clear', reason: '' };
+}
+
 function newL1Attempt(environment, phase = 'final') {
   return {
     source: SOURCE, branch: BRANCH,
@@ -855,13 +943,18 @@ function replayMakeVariables(directory, hostToolchain = null) {
   const sharedHost = typeof hostToolchain === 'string' ? hostToolchain : hostToolchain?.stagingDir;
   const hostBuildDir = typeof hostToolchain === 'object' ? hostToolchain?.buildDir : '';
   const stagingDirHost = sharedHost || paths.staging_dir_host;
+  // GNU make/OpenWrt accepts POSIX separators for these logical workspace
+  // variables.  Normalize on Windows as well so the replay contract is
+  // stable across hosts (and so suffix-based diagnostics do not confuse a
+  // path separator with a different directory layout).
+  const makePath = (value) => String(value || '').replaceAll('\\', '/');
   return [
-    `BUILD_DIR=${paths.build_dir}`,
-    ...(hostBuildDir ? [`BUILD_DIR_HOST=${hostBuildDir}`] : []),
-    `STAGING_DIR=${paths.staging_dir}`,
-    `STAGING_DIR_HOST=${stagingDirHost}`,
-    `TMP_DIR=${paths.tmp}`,
-    `BIN_DIR=${paths.bin}`,
+    `BUILD_DIR=${makePath(paths.build_dir)}`,
+    ...(hostBuildDir ? [`BUILD_DIR_HOST=${makePath(hostBuildDir)}`] : []),
+    `STAGING_DIR=${makePath(paths.staging_dir)}`,
+    `STAGING_DIR_HOST=${makePath(stagingDirHost)}`,
+    `TMP_DIR=${makePath(paths.tmp)}`,
+    `BIN_DIR=${makePath(paths.bin)}`,
   ];
 }
 
@@ -1517,6 +1610,19 @@ async function packageCompile(attempt, options = {}) {
   attempt.attemptedBuildTargets = [];
   attempt.executedBuildTargets = [];
   log(`Upstream root build targets / 上游入口目标: ${resolved.targets.join(' ')}`);
+  // The compatibility document is the only reviewed source for known failed
+  // concrete build packages.  Use the freshly refreshed .packageinfo graph to
+  // prove whether the selected roots can reach one before entering make's
+  // Target preparation/compile stages.  No package names are embedded here;
+  // missing or conditional graph facts remain structured inconclusive.
+  const closure = packageClosureGate(attempt, packageInfo || readPackageInfo(), roots, phase);
+  if (closure.result !== 'clear') {
+    if (phase === 'baseline' && closure.result === 'inconclusive') {
+      attempt.baselineBlockReason = closure.reason;
+      return { ...closure, result: 'blocked', reason: 'base-profile-prepare-failure' };
+    }
+    return closure;
+  }
   const target = await runStage(attempt, 'targetPrepare', () =>
     makeWithSerialRetry(['prepare'], 'Target build prerequisites', attempt));
   if (!target.ok) {

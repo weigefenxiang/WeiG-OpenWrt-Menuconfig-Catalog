@@ -15,7 +15,7 @@ Schema 4 added:
 - `sourceCommits`: optional full 40-character source commits, allowing a temporary upstream failure to stop matching when the source advances.
 - `targetScope`: optional exact Target `system`/`subtarget`/`profile` scope. When omitted, the rule covers every environment in the Source/Branch where the real package is present.
 - `failure`: required structured evidence for `build-failure`, containing `phase`, `cause`, a stable `code`, and optional `observed` details. It explains evidence and never drives dependencies or rewrites configuration.
-- `buildDependency`: optional, bounded build-trigger evidence for `build-failure`, strictly containing `package` and `triggerPackages`. `package` is the actual failed build target; `triggerPackages` are direct entry packages verified to invoke that target within the same exact `sourceCommits` boundary. It is not a general dependency database and is forbidden on `file-ownership` rules.
+- `buildDependency`: optional failed-target fact for `build-failure`, requiring only one real concrete `package`. Legacy `triggerPackages` remains readable in old rules, but is no longer required, maintained, or treated as a second dependency database. Direct roots must be derived and forward-verified from the exact Source/Branch/commit typed relations graph. It is forbidden on `file-ownership` rules.
 
 Legacy schema-2 rules keep the following fields:
 
@@ -36,7 +36,21 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 Rules cannot contain commands, patches, or package-specific executors. The build backend cannot turn them into locks or configuration rewrites. The browser may pass `buildDependency` evidence to the generic recommendation planner; that planner still uses only existing Kconfig relations and `applyUserIntent()` to produce minimal legal operations. Users may apply the recommendation, choose N/M/Y, or force continuation after a second confirmation.
 
-For a rule with `buildDependency`, consumers must treat the deduplicated union of `rule.packages`, `buildDependency.package`, and `buildDependency.triggerPackages` as the complete participant set. Every participant that still matches the rule in the initial configuration is an explicit compatibility cancellation target; a consumer must not demote it to an automatic linkage change or omit it merely because Kconfig may turn it off after another target is applied. Kconfig relations are used only to find legal operation order, release selectors, and compute genuine linkage changes outside the participant set. The final plan must confirm that every initially active participant no longer matches the rule.
+For a rule with `buildDependency`, consumers use the failed concrete `buildDependency.package` as the graph target, reverse-search current direct concrete roots, and forward-verify that every conditional path really reaches the target. Legacy `triggerPackages` is historical evidence only: it cannot expand the participant set, trigger cancellation, or replace the current graph. Unknown conditions, alternatives, select/imply paths, or virtual providers must return `inconclusive`; consumers must not guess from package, Source, or Branch names.
+
+Every relations asset declares `relationsComplete` and its field capabilities. If the declaration is missing or `false`, the web client and Probe must defer or return `inconclusive`; incomplete relations must never be turned into a compatibility conclusion.
+
+Package build closure is a separate narrow capability and does not depend on full typed Kconfig:
+relations also declare `packageClosureComplete`, `packageClosureCapabilities`, and
+`packageClosureValidation`. The producer may publish `complete-package-build-closure-v1` only
+after exact refreshed `.packageinfo` dependency tokens (including alternatives and conditions),
+virtual providers, and validated forward/reverse package edges are complete. This capability is
+sufficient for a generic failed-concrete-package closure proof from `buildDependency.package`;
+it must never promote `relationsComplete`. Deterministic Kconfig decisions for defaults, depends,
+select, imply, visibility, choice, or MODULES still require full `relationsComplete`; otherwise
+the consumer must return `inconclusive`.
+
+Schema-4 compact contract: `records[*]` follows the published `fields` array; its pools retain typed ordered defaults/ranges, raw and AST expressions, direct/inherited visibility and dependency variants, per-definition `nodes`, separate `packageConflicts`/`kconfigConflicts`, and package capability relations. `indexes` includes `byPackage`, `bySymbol`, `providers`, `reverseDependencies`, `reverseKconfig`, `reverseSelects`, `reverseImplies`, `forwardEdges`, and `reverseEdges`. Each edge retains `expressionAst`, `conditionAst`, nested `alternatives`, provider ownership, and an explicit `required: null` for candidate/unknown edges. Consumers must use the ordered definition records as evaluator input; flattened fields are compatibility projections only.
 
 Ordinary temporary-failure rules still use `sourceCommits` as their expiry boundary and may use `buildDependency` only with a full exact commit boundary. An explicitly approved schema-5 `preventive` rule instead keeps exact facts in `evidence` and controls preventive applicability independently through `environments`. With `packageAvailability: "if-present"`, a missing failed target skips the rule, while missing trigger entries are ignored. The rule triggers only when the effective configuration selects a failed target or trigger that actually exists in the current Catalog; the recommendation likewise targets only participants that both exist and are active. RootFS capacity, Runner, network, and disk failures do not belong in this document.
 
@@ -74,8 +88,7 @@ Normalized JSON is limited to 512 KiB uncompressed. Split by Source/Branch only 
 ### BLD-0003
 
 - Policy scope: every Source, Branch, and Target/Profile, but only where the current Catalog actually provides `dockerd`; environments without `dockerd` are skipped.
-- Failed target: `dockerd`.
-- Direct build triggers: `docker`, `containerd`, `runc`, and `tini`. A trigger absent from the current environment is ignored; every present and active trigger, plus `dockerd`, is an explicit recommendation target.
+- Failed target: `dockerd`. Direct entry packages are not maintained in this rule; they are derived from the exact Source/Branch/commit typed package/Kconfig/Make relations. No cancellation recommendation is produced without a proven path.
 - Problem: Moby 29.6.1 passes an empty `command -v` result to `cp` while copying nested executables.
 - Exact evidence: ImmortalWrt `openwrt-25.12` commit `6081813a…` in Runs `33091565296`, `32703315265`, `32702715228`, `32719724510`, `33229690268`, and `33230123378`, plus commit `1d34e7b…` in Run `33293241107`. This evidence does not claim that other Sources or Branches were observed failing.
 - Removal: narrow or delete `environments` only when the global preventive policy is explicitly withdrawn. Exact evidence remains maintained as exact evidence and must not be fabricated to mirror the broader policy scope.

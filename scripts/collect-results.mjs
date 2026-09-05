@@ -179,7 +179,12 @@ for (const artifactDir of artifactDirs) {
       const relations = document.relations || document;
       if (document.source?.id !== attempt.source.id || document.source?.branch !== attempt.branch ||
           Number(relations.schema || 0) < 3 || !Number.isInteger(relations.summary?.packages) ||
-          !relations.validation || !Array.isArray(relations.records)) {
+          !relations.validation || !Array.isArray(relations.records) ||
+          (Number(relations.schema || 0) >= 4 &&
+            (typeof relations.relationsComplete !== 'boolean' || !Array.isArray(relations.relationCapabilities) ||
+              typeof relations.packageClosureComplete !== 'boolean' ||
+              !Array.isArray(relations.packageClosureCapabilities) ||
+              !relations.packageClosureValidation || typeof relations.packageClosureValidation !== 'object'))) {
         issues.push('Kconfig relations do not match attempt identity');
       }
     } catch (error) {

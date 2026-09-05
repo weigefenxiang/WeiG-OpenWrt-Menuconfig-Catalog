@@ -14,6 +14,8 @@ import { isProbeIssue, normalizeGatewayRequest, probeCancellationAuthorized, pro
 import { aggregateScopeConclusions, createEvidence, parseProbeLog } from './write-package-probe-evidence.mjs';
 import { sourceAllowsBranch } from './source-policy.mjs';
 import { buildCuratedApplications } from './curated-applications.mjs';
+import { parsePackageInfo } from './lib.mjs';
+import { derivePackageDependencyClosure, validatePackageClosureGraph } from './kconfig-relations.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const policy = JSON.parse(readFileSync(resolve(ROOT, '.github', 'automation-policy.json'), 'utf8'));
@@ -30,6 +32,20 @@ const evidenceWriter = readFileSync(resolve(ROOT, 'scripts', 'write-package-prob
 const failureClassification = readFileSync(resolve(ROOT, 'scripts', 'package-probe-failure-classification.mjs'), 'utf8');
 const finalizer = readFileSync(resolve(ROOT, 'scripts', 'finalize-package-probe.mjs'), 'utf8');
 const probeUi = JSON.parse(readFileSync(resolve(ROOT, 'translations', 'probe-ui.json'), 'utf8'));
+
+// L1 Probe validates refreshed .packageinfo directly.  It has no Catalog
+// records argument, so this must prove the package-info projection without
+// inventing one `package-record-missing` failure per package.
+const packageRows = parsePackageInfo(readFileSync(resolve(ROOT, 'tests', 'fixture', 'packageinfo'), 'utf8'));
+const packageCapability = validatePackageClosureGraph(packageRows);
+assert.equal(packageCapability.validation.projectionValidated, true);
+assert.equal(packageCapability.validation.reasons.some((row) => row.reason === 'package-record-missing'), false);
+assert.equal(packageCapability.validation.forwardReverseValidated, true);
+const probeUnknownClosure = derivePackageDependencyClosure([
+  { name: 'root', depends: ['unrefreshed-target'] }, { name: 'failed', depends: [] },
+], ['root'], ['failed']);
+assert.equal(probeUnknownClosure.result, 'inconclusive',
+  'an unresolved target must remain a closure result, not a global package-info proof failure');
 assert.equal(probeUi.strings?.configResolve?.['zh-CN'], '官方配置求解');
 assert.equal(probeUi.strings?.environmentLimit?.en, 'Probe environments');
 assert.match(probeUi.strings?.sourceExcluded?.en || '', /hanwckf/);

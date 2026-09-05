@@ -224,6 +224,11 @@ function normalizeBuildDependency(value, label, packages, sourceCommits, evidenc
   if (!packages.includes(packageId)) {
     throw new Error(`${label}.package must be listed in the rule packages`);
   }
+  // `triggerPackages` belonged to the pre-ADR-0023 compatibility format.  It
+  // remains readable for old snapshots, but the failed concrete package is
+  // the only required fact for new rules; roots are derived from the exact
+  // Catalog relation graph instead of being copied into this document.
+  if (value.triggerPackages === undefined) return { package: packageId };
   const triggerPackages = normalizePackageIds(value.triggerPackages, `${label}.triggerPackages`);
   if (triggerPackages.includes(packageId)) {
     throw new Error(`${label}.triggerPackages must not include the failed package`);
@@ -234,6 +239,72 @@ function normalizeBuildDependency(value, label, packages, sourceCommits, evidenc
 export function compatibilityScopeMatches(scope, source, branch) {
   const patterns = scope?.[source] || scope?.['*'] || [];
   return patterns.some((pattern) => matchPattern(branch, pattern));
+}
+
+function targetScopeMatches(scope, context = {}) {
+  if (!scope || !Object.keys(scope).length) return true;
+  return Object.entries(scope).every(([key, values]) => {
+    const actual = String(context[key] || '');
+    return actual && values.some((pattern) => matchPattern(actual, pattern));
+  });
+}
+
+function environmentMatches(environment, context = {}) {
+  if (!environment) return false;
+  const source = String(context.source || '');
+  const branch = String(context.branch || '');
+  const sourceMatch = environment.source === '*' || environment.source === source;
+  const branchMatch = environment.branch === '*' || matchPattern(branch, environment.branch);
+  return sourceMatch && branchMatch && targetScopeMatches(environment.targetScope, context);
+}
+
+/**
+ * Resolve failed concrete build packages from the normalized compatibility
+ * document for one exact probe environment.  This is deliberately derived
+ * from the reviewed document and current package metadata; callers must not
+ * supply a parallel hand-maintained trigger list.
+ *
+ * A legacy sourceCommit boundary without an exact current commit is reported
+ * as unresolved instead of being silently applied to a different snapshot.
+ * Preventive schema-5 environments intentionally use their reviewed
+ * environment policy and do not inherit historical evidence commits.
+ */
+export function applicableBuildDependencies(document, context = {}) {
+  const source = String(context.source || '');
+  const branch = String(context.branch || '');
+  const upstreamCommit = String(context.upstreamCommit || '').toLowerCase();
+  const available = new Set((context.availablePackages || []).map((value) => String(value || '').trim()));
+  const packages = new Set();
+  const rules = [];
+  const unresolved = [];
+  for (const rule of document?.rules || []) {
+    const dependency = rule?.buildDependency;
+    if (!dependency?.package || rule.issue !== 'build-failure') continue;
+    const scopeMatches = rule.policy === 'preventive'
+      ? (rule.environments || []).some((environment) => environmentMatches(environment, context))
+      : compatibilityScopeMatches(rule.scope, source, branch) && targetScopeMatches(rule.targetScope, context);
+    if (!scopeMatches) continue;
+    if (Array.isArray(rule.sourceCommits) && rule.sourceCommits.length &&
+        (!upstreamCommit || !rule.sourceCommits.includes(upstreamCommit))) {
+      unresolved.push({ rule: rule.id, package: dependency.package, reason: 'exact-source-commit-unresolved' });
+      continue;
+    }
+    if (rule.if && context.conditions !== true && !new Set(context.conditions || []).has(rule.if)) {
+      unresolved.push({ rule: rule.id, package: dependency.package, reason: 'rule-condition-unresolved', condition: rule.if });
+      continue;
+    }
+    const availability = rule.policy === 'preventive'
+      ? (rule.environments || []).find((environment) => environmentMatches(environment, context))?.packageAvailability || 'required'
+      : 'required';
+    if (!available.has(dependency.package)) {
+      if (availability === 'if-present') continue;
+      unresolved.push({ rule: rule.id, package: dependency.package, reason: 'failed-package-metadata-unresolved' });
+      continue;
+    }
+    packages.add(dependency.package);
+    rules.push({ id: rule.id, package: dependency.package });
+  }
+  return { packages: [...packages].sort(), rules, unresolved };
 }
 
 export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {

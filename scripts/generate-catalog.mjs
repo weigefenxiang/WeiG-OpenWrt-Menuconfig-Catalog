@@ -168,8 +168,12 @@ const entryTranslations = translations.entries || {};
 const translatedOptions = menuOptions.map((option) => {
   const packageName = option.symbol.startsWith('PACKAGE_') ? option.symbol.slice(8) : '';
   const packageRow = packageByName.get(packageName);
-  const conflicts = (packageRow?.conflicts || [])
-    .map((name) => `PACKAGE_${name}`);
+  // Keep package conflicts as concrete package/capability names.  A bare
+  // Provides/Conflicts entry may be a virtual capability (for example
+  // libudev); mechanically prefixing it creates the invalid CONFIG_PACKAGE_
+  // identity PACKAGE_libudev.  The typed relations asset carries provider
+  // resolution for consumers while this presentation payload stays raw.
+  const conflicts = [...(packageRow?.conflicts || [])];
   const translated = entryTranslations[option.symbol] || {};
   const promptRow = promptTranslations[option.prompt] || {};
   return {
@@ -184,9 +188,19 @@ const translatedOptions = menuOptions.map((option) => {
     translationSource: translated.source || (promptRow.titleZh ? 'Catalog glossary' : ''),
   };
 });
-const relations = buildKconfigRelations(relationOptions, packages, menu.choices);
+const relations = buildKconfigRelations(relationOptions, packages, menu.choices, {
+  // The parser report is a data-support matrix, not an evaluator result. The
+  // relation builder checks it together with source/graph diagnostics; the
+  // compact serializer independently proves the readable round-trip below.
+  parserValidation: menu.validation,
+  externalSymbols: [...targetSymbols],
+});
 if (!relations.validation.structurallyValid) {
-  throw new Error(`Invalid Kconfig choice references: ${relations.validation.invalidChoices.join(', ')}`);
+  throw new Error(`Invalid Kconfig relation structure: ${JSON.stringify({
+    invalidChoices: relations.validation.invalidChoices,
+    unsupportedDirectives: relations.validation.unsupportedDirectives,
+    structuralErrors: relations.validation.structuralErrors,
+  })}`);
 }
 const menuPathNames = [...new Set(menuOptions.flatMap((option) => option.path || []))];
 const menuLabels = Object.fromEntries(menuPathNames.map((name) => [
@@ -303,6 +317,30 @@ function writeGzipAsset(logical, filename, value) {
   };
 }
 
+// Complete Kconfig relations are a publish-time contract. The readable graph
+// must pass parser/data diagnostics and the compact serializer must independently
+// prove a field-preserving round-trip before any legacy or schema-6 asset is
+// written. Package closure is intentionally checked and advertised separately.
+const compact = compactRelations(relations);
+const relationCompleteness = {
+  relationsComplete: compact.relationsComplete === true,
+  relationCapability: compact.relationCapabilities?.includes('complete-kconfig-relations-v1') === true,
+  roundTripValidated: compact.roundTripValidated === true,
+  capabilityMatrixComplete: relations.validation?.capabilityMatrixComplete === true,
+  parserFixtureValidated: relations.validation?.parserFixtureValidated === true,
+  unsupportedDirectives: relations.validation?.unsupportedDirectives || [],
+  structuralErrors: relations.validation?.structuralErrors || [],
+  kconfigUnknownRelations: relations.validation?.kconfigUnknownRelations || [],
+  roundTripErrors: compact.validation?.compactExpandValidation || [],
+};
+if (!relationCompleteness.relationsComplete || !relationCompleteness.relationCapability ||
+    !relationCompleteness.roundTripValidated || !relationCompleteness.capabilityMatrixComplete ||
+    !relationCompleteness.parserFixtureValidated || relationCompleteness.unsupportedDirectives.length ||
+    relationCompleteness.structuralErrors.length || relationCompleteness.kconfigUnknownRelations.length ||
+    relationCompleteness.roundTripErrors.length) {
+  throw new Error(`Kconfig relations completeness contract failed: ${JSON.stringify(relationCompleteness)}`);
+}
+
 // Keep the schema-5 single bundle during the migration window. Schema-6 consumers
 // use the split assets below and never download menu/help data before Advanced opens.
 const legacyJson = JSON.stringify(payload);
@@ -310,12 +348,13 @@ const asset = `${slug}.json.gz`;
 const legacyCompressed = gzipSync(Buffer.from(legacyJson), { level: 9 });
 writeFileSync(join(outDir, asset), legacyCompressed);
 
-const compact = compactRelations(relations);
 const corePayload = {
   schema: 6,
   capabilities: [
     ...payload.capabilities,
-    'compact-relations-v3',
+    'compact-relations-v4',
+    ...(compact.relationsComplete === true ? ['complete-kconfig-relations-v1'] : []),
+    ...(compact.packageClosureComplete === true ? ['complete-package-build-closure-v1'] : []),
     'split-catalog-assets-v1',
     'lazy-menu-v1',
     'branch-applications-v1',
@@ -332,7 +371,17 @@ const corePayload = {
   applications: branchApplications,
   translation: payload.translation,
 };
-const graphPayload = { schema: 6, kind: 'graph', generatedAt, source, relations: compact };
+const graphPayload = {
+  schema: 6, kind: 'graph', generatedAt, source,
+  relationsComplete: compact.relationsComplete === true,
+  capabilityMatrixComplete: compact.validation?.capabilityMatrixComplete === true,
+  roundTripValidated: compact.roundTripValidated === true,
+  relationCapabilities: compact.relationCapabilities || [],
+  packageClosureComplete: compact.packageClosureComplete === true,
+  packageClosureCapabilities: compact.packageClosureCapabilities || [],
+  packageClosureValidation: compact.packageClosureValidation || {},
+  relations: compact,
+};
 const menuPayload = {
   schema: 1,
   kind: 'menu',

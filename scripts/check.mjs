@@ -8,16 +8,29 @@ import {
   incompleteSelectableTargets,
   lintKconfigOptions,
   parseInfoRecords,
+  parseKconfigDefault,
+  parseKconfigExpression,
+  parseKconfigRelation,
+  parseKconfigRange,
   parseKconfigTree,
   parsePackageInfo,
   resolvePackageOption,
   resolveTargetSelectors,
   targetBuildContract,
 } from './lib.mjs';
-import { buildKconfigRelations } from './kconfig-relations.mjs';
-import { compactRelations, expandCompactRelations } from './compact-relations.mjs';
+import {
+  buildKconfigRelations,
+  derivePackageDependencyClosure,
+  validatePackageClosureGraph,
+} from './kconfig-relations.mjs';
+import {
+  compactRelations,
+  compareRelationSemantics,
+  expandCompactRelations,
+  validateCompactRoundTrip,
+} from './compact-relations.mjs';
 import { buildCatalogSizeReport } from './catalog-size-report.mjs';
-import { normalizeCompatibilityDocument } from './compatibility-rules.mjs';
+import { applicableBuildDependencies, normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
 import { activeCuratedGroups, buildCuratedApplications } from './curated-applications.mjs';
 import { aggregateCuratedSizes, parseApkDump, parseOpkgPackages } from './curated-sizes.mjs';
@@ -66,6 +79,33 @@ assert(sourceAllowsBranch(lede, 'openwrt-30.01'));
 // Official Target/Profile parsing and selector contracts.
 const targets = parseInfoRecords(readFileSync(join(fixture, 'targetinfo'), 'utf8'));
 const menu = parseKconfigTree(fixture);
+assert.equal(menu.validation.capabilityMatrixComplete, true);
+assert.equal(menu.validation.parserFixtureValidated, true);
+assert.equal(menu.validation.parserFixture.cases, 11);
+assert.deepEqual(menu.validation.missingRelationCapabilities, []);
+assert(Object.values(menu.validation.capabilityMatrix).every((value) => value === true));
+assert(Object.values(menu.validation.parserFixture.capabilityMatrix).every((value) => value === true));
+assert(Object.values(menu.validation.parserOutput.capabilityMatrix).every((value) => value === true));
+assert.equal(menu.validation.unsupportedDirectives.length, 0);
+assert.equal(menu.validation.structuralErrors.length, 0);
+assert.equal(menu.validation.relationsComplete, true);
+// The generic golden tree exercises parser coverage that a small target
+// fixture may not happen to use: typed scalars/defaults/ranges, expression
+// ASTs, visibility, choice metadata, MODULES, and duplicate provenance.
+const goldenMenu = parseKconfigTree(join(ROOT, 'tests', 'kconfig-capabilities'));
+assert.equal(goldenMenu.validation.parserFixtureValidated, true);
+assert.equal(goldenMenu.validation.capabilityMatrixComplete, true);
+assert(Object.entries(goldenMenu.validation.parserOutput.observed).every(([, count]) => count > 0));
+const goldenOption = (symbol) => goldenMenu.allOptions.find((row) => row.symbol === symbol);
+assert.equal(goldenOption('GOLDEN_STRING')?.defaultsTyped[0]?.value, 'foo if bar');
+assert.equal(goldenOption('GOLDEN_STRING')?.defaultsTyped[0]?.condition, 'GOLDEN_GATE');
+assert.equal(goldenOption('GOLDEN_INT')?.rangesTyped[0]?.max, 64);
+assert(goldenOption('GOLDEN_BOOL')?.dependsAst[0]?.alternatives?.length);
+assert.deepEqual(goldenOption('GOLDEN_BOOL')?.visibleIf, ['GOLDEN_VISIBLE']);
+assert.equal(goldenOption('GOLDEN_MODULE')?.modules, true);
+assert.equal(goldenMenu.choices[0]?.optional, true);
+assert.equal(goldenMenu.choices[0]?.modules, true);
+assert.equal(goldenOption('GOLDEN_DUPLICATE')?.nodes?.length, 2);
 const symbols = new Set((menu.allOptions || menu.options).map((row) => row.symbol));
 for (const target of targets) {
   target.contract = targetBuildContract(target, symbols);
@@ -119,6 +159,7 @@ assert.equal(demo?.parent, luci?.symbol);
 assert.equal(hiddenLanguage?.visible, false);
 assert.equal(hiddenLanguage?.userSettable, false);
 assert.equal(menu.choices.length, 1);
+assert.equal(menu.choices[0]?.type, '', 'an untyped choice must remain unknown, not be forced to bool');
 
 const relations = buildKconfigRelations(menu.allOptions || menu.options, packages, menu.choices);
 assert.equal(relations.schema, 2);
@@ -128,11 +169,227 @@ assert(demoRelations?.kconfig.depends.includes('PACKAGE_luci'));
 assert(demoRelations?.dependencyPackages.includes('luci-base'));
 assert(demoRelations?.conflicts.includes('kmod-demo'));
 assert(relations.validation.structurallyValid);
+assert.equal(relations.relationsComplete, true,
+  'Kconfig completeness is independent of partial package closure metadata');
 const compact = compactRelations(relations);
 const expanded = expandCompactRelations(compact);
-assert.equal(compact.schema, 3);
+assert.equal(compact.schema, 4);
+assert.equal(typeof compact.relationsComplete, 'boolean');
+assert(Array.isArray(compact.relationCapabilities));
+assert.equal(compact.relationsComplete, true);
+assert.equal(compact.roundTripValidated, true);
+assert(compact.relationCapabilities.includes('complete-kconfig-relations-v1'));
+assert.equal(compact.validation.compactExpandSemanticEqual, true);
+assert.equal(relations.packageClosureComplete, true,
+  'unresolved package targets must not invalidate the global projection proof');
+assert.equal(relations.packageClosureValidation.reasons.some((row) =>
+  row.reason === 'unresolved-package-dependency-target'), false);
+assert.equal(relations.packageClosureValidation.dependencyTargetsComplete, false);
+assert(relations.packageClosureValidation.unresolvedDependencyTargets.some((row) =>
+  row.target === 'luci-base'));
+assert.equal(typeof relations.packageClosureValidation.forwardReverseValidated, 'boolean');
+assert.equal(compact.packageClosureComplete, true);
+assert.deepEqual(expanded.indexes.byPackage, relations.indexes.byPackage);
+assert.deepEqual(expanded.indexes.bySymbol, relations.indexes.bySymbol);
 assert.deepEqual(expanded.indexes.reverseDependencies, relations.indexes.reverseDependencies);
+assert.deepEqual(expanded.indexes.reverseSelects, relations.indexes.reverseSelects);
+assert.deepEqual(expanded.indexes.reverseImplies, relations.indexes.reverseImplies);
+assert.equal(expanded.packageClosureComplete, true,
+  'compact package closure projection proof must round-trip independently');
+assert.equal(expanded.relationsComplete, true,
+  'package closure incompleteness must not demote independent Kconfig completeness');
+assert.equal(expanded.validation.roundTripValidated, true);
+assert.equal(compareRelationSemantics(relations, expanded).equal, true);
+assert.equal(expanded.choices[0]?.type, '', 'compact choice roundtrip must preserve an unknown choice type');
 assert(Buffer.byteLength(JSON.stringify(compact)) < Buffer.byteLength(JSON.stringify(relations)) * 0.5);
+
+// Typed Kconfig values retain type, source order, and unresolved expressions.
+assert.deepEqual(parseKconfigDefault('"fast path" if FEATURE_GATE', 'string'), {
+  type: 'string', value: 'fast path', raw: '"fast path" if FEATURE_GATE',
+  valueKind: 'literal', valid: true, precise: true, condition: 'FEATURE_GATE',
+});
+assert.deepEqual(parseKconfigDefault('42 if FEATURE_GATE', 'int'), {
+  type: 'int', value: 42, raw: '42 if FEATURE_GATE', valueKind: 'literal', valid: true, precise: true,
+  condition: 'FEATURE_GATE',
+});
+assert.deepEqual(parseKconfigDefault('0x2a', 'hex'), {
+  type: 'hex', value: 42, raw: '0x2a', valueKind: 'literal', valid: true, precise: true, condition: '',
+});
+assert.deepEqual(parseKconfigRange('1 64 if FEATURE_GATE', 'int'), {
+  type: 'int', min: 1, max: 64, minRaw: '1', maxRaw: '64',
+  minKind: 'literal', maxKind: 'literal', raw: '1 64 if FEATURE_GATE', condition: 'FEATURE_GATE', valid: true,
+});
+const quotedDefaultRelations = buildKconfigRelations([{
+  symbol: 'QUOTED_DEFAULT', type: 'string', prompt: 'quoted', visible: true, userSettable: true,
+  defaults: ['"foo if bar" if FEATURE_GATE'],
+  defaultsTyped: [parseKconfigDefault('"foo if bar" if FEATURE_GATE', 'string')],
+  ranges: [], rangesTyped: [], selects: [], implies: [], depends: [],
+}], [], []);
+const quotedDefaultExpanded = expandCompactRelations(compactRelations(quotedDefaultRelations));
+const quotedDefaultRecord = quotedDefaultExpanded.records.find((row) => row.configSymbol === 'QUOTED_DEFAULT');
+assert.deepEqual(quotedDefaultRecord?.defaults, ['"foo if bar" if FEATURE_GATE'],
+  'compact defaults must split `if` outside quoted Kconfig strings');
+assert.equal(quotedDefaultRecord?.defaultsTyped[0]?.raw, '"foo if bar" if FEATURE_GATE');
+assert.equal(compareRelationSemantics(quotedDefaultRelations, quotedDefaultExpanded).equal, true);
+assert.deepEqual(parseKconfigExpression('A || B && !C').alternatives, [['A'], ['B', 'C']]);
+assert.deepEqual(parseKconfigExpression('A || B && !C').symbols, ['A', 'B', 'C']);
+assert.equal(parseKconfigExpression('A || B && !C').complete, true);
+const relation = parseKconfigRelation('TARGET_FEATURE if GATE && OTHER');
+assert.equal(relation.target, 'TARGET_FEATURE');
+assert.deepEqual(relation.conditionSymbols, ['GATE', 'OTHER']);
+assert.equal(relation.complete, true);
+assert.equal(parseKconfigDefault('m', 'bool').valid, false, 'bool must not accept tristate m');
+assert.deepEqual(parseKconfigDefault('m', 'tristate'), {
+  type: 'tristate', value: 'm', raw: 'm', valueKind: 'literal', valid: true, precise: true, condition: '',
+});
+assert.deepEqual(parseKconfigDefault(String.raw`"path\q"`, 'string'), {
+  type: 'string', value: String.raw`path\q`, raw: String.raw`"path\q"`,
+  valueKind: 'literal', valid: true, precise: true, condition: '',
+}, 'Kconfig string escaping must not use JSON semantics');
+assert.equal(parseKconfigDefault('"unterminated', 'string').valid, false, 'malformed Kconfig strings must fail closed');
+const largeInteger = parseKconfigDefault('9223372036854775808', 'int');
+assert.equal(largeInteger.value, '9223372036854775808', 'large integer tokens must remain exact strings');
+assert.equal(largeInteger.precise, false, 'large integer tokens must not be rounded');
+assert.equal(parseKconfigRange('1 2 3', 'int').valid, false, 'ranges require exactly two bounds');
+
+// OR conditions and package alternatives remain explicit in the readable and
+// compact graph; neither branch is emitted as a mandatory edge.
+const alternativeOptions = [
+  { symbol: 'PACKAGE_root', type: 'bool', prompt: 'root', visible: true, userSettable: true,
+    depends: ['A || B'], dependsVariants: [['A || B']], defaults: [], selects: [], implies: [], modules: true, optional: true },
+  { symbol: 'A', type: 'bool', prompt: 'A', visible: true, userSettable: true, depends: [], defaults: [], selects: [], implies: [] },
+  { symbol: 'B', type: 'bool', prompt: 'B', visible: true, userSettable: true, depends: [], defaults: [], selects: [], implies: [] },
+];
+const alternativeRelations = buildKconfigRelations(alternativeOptions, [], []);
+const alternativeEdge = alternativeRelations.edges.find((edge) => edge.from === 'PACKAGE_root');
+assert.equal(alternativeEdge?.required, null);
+assert.deepEqual(alternativeEdge?.alternatives, [['A'], ['B']]);
+const alternativeExpanded = expandCompactRelations(compactRelations(alternativeRelations));
+const alternativeExpandedEdge = alternativeExpanded.edges.find((edge) => edge.from === 'PACKAGE_root');
+assert.deepEqual(alternativeExpandedEdge?.alternatives, [['A'], ['B']]);
+assert.equal(alternativeExpandedEdge?.required, null, 'compact roundtrip must preserve unresolved required=null');
+const alternativeExpandedRecord = alternativeExpanded.records.find((record) => record.configSymbol === 'PACKAGE_root');
+assert.equal(alternativeExpandedRecord?.modules, true, 'MODULES semantics must survive compact records');
+assert.equal(alternativeExpandedRecord?.optional, true, 'optional semantics must survive compact records');
+const packageAlternativeRelations = buildKconfigRelations([], parsePackageInfo([
+  'Package: root', 'Depends: a||b', '', 'Package: a', '', 'Package: b', '',
+].join('\n')), []);
+assert.equal(packageAlternativeRelations.packageClosureComplete, true);
+assert.equal(packageAlternativeRelations.edges.find((edge) => edge.from === 'root')?.required, null,
+  'package alternatives must not become two mandatory graph edges');
+
+const incompletePackageClosure = validatePackageClosureGraph([
+  { name: 'root', depends: ['missing'], provides: [], conflicts: [] },
+]);
+assert.equal(incompletePackageClosure.complete, true,
+  'unresolved targets do not invalidate a package-info projection proof');
+assert.equal(incompletePackageClosure.validation.reasons.some((row) =>
+  row.reason === 'unresolved-package-dependency-target'), false);
+assert.deepEqual(incompletePackageClosure.validation.unresolvedDependencyTargets.map((row) => row.target), ['missing']);
+assert.equal(incompletePackageClosure.validation.projectionValidated, true);
+
+// Kconfig-only PACKAGE_* rows may coexist with complete package-info rows;
+// they must not invalidate the independent package closure contract.
+const completePackageRows = parsePackageInfo([
+  'Package: root', 'Depends: a||cap', '',
+  'Package: a', '',
+  'Package: provider', 'Provides: cap', '',
+].join('\n'));
+const completePackageRelations = buildKconfigRelations([
+  { symbol: 'PACKAGE_root', type: 'tristate', prompt: 'root', visible: true, userSettable: true,
+    depends: [], defaults: [], selects: [], implies: [] },
+  { symbol: 'PACKAGE_a', type: 'tristate', prompt: 'a', visible: true, userSettable: true,
+    depends: [], defaults: [], selects: [], implies: [] },
+  { symbol: 'PACKAGE_provider', type: 'tristate', prompt: 'provider', visible: true, userSettable: true,
+    depends: [], defaults: [], selects: [], implies: [] },
+  { symbol: 'PACKAGE_kconfig-only', type: 'tristate', prompt: 'kconfig-only', visible: true, userSettable: true,
+    depends: [], defaults: [], selects: [], implies: [] },
+], completePackageRows, []);
+assert.equal(completePackageRelations.packageClosureComplete, true,
+  'complete package-info closure may ignore unrelated Kconfig-only rows');
+assert(completePackageRelations.packageClosureCapabilities.includes('complete-package-build-closure-v1'));
+assert.equal(completePackageRelations.relationsComplete, true,
+  'package closure is independent from typed Kconfig completeness');
+const completePackageProjection = validatePackageClosureGraph(completePackageRows,
+  completePackageRelations.records, { edges: completePackageRelations.edges, indexes: completePackageRelations.indexes });
+assert.equal(completePackageProjection.complete, true);
+const brokenPackageEdges = completePackageRelations.edges.map((edge) =>
+  edge.relation === 'package-depends' && edge.to === 'a' ? { ...edge, kind: 'unknown' } : edge);
+const brokenPackageProjection = validatePackageClosureGraph(completePackageRows,
+  completePackageRelations.records, { edges: brokenPackageEdges, indexes: completePackageRelations.indexes });
+assert.equal(brokenPackageProjection.complete, false);
+assert(brokenPackageProjection.validation.reasons.some((row) => row.reason === 'package-edge-projection-mismatch'));
+const completePackageCompact = compactRelations(completePackageRelations);
+const completePackageExpanded = expandCompactRelations(completePackageCompact);
+assert.equal(completePackageExpanded.packageClosureComplete, true);
+assert(completePackageExpanded.packageClosureCapabilities.includes('complete-package-build-closure-v1'));
+assert.equal(completePackageExpanded.relationsComplete, true);
+
+// Compact data loss and malformed Kconfig sources are fail-closed. The
+// producer may retain a diagnostic false relation object for debugging, but a
+// publish path must reject it before writing schema-5/schema-6 assets.
+const compactMutationSource = buildKconfigRelations(alternativeOptions, [], []);
+const compactMutation = compactRelations(compactMutationSource);
+compactMutation.records[0][0] = -1;
+const compactMutationValidation = validateCompactRoundTrip(
+  compactMutationSource, compactMutation,
+);
+assert.equal(compactMutationValidation.valid, false);
+const malformed = buildKconfigRelations([
+  { symbol: 'BROKEN', type: 'bool', prompt: 'broken', visible: true, userSettable: true,
+    depends: ['A $ B'], defaults: [], selects: [], implies: [] },
+], [], []);
+assert.equal(malformed.relationsComplete, false);
+assert(malformed.validation.kconfigUnknownRelations.length > 0);
+
+// Generic package closure proof uses concrete packages and selected virtual
+// providers; unresolved alternatives/providers stay inconclusive.
+const closureRecords = [
+  { name: 'root', depends: ['mid'] },
+  { name: 'mid', depends: ['+failed'] },
+  { name: 'failed', depends: [] },
+];
+const closure = derivePackageDependencyClosure(closureRecords, ['root'], ['failed']);
+assert.equal(closure.result, 'reachable');
+assert.deepEqual(closure.paths[0]?.path, ['root', 'mid', 'failed']);
+const alternativeClosure = derivePackageDependencyClosure([
+  { name: 'root', depends: ['a||b'] }, { name: 'a', depends: [] }, { name: 'b', depends: [] },
+], ['root'], ['a']);
+assert.equal(alternativeClosure.result, 'inconclusive');
+const unresolvedTargetClosure = derivePackageDependencyClosure([
+  { name: 'root', depends: ['missing'] }, { name: 'failed', depends: [] },
+], ['root'], ['failed']);
+assert.equal(unresolvedTargetClosure.result, 'inconclusive');
+assert.equal(unresolvedTargetClosure.unknown[0]?.reason, 'package-metadata-unresolved');
+const selectedAlternativeClosure = derivePackageDependencyClosure([
+  { name: 'root', depends: ['a||b'] }, { name: 'a', depends: [] }, { name: 'b', depends: [] },
+], ['root'], ['a'], { selectedPackages: ['root', 'a'] });
+assert.equal(selectedAlternativeClosure.result, 'reachable');
+const providerClosure = derivePackageDependencyClosure([
+  { name: 'root', depends: ['cap'] }, { name: 'provider-a', provides: ['cap'], depends: [] },
+  { name: 'provider-b', provides: ['cap'], depends: [] },
+], ['root'], ['provider-a'], { selectedPackages: ['root', 'provider-a'] });
+assert.equal(providerClosure.result, 'reachable');
+const ambiguousProviderClosure = derivePackageDependencyClosure([
+  { name: 'root', depends: ['cap'] }, { name: 'provider-a', provides: ['cap'], depends: [] },
+  { name: 'provider-b', provides: ['cap'], depends: [] },
+], ['root'], ['provider-a']);
+assert.equal(ambiguousProviderClosure.result, 'inconclusive');
+
+// Virtual capabilities never become fake CONFIG/PACKAGE symbols, and a
+// provider's own capability conflict is excluded from effective providers.
+const virtualPackages = parsePackageInfo([
+  'Package: libudev-zero', 'Provides: libudev', 'Conflicts: libudev', '',
+].join('\n'));
+const virtualRelations = buildKconfigRelations([], virtualPackages, []);
+const virtualRecord = virtualRelations.records.find((row) => row.package === 'libudev-zero');
+assert.equal(virtualRecord?.configSymbol, 'PACKAGE_libudev-zero');
+assert.equal(virtualRecord?.origin, 'packageinfo-only');
+assert.equal(virtualRecord?.kconfigSymbol, '');
+assert.equal(virtualRecord?.providesRelations[0]?.kind, 'virtual');
+assert.equal(virtualRecord?.conflictsRelations[0]?.ownerSelf, true);
+assert.deepEqual(virtualRecord?.conflictsRelations[0]?.effectiveProviders, []);
+assert.equal(virtualRelations.records.some((row) => row.configSymbol === 'PACKAGE_libudev'), false);
 
 // Duplicate symbols must be merged generically, not by package-specific exceptions.
 const duplicate = parseKconfigTree(join(ROOT, 'tests', 'duplicate'));
@@ -256,13 +513,18 @@ assert.deepEqual(dockerdRule?.environments, [{
 assert.equal(dockerdRule?.evidence?.[0]?.sourceCommit,
   '6081813a7ec91aba6555a74dc3f4d34f504f8a53');
 assert.deepEqual(dockerdRule?.buildDependency, {
-  package: 'dockerd', triggerPackages: ['docker', 'containerd', 'runc', 'tini'],
+  package: 'dockerd',
 });
+assert.deepEqual(applicableBuildDependencies(normalizedCompatibility, {
+  source: 'OpenWrt', branch: 'main', availablePackages: ['dockerd'],
+}).packages, ['dockerd'], 'failed packages must come from the applicable reviewed rule');
+assert.deepEqual(applicableBuildDependencies(normalizedCompatibility, {
+  source: 'OpenWrt', branch: 'main', availablePackages: [],
+}).packages, [], 'if-present rules must skip unavailable failed packages');
 assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0004'), undefined);
 assert.equal(normalizedCompatibility.rules.find((rule) => rule.id === 'BLD-0005')?.failure?.phase,
   'rootfs-install');
-assert(!dockerdRule.buildDependency.triggerPackages.includes('docker-compose'));
-assert(!dockerdRule.buildDependency.triggerPackages.some((packageId) => packageId.startsWith('luci-')));
+assert.equal(dockerdRule.buildDependency.triggerPackages, undefined);
 
 // Schema-4 build dependency evidence is strict, bounded by exact source commits,
 // and unavailable to file-ownership or legacy schema-3 rules.
@@ -278,6 +540,10 @@ const legacyDockerdRule = {
 const withBuildDependency = (buildDependency, overrides = {}) => ({
   ...legacyDockerdRule, ...overrides, buildDependency,
 });
+const packageOnlyBuildDependency = normalizeCompatibilityDocument({
+  schema: 4, rules: [withBuildDependency({ package: 'dockerd' })],
+}, policy);
+assert.deepEqual(packageOnlyBuildDependency.rules[0].buildDependency, { package: 'dockerd' });
 assert.throws(() => normalizeCompatibilityDocument({
   schema: 4, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker'], extra: true })],
 }, policy), /buildDependency contains unsupported field: extra/);

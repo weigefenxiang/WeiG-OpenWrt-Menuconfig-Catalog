@@ -14,15 +14,21 @@ JavaScript 中写死分支、Target 或菜单项目。
   `translations/zh-CN.json`; the filename is retained for compatibility.
 - Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
 - The visible menu and the complete symbol table are separate: no-prompt/hidden Kconfig symbols remain out of the normal tree but are published for Advanced search and validation.
-- Runtime relations use `relations.schema=3`: array records, string/expression pools, bit flags and integer adjacency lists retain every non-Target Kconfig symbol plus packageinfo-only packages without repeating object keys and symbol strings. A schema-2 readable graph is generated only for explicit diagnostics.
+- Runtime relations use compact `relations.schema=4`; schema 3 remains readable for old snapshots. The schema-4 contract keeps typed Kconfig values, ordered conditional defaults/ranges, visibility and choice conditions, per-definition provenance, virtual capability identity, and typed forward/reverse edges. Every asset declares `relationsComplete`; a missing/false declaration is fail-closed (`deferred`/`inconclusive`) rather than guessed.
+- Package build closure is a separate narrow contract: `packageClosureComplete` and
+  `packageClosureCapabilities` are true only after exact `.packageinfo` dependency tokens
+  (including alternatives/conditions), virtual providers, and verified forward/reverse package
+  edges pass validation. `complete-package-build-closure-v1` is sufficient for a
+  `buildDependency` failed-package closure proof; it never makes typed Kconfig evaluation
+  complete. `relationsComplete` remains independently required for deterministic defaults,
+  depends/select/imply, visibility, choice, and MODULES decisions.
 - Options carry `depends on`, `visible if`, `select`, `imply`, defaults, ranges and parent paths.
   The parser keeps effective `depends` for existing consumers and also exposes the source
   boundary as `directDepends` plus `inheritedDepends`; prompt guards are kept separately in
   `promptIf`, and menu/choice visibility in `visibleIf` (with menu-only `menuVisibleIf`).
   A `comment` is a standalone Kconfig node, so its conditions can never leak into the
-  preceding or following symbol. These fields are source/parser metadata; the compact
-  relations schema currently serializes value relations only and must not treat a prompt or
-  visibility condition as a value dependency.
+  preceding or following symbol. These fields are source/parser metadata and are retained by
+  compact schema 4; prompt or visibility conditions are never treated as value dependencies.
 - Repeated Kconfig definitions are merged by symbol. Only explicit, incompatible types are hard conflicts; split declarations such as `tristate` in one file and `prompt` in another are legal and retained as one option.
 - Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
@@ -89,12 +95,12 @@ The refresh tool verifies every selected menu shard from the chosen Catalog data
 每个分支在迁移期同时发布旧单体和新分片：
 
 - `*.core.json.gz`：Target/Profile、构建契约、来源与分片清单所需的最小启动数据。
-- `*.graph.json.gz`：`relations.schema=3` 紧凑关系图；浏览器依赖解析只读取这一份关系数据。
+- `*.graph.json.gz`：`relations.schema=4` 紧凑关系图；浏览器依赖解析只读取这一份关系数据，schema 3 仅为旧快照兼容。
 - `*.menu.json.gz`：可见 Advanced 菜单的英文标题、短说明与路径。
 - `*.hidden.json.gz`：隐藏 Kconfig/packageinfo-only 的搜索显示信息。
 - `*.help.json.gz`：长 Help/usage，仅在用户查看完整说明时下载。
 - `*.menu.<lang>.json.gz`：当前语言的菜单译文，不再一次加载全部语言。
-- `*.relations.json.gz`：同一 schema-3 紧凑关系图，供离线工具和诊断使用；不再发布 40+ MB 的缩进 JSON。
+- `*.relations.json.gz`：同一 schema-4 紧凑关系图，供离线工具和诊断使用；不再发布 40+ MB 的缩进 JSON。
 - `*.relations.debug.json.gz`：仅在 `CATALOG_DEBUG_RELATIONS=true` 时生成的可读对象版，不进入正常网页运行数据。
 
 生成后的 `*.meta.json` 包含 `sizeReport`，记录旧单体、首次 `core + graph`、全部分片、可读 Relations 与紧凑 Relations 的字节数。汇总命令：
@@ -103,7 +109,7 @@ The refresh tool verifies every selected menu shard from the chosen Catalog data
 npm run size-report -- dist
 ```
 
-紧凑格式只删除重复表示，不删除 `depends/select/imply/choice/conflicts/provides`、隐藏节点或 packageinfo-only 语义。测试会先展开 schema 3，再与原关系图逐项比对。
+紧凑格式只删除重复表示，不删除 `depends/select/imply/choice/conflicts/provides`、隐藏节点、packageinfo-only 语义或 virtual capability 身份。测试会展开 schema 4 并进行 typed round-trip；schema 3 仍可展开用于旧快照诊断。
 
 ## 自动更新
 

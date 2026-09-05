@@ -1,0 +1,67 @@
+mainmenu "Kconfig capability golden fixture"
+
+config GOLDEN_GATE
+	bool "Golden gate"
+
+config GOLDEN_A
+	bool "Golden A"
+
+config GOLDEN_B
+	bool "Golden B"
+
+config GOLDEN_C
+	bool "Golden C"
+
+config GOLDEN_VISIBLE
+	bool "Golden visibility gate"
+
+config GOLDEN_RANGE_GATE
+	bool "Golden range gate"
+
+config GOLDEN_PROMPT
+	bool "Golden prompt gate"
+
+menu "Golden visibility"
+	visible if GOLDEN_VISIBLE
+
+config GOLDEN_BOOL
+	bool "Golden bool" if GOLDEN_PROMPT
+	depends on GOLDEN_A || GOLDEN_B && !GOLDEN_C
+	default y if GOLDEN_GATE
+
+config GOLDEN_STRING
+	string "Golden string"
+	default "foo if bar" if GOLDEN_GATE
+
+config GOLDEN_INT
+	int "Golden integer"
+	range 1 64 if GOLDEN_RANGE_GATE
+
+config GOLDEN_HEX
+	hex "Golden hexadecimal"
+
+config GOLDEN_MODULE
+	tristate "Golden module"
+	option modules
+
+config GOLDEN_DUPLICATE
+	prompt "Golden duplicate prompt"
+
+source "definitions.in"
+endmenu
+
+choice GOLDEN_CHOICE
+	prompt "Golden choice"
+	tristate
+	depends on GOLDEN_GATE
+	visible if GOLDEN_VISIBLE
+	optional
+	option modules
+	default GOLDEN_CHOICE_A
+
+config GOLDEN_CHOICE_A
+	bool "Golden choice A"
+
+config GOLDEN_CHOICE_B
+	bool "Golden choice B"
+endchoice

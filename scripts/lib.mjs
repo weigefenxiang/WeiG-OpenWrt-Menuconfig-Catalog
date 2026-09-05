@@ -267,6 +267,433 @@ export function parsePackageInfo(text) {
   return packages;
 }
 
+// These are data capabilities, not evaluator capabilities.  The parser only
+// promises to preserve source facts; a runtime consumer may still choose to
+// defer a decision when it does not implement the native Kconfig fixpoint.
+export const KCONFIG_PARSER_CAPABILITIES = Object.freeze([
+  'kconfig-expression-ast-v1', 'typed-scalars-v1', 'conditional-defaults-v1',
+  'conditional-ranges-v1', 'prompt-visible-menu-conditions-v1',
+  'visibility-conditions-v1', 'choice-metadata-v1', 'choice-relations-v1',
+  'module-directive-capture-v1', 'module-semantics-v1',
+  'per-definition-provenance-v1',
+]);
+
+export const KCONFIG_RELATION_CAPABILITIES = Object.freeze([
+  'kconfig-expression-ast-v1', 'typed-kconfig-v1', 'conditional-defaults-v1',
+  'conditional-ranges-v1', 'visibility-conditions-v1', 'choice-relations-v1',
+  'module-semantics-v1', 'typed-package-capabilities-v1', 'alternatives-v1',
+  'forward-reverse-edges-v1',
+]);
+
+/**
+ * Generic golden fixtures for the parser data contract.  These fixtures are
+ * intentionally source-independent: they exercise the shared lexer/typed
+ * value helpers and the exact output shapes consumed by parseKconfigTree.
+ * They do not evaluate a real config; native evaluation remains a consumer
+ * concern and is not reimplemented by the catalog producer.
+ *
+ * Every capability is marked from a check result.  Keeping the matrix next to
+ * the checks makes an omitted or failing fixture fail closed instead of
+ * silently manufacturing an all-true capability declaration.
+ */
+export function validateKconfigParserFixture() {
+  const failures = [];
+  const capabilityMatrix = Object.fromEntries(KCONFIG_PARSER_CAPABILITIES.map((capability) => [capability, false]));
+  const capabilityChecks = new Set();
+  const check = (capability, name, actual, expected) => {
+    capabilityChecks.add(capability);
+    const valid = JSON.stringify(actual) === JSON.stringify(expected);
+    if (!valid) {
+      capabilityMatrix[capability] = false;
+      failures.push({ capability, name, actual, expected });
+    } else if (!failures.some((row) => row.capability === capability)) capabilityMatrix[capability] = true;
+    return valid;
+  };
+  const checkShape = (capability, name, value, predicate, expected = true) => {
+    capabilityChecks.add(capability);
+    const actual = Boolean(predicate(value));
+    if (actual !== expected) {
+      capabilityMatrix[capability] = false;
+      failures.push({ capability, name, actual, expected });
+    } else if (!failures.some((row) => row.capability === capability)) capabilityMatrix[capability] = true;
+    return actual === expected;
+  };
+
+  const expression = parseKconfigExpression('A || B && !C');
+  check('kconfig-expression-ast-v1', 'expression-symbols', expression.symbols, ['A', 'B', 'C']);
+  check('kconfig-expression-ast-v1', 'expression-alternatives', expression.alternatives, [['A'], ['B', 'C']]);
+  check('kconfig-expression-ast-v1', 'expression-complete', expression.complete, true);
+  const relation = parseKconfigRelation('TARGET_FEATURE if GATE && OTHER');
+  check('kconfig-expression-ast-v1', 'relation-target', relation.target, 'TARGET_FEATURE');
+  check('kconfig-expression-ast-v1', 'relation-condition-symbols', relation.conditionSymbols, ['GATE', 'OTHER']);
+  check('kconfig-expression-ast-v1', 'relation-complete', relation.complete, true);
+
+  const scalarRows = [
+    parseKconfigScalar('y', 'bool'), parseKconfigScalar('m', 'tristate'),
+    parseKconfigScalar('"fast path"', 'string'), parseKconfigScalar('42', 'int'),
+    parseKconfigScalar('0x2a', 'hex'),
+  ];
+  check('typed-scalars-v1', 'scalar-types', scalarRows.map((row) => row.type),
+    ['bool', 'tristate', 'string', 'int', 'hex']);
+  checkShape('typed-scalars-v1', 'scalar-validity', scalarRows,
+    (rows) => rows.every((row) => row.valid === true && typeof row.raw === 'string' && row.valueKind));
+
+  const defaultRow = parseKconfigDefault('"foo if bar" if DEFAULT_GATE', 'string');
+  check('conditional-defaults-v1', 'default-roundtrip-raw', defaultRow.raw,
+    '"foo if bar" if DEFAULT_GATE');
+  check('conditional-defaults-v1', 'default-value', defaultRow.value, 'foo if bar');
+  check('conditional-defaults-v1', 'default-condition', defaultRow.condition, 'DEFAULT_GATE');
+  checkShape('conditional-defaults-v1', 'default-validity', defaultRow,
+    (row) => row.valid === true && row.precise === true && row.valueKind === 'literal');
+
+  const rangeRow = parseKconfigRange('1 64 if RANGE_GATE', 'int');
+  check('conditional-ranges-v1', 'range-bounds', [rangeRow.min, rangeRow.max], [1, 64]);
+  check('conditional-ranges-v1', 'range-condition', rangeRow.condition, 'RANGE_GATE');
+  check('conditional-ranges-v1', 'range-raw', rangeRow.raw, '1 64 if RANGE_GATE');
+  checkShape('conditional-ranges-v1', 'range-validity', rangeRow,
+    (row) => row.valid === true && row.minKind === 'literal' && row.maxKind === 'literal');
+
+  const prompt = parsePromptClause('"Golden prompt" if PROMPT_GATE');
+  check('prompt-visible-menu-conditions-v1', 'prompt-condition', prompt,
+    { prompt: 'Golden prompt', condition: 'PROMPT_GATE' });
+  const visibility = ['VISIBLE_GATE', 'MENU_VISIBLE_GATE', 'INHERITED_GATE']
+    .map((condition) => parseKconfigExpression(condition));
+  checkShape('visibility-conditions-v1', 'visibility-expressions', visibility,
+    (rows) => rows.every((row) => row.complete === true && row.symbols.length === 1));
+
+  const choice = {
+    id: 'choice-golden', symbol: 'CHOICE_GOLDEN', type: 'tristate', optional: true,
+    modules: true, options: ['modules'], optionFlags: ['modules'],
+    depends: ['CHOICE_GATE'], visibleIf: ['CHOICE_VISIBLE'],
+  };
+  choice.dependsAst = choice.depends.map((value) => parseKconfigExpression(value));
+  choice.promptIf = ['CHOICE_PROMPT'];
+  checkShape('choice-metadata-v1', 'choice-shape', choice,
+    (row) => row.id && row.type === 'tristate' && row.optional === true && Array.isArray(row.options));
+  checkShape('choice-relations-v1', 'choice-relation-shape', choice,
+    (row) => row.dependsAst.length === 1 && row.dependsAst[0].complete === true &&
+      row.visibleIf.length === 1 && row.promptIf.length === 1);
+
+  const moduleFixture = { options: ['modules'], optionFlags: ['modules'], modules: true };
+  checkShape('module-directive-capture-v1', 'module-directive-shape', moduleFixture,
+    (row) => row.options.includes('modules') && row.optionFlags.includes('modules'));
+  check('module-semantics-v1', 'module-semantics', moduleFixture.modules, true);
+
+  const definitions = [
+    { source: 'golden-a.in', location: { file: 'golden-a.in', line: 7 } },
+    { source: 'golden-b.in', location: { file: 'golden-b.in', line: 11 } },
+  ];
+  checkShape('per-definition-provenance-v1', 'definition-provenance', definitions,
+    (rows) => rows.length === 2 && rows.every((row) => row.source && row.location?.file && row.location?.line));
+
+  const missing = KCONFIG_PARSER_CAPABILITIES.filter((capability) =>
+    !capabilityChecks.has(capability) || capabilityMatrix[capability] !== true);
+  return {
+    id: 'kconfig-parser-fixture-v1', valid: failures.length === 0 && missing.length === 0,
+    failures, cases: 11, capabilityMatrix,
+    missingCapabilities: missing,
+  };
+}
+
+// Kconfig scalar values are deliberately kept alongside their original text.
+// The raw form is useful for audit/debug output while the typed form gives the
+// browser/Worker evaluator an unambiguous value domain.  Expressions that
+// cannot be reduced without a symbol environment remain expressions instead
+// of being guessed into a bool/int value.
+export function splitKconfigIfClause(raw) {
+  const text = String(raw ?? '').trim();
+  let quote = false;
+  let escaped = false;
+  for (let index = 0; index < text.length - 3; index++) {
+    const char = text[index];
+    if (escaped) { escaped = false; continue; }
+    if (char === '\\' && quote) { escaped = true; continue; }
+    if (char === '"') { quote = !quote; continue; }
+    if (!quote && /\s/.test(char) && text.slice(index).match(/^\s+if\s+/)) {
+      const match = text.slice(index).match(/^\s+if\s+(.+)$/);
+      if (match) return { value: text.slice(0, index).trim(), condition: match[1].trim() };
+    }
+  }
+  return { value: text, condition: '' };
+}
+
+function unquoteKconfigString(raw) {
+  const text = String(raw ?? '').trim();
+  if (!(text.startsWith('"') && text.endsWith('"') && text.length >= 2)) return text;
+  // Kconfig strings use the kconfig lexer, not JSON.  Decode the two escapes
+  // that the lexer gives a special meaning while preserving unknown escapes
+  // verbatim (for example `\\xNN` is not silently reinterpreted as JSON).
+  const body = text.slice(1, -1);
+  let value = '';
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (char !== '\\' || index + 1 >= body.length) {
+      value += char;
+      continue;
+    }
+    const next = body[index + 1];
+    if (next === '\\' || next === '"') {
+      value += next;
+      index += 1;
+    } else {
+      value += char;
+    }
+  }
+  return value;
+}
+
+export function parseKconfigScalar(raw, type = '') {
+  const text = String(raw ?? '').trim();
+  const normalizedType = String(type || '').trim();
+  // A choice/config without a parsed type is an unknown typed value, not an
+  // implicit Kconfig string.  Keeping type empty lets the consumer defer to
+  // the native evaluator rather than silently narrowing the domain.
+  if (!normalizedType) {
+    return { type: '', value: text, raw: text, valueKind: 'expression', valid: true, precise: false };
+  }
+  if (normalizedType === 'string') {
+    const value = unquoteKconfigString(text);
+    const startsQuoted = text.startsWith('"');
+    const endsQuoted = text.endsWith('"');
+    return {
+      type: normalizedType, value, raw: text,
+      valueKind: startsQuoted && endsQuoted ? 'literal' : startsQuoted || endsQuoted ? 'unknown' : 'expression',
+      valid: !(startsQuoted !== endsQuoted), precise: !(startsQuoted !== endsQuoted),
+    };
+  }
+  if (normalizedType === 'bool' || normalizedType === 'tristate') {
+    if (/^[nmy]$/.test(text)) {
+      if (normalizedType === 'bool' && text === 'm') {
+        return { type: normalizedType, value: text, raw: text, valueKind: 'unknown', valid: false, precise: false };
+      }
+      return { type: normalizedType, value: text, raw: text, valueKind: 'literal', valid: true, precise: true };
+    }
+    return { type: normalizedType, value: text, raw: text, valueKind: 'expression', valid: true, precise: false };
+  }
+  const numericLiteral = normalizedType === 'hex'
+    ? /^[-+]?0x[0-9a-f]+$/i.test(text)
+    : /^[-+]?\d+$/.test(text);
+  if (numericLiteral) {
+    const numeric = normalizedType === 'hex' ? Number.parseInt(text, 16) : Number.parseInt(text, 10);
+    // Do not round a value outside JavaScript's safe integer range.  Keeping
+    // the exact token as a typed literal lets the shared evaluator compare it
+    // with BigInt/decimal implementations without losing information.
+    return {
+      type: normalizedType, value: Number.isSafeInteger(numeric) ? numeric : text,
+      raw: text, valueKind: 'literal', valid: true, precise: Number.isSafeInteger(numeric),
+    };
+  }
+  return { type: normalizedType, value: text, raw: text, valueKind: 'expression', valid: true, precise: false };
+}
+
+export function parseKconfigDefault(raw, type = '') {
+  const text = String(raw ?? '').trim();
+  const { value, condition } = splitKconfigIfClause(text);
+  return { ...parseKconfigScalar(value, type), raw: text, condition };
+}
+
+function kconfigTokens(raw) {
+  const tokens = [];
+  let token = '';
+  let quote = false;
+  let escaped = false;
+  for (const char of String(raw ?? '').trim()) {
+    if (escaped) { token += char; escaped = false; continue; }
+    if (char === '\\' && quote) { token += char; escaped = true; continue; }
+    if (char === '"') { token += char; quote = !quote; continue; }
+    if (!quote && /\s/.test(char)) {
+      if (token) { tokens.push(token); token = ''; }
+    } else token += char;
+  }
+  if (token) tokens.push(token);
+  return tokens;
+}
+
+export function parseKconfigRange(raw, type = '') {
+  const text = String(raw ?? '').trim();
+  const { value, condition } = splitKconfigIfClause(text);
+  const bounds = kconfigTokens(value);
+  const [minimum = '', maximum = ''] = bounds;
+  const normalizedType = String(type || '').trim();
+  const lower = parseKconfigScalar(minimum, normalizedType);
+  const upper = parseKconfigScalar(maximum, normalizedType);
+  return {
+    type: normalizedType,
+    min: lower.value, max: upper.value,
+    minRaw: lower.raw, maxRaw: upper.raw,
+    minKind: lower.valueKind, maxKind: upper.valueKind,
+    raw: text, condition, valid: bounds.length === 2 && lower.valid !== false && upper.valid !== false,
+  };
+}
+
+// Kconfig expressions are shared by the readable relation builder and every
+// compact consumer.  Keep the lexer deliberately small but lossless: symbols,
+// quoted literals, comparison/logical operators, parentheses, and unknown
+// tokens are all retained.  A caller must not turn `A || B` into two required
+// edges; the AST and `alternatives` below make that distinction explicit.
+function lexKconfigExpression(raw) {
+  const text = String(raw ?? '').trim();
+  const tokens = [];
+  const unknown = [];
+  const isWord = (char) => /[A-Za-z0-9_+@./-]/.test(char);
+  for (let index = 0; index < text.length;) {
+    const char = text[index];
+    if (/\s/.test(char)) { index += 1; continue; }
+    if (char === '"') {
+      const start = index;
+      let value = '';
+      let closed = false;
+      index += 1;
+      while (index < text.length) {
+        const next = text[index];
+        if (next === '"') { index += 1; closed = true; break; }
+        if (next === '\\' && index + 1 < text.length) {
+          value += text[index + 1] === '"' || text[index + 1] === '\\' ? text[index + 1] : next;
+          if (text[index + 1] !== '"' && text[index + 1] !== '\\') value += text[index + 1];
+          index += 2;
+          continue;
+        }
+        value += next;
+        index += 1;
+      }
+      const token = { type: 'string', raw: text.slice(start, index), value, closed };
+      tokens.push(token);
+      if (!closed) unknown.push(token.raw);
+      continue;
+    }
+    const two = text.slice(index, index + 2);
+    if (['&&', '||', '!=', '<=', '>='].includes(two)) {
+      tokens.push({ type: 'operator', raw: two, value: two }); index += 2; continue;
+    }
+    if (['!', '=', '<', '>', '(', ')'].includes(char)) {
+      tokens.push({ type: char === '(' || char === ')' ? 'paren' : 'operator', raw: char, value: char });
+      index += 1; continue;
+    }
+    if (isWord(char)) {
+      const start = index;
+      while (index < text.length && isWord(text[index])) index += 1;
+      const value = text.slice(start, index);
+      tokens.push({ type: 'word', raw: value, value });
+      continue;
+    }
+    const token = { type: 'unknown', raw: char, value: char };
+    tokens.push(token); unknown.push(char); index += 1;
+  }
+  return { text, tokens, unknown };
+}
+
+function foldExpression(kind, values) {
+  const rows = values.filter(Boolean);
+  if (rows.length === 1) return rows[0];
+  return { kind, values: rows };
+}
+
+function expressionSymbols(ast, output = new Set()) {
+  if (!ast) return output;
+  if (ast.kind === 'symbol' && !['n', 'm', 'y'].includes(ast.name)) output.add(ast.name);
+  for (const child of ast.values || []) expressionSymbols(child, output);
+  if (ast.left) expressionSymbols(ast.left, output);
+  if (ast.right) expressionSymbols(ast.right, output);
+  if (ast.value && typeof ast.value === 'object') expressionSymbols(ast.value, output);
+  return output;
+}
+
+function expressionAlternatives(ast) {
+  if (!ast) return [];
+  if (ast.kind === 'symbol') return [[ast.name]];
+  if (ast.kind === 'or') return ast.values.flatMap(expressionAlternatives);
+  if (ast.kind === 'and') {
+    const symbols = [...expressionSymbols(ast)].sort();
+    return symbols.length ? [symbols] : [];
+  }
+  if (ast.kind === 'compare' || ast.kind === 'not') {
+    const symbols = [...expressionSymbols(ast)].sort();
+    return symbols.length ? [symbols] : [];
+  }
+  return [];
+}
+
+export function parseKconfigExpression(raw) {
+  const lexed = lexKconfigExpression(raw);
+  const tokens = lexed.tokens;
+  let position = 0;
+  let parseError = '';
+  const peek = () => tokens[position];
+  const consume = () => tokens[position++];
+  const primary = () => {
+    const token = peek();
+    if (!token) { parseError ||= 'missing-expression'; return null; }
+    if (token.type === 'paren' && token.value === '(') {
+      consume();
+      const value = orExpression();
+      if (!peek() || peek().value !== ')') parseError ||= 'missing-close-parenthesis';
+      else consume();
+      return value;
+    }
+    if (token.type === 'word') {
+      consume();
+      return ['n', 'm', 'y'].includes(token.value)
+        ? { kind: 'literal', value: token.value, raw: token.raw }
+        : { kind: 'symbol', name: token.value, raw: token.raw };
+    }
+    if (token.type === 'string') {
+      consume();
+      return { kind: 'literal', value: token.value, raw: token.raw, quoted: true };
+    }
+    parseError ||= token.type === 'unknown' ? `unknown-token:${token.raw}` : `unexpected-token:${token.raw}`;
+    consume();
+    return { kind: 'unknown', raw: token.raw };
+  };
+  const unary = () => {
+    if (peek()?.value === '!') { consume(); return { kind: 'not', value: unary() }; }
+    return primary();
+  };
+  const compare = () => {
+    let left = unary();
+    while (['=', '!=', '<', '<=', '>', '>='].includes(peek()?.value)) {
+      const operator = consume().value;
+      const right = unary();
+      left = { kind: 'compare', operator, left, right };
+    }
+    return left;
+  };
+  const andExpression = () => {
+    const values = [compare()];
+    while (peek()?.value === '&&') { consume(); values.push(compare()); }
+    return foldExpression('and', values);
+  };
+  function orExpression() {
+    const values = [andExpression()];
+    while (peek()?.value === '||') { consume(); values.push(andExpression()); }
+    return foldExpression('or', values);
+  }
+  const ast = orExpression();
+  if (position < tokens.length) parseError ||= `trailing-token:${tokens[position].raw}`;
+  const complete = Boolean(String(raw ?? '').trim()) && !lexed.unknown.length && !parseError && Boolean(ast);
+  const symbols = [...expressionSymbols(ast)].sort();
+  return {
+    raw: String(raw ?? '').trim(), ast, tokens, symbols,
+    alternatives: expressionAlternatives(ast), complete,
+    error: complete ? '' : (parseError || (lexed.unknown[0] ? `unknown-token:${lexed.unknown[0]}` : 'incomplete-expression')),
+  };
+}
+
+export function parseKconfigRelation(raw) {
+  const text = String(raw ?? '').trim();
+  const { value: targetExpression, condition } = splitKconfigIfClause(text);
+  const targetParsed = parseKconfigExpression(targetExpression);
+  const conditionParsed = condition ? parseKconfigExpression(condition) : null;
+  const target = targetParsed.ast?.kind === 'symbol' ? targetParsed.ast.name : '';
+  const complete = Boolean(target && targetParsed.complete && (!condition || conditionParsed?.complete));
+  return {
+    raw: text, target, targetExpression, condition,
+    targetAst: targetParsed.ast, conditionAst: conditionParsed?.ast || null,
+    targetSymbols: targetParsed.symbols, conditionSymbols: conditionParsed?.symbols || [],
+    alternatives: targetParsed.alternatives, complete,
+    error: complete ? '' : targetParsed.error || conditionParsed?.error || 'invalid-relation-target',
+  };
+}
+
 // A curated package is selectable only when one of the explicitly declared
 // package names exists in Kconfig.  The Catalog is intentionally strict:
 // packageinfo metadata and implicit core-package fallbacks must never make a
@@ -300,16 +727,21 @@ function expandSource(pattern, topdir, currentDir) {
 }
 
 function hasPositiveDependency(expressions, symbol) {
-  for (const expression of expressions) {
-    const tokens = String(expression).match(/\|\||&&|!=|=|!|\(|\)|"[^"]*"|[A-Za-z0-9_+./-]+/g) || [];
-    for (let index = 0; index < tokens.length; index++) {
-      if (tokens[index] !== symbol || tokens[index - 1] === '!') continue;
-      if (tokens[index + 1] === '!=') continue;
-      if (tokens[index + 1] === '=' && tokens[index + 2] === 'n') continue;
-      return true;
+  const visit = (node, negated = false) => {
+    if (!node) return false;
+    if (node.kind === 'symbol') return node.name === symbol && !negated;
+    if (node.kind === 'not') return visit(node.value, !negated);
+    if (node.kind === 'compare') {
+      if (node.left?.kind === 'symbol' && node.left.name === symbol) {
+        if (node.operator === '=' && node.right?.kind === 'literal' && node.right.value === 'n') return false;
+        if (node.operator === '!=' && node.right?.kind === 'literal' && node.right.value === 'y') return false;
+        return !negated;
+      }
+      return visit(node.left, negated) || visit(node.right, negated);
     }
-  }
-  return false;
+    return (node.values || []).some((child) => visit(child, negated));
+  };
+  return expressions.some((expression) => visit(parseKconfigExpression(expression).ast));
 }
 
 function addImplicitMenuParents(options) {
@@ -324,7 +756,10 @@ function addImplicitMenuParents(options) {
         break;
       }
     }
-    if (parent) option.parent = parent;
+    if (parent) {
+      option.parent = parent;
+      for (const node of option.nodes || []) node.parent = parent;
+    }
     if (option.kind === 'menuconfig') menuconfigs.push(option);
   }
 }
@@ -340,17 +775,18 @@ function parsePromptClause(text) {
 }
 
 function selfNegativeDependency(expression, symbol) {
-  const tokens = String(expression || '').match(/\|\||&&|!=|=|!|\(|\)|"[^"\\]*(?:\\.[^"\\]*)*"|[A-Za-z0-9_+./@-]+/g) || [];
-  for (let index = 0; index < tokens.length; index++) {
-    if (tokens[index] !== symbol) continue;
-    const previous = tokens[index - 1] || '';
-    const next = tokens[index + 1] || '';
-    const value = tokens[index + 2] || '';
-    if (previous === '!' || (next === '=' && value !== 'y') || (next === '!=' && value === 'y')) {
-      return true;
+  const visit = (node, negated = false) => {
+    if (!node) return false;
+    if (node.kind === 'symbol') return node.name === symbol && negated;
+    if (node.kind === 'not') return visit(node.value, !negated);
+    if (node.kind === 'compare' && node.left?.kind === 'symbol' && node.left.name === symbol) {
+      if (node.operator === '=' && node.right?.kind === 'literal' && node.right.value === 'y') return negated;
+      if (node.operator === '!=' && node.right?.kind === 'literal' && node.right.value !== 'y') return negated;
+      return !negated;
     }
-  }
-  return false;
+    return (node.values || []).some((child) => visit(child, negated));
+  };
+  return visit(parseKconfigExpression(expression).ast);
 }
 
 /**
@@ -390,18 +826,84 @@ export function lintKconfigOptions(options = []) {
   };
 }
 
+function validateParsedKconfigOutput(options = [], choices = []) {
+  const rows = [...(Array.isArray(options) ? options : []), ...(Array.isArray(choices) ? choices : [])];
+  const all = (predicate) => rows.every(predicate);
+  const expressions = rows.flatMap((row) => [
+    ...(row.dependsAst || []), ...(row.selectRelations || []), ...(row.implyRelations || []),
+  ]);
+  const typedDefaults = rows.flatMap((row) => row.defaultsTyped || []);
+  const typedRanges = rows.flatMap((row) => row.rangesTyped || []);
+  const observed = {
+    'kconfig-expression-ast-v1': expressions.length,
+    'typed-scalars-v1': typedDefaults.length + typedRanges.length,
+    'conditional-defaults-v1': typedDefaults.filter((row) => row?.condition).length,
+    'conditional-ranges-v1': typedRanges.filter((row) => row?.condition).length,
+    'prompt-visible-menu-conditions-v1': rows.filter((row) =>
+      (row.promptIf || []).length || (row.promptConditions || []).length).length,
+    'visibility-conditions-v1': rows.filter((row) =>
+      (row.visibleIf || []).length || (row.menuVisibleIf || []).length).length,
+    'choice-metadata-v1': choices.length,
+    'choice-relations-v1': choices.filter((row) => (row.dependsAst || []).length ||
+      (row.selectRelations || []).length || (row.implyRelations || []).length).length,
+    'module-directive-capture-v1': rows.filter((row) => (row.options || []).includes('modules') ||
+      (row.optionFlags || []).includes('modules')).length,
+    'module-semantics-v1': rows.filter((row) => row.modules === true).length,
+    'per-definition-provenance-v1': (options || []).filter((row) => (row.nodes || []).length > 1).length,
+  };
+  const capabilityMatrix = {
+    'kconfig-expression-ast-v1': expressions.every((row) => row && row.complete === true &&
+      (row.ast || row.targetAst)),
+    'typed-scalars-v1': [...typedDefaults, ...typedRanges].every((row) => row &&
+      typeof row.type === 'string' && typeof row.raw === 'string' && row.valid !== undefined),
+    'conditional-defaults-v1': typedDefaults.every((row) => row && typeof row.condition === 'string'),
+    'conditional-ranges-v1': typedRanges.every((row) => row && typeof row.condition === 'string'),
+    'prompt-visible-menu-conditions-v1': all((row) => Array.isArray(row.promptIf) &&
+      Array.isArray(row.promptConditions)),
+    'visibility-conditions-v1': all((row) => Array.isArray(row.visibleIf) &&
+      Array.isArray(row.menuVisibleIf) && Array.isArray(row.directVisibleIf) &&
+      Array.isArray(row.inheritedVisibleIf) && Array.isArray(row.inheritedMenuVisibleIf)),
+    'choice-metadata-v1': (choices || []).every((row) => row && typeof row.id === 'string' &&
+      typeof row.type === 'string' && typeof row.optional === 'boolean' && Array.isArray(row.options)),
+    'choice-relations-v1': (choices || []).every((row) => row && Array.isArray(row.dependsAst) &&
+      Array.isArray(row.selectRelations) && Array.isArray(row.implyRelations)),
+    'module-directive-capture-v1': all((row) => Array.isArray(row.options) && Array.isArray(row.optionFlags)),
+    'module-semantics-v1': all((row) => typeof row.modules === 'boolean'),
+    'per-definition-provenance-v1': (options || []).every((row) => Array.isArray(row.nodes) && row.nodes.length > 0 &&
+      row.nodes.every((node) => node && typeof node.source === 'string' && node.location?.file && node.location?.line)),
+  };
+  const missing = KCONFIG_PARSER_CAPABILITIES.filter((capability) => capabilityMatrix[capability] !== true);
+  return { valid: missing.length === 0, capabilityMatrix, missing, observed };
+}
+
 export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   const options = [];
   const choices = [];
   const comments = [];
   const menus = [];
+  const unsupportedDirectives = [];
+  const structuralErrors = [];
+  const missingSources = [];
   const seen = new Set();
   let choiceSeq = 0;
+  const supportedDirectives = new Set([
+    'config', 'menuconfig', 'mainmenu', 'menu', 'endmenu', 'if', 'endif',
+    'choice', 'endchoice', 'source', 'rsource', 'osource', 'orsource',
+    'comment', 'bool', 'tristate', 'string', 'int', 'hex', 'prompt',
+    'depends', 'visible', 'default', 'def_bool', 'def_tristate', 'select',
+    'imply', 'range', 'help', 'optional', 'option', 'modules',
+  ]);
+  const parserCapabilities = KCONFIG_PARSER_CAPABILITIES;
+  const requiredRelationCapabilities = Object.freeze([...KCONFIG_PARSER_CAPABILITIES]);
 
   function parseFile(file, inheritedPath = [], inheritedDepends = [], inheritedChoice = '', inheritedVisibleIf = [], inheritedMenuVisibleIf = []) {
     file = normalize(file);
     const seenKey = `${file}\0${inheritedPath.join('/')}\0${inheritedDepends.join('&&')}\0${inheritedVisibleIf.join('&&')}\0${inheritedMenuVisibleIf.join('&&')}\0${inheritedChoice}`;
-    if (seen.has(seenKey) || !existsSync(file)) return;
+    if (seen.has(seenKey)) return;
+    if (!existsSync(file)) {
+      missingSources.push({ file: relativeSource(topdir, file), reason: 'missing-source' });
+      return;
+    }
     seen.add(seenKey);
     const lines = readFileSync(file, 'utf8').replace(/\\\r?\n/g, ' ').replace(/\r\n/g, '\n').split('\n');
     const menuPath = [...inheritedPath];
@@ -420,6 +922,14 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
     const indentWidth = (raw) => {
       const prefix = raw.match(/^\s*/)?.[0] || '';
       return [...prefix].reduce((total, char) => total + (char === '\t' ? 8 : 1), 0);
+    };
+    const recordUnsupported = (text, lineNumber) => {
+      const directive = String(text || '').match(/^([a-z][a-z0-9_-]*)\b/)?.[1] || '';
+      if (directive && !supportedDirectives.has(directive)) {
+        unsupportedDirectives.push({
+          file: relativeSource(topdir, file), line: lineNumber, directive, text: String(text || ''),
+        });
+      }
     };
     const finishComment = () => {
       if (!currentComment) return;
@@ -444,6 +954,13 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       ].filter(Boolean))];
       current.promptIf = [...new Set((current.promptIf || []).filter(Boolean))];
       current.promptConditions = [...current.promptIf];
+      current.dependsAst = current.depends.map((value) => parseKconfigExpression(value));
+      current.selectRelations = current.selects.map((value) => parseKconfigRelation(value));
+      current.implyRelations = current.implies.map((value) => parseKconfigRelation(value));
+      current.defaultsTyped = (current.defaults || []).map((value) =>
+        parseKconfigDefault(value, current.type));
+      current.rangesTyped = (current.ranges || []).map((value) =>
+        parseKconfigRange(value, current.type));
       current.inheritedVisibleIf = [...new Set((current.inheritedVisibleIf || []).filter(Boolean))];
       current.menuVisibleIf = [...new Set((current.menuVisibleIf || []).filter(Boolean))];
       current.visibleIf = [...new Set([
@@ -494,8 +1011,10 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
           directVisibleIf: [], inheritedVisibleIf: [...visibilityConditions],
           inheritedMenuVisibleIf: [...menuVisibilityConditions],
           menuVisibleIf: [...menuVisibilityConditions], visibleIf: [],
-          promptIf: [], defaults: [], selects: [], implies: [], ranges: [],
+          promptIf: [], defaults: [], defaultsTyped: [], selects: [], implies: [], ranges: [],
+          rangesTyped: [], options: [], optionFlags: [], modules: false,
           choice: choiceStack.at(-1) || '',
+          dependsAst: [], selectRelations: [], implyRelations: [],
           source: relativeSource(topdir, file),
           location: { file: relativeSource(topdir, file), line: index + 1 },
         };
@@ -528,7 +1047,8 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       if (/^endmenu\b/.test(line)) {
         finishNode();
         const frame = menuFrames.pop();
-        if (frame) {
+        if (!frame) structuralErrors.push({ file: relativeSource(topdir, file), line: index + 1, error: 'unexpected-endmenu' });
+        else {
           conditions.length = frame.dependsLength;
           visibilityConditions.length = frame.visibleLength;
           menuVisibilityConditions.length = frame.menuVisibleLength;
@@ -545,22 +1065,29 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       if (/^endif\b/.test(line)) {
         finishNode();
         const frame = ifFrames.pop();
-        if (frame) conditions.length = frame.dependsLength;
+        if (!frame) structuralErrors.push({ file: relativeSource(topdir, file), line: index + 1, error: 'unexpected-endif' });
+        else conditions.length = frame.dependsLength;
         continue;
       }
       if (line === 'choice' || line.startsWith('choice ')) {
         finishNode();
         const id = `choice-${++choiceSeq}`;
+        const choiceTail = line.slice('choice'.length).trim();
+        const choiceSymbol = choiceTail.match(/^([A-Za-z0-9_]+)(?:\s|$)/)?.[1] || '';
+        const choicePrompt = choiceSymbol ? choiceTail.slice(choiceSymbol.length).trim() : choiceTail;
         const choice = {
-          id, prompt: parsePromptClause(line.slice('choice'.length)).prompt,
-          type: 'bool', depends: [...conditions], directDepends: [], inheritedDepends: [...conditions],
+          id, symbol: choiceSymbol, prompt: parsePromptClause(choicePrompt).prompt,
+          type: '', depends: [...conditions], directDepends: [], inheritedDepends: [...conditions],
           promptIf: [], directVisibleIf: [], inheritedVisibleIf: [...visibilityConditions],
           inheritedMenuVisibleIf: [...menuVisibilityConditions],
           visibleIf: [...visibilityConditions], menuVisibleIf: [...menuVisibilityConditions], defaults: [],
+          defaultsTyped: [], selects: [], implies: [], options: [], optionFlags: [], modules: false, optional: false,
+          ranges: [], rangesTyped: [],
+          dependsAst: [], selectRelations: [], implyRelations: [],
           source: relativeSource(topdir, file),
           location: { file: relativeSource(topdir, file), line: index + 1 },
         };
-        const initialPrompt = parsePromptClause(line.slice('choice'.length));
+        const initialPrompt = parsePromptClause(choicePrompt);
         if (initialPrompt.condition) choice.promptIf.push(initialPrompt.condition);
         currentChoice = choice;
         choices.push(currentChoice);
@@ -573,13 +1100,21 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       if (/^endchoice\b/.test(line)) {
         finishNode();
         const frame = choiceFrames.pop();
-        if (frame) {
+        if (!frame) structuralErrors.push({ file: relativeSource(topdir, file), line: index + 1, error: 'unexpected-endchoice' });
+        else {
           frame.choice.directDepends = [...new Set(frame.choice.directDepends.filter(Boolean))];
           frame.choice.inheritedDepends = [...new Set(frame.choice.inheritedDepends.filter(Boolean))];
           frame.choice.depends = [...new Set([...frame.choice.inheritedDepends, ...frame.choice.directDepends].filter(Boolean))];
           frame.choice.visibleIf = [...new Set([...frame.choice.inheritedVisibleIf, ...frame.choice.directVisibleIf].filter(Boolean))];
           frame.choice.menuVisibleIf = [...frame.choice.inheritedMenuVisibleIf];
           frame.choice.promptConditions = [...frame.choice.promptIf];
+          frame.choice.dependsAst = frame.choice.depends.map((value) => parseKconfigExpression(value));
+          frame.choice.selectRelations = frame.choice.selects.map((value) => parseKconfigRelation(value));
+          frame.choice.implyRelations = frame.choice.implies.map((value) => parseKconfigRelation(value));
+          frame.choice.defaultsTyped = (frame.choice.defaults || []).map((value) =>
+            parseKconfigDefault(value, frame.choice.type));
+          frame.choice.rangesTyped = (frame.choice.ranges || []).map((value) =>
+            parseKconfigRange(value, frame.choice.type));
           frame.choice.visibility = {
             promptIf: [...frame.choice.promptIf],
             menuVisibleIf: [...frame.choice.menuVisibleIf],
@@ -597,7 +1132,18 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       if (sourceMatch) {
         finishNode();
         const relativeBase = sourceMatch[1].includes('rsource') ? dirname(file) : topdir;
-        for (const child of expandSource(sourceMatch[2], topdir, relativeBase)) {
+        const children = expandSource(sourceMatch[2], topdir, relativeBase);
+        // `source`/`rsource` are required includes. An empty glob or a missing
+        // literal would otherwise make the parser silently publish a partial
+        // relation graph. The `o*source` forms are explicitly optional and are
+        // allowed to have no matching file.
+        if (!children.length && !sourceMatch[1].startsWith('o')) {
+          missingSources.push({
+            file: relativeSource(topdir, resolve(relativeBase, sourceMatch[2])),
+            source: sourceMatch[2], reason: 'missing-source',
+          });
+        }
+        for (const child of children) {
           parseFile(child, menuPath, conditions, choiceStack.at(-1) || '', visibilityConditions, menuVisibilityConditions);
         }
         continue;
@@ -624,7 +1170,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
         else if (line.startsWith('prompt ')) {
           const parsed = parsePromptClause(line);
           if (parsed.condition) currentComment.promptIf.push(parsed.condition);
-        }
+        } else recordUnsupported(line, index + 1);
         continue;
       }
       if (!current && currentChoice && menuFrames.length === (choiceFrames.at(-1)?.menuDepth ?? menuFrames.length)) {
@@ -644,6 +1190,18 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
           visibilityConditions.push(expression);
         }
         else if (line.startsWith('default ')) currentChoice.defaults.push(line.slice(8).trim());
+        else if (line === 'optional') currentChoice.optional = true;
+        else if (line.startsWith('option ')) {
+          const option = line.slice(7).trim();
+          if (option) {
+            currentChoice.options.push(option);
+            currentChoice.optionFlags.push(option.split(/[=\s]/, 1)[0]);
+            if (option === 'modules' || option.startsWith('modules=')) currentChoice.modules = true;
+          }
+        } else if (line === 'modules') {
+          currentChoice.modules = true;
+          currentChoice.optionFlags.push('modules');
+        } else recordUnsupported(line, index + 1);
         continue;
       }
       if (!current) {
@@ -656,7 +1214,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
           menuFrames.at(-1).directVisibleIf.push(expression);
           visibilityConditions.push(expression);
           menuVisibilityConditions.push(expression);
-        }
+        } else recordUnsupported(line, index + 1);
         continue;
       }
       if (line === 'help' || line === '---help---') {
@@ -682,19 +1240,65 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       else if (line.startsWith('select ')) current.selects.push(line.slice(7).trim());
       else if (line.startsWith('imply ')) current.implies.push(line.slice(6).trim());
       else if (line.startsWith('range ')) current.ranges.push(line.slice(6).trim());
+      else if (line.startsWith('option ')) {
+        const option = line.slice(7).trim();
+        if (option) {
+          current.options.push(option);
+          current.optionFlags.push(option.split(/[=\s]/, 1)[0]);
+          if (option === 'modules' || option.startsWith('modules=')) current.modules = true;
+        }
+      } else if (line === 'modules') {
+        current.modules = true;
+        current.optionFlags.push('modules');
+      } else recordUnsupported(line, index + 1);
     }
     finishNode();
+    if (ifFrames.length) structuralErrors.push({ file: relativeSource(topdir, file), error: 'unclosed-if', count: ifFrames.length });
+    if (menuFrames.length) structuralErrors.push({ file: relativeSource(topdir, file), error: 'unclosed-menu', count: menuFrames.length });
+    if (choiceFrames.length) structuralErrors.push({ file: relativeSource(topdir, file), error: 'unclosed-choice', count: choiceFrames.length });
   }
 
   parseFile(entry);
   const validation = mergeKconfigOptions(options);
   addImplicitMenuParents(validation.options);
   const semantic = lintKconfigOptions(validation.options);
+  const parserFixture = validateKconfigParserFixture();
+  const parserOutput = validateParsedKconfigOutput(validation.options, choices);
+  const capabilityMatrix = Object.fromEntries(requiredRelationCapabilities.map((capability) => [
+    capability, parserFixture.capabilityMatrix?.[capability] === true &&
+      parserOutput.capabilityMatrix?.[capability] === true,
+  ]));
+  const missingRelationCapabilities = requiredRelationCapabilities.filter((capability) =>
+    capabilityMatrix[capability] !== true);
+  const capabilityMatrixComplete = missingRelationCapabilities.length === 0;
+  const parserStructuralErrors = [
+    ...structuralErrors,
+    ...missingSources,
+    ...validation.conflicts.map((row) => ({ ...row, error: 'kconfig-symbol-conflict' })),
+  ];
+  const parserFixtureValidated = parserFixture.valid && parserOutput.valid;
+  const parserComplete = capabilityMatrixComplete && !unsupportedDirectives.length &&
+    !parserStructuralErrors.length && parserFixtureValidated;
   const visibleOptions = validation.options.filter((item) => item.visible !== false);
   const categories = [...new Set(visibleOptions.map((item) => item.path[0] || 'Other'))];
   return {
     categories, options: visibleOptions, allOptions: validation.options, choices, comments, menus,
-    validation: { ...validation, semantic },
+    relationsComplete: parserComplete,
+    validation: {
+      ...validation, semantic,
+      relationsComplete: parserComplete,
+      capabilityMatrixComplete,
+      roundTripValidated: false,
+      parserFixtureValidated,
+      parserFixture,
+      parserOutput,
+      capabilities: parserCapabilities,
+      capabilityMatrix,
+      unsupportedDirectives,
+      structuralErrors: parserStructuralErrors,
+      requiredRelationCapabilities,
+      missingRelationCapabilities,
+    },
   };
 }
 
@@ -736,9 +1340,17 @@ function mergeKconfigOptions(rawOptions) {
     inheritedMenuVisibleIf: [...(node.inheritedMenuVisibleIf || [])],
     visibleIf: [...(node.visibleIf || [])], menuVisibleIf: [...(node.menuVisibleIf || [])],
     promptIf: [...(node.promptIf || [])],
-    defaults: [...(node.defaults || [])], selects: [...(node.selects || [])],
-    implies: [...(node.implies || [])], ranges: [...(node.ranges || [])],
-    choice: node.choice || '', help: node.help || '', source: node.source || '',
+    dependsAst: [...(node.dependsAst || [])],
+    selectRelations: [...(node.selectRelations || [])],
+    implyRelations: [...(node.implyRelations || [])],
+    kconfigConflicts: [...(node.kconfigConflicts || [])],
+    packageConflicts: [...(node.packageConflicts || [])],
+    defaults: [...(node.defaults || [])], defaultsTyped: [...(node.defaultsTyped || [])],
+    selects: [...(node.selects || [])], implies: [...(node.implies || [])],
+    ranges: [...(node.ranges || [])], rangesTyped: [...(node.rangesTyped || [])],
+    options: [...(node.options || [])], optionFlags: [...(node.optionFlags || [])],
+    modules: node.modules === true, optional: node.optional === true,
+    choice: node.choice || '', parent: node.parent || '', help: node.help || '', source: node.source || '',
     location: node.location || null,
   });
   for (const [symbol, nodes] of groups) {
@@ -757,7 +1369,10 @@ function mergeKconfigOptions(rawOptions) {
     const symbolConflicts = types.length > 1 ? [{ field: 'type', values: types }] : [];
     const merged = {
       ...first,
-      type: types[0] || 'bool',
+      // An omitted type is meaningful for choices and for definitions whose
+      // type is supplied by another native Kconfig declaration.  Do not turn
+      // an unknown source value into an invented bool domain.
+      type: types[0] || '',
       path: paths[0] || [],
       paths,
       nodes: snapshots,
@@ -778,22 +1393,44 @@ function mergeKconfigOptions(rawOptions) {
       menuVisibleIf: [...(first.menuVisibleIf || [])],
       promptIf: [...(first.promptIf || [])],
       promptConditions: [...(first.promptConditions || first.promptIf || [])],
+      dependsAst: [...(first.dependsAst || [])],
+      selectRelations: nodes.flatMap((node) => node.selectRelations || []),
+      implyRelations: nodes.flatMap((node) => node.implyRelations || []),
       defaults: unique(nodes.flatMap((node) => node.defaults || [])),
+      defaultsTyped: nodes.flatMap((node) => node.defaultsTyped || []),
       selects: unique(nodes.flatMap((node) => node.selects || [])),
       implies: unique(nodes.flatMap((node) => node.implies || [])),
       ranges: unique(nodes.flatMap((node) => node.ranges || [])),
-      conflicts: symbolConflicts,
+      rangesTyped: nodes.flatMap((node) => node.rangesTyped || []),
+      options: unique(nodes.flatMap((node) => node.options || [])),
+      optionFlags: unique(nodes.flatMap((node) => node.optionFlags || [])),
+      modules: nodes.some((node) => node.modules === true),
+      optional: nodes.some((node) => node.optional === true),
+      // Kconfig definition/type conflicts are not package metadata conflicts.
+      // Keep the namespaces separate so a consumer cannot mistake one for
+      // the other when resolving a package capability.
+      kconfigConflicts: symbolConflicts,
+      packageConflicts: [],
       variants,
       dependsVariants: nodes.map((node) => [...(node.depends || [])]),
+      dependsAstVariants: nodes.map((node) => [...(node.dependsAst || [])]),
       directDependsVariants: nodes.map((node) => [...(node.directDepends || [])]),
       inheritedDependsVariants: nodes.map((node) => [...(node.inheritedDepends || [])]),
       visibleIfVariants: nodes.map((node) => [...(node.visibleIf || [])]),
       menuVisibleIfVariants: nodes.map((node) => [...(node.menuVisibleIf || [])]),
       promptIfVariants: nodes.map((node) => [...(node.promptIf || [])]),
       defaultsVariants: nodes.map((node) => [...(node.defaults || [])]),
+      defaultsTypedVariants: nodes.map((node) => [...(node.defaultsTyped || [])]),
       selectsVariants: nodes.map((node) => [...(node.selects || [])]),
+      selectRelationsVariants: nodes.map((node) => [...(node.selectRelations || [])]),
       impliesVariants: nodes.map((node) => [...(node.implies || [])]),
+      implyRelationsVariants: nodes.map((node) => [...(node.implyRelations || [])]),
       rangesVariants: nodes.map((node) => [...(node.ranges || [])]),
+      rangesTypedVariants: nodes.map((node) => [...(node.rangesTyped || [])]),
+      optionsVariants: nodes.map((node) => [...(node.options || [])]),
+      optionFlagsVariants: nodes.map((node) => [...(node.optionFlags || [])]),
+      modulesVariants: nodes.map((node) => node.modules === true),
+      optionalVariants: nodes.map((node) => node.optional === true),
     };
     if (nodes.length > 1) duplicates.push({
       symbol, count: nodes.length, paths, locations: merged.locations,

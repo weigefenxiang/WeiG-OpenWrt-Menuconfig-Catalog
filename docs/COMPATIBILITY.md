@@ -15,7 +15,7 @@ schema 4 在原规则上增加：
 - `sourceCommits`：可选完整 40 位源码提交列表，使临时上游故障在源码前进后自动失效。
 - `targetScope`：可选 Target `system`/`subtarget`/`profile` 精确范围；省略时覆盖该 Source/Branch 中所有真实包含目标包的环境。
 - `failure`：`build-failure` 必需的结构化证据，包含 `phase`、`cause`、稳定 `code` 与可选 `observed`；只负责说明，不驱动依赖或改写配置。
-- `buildDependency`：`build-failure` 可选的、有界构建触发证据，严格包含 `package` 和 `triggerPackages`。`package` 是实际失败的构建目标，`triggerPackages` 是已在同一精确 `sourceCommits` 范围验证、会触发该目标编译的直接入口。它不是通用 dependency 数据，也不能出现在 `file-ownership` 规则中。
+- `buildDependency`：`build-failure` 可选的失败目标事实，只要求一个真实 concrete `package`。旧规则中的 `triggerPackages` 仍可读取，但不再要求、维护或作为第二套依赖数据库；直接入口必须由当前精确 Source/Branch/commit 的 typed relations 图动态反向/正向验证。它不能出现在 `file-ownership` 规则中。
 
 schema 2 旧规则继续按以下字段读取：
 
@@ -36,7 +36,20 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 规则不得包含命令、补丁或专用执行逻辑。构建端不得据此锁包或改写用户配置。浏览器可以把 `buildDependency` 作为证据交给通用推荐规划器，规划器仍只通过现有 Kconfig relations 和 `applyUserIntent()` 生成最少合法操作。用户可应用推荐方案、自定义 N/M/Y，或二次确认后强制继续。
 
-对于带 `buildDependency` 的规则，消费方必须把 `rule.packages`、`buildDependency.package` 和 `buildDependency.triggerPackages` 的去重并集视为完整参与集合。初始配置中每个仍匹配规则的参与包都是明确的兼容性取消目标，不能因执行其他目标后可能被 Kconfig 连带关闭，就把它降级为“自动联动变化”或从方案中省略。Kconfig relations 只用于寻找合法操作顺序、解除 selector，并计算参与集合之外的真实联动变化；最终方案必须确认所有初始活动参与者均不再匹配规则。
+对于带 `buildDependency` 的规则，消费方以失败的 concrete `buildDependency.package` 为图搜索目标，从当前配置反向寻找 direct concrete roots，再正向验证每条条件路径确实可达。旧 `triggerPackages` 只作为历史证据展示，不能扩大参与集合、触发取消或替代当前图。条件、alternative、select/imply 或 virtual provider 无法证明时返回 `inconclusive`；不能按包名、Source 或 Branch 猜测。
+
+每份 relations 资产必须声明 `relationsComplete` 与字段能力。缺失或为 `false` 时，网页和 Probe 只能延后/返回 `inconclusive`，不得把不完整关系当作兼容结论。
+
+软件包构建闭包是独立的窄能力，不依赖完整 typed Kconfig：relations 另行声明
+`packageClosureComplete`、`packageClosureCapabilities` 和
+`packageClosureValidation`。只有精确刷新得到的 `.packageinfo` 依赖 token（包含
+alternative/condition）、virtual provider，以及已经校验过的 package 正向/反向边都完整时，
+才声明 `complete-package-build-closure-v1`。该能力足够让 `buildDependency.package` 从失败
+concrete package 做通用闭包证明；它绝不能把 `relationsComplete` 置为 true。defaults、depends、
+select、imply、visibility、choice、MODULES 等确定性 Kconfig 判断仍必须要求完整
+`relationsComplete`，否则只能 `inconclusive`。
+
+schema 4 紧凑契约：`records[*]` 按公开的 `fields` 顺序解释；各池无损保存 typed 有序 defaults/ranges、原始与 AST 表达式、direct/inherited 可见性和依赖 variants、逐定义 `nodes`、分离的 `packageConflicts`/`kconfigConflicts` 与包 capability relations。`indexes` 包含 `byPackage`、`bySymbol`、`providers`、`reverseDependencies`、`reverseKconfig`、`reverseSelects`、`reverseImplies`、`forwardEdges`、`reverseEdges`。每条 edge 保留 `expressionAst`、`conditionAst`、嵌套 `alternatives`、provider ownership，并明确用 `required: null` 表示候选/未知边。求值器必须以有序 definition records 为权威输入，展平字段只用于兼容投影。
 
 普通临时故障规则仍以 `sourceCommits` 为失效边界，且 `buildDependency` 只能用于完整精确提交边界。经明确批准的 schema-5 `preventive` 规则改用 `evidence` 保存精确事实，并用 `environments` 独立控制预防范围。`packageAvailability: "if-present"` 下，失败目标不存在即跳过；部分触发入口不存在时只忽略缺失入口。规则只在有效配置真实选择当前 Catalog 中存在的失败目标或触发入口时触发，推荐方案也只处理这些实际存在且活动的参与包。RootFS 容量、Runner、网络和磁盘问题不得写入本文件。
 
@@ -74,8 +87,7 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 ### BLD-0003
 
 - 策略范围：所有 Source、所有 Branch、所有 Target/Profile，但仅在当前 Catalog 真实提供 `dockerd` 时适用；没有 `dockerd` 的环境直接跳过。
-- 失败目标：`dockerd`。
-- 直接构建触发入口：`docker`、`containerd`、`runc`、`tini`。某个入口在当前环境不存在时忽略；存在且活动的入口与 `dockerd` 都是明确推荐取消对象。
+- 失败目标：`dockerd`。直接入口不在规则中维护；由当前 Source/Branch/commit 的 typed package/Kconfig/Make relations 动态计算。没有可证明路径时不产生取消建议。
 - 问题：Moby 29.6.1 在复制嵌套可执行文件时把空的 `command -v` 结果传给 `cp`。
 - 精确证据：ImmortalWrt `openwrt-25.12` 提交 `6081813a…` 的 Runs `33091565296`、`32703315265`、`32702715228`、`32719724510`、`33229690268`、`33230123378`，以及提交 `1d34e7b…` 的 Run `33293241107`。这些证据不表示其他 Source/Branch 已实测失败。
 - 删除条件：只有明确撤销该全局预防策略时才缩小或删除 `environments`；真实证据仍按精确环境维护，不能因策略范围扩大而伪造。
