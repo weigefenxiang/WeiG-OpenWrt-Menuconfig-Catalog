@@ -1,0 +1,7 @@
+config HELP_ZERO
+	bool "Zero-column help"
+help
+Zero-column help text is retained exactly as a help block.
+ config, source and reset are ordinary words here.
+config HELP_ZERO_NEXT
+	bool "Directive after zero-column help"

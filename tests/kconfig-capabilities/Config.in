@@ -21,6 +21,9 @@ config GOLDEN_RANGE_GATE
 config GOLDEN_PROMPT
 	bool "Golden prompt gate"
 
+config GOLDEN_RESET
+	bool "Golden choice reset gate"
+
 menu "Golden visibility"
 	visible if GOLDEN_VISIBLE
 
@@ -55,6 +58,11 @@ choice GOLDEN_CHOICE
 	tristate
 	depends on GOLDEN_GATE
 	visible if GOLDEN_VISIBLE
+	help
+		Choice help paragraph one.
+
+		config, source and reset are help text here.
+	reset if GOLDEN_RESET
 	optional
 	option modules
 	default GOLDEN_CHOICE_A

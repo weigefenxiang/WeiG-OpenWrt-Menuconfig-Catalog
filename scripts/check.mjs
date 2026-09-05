@@ -81,7 +81,7 @@ const targets = parseInfoRecords(readFileSync(join(fixture, 'targetinfo'), 'utf8
 const menu = parseKconfigTree(fixture);
 assert.equal(menu.validation.capabilityMatrixComplete, true);
 assert.equal(menu.validation.parserFixtureValidated, true);
-assert.equal(menu.validation.parserFixture.cases, 11);
+assert.equal(menu.validation.parserFixture.cases, 12);
 assert.deepEqual(menu.validation.missingRelationCapabilities, []);
 assert(Object.values(menu.validation.capabilityMatrix).every((value) => value === true));
 assert(Object.values(menu.validation.parserFixture.capabilityMatrix).every((value) => value === true));
@@ -105,7 +105,41 @@ assert.deepEqual(goldenOption('GOLDEN_BOOL')?.visibleIf, ['GOLDEN_VISIBLE']);
 assert.equal(goldenOption('GOLDEN_MODULE')?.modules, true);
 assert.equal(goldenMenu.choices[0]?.optional, true);
 assert.equal(goldenMenu.choices[0]?.modules, true);
+assert.equal(goldenMenu.choices[0]?.resetIf?.[0], 'GOLDEN_RESET');
+assert.equal(goldenMenu.choices[0]?.resetIfAst?.[0]?.complete, true);
+assert(goldenMenu.choices[0]?.help?.includes('config, source and reset are help text'));
 assert.equal(goldenOption('GOLDEN_DUPLICATE')?.nodes?.length, 2);
+const sourceMenu = parseKconfigTree(join(ROOT, 'tests', 'kconfig-source'));
+assert.equal(sourceMenu.validation.relationsComplete, true);
+assert.deepEqual(sourceMenu.validation.structuralErrors, []);
+assert.deepEqual(sourceMenu.validation.unsupportedDirectives, []);
+assert(sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_GLOB_ONE'));
+assert(sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_GLOB_TWO'));
+assert(sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_NESTED_FALLBACK'));
+assert(sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_RELATIVE'));
+assert(sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_QUESTION_FALLBACK'));
+assert(sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_RSOURCE_GLOB'));
+assert(!sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_RELATIVE_ROOT'));
+assert(!sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_HIDDEN_GLOB'));
+assert(!sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_SOURCE_GLOB_FALLBACK'));
+assert.equal(sourceMenu.validation.variableAssignments?.[0]?.operator, ':=');
+assert(sourceMenu.validation.dynamicExpressions?.some((row) => row.text.includes('$(shell')));
+const sourceRelations = buildKconfigRelations(sourceMenu.allOptions || sourceMenu.options, [], sourceMenu.choices, {
+  parserValidation: sourceMenu.validation,
+});
+const sourceExpanded = expandCompactRelations(compactRelations(sourceRelations));
+assert(sourceExpanded.validation.variableAssignments?.some((row) => row.name === 'KCONFIG_CAPTURE'));
+assert(sourceExpanded.validation.dynamicExpressions?.some((row) => row.text.includes('$(shell')));
+const missingLiteralMenu = parseKconfigTree(join(ROOT, 'tests', 'kconfig-source-missing'));
+assert.equal(missingLiteralMenu.validation.relationsComplete, false);
+assert(missingLiteralMenu.validation.structuralErrors.some((row) => row.reason === 'missing-source'));
+const zeroColumnHelp = parseKconfigTree(join(ROOT, 'tests', 'kconfig-help-zero'));
+assert.equal(zeroColumnHelp.validation.relationsComplete, true);
+assert(zeroColumnHelp.allOptions.find((row) => row.symbol === 'HELP_ZERO')?.help?.includes('Zero-column help text'));
+assert(zeroColumnHelp.allOptions.some((row) => row.symbol === 'HELP_ZERO_NEXT'));
+const wildcardMissing = parseKconfigTree(join(ROOT, 'tests', 'kconfig-source-patterns'));
+assert.equal(wildcardMissing.validation.relationsComplete, false);
+assert.equal(wildcardMissing.validation.structuralErrors.filter((row) => row.reason === 'missing-source').length, 2);
 const symbols = new Set((menu.allOptions || menu.options).map((row) => row.symbol));
 for (const target of targets) {
   target.contract = targetBuildContract(target, symbols);
@@ -177,6 +211,7 @@ assert.equal(compact.schema, 4);
 assert.equal(typeof compact.relationsComplete, 'boolean');
 assert(Array.isArray(compact.relationCapabilities));
 assert.equal(compact.relationsComplete, true);
+assert(compact.relationCapabilities.includes('choice-reset-conditions-v1'));
 assert.equal(compact.roundTripValidated, true);
 assert(compact.relationCapabilities.includes('complete-kconfig-relations-v1'));
 assert.equal(compact.validation.compactExpandSemanticEqual, true);
@@ -201,6 +236,10 @@ assert.equal(expanded.relationsComplete, true,
 assert.equal(expanded.validation.roundTripValidated, true);
 assert.equal(compareRelationSemantics(relations, expanded).equal, true);
 assert.equal(expanded.choices[0]?.type, '', 'compact choice roundtrip must preserve an unknown choice type');
+const goldenRelations = buildKconfigRelations(goldenMenu.allOptions || goldenMenu.options, [], goldenMenu.choices);
+const goldenExpanded = expandCompactRelations(compactRelations(goldenRelations));
+assert.deepEqual(goldenExpanded.choices[0]?.resetIf, goldenMenu.choices[0]?.resetIf);
+assert.equal(goldenExpanded.choices[0]?.resetIfAst?.[0]?.complete, true);
 assert(Buffer.byteLength(JSON.stringify(compact)) < Buffer.byteLength(JSON.stringify(relations)) * 0.5);
 
 // Typed Kconfig values retain type, source order, and unresolved expressions.

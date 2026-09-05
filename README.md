@@ -26,6 +26,15 @@ JavaScript 中写死分支、Target 或菜单项目。
   The parser keeps effective `depends` for existing consumers and also exposes the source
   boundary as `directDepends` plus `inheritedDepends`; prompt guards are kept separately in
   `promptIf`, and menu/choice visibility in `visibleIf` (with menu-only `menuVisibleIf`).
+  Choice `reset if` conditions are preserved as `resetIf` plus typed `resetIfAst` through the
+  readable graph and compact schema-4 round trip. Source globs follow native Kconfig scope:
+  ordinary `source` globs are rooted at the source tree, `rsource` globs at the including file,
+  and an unmatched glob is an empty include while a missing literal remains structural evidence.
+  Top-level Kconfig assignments and evaluator-owned `$(...)` expressions are retained in
+  `validation.variableAssignments` and `validation.dynamicExpressions`; the catalog never
+  executes shell expressions or guesses their values. `relationsComplete` asserts producer-data
+  completeness; consumers must still fail closed when evaluator-owned dynamic expressions cannot
+  be reduced.
   A `comment` is a standalone Kconfig node, so its conditions can never leak into the
   preceding or following symbol. These fields are source/parser metadata and are retained by
   compact schema 4; prompt or visibility conditions are never treated as value dependencies.

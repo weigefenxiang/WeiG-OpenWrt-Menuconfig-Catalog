@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { basename, dirname, isAbsolute, join, normalize, resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { dirname, isAbsolute, join, normalize, resolve } from 'node:path';
 
 export const safeSlug = (value) => String(value).toLowerCase()
   .replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'item';
@@ -274,6 +274,7 @@ export const KCONFIG_PARSER_CAPABILITIES = Object.freeze([
   'kconfig-expression-ast-v1', 'typed-scalars-v1', 'conditional-defaults-v1',
   'conditional-ranges-v1', 'prompt-visible-menu-conditions-v1',
   'visibility-conditions-v1', 'choice-metadata-v1', 'choice-relations-v1',
+  'choice-reset-conditions-v1',
   'module-directive-capture-v1', 'module-semantics-v1',
   'per-definition-provenance-v1',
 ]);
@@ -281,6 +282,7 @@ export const KCONFIG_PARSER_CAPABILITIES = Object.freeze([
 export const KCONFIG_RELATION_CAPABILITIES = Object.freeze([
   'kconfig-expression-ast-v1', 'typed-kconfig-v1', 'conditional-defaults-v1',
   'conditional-ranges-v1', 'visibility-conditions-v1', 'choice-relations-v1',
+  'choice-reset-conditions-v1',
   'module-semantics-v1', 'typed-package-capabilities-v1', 'alternatives-v1',
   'forward-reverse-edges-v1',
 ]);
@@ -365,6 +367,7 @@ export function validateKconfigParserFixture() {
     id: 'choice-golden', symbol: 'CHOICE_GOLDEN', type: 'tristate', optional: true,
     modules: true, options: ['modules'], optionFlags: ['modules'],
     depends: ['CHOICE_GATE'], visibleIf: ['CHOICE_VISIBLE'],
+    resetIf: ['CHOICE_RESET'], resetIfAst: [parseKconfigExpression('CHOICE_RESET')],
   };
   choice.dependsAst = choice.depends.map((value) => parseKconfigExpression(value));
   choice.promptIf = ['CHOICE_PROMPT'];
@@ -373,6 +376,9 @@ export function validateKconfigParserFixture() {
   checkShape('choice-relations-v1', 'choice-relation-shape', choice,
     (row) => row.dependsAst.length === 1 && row.dependsAst[0].complete === true &&
       row.visibleIf.length === 1 && row.promptIf.length === 1);
+  checkShape('choice-reset-conditions-v1', 'choice-reset-shape', choice,
+    (row) => row.resetIf.length === 1 && row.resetIfAst.length === 1 &&
+      row.resetIfAst[0].complete === true);
 
   const moduleFixture = { options: ['modules'], optionFlags: ['modules'], modules: true };
   checkShape('module-directive-capture-v1', 'module-directive-shape', moduleFixture,
@@ -390,7 +396,7 @@ export function validateKconfigParserFixture() {
     !capabilityChecks.has(capability) || capabilityMatrix[capability] !== true);
   return {
     id: 'kconfig-parser-fixture-v1', valid: failures.length === 0 && missing.length === 0,
-    failures, cases: 11, capabilityMatrix,
+    failures, cases: 12, capabilityMatrix,
     missingCapabilities: missing,
   };
 }
@@ -711,19 +717,115 @@ function quoted(line) {
   return match ? match[1].replace(/\\"/g, '"') : '';
 }
 
-function expandSource(pattern, topdir, currentDir) {
+function hasGlobPattern(value) {
+  return /[*?\[]/.test(String(value || ''));
+}
+
+function hasStarGlobPattern(value) {
+  return String(value || '').includes('*');
+}
+
+function globSegmentRegExp(segment) {
+  let pattern = '^';
+  for (let index = 0; index < segment.length; index++) {
+    const char = segment[index];
+    if (char === '*') {
+      pattern += '.*';
+    } else if (char === '?') {
+      pattern += '.';
+    } else if (char === '[') {
+      const end = segment.indexOf(']', index + 1);
+      if (end > index + 1) {
+        let characterClass = segment.slice(index + 1, end);
+        if (characterClass.startsWith('!')) characterClass = `^${characterClass.slice(1)}`;
+        pattern += `[${characterClass}]`;
+        index = end;
+      } else {
+        pattern += '\\[';
+      }
+    } else {
+      pattern += char.replace(/[.+^${}()|\\]/g, '\\$&');
+    }
+  }
+  return new RegExp(`${pattern}$`);
+}
+
+function isDirectoryPath(value) {
+  try { return statSync(value).isDirectory(); } catch { return false; }
+}
+
+function isFilePath(value) {
+  try { return statSync(value).isFile(); } catch { return false; }
+}
+
+function expandGlobPattern(pattern) {
+  const value = String(pattern || '').replaceAll('\\', '/');
+  const drive = value.match(/^[A-Za-z]:\//)?.[0] || '';
+  const absolute = value.startsWith('/') || Boolean(drive);
+  const root = drive || (absolute ? '/' : '.');
+  const rest = drive ? value.slice(drive.length) : (absolute ? value.slice(1) : value);
+  let paths = [root];
+  for (const segment of rest.split('/').filter(Boolean)) {
+    const wildcard = hasGlobPattern(segment);
+    const matcher = wildcard ? globSegmentRegExp(segment) : null;
+    const next = [];
+    for (const base of paths) {
+      if (!existsSync(base) || !isDirectoryPath(base)) continue;
+      if (!wildcard) {
+        const child = join(base, segment);
+        if (existsSync(child)) next.push(child);
+        continue;
+      }
+      for (const entry of readdirSync(base, { withFileTypes: true })) {
+        // Match POSIX glob(3): a wildcard segment does not consume a
+        // leading dot unless the pattern itself starts with a dot.
+        if (entry.name.startsWith('.') && !segment.startsWith('.')) continue;
+        if (matcher.test(entry.name)) next.push(join(base, entry.name));
+      }
+    }
+    paths = next;
+    if (!paths.length) break;
+  }
+  return [...new Set(paths.filter((path) => existsSync(path) && isFilePath(path))
+    .map((path) => normalize(path)))].sort();
+}
+
+function expandSource(pattern, topdir, currentDir, sourceKind = 'source') {
   let value = pattern
     .replace(/\$\((?:TOPDIR)\)|\$\{?TOPDIR\}?/g, topdir)
     .replace(/\$\((?:INCLUDE_DIR)\)|\$\{?INCLUDE_DIR\}?/g, join(topdir, 'include'))
     .replace(/\$\((?:FEED_CONFIG)\)|\$\{?FEED_CONFIG\}?/g, join(topdir, 'feeds.conf'));
-  if (!isAbsolute(value)) value = resolve(currentDir, value);
-  if (!/[*?[]/.test(value)) return existsSync(value) ? [value] : [];
-  const dir = dirname(value);
-  const mask = basename(value).replace(/[.+^${}()|\\]/g, '\\$&')
-    .replace(/\*/g, '.*').replace(/\?/g, '.');
-  if (!existsSync(dir)) return [];
-  const re = new RegExp(`^${mask}$`);
-  return readdirSync(dir).filter((name) => re.test(name)).sort().map((name) => join(dir, name));
+  const candidates = isAbsolute(value) ? [value] : sourceKind.includes('rsource') ? [
+    // rsource/orsource are strictly relative to the including file.
+    resolve(currentDir, value),
+  ] : [
+    // source/osource first resolve from the source root, then fall back to
+    // the including file directory. Never consult an unrelated process cwd.
+    resolve(topdir, value),
+    resolve(currentDir, value),
+  ];
+  const uniqueCandidates = [...new Set(candidates.map((candidate) => normalize(candidate)))];
+  if (hasGlobPattern(value)) {
+    // Kconfig's zconf_nextfile treats a GLOB_NOMATCH as an empty include,
+    // regardless of whether the source form is source/rsource/osource. The
+    // caller records a structural error only for a missing literal.
+    if (hasStarGlobPattern(value)) {
+      const candidate = uniqueCandidates[0];
+      return candidate ? expandGlobPattern(candidate) : [];
+    }
+    // `?` and bracket expressions are wildcard syntax for matching, but a
+    // GLOB_NOMATCH is not the native empty-include case. Resolve them like a
+    // literal source with the documented root/current-file fallback.
+    for (const candidate of uniqueCandidates) {
+      const matches = expandGlobPattern(candidate);
+      if (matches.length) return matches;
+    }
+    return [];
+  }
+  for (const candidate of uniqueCandidates) {
+    if (existsSync(candidate) && isFilePath(candidate)) return [candidate];
+  }
+  return [];
 }
 
 function hasPositiveDependency(expressions, symbol) {
@@ -846,6 +948,7 @@ function validateParsedKconfigOutput(options = [], choices = []) {
     'choice-metadata-v1': choices.length,
     'choice-relations-v1': choices.filter((row) => (row.dependsAst || []).length ||
       (row.selectRelations || []).length || (row.implyRelations || []).length).length,
+    'choice-reset-conditions-v1': choices.filter((row) => (row.resetIf || []).length).length,
     'module-directive-capture-v1': rows.filter((row) => (row.options || []).includes('modules') ||
       (row.optionFlags || []).includes('modules')).length,
     'module-semantics-v1': rows.filter((row) => row.modules === true).length,
@@ -867,6 +970,9 @@ function validateParsedKconfigOutput(options = [], choices = []) {
       typeof row.type === 'string' && typeof row.optional === 'boolean' && Array.isArray(row.options)),
     'choice-relations-v1': (choices || []).every((row) => row && Array.isArray(row.dependsAst) &&
       Array.isArray(row.selectRelations) && Array.isArray(row.implyRelations)),
+    'choice-reset-conditions-v1': (choices || []).every((row) => row &&
+      Array.isArray(row.resetIf) && Array.isArray(row.resetIfAst) &&
+      row.resetIfAst.every((condition) => condition?.complete === true)),
     'module-directive-capture-v1': all((row) => Array.isArray(row.options) && Array.isArray(row.optionFlags)),
     'module-semantics-v1': all((row) => typeof row.modules === 'boolean'),
     'per-definition-provenance-v1': (options || []).every((row) => Array.isArray(row.nodes) && row.nodes.length > 0 &&
@@ -882,6 +988,8 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   const comments = [];
   const menus = [];
   const unsupportedDirectives = [];
+  const variableAssignments = [];
+  const dynamicExpressions = [];
   const structuralErrors = [];
   const missingSources = [];
   const seen = new Set();
@@ -892,6 +1000,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
     'comment', 'bool', 'tristate', 'string', 'int', 'hex', 'prompt',
     'depends', 'visible', 'default', 'def_bool', 'def_tristate', 'select',
     'imply', 'range', 'help', 'optional', 'option', 'modules',
+    'reset',
   ]);
   const parserCapabilities = KCONFIG_PARSER_CAPABILITIES;
   const requiredRelationCapabilities = Object.freeze([...KCONFIG_PARSER_CAPABILITIES]);
@@ -919,9 +1028,23 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
     let currentComment = null;
     let help = false;
     let helpIndent = -1;
+    let helpTextIndent = null;
+    let helpTarget = null;
     const indentWidth = (raw) => {
       const prefix = raw.match(/^\s*/)?.[0] || '';
       return [...prefix].reduce((total, char) => total + (char === '\t' ? 8 : 1), 0);
+    };
+    const resetHelp = () => {
+      help = false;
+      helpIndent = -1;
+      helpTextIndent = null;
+      helpTarget = null;
+    };
+    const appendHelp = (raw) => {
+      if (!helpTarget) return;
+      const text = raw.trim();
+      if (!text && !helpTarget.help) return;
+      helpTarget.help = `${helpTarget.help || ''}${helpTarget.help ? '\n' : ''}${text}`;
     };
     const recordUnsupported = (text, lineNumber) => {
       const directive = String(text || '').match(/^([a-z][a-z0-9_-]*)\b/)?.[1] || '';
@@ -930,6 +1053,30 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
           file: relativeSource(topdir, file), line: lineNumber, directive, text: String(text || ''),
         });
       }
+    };
+    const recordVariableAssignment = (text, lineNumber) => {
+      const match = String(text || '').match(/^([A-Za-z_][A-Za-z0-9_]*)\s*(\+=|:=|=)\s*(.*)$/);
+      if (!match) return false;
+      const row = {
+        file: relativeSource(topdir, file), line: lineNumber, name: match[1],
+        operator: match[2], value: match[3], directive: 'kconfig-variable-assignment',
+        text: String(text || ''),
+      };
+      variableAssignments.push(row);
+      return true;
+    };
+    const recordDynamicExpression = (text, lineNumber) => {
+      const value = String(text || '');
+      // Known source-root variables are expanded above. All other $(...)
+      // forms (notably $(shell,...)) require Kconfig's evaluator and must be
+      // preserved as an explicit fail-closed diagnostic, never guessed.
+      if (!/\$\((?!(?:TOPDIR|INCLUDE_DIR|FEED_CONFIG)\b)[^)]*\)|\$\{(?!(?:TOPDIR|INCLUDE_DIR|FEED_CONFIG)\b)[^}]+\}/.test(value)) return false;
+      const row = {
+        file: relativeSource(topdir, file), line: lineNumber,
+        directive: 'dynamic-kconfig-expression', text: value,
+      };
+      dynamicExpressions.push(row);
+      return true;
     };
     const finishComment = () => {
       if (!currentComment) return;
@@ -979,8 +1126,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
         options.push(current);
       }
       current = null;
-      help = false;
-      helpIndent = -1;
+      resetHelp();
     };
     const finishNode = () => {
       finish();
@@ -995,13 +1141,42 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
     for (let index = 0; index < lines.length; index++) {
       const raw = lines[index];
       const line = raw.trim();
-      if (!line || line.startsWith('#')) continue;
-      if (help && indentWidth(raw) > helpIndent) {
-        current.help = `${current.help || ''}${current.help ? '\n' : ''}${line}`;
-        continue;
+      if (help) {
+        const indentation = indentWidth(raw);
+        if (!line) {
+          const nextRaw = lines[index + 1] || '';
+          // zconf's blank-line lookahead ends HELP before an unindented
+          // command. This keeps a normal directive after a paragraph from
+          // being swallowed while preserving blank lines inside help text.
+          if (nextRaw && nextRaw.trim() && !/^[ \t]/.test(nextRaw)) {
+            resetHelp();
+            continue;
+          }
+          // Blank lines are part of a help paragraph. Preserve them after
+          // the first text line, but do not create leading empty help text.
+          if (helpTextIndent !== null) appendHelp(raw);
+          continue;
+        }
+        if (helpTextIndent === null) {
+          // The native lexer establishes first_ts from the first non-empty
+          // help line. It can legitimately be column zero; do not compare it
+          // with the indentation of the `help` keyword.
+          helpTextIndent = indentation;
+          appendHelp(raw);
+          continue;
+        } else if (helpTextIndent === 0 ? indentation > 0 : indentation >= helpTextIndent) {
+          appendHelp(raw);
+          continue;
+        }
+        // The first non-help line terminates the help block and must be
+        // parsed again as a normal Kconfig directive below.
+        resetHelp();
       }
-      help = false;
-      helpIndent = -1;
+      if (!line || line.startsWith('#')) continue;
+      if (recordVariableAssignment(line, index + 1)) continue;
+      // Source-root variables handled by expandSource are safe. Other
+      // variables are retained in the parsed directive but fail closed here.
+      recordDynamicExpression(line, index + 1);
       if (/^(config|menuconfig)\s+/.test(line)) {
         finishNode();
         const [, kind, symbol] = line.match(/^(config|menuconfig)\s+(\S+)/);
@@ -1082,6 +1257,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
           inheritedMenuVisibleIf: [...menuVisibilityConditions],
           visibleIf: [...visibilityConditions], menuVisibleIf: [...menuVisibilityConditions], defaults: [],
           defaultsTyped: [], selects: [], implies: [], options: [], optionFlags: [], modules: false, optional: false,
+          resetIf: [], resetIfAst: [], help: '',
           ranges: [], rangesTyped: [],
           dependsAst: [], selectRelations: [], implyRelations: [],
           source: relativeSource(topdir, file),
@@ -1111,6 +1287,8 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
           frame.choice.dependsAst = frame.choice.depends.map((value) => parseKconfigExpression(value));
           frame.choice.selectRelations = frame.choice.selects.map((value) => parseKconfigRelation(value));
           frame.choice.implyRelations = frame.choice.implies.map((value) => parseKconfigRelation(value));
+          frame.choice.resetIf = [...new Set((frame.choice.resetIf || []).filter(Boolean))];
+          frame.choice.resetIfAst = frame.choice.resetIf.map((value) => parseKconfigExpression(value));
           frame.choice.defaultsTyped = (frame.choice.defaults || []).map((value) =>
             parseKconfigDefault(value, frame.choice.type));
           frame.choice.rangesTyped = (frame.choice.ranges || []).map((value) =>
@@ -1131,16 +1309,17 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       const sourceMatch = line.match(/^((?:o|r|or)?source)\s+"([^"]+)"/);
       if (sourceMatch) {
         finishNode();
-        const relativeBase = sourceMatch[1].includes('rsource') ? dirname(file) : topdir;
-        const children = expandSource(sourceMatch[2], topdir, relativeBase);
-        // `source`/`rsource` are required includes. An empty glob or a missing
-        // literal would otherwise make the parser silently publish a partial
-        // relation graph. The `o*source` forms are explicitly optional and are
-        // allowed to have no matching file.
-        if (!children.length && !sourceMatch[1].startsWith('o')) {
+        const relativeBase = dirname(file);
+        const sourcePattern = sourceMatch[2];
+        const children = expandSource(sourcePattern, topdir, relativeBase, sourceMatch[1]);
+        // Kconfig treats a glob with no matches as an empty include. Only a
+        // missing literal is a structural error; the source form (source,
+        // rsource, or an optional o*source variant) does not change that glob
+        // rule.
+        if (!children.length && !sourceMatch[1].startsWith('o') && !hasStarGlobPattern(sourcePattern)) {
           missingSources.push({
-            file: relativeSource(topdir, resolve(relativeBase, sourceMatch[2])),
-            source: sourceMatch[2], reason: 'missing-source',
+            file: relativeSource(topdir, resolve(relativeBase, sourcePattern)),
+            source: sourcePattern, reason: 'missing-source',
           });
         }
         for (const child of children) {
@@ -1174,7 +1353,12 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
         continue;
       }
       if (!current && currentChoice && menuFrames.length === (choiceFrames.at(-1)?.menuDepth ?? menuFrames.length)) {
-        if (/^(bool|tristate|string|int|hex)\b/.test(line)) {
+        if (line === 'help' || line === '---help---') {
+          help = true;
+          helpIndent = indentWidth(raw);
+          helpTextIndent = null;
+          helpTarget = currentChoice;
+        } else if (/^(bool|tristate|string|int|hex)\b/.test(line)) {
           currentChoice.type = line.match(/^(\w+)/)[1];
           prompt(currentChoice, line.replace(/^(bool|tristate|string|int|hex)\b/, ''));
         } else if (line.startsWith('prompt ')) prompt(currentChoice, line);
@@ -1188,6 +1372,8 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
           currentChoice.directVisibleIf.push(expression);
           currentChoice.visibleIf.push(expression);
           visibilityConditions.push(expression);
+        } else if (line.startsWith('reset if ')) {
+          currentChoice.resetIf.push(line.slice(9).trim());
         }
         else if (line.startsWith('default ')) currentChoice.defaults.push(line.slice(8).trim());
         else if (line === 'optional') currentChoice.optional = true;
@@ -1220,6 +1406,8 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       if (line === 'help' || line === '---help---') {
         help = true;
         helpIndent = indentWidth(raw);
+        helpTextIndent = null;
+        helpTarget = current;
         continue;
       }
       const typeMatch = line.match(/^(bool|tristate|string|int|hex)\b(.*)$/);
@@ -1295,6 +1483,8 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       capabilities: parserCapabilities,
       capabilityMatrix,
       unsupportedDirectives,
+      variableAssignments,
+      dynamicExpressions,
       structuralErrors: parserStructuralErrors,
       requiredRelationCapabilities,
       missingRelationCapabilities,

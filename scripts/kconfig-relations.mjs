@@ -601,6 +601,9 @@ function normalizeChoice(choice, records = []) {
     },
     selectRelations: selectRelations.length ? selectRelations : (choice?.selects || []).map(parseKconfigRelation),
     implyRelations: implyRelations.length ? implyRelations : (choice?.implies || []).map(parseKconfigRelation),
+    resetIf: [...(choice?.resetIf || [])],
+    resetIfAst: Array.isArray(choice?.resetIfAst) && choice.resetIfAst.length
+      ? [...choice.resetIfAst] : [...(choice?.resetIf || [])].map((value) => parseKconfigExpression(value)),
     defaults: [...(choice?.defaults || [])],
     defaultsTyped: [...(choice?.defaultsTyped || [])],
     ranges: [...(choice?.ranges || [])],
@@ -716,6 +719,9 @@ function directRelationCapabilityMatrix(context = {}) {
       Array.isArray(record.visibleIf) && Array.isArray(record.menuVisibleIf)),
     'choice-relations-v1': choices.every((choice) => Array.isArray(choice.dependsAst) &&
       Array.isArray(choice.selectRelations) && Array.isArray(choice.implyRelations)),
+    'choice-reset-conditions-v1': choices.every((choice) => Array.isArray(choice.resetIf) &&
+      Array.isArray(choice.resetIfAst) &&
+      choice.resetIfAst.every((condition) => condition?.complete === true)),
     'module-semantics-v1': records.every((record) => typeof record.modules === 'boolean'),
     'typed-package-capabilities-v1': packageRelations.every((row) => row &&
       (typeof row.kind === 'string' || typeof row.raw === 'string')),
@@ -737,7 +743,7 @@ function parserContract(options = {}, context = {}) {
       capabilityMatrix[capability] === true);
     return {
       capabilityMatrixComplete, parserFixtureValidated: capabilityMatrixComplete,
-      unsupportedDirectives: [], structuralErrors: [],
+      unsupportedDirectives: [], structuralErrors: [], variableAssignments: [], dynamicExpressions: [],
       capabilityMatrix,
     };
   }
@@ -755,6 +761,8 @@ function parserContract(options = {}, context = {}) {
       ...(Array.isArray(parser.structuralErrors) ? parser.structuralErrors : []),
       ...(Array.isArray(parser.conflicts) ? parser.conflicts : []),
     ],
+    variableAssignments: Array.isArray(parser.variableAssignments) ? parser.variableAssignments : [],
+    dynamicExpressions: Array.isArray(parser.dynamicExpressions) ? parser.dynamicExpressions : [],
     capabilityMatrix,
   };
 }
@@ -1113,6 +1121,12 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
         choice: choice.id, relation: 'choice-relation', expression: relation.raw, error: relation.error,
       });
     }
+    for (const condition of choice.resetIfAst || choice.resetIf || []) {
+      const parsed = condition?.ast ? condition : parseKconfigExpression(condition);
+      if (!parsed.complete) unknownRelations.push({
+        choice: choice.id, relation: 'choice-reset', expression: parsed.raw, error: parsed.error,
+      });
+    }
     for (const condition of [...(choice.promptIf || []), ...(choice.visibleIf || []), ...(choice.menuVisibleIf || [])]) {
       const parsed = condition?.ast ? condition : parseKconfigExpression(condition);
       if (!parsed.complete) unknownRelations.push({
@@ -1215,6 +1229,8 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
         ...unresolvedConflicts.flatMap((row) => row.missing.map((target) => ({ ...row, target, relation: 'conflicts' }))),
       ],
       unsupportedDirectives: parser.unsupportedDirectives,
+      variableAssignments: parser.variableAssignments,
+      dynamicExpressions: parser.dynamicExpressions,
       structuralErrors,
       dataComplete,
       sourceComplete: dataComplete,

@@ -1,0 +1,9 @@
+mainmenu "Source expansion"
+
+source "root-fallback.in"
+source "glob/*/Config.in"
+source "glob/zero/*/Config.in"
+source "nested/Config.in"
+source "dynamic.in"
+osource "optional-missing.in"
+orsource "optional-relative.in"

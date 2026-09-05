@@ -1,0 +1,5 @@
+source "nested-only.in"
+source "ordinary/*/Config.in"
+source "q?local.in"
+rsource "relative.in"
+rsource "local/*/Config.in"

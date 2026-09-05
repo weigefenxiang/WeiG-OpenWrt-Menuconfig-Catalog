@@ -1,0 +1,4 @@
+KCONFIG_CAPTURE := $(shell echo should-not-run)
+
+config SOURCE_DYNAMIC
+	def_bool $(shell echo y)
