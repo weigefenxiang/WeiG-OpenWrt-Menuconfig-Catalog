@@ -21,6 +21,7 @@ import {
 import {
   buildKconfigRelations,
   derivePackageDependencyClosure,
+  parsePackageDependency,
   validatePackageClosureGraph,
 } from './kconfig-relations.mjs';
 import {
@@ -110,7 +111,8 @@ assert.equal(goldenMenu.choices[0]?.resetIfAst?.[0]?.complete, true);
 assert(goldenMenu.choices[0]?.help?.includes('config, source and reset are help text'));
 assert.equal(goldenOption('GOLDEN_DUPLICATE')?.nodes?.length, 2);
 const sourceMenu = parseKconfigTree(join(ROOT, 'tests', 'kconfig-source'));
-assert.equal(sourceMenu.validation.relationsComplete, true);
+assert.equal(sourceMenu.validation.relationsComplete, false,
+  'unevaluated dynamic Kconfig expressions cannot claim a complete source closure');
 assert.deepEqual(sourceMenu.validation.structuralErrors, []);
 assert.deepEqual(sourceMenu.validation.unsupportedDirectives, []);
 assert(sourceMenu.allOptions.some((row) => row.symbol === 'SOURCE_GLOB_ONE'));
@@ -127,6 +129,8 @@ assert(sourceMenu.validation.dynamicExpressions?.some((row) => row.text.includes
 const sourceRelations = buildKconfigRelations(sourceMenu.allOptions || sourceMenu.options, [], sourceMenu.choices, {
   parserValidation: sourceMenu.validation,
 });
+assert.equal(sourceRelations.relationsComplete, false,
+  'relation completeness must retain the parser dynamic-expression failure');
 const sourceExpanded = expandCompactRelations(compactRelations(sourceRelations));
 assert(sourceExpanded.validation.variableAssignments?.some((row) => row.name === 'KCONFIG_CAPTURE'));
 assert(sourceExpanded.validation.dynamicExpressions?.some((row) => row.text.includes('$(shell')));
@@ -277,12 +281,121 @@ const relation = parseKconfigRelation('TARGET_FEATURE if GATE && OTHER');
 assert.equal(relation.target, 'TARGET_FEATURE');
 assert.deepEqual(relation.conditionSymbols, ['GATE', 'OTHER']);
 assert.equal(relation.complete, true);
-assert.equal(parseKconfigDefault('m', 'bool').valid, false, 'bool must not accept tristate m');
+const nativeUndefinedRelations = buildKconfigRelations([{
+  symbol: 'NATIVE_UNDEFINED_ROOT', type: 'bool', prompt: 'root', visible: true, userSettable: true,
+  depends: ['NATIVE_UNDEFINED_CONTEXT'], defaults: [], selects: [], implies: [],
+}], [], [], { externalSymbols: [] });
+assert.equal(nativeUndefinedRelations.relationsComplete, false,
+  'without a full parser proof, a missing Kconfig definition remains unresolved');
+assert.deepEqual(nativeUndefinedRelations.validation.unresolvedKconfig, [{
+  symbol: 'NATIVE_UNDEFINED_ROOT', missing: ['NATIVE_UNDEFINED_CONTEXT'],
+}]);
+assert.deepEqual(nativeUndefinedRelations.validation.kconfigUndefinedSymbols, []);
+
+// A complete active-root parse proves that these references are genuinely
+// undefined in the evaluated Kconfig context.  The proof must retain the
+// native unknown identity: boolean evaluation is n, while string comparison
+// keeps the symbol name rather than fabricating the string "n".
+const undefinedMenu = parseKconfigTree(join(ROOT, 'tests', 'kconfig-undefined'));
+assert.equal(undefinedMenu.validation.relationsComplete, true);
+const undefinedRelations = buildKconfigRelations(undefinedMenu.allOptions, [], undefinedMenu.choices, {
+  parserValidation: undefinedMenu.validation,
+});
+assert.equal(undefinedRelations.relationsComplete, true,
+  'authoritatively undefined active-root symbols do not make a complete graph incomplete');
+assert(undefinedRelations.validation.kconfigUndefinedSymbols.some((row) =>
+  row.symbol === 'UNDEFINED_ROOT' && row.missing === 'UNDEFINED_CONTEXT' &&
+  row.nativeType === 'unknown' && row.booleanValue === 'n' && row.stringValue === 'UNDEFINED_CONTEXT'));
+assert(undefinedRelations.validation.kconfigUndefinedSymbols.some((row) =>
+  row.symbol === 'UNDEFINED_STRING' && row.missing === 'UNDEFINED_STRING_DEFAULT' &&
+  row.nativeType === 'unknown' && row.booleanValue === 'n' && row.stringValue === 'UNDEFINED_STRING_DEFAULT'));
+assert(undefinedRelations.validation.kconfigUndefinedSymbols.some((row) =>
+  row.choice === 'choice-1' && row.missing === 'UNDEFINED_CHOICE_RESET'));
+assert(undefinedRelations.validation.kconfigUndefinedSymbols.some((row) =>
+  row.missing === 'UNDEFINED_MIN' || row.missing === 'UNDEFINED_MAX' ||
+  row.missing === 'UNDEFINED_RANGE_GATE'));
+
+// A symbol that is present in the authoritative parser set but omitted from
+// the graph projection is not native-undefined; it is a projection loss and
+// must remain unresolved.
+const omittedOptions = undefinedMenu.allOptions.filter((row) => row.symbol !== 'DEFINED_BUT_OMITTED');
+const omittedRelations = buildKconfigRelations(omittedOptions, [], undefinedMenu.choices, {
+  parserValidation: undefinedMenu.validation,
+});
+assert.equal(omittedRelations.relationsComplete, false);
+assert(omittedRelations.validation.unresolvedKconfig.some((row) =>
+  row.symbol === 'OMITTED_REFERENCE_ROOT' && row.missing.includes('DEFINED_BUT_OMITTED')));
+assert(!omittedRelations.validation.kconfigUndefinedSymbols.some((row) =>
+  row.missing === 'DEFINED_BUT_OMITTED'));
+const targetProjectionRelations = buildKconfigRelations(omittedOptions, [], undefinedMenu.choices, {
+  parserValidation: undefinedMenu.validation,
+  externalSymbols: ['DEFINED_BUT_OMITTED'],
+  externalSymbolSources: { DEFINED_BUT_OMITTED: ['parsed-target-filter'] },
+});
+assert(targetProjectionRelations.validation.externalSymbols.includes('DEFINED_BUT_OMITTED'));
+assert.deepEqual(targetProjectionRelations.validation.externalSymbolDefinitions, [
+  { symbol: 'DEFINED_BUT_OMITTED', type: 'bool' },
+]);
+assert(!targetProjectionRelations.validation.unresolvedKconfig.some((row) =>
+  row.missing.includes('DEFINED_BUT_OMITTED')));
+const forgedExternalRelations = buildKconfigRelations(undefinedMenu.allOptions, [], undefinedMenu.choices, {
+  parserValidation: undefinedMenu.validation,
+  externalSymbols: ['UNDEFINED_CONTEXT'],
+  externalSymbolSources: { UNDEFINED_CONTEXT: ['parsed-target-filter'] },
+});
+assert(!forgedExternalRelations.validation.externalSymbols.includes('UNDEFINED_CONTEXT'),
+  'external provenance must point to a parsed definition, not merely supply a source label');
+assert(forgedExternalRelations.validation.kconfigUndefinedSymbols.some((row) =>
+  row.missing === 'UNDEFINED_CONTEXT'));
+assert.equal(parseKconfigDefault('m', 'bool').valid, true,
+  'bool defaults may use the native tristate literal before bool-domain narrowing');
+assert.equal(parseKconfigRange('20 50000 # inline rationale', 'int').valid, true,
+  'Kconfig range comments must be removed before typed validation');
+assert.equal(parseKconfigExpression('!FEATURE_GATE # inline rationale').complete, true,
+  'Kconfig expression comments must not become trailing tokens');
+const packageSelectorExpression = parseKconfigExpression('@(!boost-shared-libs&&!boost-static-and-shared-libs)');
+assert.equal(packageSelectorExpression.complete, true,
+  'the native lexer ignores @ but continues parsing the ordinary Kconfig expression');
+assert.equal(packageSelectorExpression.ast?.kind, 'and');
+assert.deepEqual(packageSelectorExpression.symbols,
+  ['boost-shared-libs', 'boost-static-and-shared-libs']);
+assert.deepEqual(packageSelectorExpression.warnings, [
+  { kind: 'ignored-character', character: '@', index: 0 },
+]);
+const architectureSelectorExpression = parseKconfigExpression('@arm||@x86_64');
+assert.equal(architectureSelectorExpression.complete, true);
+assert.deepEqual(architectureSelectorExpression.symbols, ['arm', 'x86_64']);
+assert.equal(architectureSelectorExpression.warnings.length, 2);
+assert.deepEqual(parseKconfigExpression('"quoted@literal"').symbols, []);
+assert.deepEqual(parseKconfigExpression('"quoted@literal"').warnings, []);
+assert.deepEqual(parseKconfigExpression('A').symbols, ['A']);
+const packageSelectorRelations = buildKconfigRelations([{
+  symbol: 'PACKAGE_selector-demo', type: 'tristate', prompt: 'selector demo', visible: true,
+  userSettable: true, depends: ['@(!boost-shared-libs&&!boost-static-and-shared-libs)'],
+  defaults: [], selects: [], implies: [],
+}], [], []);
+assert.equal(packageSelectorRelations.relationsComplete, false,
+  'raw Kconfig @ conditions retain their ordinary symbol dependencies');
+assert(packageSelectorRelations.validation.unresolvedKconfig.some((row) =>
+  row.missing.includes('boost-shared-libs')));
+const packageSelectorMenu = parseKconfigTree(join(ROOT, 'tests', 'kconfig-package-selector'));
+assert.equal(packageSelectorMenu.validation.relationsComplete, true);
+assert.deepEqual(packageSelectorMenu.allOptions[0]?.dependsAst[0]?.symbols,
+  ['boost-shared-libs', 'boost-static-and-shared-libs']);
+const packageSelectorParsedRelations = buildKconfigRelations(packageSelectorMenu.allOptions,
+  [], packageSelectorMenu.choices, { parserValidation: packageSelectorMenu.validation });
+assert.equal(packageSelectorParsedRelations.relationsComplete, true);
+assert(packageSelectorParsedRelations.validation.kconfigUndefinedSymbols.some((row) =>
+  row.missing === 'boost-shared-libs'));
+assert.deepEqual(parsePackageDependency('@(!boost-shared-libs&&!boost-static-and-shared-libs)'), {
+  raw: '@(!boost-shared-libs&&!boost-static-and-shared-libs)', required: false,
+  kind: 'menu-condition', condition: '(!boost-shared-libs&&!boost-static-and-shared-libs)', packages: [],
+}, 'package selector conditions use package metadata syntax, not Kconfig expression tokenization');
 assert.deepEqual(parseKconfigDefault('m', 'tristate'), {
   type: 'tristate', value: 'm', raw: 'm', valueKind: 'literal', valid: true, precise: true, condition: '',
 });
 assert.deepEqual(parseKconfigDefault(String.raw`"path\q"`, 'string'), {
-  type: 'string', value: String.raw`path\q`, raw: String.raw`"path\q"`,
+  type: 'string', value: 'pathq', raw: String.raw`"path\q"`,
   valueKind: 'literal', valid: true, precise: true, condition: '',
 }, 'Kconfig string escaping must not use JSON semantics');
 assert.equal(parseKconfigDefault('"unterminated', 'string').valid, false, 'malformed Kconfig strings must fail closed');

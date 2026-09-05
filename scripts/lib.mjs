@@ -407,14 +407,19 @@ export function validateKconfigParserFixture() {
 // cannot be reduced without a symbol environment remain expressions instead
 // of being guessed into a bool/int value.
 export function splitKconfigIfClause(raw) {
-  const text = String(raw ?? '').trim();
-  let quote = false;
+  // `#` starts a Kconfig comment outside a quoted string.  The native
+  // lexer removes it before parsing defaults/ranges/conditions; keeping it in
+  // the shared parser makes otherwise valid expressions such as
+  // `A && B # explanation` fail closed as if the comment were a token.
+  const text = stripKconfigInlineComment(raw);
+  let quote = '';
   let escaped = false;
   for (let index = 0; index < text.length - 3; index++) {
     const char = text[index];
     if (escaped) { escaped = false; continue; }
     if (char === '\\' && quote) { escaped = true; continue; }
-    if (char === '"') { quote = !quote; continue; }
+    if (quote && char === quote) { quote = ''; continue; }
+    if (!quote && (char === '"' || char === "'")) { quote = char; continue; }
     if (!quote && /\s/.test(char) && text.slice(index).match(/^\s+if\s+/)) {
       const match = text.slice(index).match(/^\s+if\s+(.+)$/);
       if (match) return { value: text.slice(0, index).trim(), condition: match[1].trim() };
@@ -423,12 +428,32 @@ export function splitKconfigIfClause(raw) {
   return { value: text, condition: '' };
 }
 
+/**
+ * Remove one-line Kconfig comments without touching a `#` inside a quoted
+ * string or an escaped quote.  This is intentionally shared by scalar,
+ * range, default and expression parsing so all typed relation domains have
+ * the same lexer boundary as native Kconfig.
+ */
+export function stripKconfigInlineComment(raw) {
+  const text = String(raw ?? '');
+  let quote = '';
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (escaped) { escaped = false; continue; }
+    if (quote && char === '\\') { escaped = true; continue; }
+    if (quote && char === quote) { quote = ''; continue; }
+    if (!quote && (char === '"' || char === "'")) { quote = char; continue; }
+    if (!quote && char === '#') return text.slice(0, index).trim();
+  }
+  return text.trim();
+}
+
 function unquoteKconfigString(raw) {
   const text = String(raw ?? '').trim();
-  if (!(text.startsWith('"') && text.endsWith('"') && text.length >= 2)) return text;
-  // Kconfig strings use the kconfig lexer, not JSON.  Decode the two escapes
-  // that the lexer gives a special meaning while preserving unknown escapes
-  // verbatim (for example `\\xNN` is not silently reinterpreted as JSON).
+  if (!(['"', "'"].includes(text[0]) && text.endsWith(text[0]) && text.length >= 2)) return text;
+  // Native lexer removes every escape backslash; it does not implement JSON
+  // control escapes. For example backslash-n is the literal character n.
   const body = text.slice(1, -1);
   let value = '';
   for (let index = 0; index < body.length; index += 1) {
@@ -438,12 +463,8 @@ function unquoteKconfigString(raw) {
       continue;
     }
     const next = body[index + 1];
-    if (next === '\\' || next === '"') {
-      value += next;
-      index += 1;
-    } else {
-      value += char;
-    }
+    value += next;
+    index += 1;
   }
   return value;
 }
@@ -459,8 +480,8 @@ export function parseKconfigScalar(raw, type = '') {
   }
   if (normalizedType === 'string') {
     const value = unquoteKconfigString(text);
-    const startsQuoted = text.startsWith('"');
-    const endsQuoted = text.endsWith('"');
+    const startsQuoted = ['"', "'"].includes(text[0]);
+    const endsQuoted = startsQuoted ? text.length >= 2 && text.endsWith(text[0]) : ['"', "'"].includes(text.at(-1));
     return {
       type: normalizedType, value, raw: text,
       valueKind: startsQuoted && endsQuoted ? 'literal' : startsQuoted || endsQuoted ? 'unknown' : 'expression',
@@ -469,9 +490,11 @@ export function parseKconfigScalar(raw, type = '') {
   }
   if (normalizedType === 'bool' || normalizedType === 'tristate') {
     if (/^[nmy]$/.test(text)) {
-      if (normalizedType === 'bool' && text === 'm') {
-        return { type: normalizedType, value: text, raw: text, valueKind: 'unknown', valid: false, precise: false };
-      }
+      // Kconfig accepts the tristate literal in a bool default expression.
+      // Native evaluation narrows it to the bool domain (effectively y when
+      // selected), but the source token must remain lossless for audit and
+      // compact round-trips.  Do not reject a valid source construct merely
+      // because the destination symbol is bool.
       return { type: normalizedType, value: text, raw: text, valueKind: 'literal', valid: true, precise: true };
     }
     return { type: normalizedType, value: text, raw: text, valueKind: 'expression', valid: true, precise: false };
@@ -541,21 +564,25 @@ function lexKconfigExpression(raw) {
   const text = String(raw ?? '').trim();
   const tokens = [];
   const unknown = [];
-  const isWord = (char) => /[A-Za-z0-9_+@./-]/.test(char);
+  const ignoredCharacters = [];
+  // Match the native Kconfig lexer: words use [A-Za-z0-9_-] with '.' and
+  // '/' permitted inside a word.  Unsupported punctuation such as '@' is
+  // ignored with a warning; it is not part of the symbol identity.
+  const isWord = (char) => /[A-Za-z0-9_./-]/.test(char);
   for (let index = 0; index < text.length;) {
     const char = text[index];
     if (/\s/.test(char)) { index += 1; continue; }
-    if (char === '"') {
+    if (char === '"' || char === "'") {
       const start = index;
+      const closingQuote = char;
       let value = '';
       let closed = false;
       index += 1;
       while (index < text.length) {
         const next = text[index];
-        if (next === '"') { index += 1; closed = true; break; }
+        if (next === closingQuote) { index += 1; closed = true; break; }
         if (next === '\\' && index + 1 < text.length) {
-          value += text[index + 1] === '"' || text[index + 1] === '\\' ? text[index + 1] : next;
-          if (text[index + 1] !== '"' && text[index + 1] !== '\\') value += text[index + 1];
+          value += text[index + 1];
           index += 2;
           continue;
         }
@@ -565,6 +592,11 @@ function lexKconfigExpression(raw) {
       const token = { type: 'string', raw: text.slice(start, index), value, closed };
       tokens.push(token);
       if (!closed) unknown.push(token.raw);
+      continue;
+    }
+    if (char === '@') {
+      ignoredCharacters.push({ character: char, index });
+      index += 1;
       continue;
     }
     const two = text.slice(index, index + 2);
@@ -585,7 +617,7 @@ function lexKconfigExpression(raw) {
     const token = { type: 'unknown', raw: char, value: char };
     tokens.push(token); unknown.push(char); index += 1;
   }
-  return { text, tokens, unknown };
+  return { text, tokens, unknown, ignoredCharacters };
 }
 
 function foldExpression(kind, values) {
@@ -620,7 +652,9 @@ function expressionAlternatives(ast) {
 }
 
 export function parseKconfigExpression(raw) {
-  const lexed = lexKconfigExpression(raw);
+  const rawText = String(raw ?? '').trim();
+  const text = stripKconfigInlineComment(rawText);
+  const lexed = lexKconfigExpression(text);
   const tokens = lexed.tokens;
   let position = 0;
   let parseError = '';
@@ -675,10 +709,13 @@ export function parseKconfigExpression(raw) {
   }
   const ast = orExpression();
   if (position < tokens.length) parseError ||= `trailing-token:${tokens[position].raw}`;
-  const complete = Boolean(String(raw ?? '').trim()) && !lexed.unknown.length && !parseError && Boolean(ast);
+  const complete = Boolean(text) && !lexed.unknown.length && !parseError && Boolean(ast);
   const symbols = [...expressionSymbols(ast)].sort();
+  const warnings = lexed.ignoredCharacters.map((row) => ({
+    kind: 'ignored-character', character: row.character, index: row.index,
+  }));
   return {
-    raw: String(raw ?? '').trim(), ast, tokens, symbols,
+    raw: rawText, ast, tokens, symbols, ignoredCharacters: lexed.ignoredCharacters, warnings,
     alternatives: expressionAlternatives(ast), complete,
     error: complete ? '' : (parseError || (lexed.unknown[0] ? `unknown-token:${lexed.unknown[0]}` : 'incomplete-expression')),
   };
@@ -713,8 +750,8 @@ export function resolvePackageOption(candidate, packageSymbols) {
 }
 
 function quoted(line) {
-  const match = line.match(/"((?:[^"\\]|\\.)*)"/);
-  return match ? match[1].replace(/\\"/g, '"') : '';
+  const match = line.match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/);
+  return match ? unquoteKconfigString(match[0]) : '';
 }
 
 function hasGlobPattern(value) {
@@ -868,9 +905,9 @@ function addImplicitMenuParents(options) {
 
 function parsePromptClause(text) {
   const value = String(text || '');
-  const match = value.match(/"((?:[^"\\]|\\.)*)"/);
+  const match = value.match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/);
   if (!match) return { prompt: '', condition: '' };
-  const prompt = match[1].replace(/\\"/g, '"');
+  const prompt = unquoteKconfigString(match[0]);
   const suffix = value.slice(match.index + match[0].length).trim();
   const condition = suffix.match(/^if\s+(.+)$/)?.[1]?.trim() || '';
   return { prompt, condition };
@@ -982,7 +1019,7 @@ function validateParsedKconfigOutput(options = [], choices = []) {
   return { valid: missing.length === 0, capabilityMatrix, missing, observed };
 }
 
-export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
+export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in'), { nativeReplay = null } = {}) {
   const options = [];
   const choices = [];
   const comments = [];
@@ -1014,7 +1051,16 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       return;
     }
     seen.add(seenKey);
-    const lines = readFileSync(file, 'utf8').replace(/\\\r?\n/g, ' ').replace(/\r\n/g, '\n').split('\n');
+    const lines = readFileSync(file, 'utf8').replace(/\r\n/g, '\n').split('\n')
+      .map((line, index) => nativeReplay ? nativeReplay.line(file, index + 1, line) : line);
+    // Preserve physical line provenance even when a statement is continued.
+    for (let index = 0; index < lines.length; index++) {
+      let end = index;
+      while (lines[index].endsWith('\\') && end + 1 < lines.length) {
+        lines[index] = lines[index].slice(0, -1) + ' ' + lines[++end];
+        lines[end] = '';
+      }
+    }
     const menuPath = [...inheritedPath];
     const conditions = [...inheritedDepends];
     const visibilityConditions = [...inheritedVisibleIf];
@@ -1066,7 +1112,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       return true;
     };
     const recordDynamicExpression = (text, lineNumber) => {
-      const value = String(text || '');
+      const value = String(text || '').replace(/\\./g, '');
       // Known source-root variables are expanded above. All other $(...)
       // forms (notably $(shell,...)) require Kconfig's evaluator and must be
       // preserved as an explicit fail-closed diagnostic, never guessed.
@@ -1195,11 +1241,11 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
         };
         continue;
       }
-      if (/^mainmenu\s+"/.test(line)) {
+      if (/^mainmenu\s+["']/.test(line)) {
         finishNode();
         continue;
       }
-      if (/^menu\s+"/.test(line)) {
+      if (/^menu\s+["']/.test(line)) {
         finishNode();
         const label = quoted(line);
         const frame = {
@@ -1306,11 +1352,11 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
         currentChoice = choiceFrames.at(-1)?.choice || null;
         continue;
       }
-      const sourceMatch = line.match(/^((?:o|r|or)?source)\s+"([^"]+)"/);
+      const sourceMatch = line.match(/^((?:o|r|or)?source)\s+("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/);
       if (sourceMatch) {
         finishNode();
         const relativeBase = dirname(file);
-        const sourcePattern = sourceMatch[2];
+        const sourcePattern = unquoteKconfigString(sourceMatch[2]);
         const children = expandSource(sourcePattern, topdir, relativeBase, sourceMatch[1]);
         // Kconfig treats a glob with no matches as an empty include. Only a
         // missing literal is a structural error; the source form (source,
@@ -1447,6 +1493,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
   }
 
   parseFile(entry);
+  const nativePreprocessing = nativeReplay?.finish() || null;
   const validation = mergeKconfigOptions(options);
   addImplicitMenuParents(validation.options);
   const semantic = lintKconfigOptions(validation.options);
@@ -1465,8 +1512,12 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
     ...validation.conflicts.map((row) => ({ ...row, error: 'kconfig-symbol-conflict' })),
   ];
   const parserFixtureValidated = parserFixture.valid && parserOutput.valid;
+  // Dynamic Kconfig expressions (for example $(shell,...)) are captured for
+  // audit but are not evaluated by this parser.  They therefore cannot be
+  // advertised as a complete source graph; callers must not infer missing
+  // symbols from an unevaluated expression context.
   const parserComplete = capabilityMatrixComplete && !unsupportedDirectives.length &&
-    !parserStructuralErrors.length && parserFixtureValidated;
+    !parserStructuralErrors.length && !dynamicExpressions.length && parserFixtureValidated;
   const visibleOptions = validation.options.filter((item) => item.visible !== false);
   const categories = [...new Set(visibleOptions.map((item) => item.path[0] || 'Other'))];
   return {
@@ -1485,6 +1536,7 @@ export function parseKconfigTree(topdir, entry = join(topdir, 'Config.in')) {
       unsupportedDirectives,
       variableAssignments,
       dynamicExpressions,
+      nativePreprocessing,
       structuralErrors: parserStructuralErrors,
       requiredRelationCapabilities,
       missingRelationCapabilities,

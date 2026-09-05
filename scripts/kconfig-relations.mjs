@@ -2,6 +2,7 @@ import {
   KCONFIG_RELATION_CAPABILITIES,
   parseKconfigExpression,
   parseKconfigRelation,
+  splitKconfigIfClause,
 } from './lib.mjs';
 
 function unique(values) {
@@ -629,6 +630,128 @@ function normalizeTypedRanges(option) {
   }));
 }
 
+// Typed defaults/ranges carry expressions outside the ordinary depends/select
+// fields.  Parse those expressions with the same Kconfig AST as every other
+// relation instead of searching raw text (which would mistake string
+// literals, numbers, or comments for symbol references).
+function typedExpressionRows(defaultsTyped = [], rangesTyped = []) {
+  const rows = [];
+  const add = (field, raw, owner, kind) => {
+    const text = String(raw ?? '').trim();
+    if (!text) return;
+    rows.push({ field, kind, owner, ...parseKconfigExpression(text) });
+  };
+  for (const [index, value] of (defaultsTyped || []).entries()) {
+    if (value?.valueKind === 'expression') {
+      const split = splitKconfigIfClause(value.raw ?? value.value ?? '');
+      add(`defaults[${index}].value`, split.value, value, 'default-value');
+    }
+    if (value?.condition) add(`defaults[${index}].condition`, value.condition, value, 'default-condition');
+  }
+  for (const [index, value] of (rangesTyped || []).entries()) {
+    if (value?.minKind === 'expression') add(`ranges[${index}].min`, value.minRaw, value, 'range-bound');
+    if (value?.maxKind === 'expression') add(`ranges[${index}].max`, value.maxRaw, value, 'range-bound');
+    if (value?.condition) add(`ranges[${index}].condition`, value.condition, value, 'range-condition');
+  }
+  return rows;
+}
+
+function relationSymbols(rows = []) {
+  return unique(rows.flatMap((row) => [
+    ...(row?.targetSymbols || []), ...(row?.conditionSymbols || []),
+  ]));
+}
+
+function optionReferenceRows(kconfig, defaultsTyped, rangesTyped) {
+  const rows = [];
+  const addAsts = (field, astRows = []) => {
+    for (const [index, row] of astRows.entries()) {
+      if (row?.ast || row?.symbols) rows.push({ field: `${field}[${index}]`, ...row });
+    }
+  };
+  for (const field of [
+    'dependsAst', 'directDependsAst', 'inheritedDependsAst',
+    'promptIfAst', 'visibleIfAst', 'menuVisibleIfAst',
+    'directVisibleIfAst', 'inheritedVisibleIfAst', 'inheritedMenuVisibleIfAst',
+  ]) {
+    addAsts(field, kconfig?.[field] || []);
+    addAsts(`${field}Variants`, (kconfig?.[`${field}Variants`] || []).flat());
+  }
+  for (const field of ['selectRelations', 'implyRelations']) {
+    const relationRows = [
+      ...(kconfig?.[field] || []),
+      ...(kconfig?.[`${field}Variants`] || []).flat(),
+    ];
+    for (const [index, row] of relationRows.entries()) {
+      rows.push({ field: `${field}[${index}].target`, ...parseKconfigExpression(row?.targetExpression || row?.target || '') });
+      if (row?.condition) rows.push({ field: `${field}[${index}].condition`, ...parseKconfigExpression(row.condition) });
+      // Prefer the symbols captured from relation ASTs when available.  The
+      // parsed rows above are still retained for completeness diagnostics.
+      rows.push({ field: `${field}[${index}]`, symbols: relationSymbols([row]), ast: row?.targetAst || null,
+        complete: row?.complete !== false, raw: row?.raw || '' });
+    }
+  }
+  rows.push(...typedExpressionRows(defaultsTyped, rangesTyped));
+  return rows;
+}
+
+function choiceReferenceRows(choice) {
+  const rows = [];
+  const addAsts = (field, values = []) => {
+    for (const [index, value] of values.entries()) {
+      const parsed = value?.ast || value?.symbols ? value : parseKconfigExpression(value);
+      rows.push({ field: `${field}[${index}]`, ...parsed });
+    }
+  };
+  for (const field of ['dependsAst', 'resetIfAst']) addAsts(field, choice?.[field] || []);
+  for (const field of ['promptIf', 'visibleIf', 'menuVisibleIf']) addAsts(field, choice?.[field] || []);
+  for (const field of ['selectRelations', 'implyRelations']) {
+    for (const [index, row] of (choice?.[field] || []).entries()) {
+      rows.push({ field: `${field}[${index}].target`, symbols: relationSymbols([row]),
+        ast: row?.targetAst || null, complete: row?.complete !== false, raw: row?.raw || '' });
+      if (row?.condition) rows.push({ field: `${field}[${index}].condition`,
+        ...parseKconfigExpression(row.condition) });
+    }
+  }
+  rows.push(...typedExpressionRows(choice?.defaultsTyped || [], choice?.rangesTyped || []));
+  return rows;
+}
+
+function parserSymbolProof(parserValidation) {
+  const parser = parserValidation && typeof parserValidation === 'object' ? parserValidation : null;
+  const rows = Array.isArray(parser?.options) ? parser.options : null;
+  const reasons = [];
+  if (!parser) reasons.push('parser-validation-missing');
+  if (!rows) reasons.push('full-symbol-definitions-missing');
+  if (parser?.relationsComplete !== true) reasons.push('parser-not-complete');
+  if (parser?.capabilityMatrixComplete !== true) reasons.push('parser-capability-incomplete');
+  if (parser?.parserFixtureValidated !== true) reasons.push('parser-fixture-incomplete');
+  if ((parser?.structuralErrors || []).length) reasons.push('source-traversal-incomplete');
+  if ((parser?.unsupportedDirectives || []).length) reasons.push('unsupported-kconfig-directive');
+  if ((parser?.dynamicExpressions || []).length) reasons.push('dynamic-expression-unresolved');
+  if (rows && rows.some((row) => !row?.symbol || !row?.source || !row?.location?.file ||
+      !Number.isSafeInteger(row?.location?.line) || row.location.line < 1)) {
+    reasons.push('definition-provenance-incomplete');
+  }
+  const symbols = new Set((rows || []).map((row) => String(row?.symbol || '').trim()).filter(Boolean));
+  const definitions = new Map((rows || []).map((row) => [
+    String(row?.symbol || '').trim(), String(row?.type || '').trim(),
+  ]).filter(([symbol]) => symbol));
+  return {
+    complete: reasons.length === 0,
+    available: Boolean(parser),
+    symbols,
+    definitions,
+    metadata: {
+      available: Boolean(parser),
+      complete: reasons.length === 0,
+      source: 'parseKconfigTree.active-source-closure',
+      definitionCount: symbols.size,
+      reasons,
+    },
+  };
+}
+
 function kconfigRecordFields(option) {
   const dependsVariants = expressionVariants(option, 'depends');
   const selectsVariants = expressionVariants(option, 'selects');
@@ -804,10 +927,22 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
   const optionBySymbol = new Map(menuOptions.map((option) => [option.symbol, option]));
   const packageByName = new Map(packages.map((item) => [item.name, item]));
   const choiceIds = new Set(choices.map((choice) => choice.id));
-  const externalSymbols = new Set(options.externalSymbols || []);
+  const externalSymbolSources = options.externalSymbolSources && typeof options.externalSymbolSources === 'object'
+    ? Object.fromEntries(Object.entries(options.externalSymbolSources).map(([symbol, sources]) => [
+      symbol, unique(Array.isArray(sources) ? sources : [sources]),
+    ])) : {};
+  const parserProof = parserSymbolProof(options.parserValidation);
+  const provenExternalSymbols = new Set(Object.entries(externalSymbolSources)
+    .filter(([symbol, sources]) => parserProof.complete && parserProof.symbols.has(symbol) &&
+      Array.isArray(sources) && sources.includes('parsed-target-filter'))
+    .map(([symbol]) => symbol));
+  const provenExternalDefinitions = [...provenExternalSymbols].sort().map((symbol) => ({
+    symbol, type: parserProof.definitions.get(symbol) || '',
+  }));
   const records = [];
   const seenPackages = new Set();
   const unresolvedKconfig = [];
+  const kconfigUndefinedSymbols = [];
   const unresolvedPackageDependencies = [];
   const unresolvedConflicts = [];
   const invalidChoices = [];
@@ -855,20 +990,27 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
     const missingDependencies = dependencyRelations.flatMap((dependency) => dependency.targets
       .filter((target) => target.kind === 'unknown').map((target) => target.name));
     const missingConflicts = conflictsRelations.filter((relation) => relation.kind === 'unknown').map((relation) => relation.name);
-    const referencedSymbols = [
+    const defaultsTyped = normalizeTypedDefaults(option);
+    const rangesTyped = normalizeTypedRanges(option);
+    const typedReferenceRows = typedExpressionRows(defaultsTyped, rangesTyped);
+    const referenceRows = optionReferenceRows(kconfig, defaultsTyped, rangesTyped);
+    const referencedSymbols = unique([
       ...(kconfig.dependsAst || []).flatMap((row) => row.symbols || []),
       ...(kconfig.selectRelations || []).flatMap((row) => [...(row.targetSymbols || []), ...(row.conditionSymbols || [])]),
       ...(kconfig.implyRelations || []).flatMap((row) => [...(row.targetSymbols || []), ...(row.conditionSymbols || [])]),
       ...(kconfig.promptIfAst || []).flatMap((row) => row.symbols || []),
       ...(kconfig.visibleIfAst || []).flatMap((row) => row.symbols || []),
       ...(kconfig.menuVisibleIfAst || []).flatMap((row) => row.symbols || []),
-    ];
-    const missingSymbols = unique(referencedSymbols).filter((symbol) =>
-      !['y', 'm', 'n'].includes(symbol) && !optionBySymbol.has(symbol) && !externalSymbols.has(symbol));
-    const defaultsTyped = normalizeTypedDefaults(option);
-    const rangesTyped = normalizeTypedRanges(option);
+      ...referenceRows.flatMap((row) => row.symbols || []),
+    ]);
+    const missingSymbols = referencedSymbols.filter((symbol) =>
+      !['y', 'm', 'n'].includes(symbol) && !optionBySymbol.has(symbol));
     for (const row of [...defaultsTyped, ...rangesTyped].filter((item) => item?.valid === false)) {
       unknownRelations.push({ symbol: option.symbol, relation: 'typed-kconfig-value', raw: row.raw || '', error: 'invalid-typed-value' });
+    }
+    for (const row of typedReferenceRows.filter((item) => item.complete === false)) {
+      unknownRelations.push({ symbol: option.symbol, relation: 'typed-kconfig-expression',
+        field: row.field, expression: row.raw, error: row.error });
     }
     if (kconfigConflicts.length) unknownRelations.push({
       symbol: option.symbol, relation: 'kconfig-type-conflict', conflicts: kconfigConflicts,
@@ -880,7 +1022,17 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
     // relation errors.
     const missingKconfigSymbols = missingSymbols.filter((symbol) => !symbol.startsWith('PACKAGE_'));
     const missingPackageSymbols = missingSymbols.filter((symbol) => symbol.startsWith('PACKAGE_'));
-    if (missingKconfigSymbols.length) unresolvedKconfig.push({ symbol: option.symbol, missing: unique(missingKconfigSymbols) });
+    const unresolved = [];
+    for (const missing of unique(missingKconfigSymbols)) {
+      if (provenExternalSymbols.has(missing)) continue;
+      if (parserProof.complete && !parserProof.symbols.has(missing)) {
+        kconfigUndefinedSymbols.push({
+          symbol: option.symbol, missing, reason: 'undefined-kconfig-symbol',
+          nativeType: 'unknown', booleanValue: 'n', stringValue: missing,
+        });
+      } else unresolved.push(missing);
+    }
+    if (unresolved.length) unresolvedKconfig.push({ symbol: option.symbol, missing: unresolved });
     if (missingPackageSymbols.length) unresolvedPackageDependencies.push({
       package: name, missing: unique(missingPackageSymbols.map((symbol) => symbol.slice('PACKAGE_'.length))),
     });
@@ -1111,6 +1263,31 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
 
   const choiceDefinitions = choices.map((choice) => normalizeChoice(choice, records));
   for (const choice of choiceDefinitions) {
+    const choiceReferenceRowsValue = choiceReferenceRows(choice);
+    const missingChoiceSymbols = unique(choiceReferenceRowsValue.flatMap((row) => row.symbols || []))
+      .filter((symbol) => !['y', 'm', 'n'].includes(symbol) &&
+        !optionBySymbol.has(symbol) && !symbol.startsWith('PACKAGE_'));
+    const unresolvedChoiceSymbols = [];
+    for (const missing of missingChoiceSymbols) {
+      if (provenExternalSymbols.has(missing)) continue;
+      if (parserProof.complete && !parserProof.symbols.has(missing)) {
+        kconfigUndefinedSymbols.push({
+          symbol: choice.symbol || choice.id, choice: choice.id, missing,
+          reason: 'undefined-kconfig-symbol', nativeType: 'unknown',
+          booleanValue: 'n', stringValue: missing,
+        });
+      } else unresolvedChoiceSymbols.push(missing);
+    }
+    if (unresolvedChoiceSymbols.length) unresolvedKconfig.push({
+      symbol: choice.symbol || choice.id, choice: choice.id, missing: unresolvedChoiceSymbols,
+    });
+    const missingChoicePackages = unique(choiceReferenceRowsValue.flatMap((row) => row.symbols || []))
+      .filter((symbol) => symbol.startsWith('PACKAGE_') && !optionBySymbol.has(symbol) &&
+        !provenExternalSymbols.has(symbol));
+    if (missingChoicePackages.length) unresolvedPackageDependencies.push({
+      package: choice.symbol || choice.id,
+      missing: missingChoicePackages.map((symbol) => symbol.slice('PACKAGE_'.length)),
+    });
     for (const expression of choice.dependsAst || []) {
       if (!expression.complete) unknownRelations.push({
         choice: choice.id, relation: 'choice-depends', expression: expression.raw, error: expression.error,
@@ -1133,17 +1310,26 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
         choice: choice.id, relation: 'choice-visibility', expression: parsed.raw, error: parsed.error,
       });
     }
+    for (const row of choiceReferenceRowsValue.filter((item) => item.complete === false &&
+      /^(defaults|ranges)\[/.test(item.field))) {
+      unknownRelations.push({ choice: choice.id, relation: 'choice-typed-kconfig-expression',
+        field: row.field, expression: row.raw, error: row.error });
+    }
   }
   const choicesIndex = Object.fromEntries(choiceDefinitions.map((choice) => [choice.id, choice.members]));
   const normalizedUnknown = [
     ...unknownRelations,
-    ...unresolvedKconfig.flatMap((row) => row.missing.map((target) => ({ ...row, target, relation: 'kconfig' }))),
+    ...kconfigUndefinedSymbols.flatMap((row) => [row.missing].flat().filter(Boolean)
+      .map((target) => ({ ...row, target, relation: 'kconfig-undefined' }))),
+    ...unresolvedKconfig.flatMap((row) => row.missing.map((target) => ({ ...row, target, relation: 'kconfig-unresolved' }))),
     ...unresolvedPackageDependencies.flatMap((row) => row.missing.map((target) => ({ ...row, target, relation: 'package-depends' }))),
     ...unresolvedConflicts.flatMap((row) => row.missing.map((target) => ({ ...row, target, relation: 'conflicts' }))),
   ];
   const normalizedKconfigUnknown = [
     ...unknownRelations,
-    ...unresolvedKconfig.flatMap((row) => row.missing.map((target) => ({ ...row, target, relation: 'kconfig' }))),
+    ...unresolvedKconfig.flatMap((row) => row.missing.map((target) => ({
+      ...row, target, relation: 'kconfig-unresolved',
+    }))),
   ];
   const relationIndexes = {
     forwardEdges: Object.fromEntries(forwardEdges),
@@ -1163,7 +1349,8 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
   // supported, all source/graph diagnostics are empty, and the graph indexes
   // are internally bidirectional. The compact serializer performs the
   // independent readable/compact semantic round-trip before publishing true.
-  const dataComplete = parser.capabilityMatrixComplete && parser.parserFixtureValidated &&
+  const dataComplete = (!parserProof.available || parserProof.complete) &&
+    parser.capabilityMatrixComplete && parser.parserFixtureValidated &&
     parser.unsupportedDirectives.length === 0 && structuralErrors.length === 0 &&
     normalizedKconfigUnknown.length === 0 && indexValidation.valid;
   const relationsComplete = dataComplete;
@@ -1218,6 +1405,7 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
       structurallyValid: structuralErrors.length === 0 && parser.unsupportedDirectives.length === 0,
       relationsComplete,
       unresolvedKconfig,
+      kconfigUndefinedSymbols,
       unresolvedPackageDependencies,
       unresolvedConflicts,
       invalidChoices,
@@ -1231,6 +1419,18 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
       unsupportedDirectives: parser.unsupportedDirectives,
       variableAssignments: parser.variableAssignments,
       dynamicExpressions: parser.dynamicExpressions,
+      // Every accepted external symbol has an explicit provenance boundary:
+      // it was parsed then removed by the Target Devices projection.  Symbols
+      // supplied without a source row remain unresolved rather than silently
+      // becoming an external context.
+      externalSymbols: [...provenExternalSymbols].sort(),
+      externalSymbolSources: Object.fromEntries([...provenExternalSymbols]
+        .sort().map((symbol) => [symbol, externalSymbolSources[symbol]])),
+      // Exact symbol/type pairs from the complete parser set.  This is the
+      // only external-definition metadata AutoBuild may use for expression
+      // typing; no source text or inferred prefix type is exposed here.
+      externalSymbolDefinitions: provenExternalDefinitions,
+      kconfigSymbolProof: parserProof.metadata,
       structuralErrors,
       dataComplete,
       sourceComplete: dataComplete,

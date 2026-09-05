@@ -1,0 +1,5 @@
+mainmenu "OpenWrt package selector fixture"
+
+config PACKAGE_selector-source
+	tristate "Package selector source"
+	depends on @(!boost-shared-libs&&!boost-static-and-shared-libs)

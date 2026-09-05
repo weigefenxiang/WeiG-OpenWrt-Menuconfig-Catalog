@@ -1,0 +1,3 @@
+config ROUNDTRIP_DUP
+	bool "Roundtrip duplicate definition"
+	depends on ROUNDTRIP_GATE

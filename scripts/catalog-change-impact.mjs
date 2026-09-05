@@ -37,6 +37,8 @@ const REGISTRY = Object.freeze({
     'scripts/index-contract.mjs',
     'scripts/kconfig-relations.mjs',
     'scripts/lib.mjs',
+    'scripts/native-kconfig-preprocess.mjs',
+    'scripts/native-kconfig-trace.c',
     'scripts/prepare-metadata.sh',
     'scripts/profile-config-contract.mjs',
     'scripts/source-policy.mjs',

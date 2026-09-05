@@ -32,6 +32,8 @@ on:
       - "scripts/index-contract.mjs"
       - "scripts/kconfig-relations.mjs"
       - "scripts/lib.mjs"
+      - "scripts/native-kconfig-preprocess.mjs"
+      - "scripts/native-kconfig-trace.c"
       - "scripts/prepare-metadata.sh"
       - "scripts/install-probe-feeds.sh"
       - "scripts/profile-config-contract.mjs"

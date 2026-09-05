@@ -1,0 +1,39 @@
+mainmenu "Compact relation roundtrip"
+
+config ROUNDTRIP_GATE
+	bool "Roundtrip gate"
+
+config ROUNDTRIP_RESET
+	bool "Roundtrip reset"
+
+menu "Roundtrip menu"
+	visible if ROUNDTRIP_GATE
+
+config ROUNDTRIP_TYPED
+	string "Roundtrip typed default"
+	default "first"   if ROUNDTRIP_GATE
+	default "second"	if ROUNDTRIP_RESET
+	range 1 64 if ROUNDTRIP_GATE
+
+config ROUNDTRIP_DUP
+	prompt "Roundtrip duplicate prompt"
+
+source "definitions.in"
+endmenu
+
+choice ROUNDTRIP_CHOICE
+	prompt "Roundtrip choice"
+	tristate
+	depends on ROUNDTRIP_GATE
+	visible if ROUNDTRIP_GATE
+	reset if ROUNDTRIP_RESET
+	optional
+	option modules
+	default ROUNDTRIP_CHOICE_A
+
+config ROUNDTRIP_CHOICE_A
+	bool "Roundtrip choice A"
+
+config ROUNDTRIP_CHOICE_B
+	bool "Roundtrip choice B"
+endchoice

@@ -11,6 +11,7 @@ import {
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
 import { compactRelations } from './compact-relations.mjs';
+import { traceNativeKconfig, createNativeExpansionReplay } from './native-kconfig-preprocess.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = {};
@@ -33,7 +34,13 @@ const source = {
 };
 const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
-const menu = parseKconfigTree(tree);
+let menu = parseKconfigTree(tree);
+if (menu.validation.dynamicExpressions.length) {
+  const events = traceNativeKconfig(tree);
+  menu = parseKconfigTree(tree, join(tree, 'Config.in'), {
+    nativeReplay: createNativeExpansionReplay(tree, events),
+  });
+}
 const allMenuOptions = menu.allOptions || menu.options;
 const duplicateReport = {
   schema: 1,
@@ -102,6 +109,24 @@ for (const target of targets) {
 }
 const relationOptions = allMenuOptions.filter((option) =>
   option.path[0] !== 'Target Devices' && !targetSymbols.has(option.symbol));
+const relationOptionSet = new Set(relationOptions);
+
+// Relations deliberately exclude Target Devices from the selectable graph,
+// but expressions emitted by the native target/package metadata still refer
+// to symbols in that filtered context. Keep only exact symbols that were
+// actually parsed and then removed by this projection; an unresolved name in
+// a generated file is not proof that a definition exists.
+const externalSymbolSources = {};
+const addExternalSymbol = (symbol, source) => {
+  const name = String(symbol || '').trim();
+  if (!name || ['n', 'm', 'y'].includes(name)) return;
+  const rows = externalSymbolSources[name] || [];
+  if (!rows.includes(source)) rows.push(source);
+  externalSymbolSources[name] = rows;
+};
+for (const option of allMenuOptions) {
+  if (!relationOptionSet.has(option)) addExternalSymbol(option.symbol, 'parsed-target-filter');
+}
 const menuOptions = relationOptions.filter((option) => option.visible !== false);
 const pollutedDependencies = menuOptions.flatMap((option) =>
   (option.depends || []).filter((expression) =>
@@ -193,7 +218,8 @@ const relations = buildKconfigRelations(relationOptions, packages, menu.choices,
   // relation builder checks it together with source/graph diagnostics; the
   // compact serializer independently proves the readable round-trip below.
   parserValidation: menu.validation,
-  externalSymbols: [...targetSymbols],
+  externalSymbols: Object.keys(externalSymbolSources),
+  externalSymbolSources,
 });
 if (!relations.validation.structurallyValid) {
   throw new Error(`Invalid Kconfig relation structure: ${JSON.stringify({

@@ -236,6 +236,54 @@ function pick(object, fields) {
   return Object.fromEntries(fields.map((field) => [field, object?.[field]]).filter(([, value]) => value !== undefined));
 }
 
+const ROUND_TRIP_DIFF_LIMIT = 8;
+const ROUND_TRIP_VALUE_LIMIT = 320;
+
+function summarizeDifferenceValue(value) {
+  if (value === undefined) return '<undefined>';
+  let text;
+  try { text = JSON.stringify(value); } catch { text = String(value); }
+  if (text === undefined) text = String(value);
+  return text.length > ROUND_TRIP_VALUE_LIMIT
+    ? `${text.slice(0, ROUND_TRIP_VALUE_LIMIT)}…`
+    : text;
+}
+
+function collectStructuralDifferences(expected, actual, path = '$', differences = []) {
+  if (differences.length >= ROUND_TRIP_DIFF_LIMIT || Object.is(expected, actual)) return differences;
+  const expectedArray = Array.isArray(expected);
+  const actualArray = Array.isArray(actual);
+  if (expectedArray || actualArray) {
+    if (!expectedArray || !actualArray) {
+      differences.push({ path, expected: summarizeDifferenceValue(expected), actual: summarizeDifferenceValue(actual) });
+      return differences;
+    }
+    if (expected.length !== actual.length) {
+      differences.push({ path: `${path}.length`, expected: expected.length, actual: actual.length });
+    }
+    for (let index = 0; index < Math.max(expected.length, actual.length) && differences.length < ROUND_TRIP_DIFF_LIMIT; index += 1) {
+      collectStructuralDifferences(expected[index], actual[index], `${path}[${index}]`, differences);
+    }
+    return differences;
+  }
+  const expectedObject = expected && typeof expected === 'object';
+  const actualObject = actual && typeof actual === 'object';
+  if (expectedObject || actualObject) {
+    if (!expectedObject || !actualObject) {
+      differences.push({ path, expected: summarizeDifferenceValue(expected), actual: summarizeDifferenceValue(actual) });
+      return differences;
+    }
+    const keys = [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort();
+    for (const key of keys) {
+      if (differences.length >= ROUND_TRIP_DIFF_LIMIT) break;
+      collectStructuralDifferences(expected[key], actual[key], `${path}.${key}`, differences);
+    }
+    return differences;
+  }
+  differences.push({ path, expected: summarizeDifferenceValue(expected), actual: summarizeDifferenceValue(actual) });
+  return differences;
+}
+
 const RELATION_RECORD_FIELDS = Object.freeze([
   'kind', 'package', 'configSymbol', 'kconfigSymbol', 'symbol', 'origin', 'states',
   'visible', 'hidden', 'userSettable', 'canDisable', 'choice', 'type', 'defaults',
@@ -310,9 +358,16 @@ export function relationSemanticProjection(relations = {}) {
 }
 
 export function compareRelationSemantics(readable, expanded) {
-  const expected = JSON.stringify(relationSemanticProjection(readable));
-  const actual = JSON.stringify(relationSemanticProjection(expanded));
-  return { equal: expected === actual, expected, actual };
+  const expectedProjection = relationSemanticProjection(readable);
+  const actualProjection = relationSemanticProjection(expanded);
+  const expected = JSON.stringify(expectedProjection);
+  const actual = JSON.stringify(actualProjection);
+  return {
+    equal: expected === actual,
+    expected,
+    actual,
+    differences: expected === actual ? [] : collectStructuralDifferences(expectedProjection, actualProjection),
+  };
 }
 
 export function validateCompactRoundTrip(readable, compact, expanded = expandCompactRelations(compact)) {
@@ -321,7 +376,10 @@ export function validateCompactRoundTrip(readable, compact, expanded = expandCom
     valid: comparison.equal,
     comparison,
     schema: Number(compact?.schema || 0),
-    reasons: comparison.equal ? [] : [{ reason: 'compact-expand-semantic-mismatch' }],
+    reasons: comparison.equal ? [] : [{
+      reason: 'compact-expand-semantic-mismatch',
+      differences: comparison.differences,
+    }],
   };
 }
 
@@ -413,7 +471,6 @@ export function compactRelations(relations) {
   const kconfigConflicts = tablePool();
   const definitions = tablePool();
   const choices = tablePool();
-  const edges = tablePool();
   const expressionAsts = tablePool();
   const alternativeLists = tablePool();
   const numberLists = tablePool();
@@ -429,15 +486,21 @@ export function compactRelations(relations) {
   const rangesId = (record) => ranges.id(array(record.rangesTyped).length
     ? array(record.rangesTyped).map((row) => normalizedTypedRange(row, record.type, strings, expressions))
     : array(record.ranges).map((raw) => normalizedTypedRange({ type: record.type, raw }, record.type, strings, expressions)));
-  const rawDefaultsId = (record) => defaults.id(array(record.defaultsTyped).length
-    ? array(record.defaultsTyped).map((row) => {
-      // `defaults` is the legacy display table.  Store only the value token
-      // there; the full source spelling (including `if ...`) remains in the
-      // typed table's rawId.  Otherwise expansion would produce `x if C if C`.
-      const [value] = parseDefault(row.raw ?? '');
-      return [strings.id(value), expressionIdFor(row.condition || '')];
-    })
-    : array(record.defaults).map((raw) => { const [value, condition] = parseDefault(raw); return [strings.id(value), expressionIdFor(condition)]; }));
+  const rawDefaultsId = (record) => defaults.id(
+    array(record.defaults).length
+      ? array(record.defaults).map((raw) => {
+        const [value, condition] = parseDefault(raw);
+        // Keep the original source spelling as well as the parsed value and
+        // condition.  Kconfig accepts alignment whitespace before `if`, and
+        // that spelling is part of the readable relation contract.
+        return [strings.id(value), expressionIdFor(condition), strings.id(raw)];
+      })
+      : array(record.defaultsTyped).map((row) => {
+        const raw = row?.raw ?? '';
+        const [value, condition] = parseDefault(raw);
+        return [strings.id(value), expressionIdFor(condition), strings.id(raw)];
+      }),
+  );
   const capabilityRelationsId = (record) => capabilities.id({
     provides: array(record.providesRelations).map(normalizeCapabilityRelation),
     conflicts: array(record.conflictsRelations).map(normalizeCapabilityRelation),
@@ -495,10 +558,11 @@ export function compactRelations(relations) {
     forwardEdges: encodeNumberIndex(relations.indexes?.forwardEdges, numberLists),
     reverseEdges: encodeNumberIndex(relations.indexes?.reverseEdges, numberLists),
   };
-  const edgeRows = tablePool();
-  for (const edge of array(relations.edges)) {
-    edgeRows.id(normalizeEdge(edge, strings, expressions, stringLists, expressionAsts, alternativeLists));
-  }
+  // Edge indexes are authored against the source edge position.  Do not
+  // deduplicate this table: two source rows can normalize to the same wire
+  // edge while their forward/reverse indexes still refer to distinct IDs.
+  const edgeRows = array(relations.edges).map((edge) =>
+    normalizeEdge(edge, strings, expressions, stringLists, expressionAsts, alternativeLists));
   const choiceRows = array(relations.choices).map((choice) => ({
     ...choice,
     defaultsTyped: array(choice.defaultsTyped), rangesTyped: array(choice.rangesTyped),
@@ -514,6 +578,7 @@ export function compactRelations(relations) {
       'inheritedVisibleIfId', 'inheritedMenuVisibleIfId', 'optionFlagsId', 'optionsId', 'definitionsId',
       'capabilityRelationsId',
     ],
+    defaultsFields: ['valueId', 'conditionId', 'rawId'],
     flags: { visible: FLAG_VISIBLE, userSettable: FLAG_USER_SETTABLE, canDisable: FLAG_CAN_DISABLE,
       hasKconfig: FLAG_HAS_KCONFIG, package: FLAG_PACKAGE, modules: FLAG_MODULES, optional: FLAG_OPTIONAL },
     types: TYPES, origins: ORIGINS, valueKinds: VALUE_KINDS,
@@ -537,7 +602,7 @@ export function compactRelations(relations) {
     definitions: definitions.values, choices: choiceRows, expressionAsts: expressionAsts.values,
     alternativeLists: alternativeLists.values,
     numberLists: numberLists.values,
-    edges: edgeRows.values, indexes: indexRows, records,
+    edges: edgeRows, indexes: indexRows, records,
     summary: relations.summary || {}, validation: relations.validation || {},
   };
   const roundTrip = validateCompactRoundTrip(relations, compact);
@@ -699,9 +764,10 @@ function expandSchema4(compact) {
       selectsAllSymbols: allSymbols(selectsExpressions),
       impliesAllSymbols: allSymbols(impliesExpressions),
     };
-    const defaultRows = (compact.defaults?.[defaultsId] || []).map(([valueId, conditionId]) => {
+    const defaultRows = (compact.defaults?.[defaultsId] || []).map(([valueId, conditionId, rawId]) => {
       const value = strings[valueId] || ''; const condition = expression(conditionId);
-      return condition ? `${value} if ${condition}` : value;
+      const fallback = condition ? `${value} if ${condition}` : value;
+      return rawId === undefined ? fallback : (strings[rawId] ?? fallback);
     });
     const packageName = isPackage && symbol.startsWith('PACKAGE_') ? symbol.slice(8) : '';
     const provides = list(providesId);
@@ -748,25 +814,28 @@ function expandSchema4(compact) {
       optionFlags: list(optionFlagsId), options: list(optionsId),
       modules: Boolean(flags & FLAG_MODULES) || list(optionFlagsId).includes('modules'),
       optional: Boolean(flags & FLAG_OPTIONAL),
-      dependsAst: definitionDependsAst.flat(), dependsAstVariants: definitionDependsAst,
-      directDependsAst: definitionDirectDependsAst.flat(), directDependsAstVariants: definitionDirectDependsAst,
-      inheritedDependsAst: definitionInheritedDependsAst.flat(), inheritedDependsAstVariants: definitionInheritedDependsAst,
+      // The readable builder exposes the first definition as the aggregate
+      // AST and keeps every definition in the corresponding variants field.
+      // Flattening here duplicates conditions for multi-definition symbols.
+      dependsAst: array(firstDefinition.dependsAst), dependsAstVariants: definitionDependsAst,
+      directDependsAst: array(firstDefinition.directDependsAst), directDependsAstVariants: definitionDirectDependsAst,
+      inheritedDependsAst: array(firstDefinition.inheritedDependsAst), inheritedDependsAstVariants: definitionInheritedDependsAst,
       selectRelations: definitionSelectRelations.flat(), selectRelationsVariants: definitionSelectRelations,
       implyRelations: definitionImplyRelations.flat(), implyRelationsVariants: definitionImplyRelations,
-      promptIfAst: definitionPromptIfAst.flat(), visibleIfAst: definitionVisibleIfAst.flat(),
-      menuVisibleIfAst: definitionMenuVisibleIfAst.flat(), directVisibleIfAst: definitionDirectVisibleIfAst.flat(),
-      inheritedVisibleIfAst: definitionInheritedVisibleIfAst.flat(),
-      inheritedMenuVisibleIfAst: definitionInheritedMenuVisibleIfAst.flat(),
+      promptIfAst: array(firstDefinition.promptIfAst), visibleIfAst: array(firstDefinition.visibleIfAst),
+      menuVisibleIfAst: array(firstDefinition.menuVisibleIfAst), directVisibleIfAst: array(firstDefinition.directVisibleIfAst),
+      inheritedVisibleIfAst: array(firstDefinition.inheritedVisibleIfAst),
+      inheritedMenuVisibleIfAst: array(firstDefinition.inheritedMenuVisibleIfAst),
       kconfigConflicts, packageConflicts, conflicts: packageConflicts,
-      nodes: definitionRows, kconfig: { ...kconfig, dependsAst: definitionDependsAst.flat(),
-        directDependsAst: definitionDirectDependsAst.flat(), directDependsAstVariants: definitionDirectDependsAst,
-        inheritedDependsAst: definitionInheritedDependsAst.flat(), inheritedDependsAstVariants: definitionInheritedDependsAst,
+      nodes: definitionRows, kconfig: { ...kconfig, dependsAst: array(firstDefinition.dependsAst),
+        directDependsAst: array(firstDefinition.directDependsAst), directDependsAstVariants: definitionDirectDependsAst,
+        inheritedDependsAst: array(firstDefinition.inheritedDependsAst), inheritedDependsAstVariants: definitionInheritedDependsAst,
         dependsAstVariants: definitionDependsAst, selectRelations: definitionSelectRelations.flat(),
         selectRelationsVariants: definitionSelectRelations, implyRelations: definitionImplyRelations.flat(),
-        implyRelationsVariants: definitionImplyRelations, promptIfAst: definitionPromptIfAst.flat(),
-        visibleIfAst: definitionVisibleIfAst.flat(), menuVisibleIfAst: definitionMenuVisibleIfAst.flat(),
-        directVisibleIfAst: definitionDirectVisibleIfAst.flat(), inheritedVisibleIfAst: definitionInheritedVisibleIfAst.flat(),
-      inheritedMenuVisibleIfAst: definitionInheritedMenuVisibleIfAst.flat() }, packageInfo: {
+        implyRelationsVariants: definitionImplyRelations, promptIfAst: array(firstDefinition.promptIfAst),
+        visibleIfAst: array(firstDefinition.visibleIfAst), menuVisibleIfAst: array(firstDefinition.menuVisibleIfAst),
+        directVisibleIfAst: array(firstDefinition.directVisibleIfAst), inheritedVisibleIfAst: array(firstDefinition.inheritedVisibleIfAst),
+      inheritedMenuVisibleIfAst: array(firstDefinition.inheritedMenuVisibleIfAst) }, packageInfo: {
         depends: packageDepends, rawDepends: packageDepends.map((row) => row.raw), provides, conflicts,
         packageConflicts, kconfigConflicts,
         providesRelations: capabilityRows.provides || [], conflictsRelations: capabilityRows.conflicts || [],

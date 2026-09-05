@@ -26,6 +26,8 @@ on:
       - "scripts/stamp-catalog-snapshot.mjs"
       - "scripts/check-catalog-snapshot.mjs"
       - "package.json"
+      - "scripts/native-kconfig-*"
+      - "tests/check-native-kconfig-preprocess.mjs"
       - ".github/workflows/catalog.yml"
       - ".github/workflows/catalog-production.yml"
       - ".github/workflows/catalog-reuse.yml"
@@ -55,6 +57,8 @@ on:
       - "scripts/stamp-catalog-snapshot.mjs"
       - "scripts/check-catalog-snapshot.mjs"
       - "package.json"
+      - "scripts/native-kconfig-*"
+      - "tests/check-native-kconfig-preprocess.mjs"
       - ".github/workflows/catalog.yml"
       - ".github/workflows/catalog-production.yml"
       - ".github/workflows/catalog-reuse.yml"
@@ -76,3 +80,12 @@ jobs:
         run: node scripts/catalog-change-impact.mjs --check-registry
       - name: Run project contract tests
         run: npm test
+      - name: Test native preprocessing with upstream parser
+        shell: bash
+        run: |
+          tree="$(mktemp -d)"
+          git -C "$tree" init --quiet
+          git -C "$tree" remote add origin https://github.com/openwrt/openwrt.git
+          git -C "$tree" fetch --depth=1 origin a1ea57bd050c172fdc2b851824ebd9782aafb055
+          git -C "$tree" checkout --detach FETCH_HEAD
+          KCONFIG_NATIVE_TEST_TREE="$tree" node tests/check-native-kconfig-preprocess.mjs

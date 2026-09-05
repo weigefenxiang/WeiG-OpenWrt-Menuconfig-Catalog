@@ -40,6 +40,12 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 每份 relations 资产必须声明 `relationsComplete` 与字段能力。缺失或为 `false` 时，网页和 Probe 只能延后/返回 `inconclusive`，不得把不完整关系当作兼容结论。
 
+### 原生 Kconfig 解析与 source-closure 证明
+
+Catalog 复用上游 Kconfig 的词法边界：bool default 的 `m` 可以作为原始三态字面量保留，注释只在引号外剥离；引号外的 `@` 记录为 ignored-character warning 后继续解析普通表达式 AST，`@` 后面的 Kconfig symbols 仍保留，不能包装成另一种 package-selector AST；引号内的 `@` 不产生警告。`.packageinfo` 的 `@(...)` 仍由独立的软件包元数据解析器处理，不能混用这两个域。
+
+符号缺失只有在没有未求值动态预处理、且完整 active source closure 已被证明时才能分类为 native undefined。明确被 Target projection 排除的真实定义，只有同时有完整 parser proof 和 `parsed-target-filter` provenance 时才可作为 external；如果已解析定义既没有进入 graph、也没有这份证明，则仍是 projection omission，必须保持 `unresolved`。native undefined 的记录保留实际缺失符号、`nativeType: "unknown"`、bool coercion `n` 和原始 string token；不得把所有 unresolved 或所有带 source 标签的名称直接当成 external。`externalSymbolDefinitions` 只允许输出真实解析定义的 `{symbol,type}`。任何未求值的 `$(shell,...)` 或动态赋值都会使 `relationsComplete=false`，此时相关缺失只能保持 `unresolved`/`inconclusive`。
+
 软件包构建闭包是独立的窄能力，不依赖完整 typed Kconfig：relations 另行声明
 `packageClosureComplete`、`packageClosureCapabilities` 和
 `packageClosureValidation`。只有精确刷新得到的 `.packageinfo` 依赖 token（包含
@@ -49,9 +55,9 @@ concrete package 做通用闭包证明；它绝不能把 `relationsComplete` 置
 select、imply、visibility、choice、MODULES 等确定性 Kconfig 判断仍必须要求完整
 `relationsComplete`，否则只能 `inconclusive`。
 
-schema 4 紧凑契约：`records[*]` 按公开的 `fields` 顺序解释；各池无损保存 typed 有序 defaults/ranges、原始与 AST 表达式、direct/inherited 可见性和依赖 variants、逐定义 `nodes`、分离的 `packageConflicts`/`kconfigConflicts` 与包 capability relations。`indexes` 包含 `byPackage`、`bySymbol`、`providers`、`reverseDependencies`、`reverseKconfig`、`reverseSelects`、`reverseImplies`、`forwardEdges`、`reverseEdges`。每条 edge 保留 `expressionAst`、`conditionAst`、嵌套 `alternatives`、provider ownership，并明确用 `required: null` 表示候选/未知边。求值器必须以有序 definition records 为权威输入，展平字段只用于兼容投影。
+schema 4 紧凑契约：`records[*]` 按公开的 `fields` 顺序解释；各池无损保存 typed 有序 defaults/ranges、原始与 AST 表达式、direct/inherited 可见性和依赖 variants、逐定义 `nodes`、分离的 `packageConflicts`/`kconfigConflicts` 与包 capability relations。本轮修复的多定义 depends/visibility AST aggregate 只代表首个定义，完整定义继续保存在有序 variants；select/imply 仍按既有关系语义聚合。`indexes` 包含 `byPackage`、`bySymbol`、`providers`、`reverseDependencies`、`reverseKconfig`、`reverseSelects`、`reverseImplies`、`forwardEdges`、`reverseEdges`。每条 edge 保留 `expressionAst`、`conditionAst`、嵌套 `alternatives`、provider ownership，并明确用 `required: null` 表示候选/未知边；edge rows 按源 ID 保持 positional，不能因内容相同而去重。`defaultsFields` 同时保留解析值、条件和原始 default 拼写。求值器必须以有序 definition records 为权威输入，展平字段只用于兼容投影；compact-expand 语义 mismatch 必须产生有界结构差异诊断，不能静默通过。
 
-普通临时故障规则仍以 `sourceCommits` 为失效边界，且 `buildDependency` 只能用于完整精确提交边界。经明确批准的 schema-5 `preventive` 规则改用 `evidence` 保存精确事实，并用 `environments` 独立控制预防范围。`packageAvailability: "if-present"` 下，失败目标不存在即跳过；部分触发入口不存在时只忽略缺失入口。规则只在有效配置真实选择当前 Catalog 中存在的失败目标或触发入口时触发，推荐方案也只处理这些实际存在且活动的参与包。RootFS 容量、Runner、网络和磁盘问题不得写入本文件。
+普通临时故障规则仍以 `sourceCommits` 为失效边界，且 `buildDependency` 只能用于完整精确提交边界。经明确批准的 schema-5 `preventive` 规则改用 `evidence` 保存精确事实，并用 `environments` 独立控制预防范围。`packageAvailability: "if-present"` 下，失败目标不存在即跳过；规则只有在有效配置选择当前 Catalog 中真实存在的失败目标，且图证明当前活动用户根可达该失败目标时才触发。图路径未知时保持 `inconclusive`，不得恢复静态 trigger 参与集合。RootFS 容量、Runner、网络和磁盘问题不得写入本文件。
 
 规范化 JSON 未压缩上限 512 KiB。只有接近上限时才通过明确 schema 迁移按 Source/Branch 拆分；禁止提前维护平行数据集。
 

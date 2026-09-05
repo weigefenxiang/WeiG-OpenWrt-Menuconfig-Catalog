@@ -2,6 +2,19 @@
 
 ## Dynamic targets and 11-language translations / 动态目标与 11 语翻译
 
+Dynamic Kconfig defaults are expanded by the selected upstream's own parser in
+a disposable build directory, without reading or writing `.config`. Catalog
+replays the observed expansions against their source locations and retains the
+trace. Missing APIs, ambiguous replay, or unresolved expressions fail closed;
+neither JavaScript shell emulation nor package-specific defaults are used.
+Local replay tests and the Linux native-parser integration test are separate
+from full Source/Branch generation validation.
+
+动态 Kconfig 默认值复用所选上游原生解析器，在临时构建目录中展开，不读写 `.config`。
+Catalog 按源码位置重放并保留展开证据；API 缺失、重放歧义或未解析表达式继续阻断，
+不自行模拟 shell，也不按包名补默认值。本地重放测试、Linux 原生解析器集成测试和
+完整 Source/Branch 生成验证分别报告，不互相替代。
+
 The catalog is the data authority for source branches, Target selectors and the complete
 Kconfig menu tree. The web customizer does not keep source branches, targets or menu entries
 in JavaScript.
@@ -39,6 +52,9 @@ JavaScript 中写死分支、Target 或菜单项目。
   preceding or following symbol. These fields are source/parser metadata and are retained by
   compact schema 4; prompt or visibility conditions are never treated as value dependencies.
 - Repeated Kconfig definitions are merged by symbol. Only explicit, incompatible types are hard conflicts; split declarations such as `tristate` in one file and `prompt` in another are legal and retained as one option.
+- Native lexer boundaries are preserved: a bool default may retain the native tristate literal `m` until type-aware evaluation, comments are removed only outside quoted strings, and `@` outside quotes is recorded as an ignored-character warning while the surrounding expression remains an ordinary Kconfig AST. Symbols after `@` are not discarded or wrapped as a package-selector AST; quoted `@` remains literal. The `@(...)` syntax in `.packageinfo` is a separate package-metadata parser domain.
+- Native source-closure proof is explicit. A complete active-root parse with no unresolved dynamic preprocessing distinguishes a symbol that is genuinely undefined in that closure from a symbol omitted by the Catalog projection. An intentionally Target-filtered definition may be external only when the full parser proof and `parsed-target-filter` provenance are both present; a definition omitted from the graph without that proven mapping remains unresolved. Undefined metadata keeps the symbol identity and records boolean coercion `n` plus the original string token; external types never come from a source label or an unknown prefix. Unevaluated `$(shell,...)`/dynamic assignments keep `relationsComplete=false`; they cannot be used to classify undefined or external symbols.
+- Compact relations retain the first-definition aggregate for the repaired depends/visibility AST fields, while select/imply relations keep their existing aggregate behavior; every definition remains available in ordered variants. Edge rows are positional and are not deduplicated because forward/reverse indexes refer to their source IDs. `defaultsFields` keeps the original default spelling alongside parsed value and condition, so semantic round-trip validation can report bounded structural differences instead of silently accepting a mismatch.
 - Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
@@ -57,6 +73,9 @@ JavaScript 中写死分支、Target 或菜单项目。
 分类维护在 `translations/menu-i18n.json`。每日翻译任务复用历史翻译缓存，只翻译新增或变化
 文本；额度不足或服务异常时保留官方英文并写入待译统计与重试队列，已完成部分仍可提交。
 软件包选项也带有上游 `.packageinfo` 的 `Conflicts:` 元数据，使用方可在编译前拒绝不可能的 `y/y` 组合。
+- 原生 Kconfig 词法边界必须保留：bool default 可以先保留原生三态字面量 `m` 再按类型求值；注释只在引号外删除；引号外的 `@` 只记录 ignored-character 警告，周围仍解析为普通 Kconfig AST，`@` 后面的符号不能丢失，引号内的 `@` 保持字面量。`.packageinfo` 中的 `@(...)` 仍属于独立的软件包元数据解析域。
+- 没有未求值动态预处理的完整 active source closure 才能证明符号确实在该源码闭包中未定义。明确被 Target projection 过滤的定义，只有同时具备完整 parser proof 与 `parsed-target-filter` provenance 才能作为 external；既未进入 graph、又没有这份证明的已解析定义仍必须保持 unresolved。undefined 元数据保留原符号身份，同时记录 bool 求值 `n` 与原始 string token；external 类型不能凭 source 标签或前缀猜测。`$(shell,...)`/动态赋值未实现求值时保持 `relationsComplete=false`，不能把名称分类为 undefined 或 external。
+- compact relations 中，本轮修复的 depends/visibility AST 使用首个定义的 aggregate，其它定义保存在有序 variants；select/imply 继续按既有关系语义聚合。edge 是按源 ID 定位的 positional row，不能去重。`defaultsFields` 同时保留 default 原文、解析值和条件，round-trip 发现差异时只报告有界结构差异，不静默吞掉 mismatch。
 - 翻译任务每天上海时间 04:37 独立运行，不因普通 Push 或 Catalog 发布重复启动。
   自动与手动任务默认 `500×5` 批；手动任务可选择代码分支与 `catalog-data/catalog-dev/catalog-staging/catalog-fix` 数据通道，并可设置每批
   `100–5000` 条、`1–20` 批，但单次总数最多 5000 条。任务上限 60 分钟，全部批次共享

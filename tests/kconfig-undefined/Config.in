@@ -1,0 +1,30 @@
+mainmenu "Kconfig undefined-symbol fixture"
+
+config UNDEFINED_ROOT
+	bool "Undefined root"
+	depends on UNDEFINED_CONTEXT
+	default UNDEFINED_DEFAULT
+
+config UNDEFINED_STRING
+	string "Undefined string"
+	default UNDEFINED_STRING_DEFAULT if UNDEFINED_STRING_GATE
+
+config UNDEFINED_INT
+	int "Undefined integer"
+	range UNDEFINED_MIN UNDEFINED_MAX if UNDEFINED_RANGE_GATE
+
+config DEFINED_BUT_OMITTED
+	bool "Defined but omitted from graph"
+
+config OMITTED_REFERENCE_ROOT
+	bool "Omitted reference root"
+	depends on DEFINED_BUT_OMITTED
+
+choice UNDEFINED_CHOICE
+	bool "Undefined choice"
+	depends on UNDEFINED_CHOICE_CONTEXT
+	reset if UNDEFINED_CHOICE_RESET
+
+config UNDEFINED_CHOICE_MEMBER
+	bool "Undefined choice member"
+endchoice
