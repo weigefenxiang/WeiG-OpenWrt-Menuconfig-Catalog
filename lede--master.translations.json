@@ -4,7 +4,7 @@
     "id": "lede",
     "branch": "master"
   },
-  "generatedAt": "2026-09-01T01:30:16.358Z",
+  "generatedAt": "2026-09-05T21:14:48.790Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,8 +18,8 @@
     "fr",
     "vi"
   ],
-  "options": 10120,
-  "translatedZhCN": 197,
+  "options": 10150,
+  "translatedZhCN": 198,
   "missingZhCN": [
     {
       "symbol": "TARGET_silicon",
@@ -4040,27 +4040,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_wifi-scripts",
-      "promptEn": "Wi-Fi configuration scripts",
-      "path": [
-        "Base system"
-      ]
-    },
-    {
-      "symbol": "WIFI_SCRIPTS_UCODE",
-      "promptEn": "Use new ucode based scripts",
-      "path": [
-        "Base system"
-      ]
-    },
-    {
-      "symbol": "WIFI_SCRIPTS_WPS_BUTTON_DISABLED",
-      "promptEn": "Disable WPS button handling",
-      "path": [
-        "Base system"
-      ]
-    },
-    {
       "symbol": "PACKAGE_wireless-tools",
       "promptEn": "Tools for manipulating Linux Wireless Extensions",
       "path": [
@@ -4587,6 +4566,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_rkbin-rk3308",
+      "promptEn": "Rockchip rkbin for rk3308 SoCs",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_rkbin-rk3328",
       "promptEn": "Rockchip rkbin for rk3328 SoCs",
       "path": [
@@ -4874,6 +4860,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_trusted-firmware-a-mt7981-emmc-ddr3-1866",
+      "promptEn": "Trusted-Firmware-A for MediaTek MT7981 (eMMC, DDR3 1866 MT/s)",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_trusted-firmware-a-mt7981-emmc-ddr4",
       "promptEn": "Trusted-Firmware-A for MediaTek MT7981 (eMMC, DDR4)",
       "path": [
@@ -4916,8 +4909,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_trusted-firmware-a-mt7981-spim-nand-ddr3-1866",
+      "promptEn": "Trusted-Firmware-A for MediaTek MT7981 (SPI-NAND via SPIM, DDR3 1866 MT/s)",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_trusted-firmware-a-mt7981-spim-nand-ddr4",
       "promptEn": "Trusted-Firmware-A for MediaTek MT7981 (SPI-NAND via SPIM, DDR4)",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-mt7981-spim-nand-ubi-ddr3-1866",
+      "promptEn": "Trusted-Firmware-A for MediaTek MT7981 (SPI-NAND via SPIM, UBI, DDR3 1866 MT/s)",
       "path": [
         "Boot Loaders"
       ]
@@ -5177,6 +5184,13 @@
     {
       "symbol": "PACKAGE_trusted-firmware-a-mt7988-spim-nand-ubi-ddr4",
       "promptEn": "Trusted-Firmware-A for MediaTek MT7988 (SPI-NAND via SPIM, DDR4)",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_trusted-firmware-a-mt7988-tplink-tl-7dr7299-comb",
+      "promptEn": "Trusted-Firmware-A for MediaTek MT7988 (SPI-NAND via SPIM)",
       "path": [
         "Boot Loaders"
       ]
@@ -5931,6 +5945,27 @@
       ]
     },
     {
+      "symbol": "PACKAGE_u-boot-mt7981_cmcc_rax3000me-emmc",
+      "promptEn": "U-Boot for CMCC RAX3000Me",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_u-boot-mt7981_cmcc_rax3000me-nand-ddr3",
+      "promptEn": "U-Boot for CMCC RAX3000Me",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_u-boot-mt7981_cmcc_rax3000me-nand-ddr4",
+      "promptEn": "U-Boot for CMCC RAX3000Me",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_u-boot-mt7981_rfb-emmc",
       "promptEn": "U-Boot for MT7981 Reference Board",
       "path": [
@@ -6122,6 +6157,13 @@
     {
       "symbol": "PACKAGE_u-boot-mt7988_rfb-spim-nand",
       "promptEn": "U-Boot for MT7988 Reference Board",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_u-boot-mt7988_tplink_tl-7dr7299-v1",
+      "promptEn": "U-Boot for TP-Link TL-7DR7299 v1",
       "path": [
         "Boot Loaders"
       ]
@@ -8851,6 +8893,20 @@
     {
       "symbol": "PACKAGE_pcat-firmware",
       "promptEn": "Photonicat WiFi Firmware",
+      "path": [
+        "Firmware"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_qcom-iris-firmware",
+      "promptEn": "Qualcomm Iris video firmware",
+      "path": [
+        "Firmware"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_qcom-venus-firmware",
+      "promptEn": "Qualcomm Venus video firmware",
       "path": [
         "Firmware"
       ]
@@ -11891,6 +11947,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-input-adc-keys",
+      "promptEn": "ADC Ladder Buttons support",
+      "path": [
+        "Kernel modules",
+        "Input modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-input-core",
       "promptEn": "Input device core",
       "path": [
@@ -13603,6 +13667,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-dsa-rtl837x",
+      "promptEn": "Realtek RTL837x switch DSA support",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-dsa-yt921x",
+      "promptEn": "Motorcomm YT921x Ethernet switch support",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-dummy",
       "promptEn": "Dummy network device",
       "path": [
@@ -15302,6 +15382,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-stmmac-tc956x",
+      "promptEn": "Toshiba TC956x/QPS615 Ethernet support",
+      "path": [
+        "Kernel modules",
+        "Network Devices"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-sun4i-emac",
       "promptEn": "AllWinner EMAC Ethernet support",
       "path": [
@@ -15926,7 +16014,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-ovpn-dco-v2",
+      "symbol": "PACKAGE_kmod-ovpn-backports",
       "promptEn": "OpenVPN data channel offload",
       "path": [
         "Kernel modules",
@@ -16838,6 +16926,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-qcom-fastrpc",
+      "promptEn": "Qualcomm FastRPC support",
+      "path": [
+        "Kernel modules",
+        "Other modules"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-qcom-videocc",
+      "promptEn": "Qualcomm video clock controller support",
+      "path": [
+        "Kernel modules",
+        "Other modules"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-ramoops",
       "promptEn": "Ramoops (pstore-ram)",
       "path": [
@@ -17048,6 +17152,14 @@
     {
       "symbol": "PACKAGE_kmod-sunxi-ir",
       "promptEn": "Sunxi SoC built-in IR support",
+      "path": [
+        "Kernel modules",
+        "Other modules"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-tc956x-pci",
+      "promptEn": "Toshiba TC956x / Qualcomm QPS615 PCI bridge support",
       "path": [
         "Kernel modules",
         "Other modules"
@@ -19126,6 +19238,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-camera-bcm2835",
+      "promptEn": "BCM2835 Camera",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-codec-bcm2835",
+      "promptEn": "BCM2835 Video Codec",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-drm-amdgpu",
       "promptEn": "AMDGPU DRM support",
       "path": [
@@ -19136,6 +19264,14 @@
     {
       "symbol": "PACKAGE_kmod-drm-client-lib",
       "promptEn": "DRM client library setup helper",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-gem-shmem-helper",
+      "promptEn": "GEM shmem helper functions",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -19206,6 +19342,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-drm-msm",
+      "promptEn": "Qualcomm MSM DRM support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-drm-nouveau",
       "promptEn": "nouveau DRM support",
       "path": [
@@ -19246,6 +19390,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-drm-phytium",
+      "promptEn": "DRM Support for Phytium Graphics Card",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-drm-radeon",
       "promptEn": "Radeon DRM support",
       "path": [
@@ -19254,8 +19406,64 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-drm-rockchip",
+      "promptEn": "Rockchip DRM support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rocket",
+      "promptEn": "Rockchip NPU support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rp1-dpi",
+      "promptEn": "RP1 Display Parallel Interface for Video",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rp1-dsi",
+      "promptEn": "RP1 Display Serial Interface for Video",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-rp1-vec",
+      "promptEn": "RP1 Display Composite Video",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-drm-ttm",
       "promptEn": "GPU memory management subsystem",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-v3d",
+      "promptEn": "Broadcom V3D Graphics",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-drm-vc4",
+      "promptEn": "Broadcom VC4 Graphics",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -19342,6 +19550,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-isp-bcm2835",
+      "promptEn": "BCM2835 ISP",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-media-controller",
       "promptEn": "Media Controller API",
       "path": [
@@ -19358,96 +19574,16 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-video-core",
-      "promptEn": "Video4Linux support",
+      "symbol": "PACKAGE_kmod-npu-qcom",
+      "promptEn": "Qualcomm NSP/NPU remote processor support",
       "path": [
         "Kernel modules",
         "Video Support"
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-camera-bcm2835",
-      "promptEn": "BCM2835 Camera",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-codec-bcm2835",
-      "promptEn": "BCM2835 Video Codec",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-phytium",
-      "promptEn": "DRM Support for Phytium Graphics Card",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rockchip",
-      "promptEn": "Rockchip DRM support",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rocket",
-      "promptEn": "Rockchip NPU support",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rp1-dpi",
-      "promptEn": "RP1 Display Parallel Interface for Video",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rp1-dsi",
-      "promptEn": "RP1 Display Serial Interface for Video",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-rp1-vec",
-      "promptEn": "RP1 Display Composite Video",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-v3d",
-      "promptEn": "Broadcom V3D Graphics",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-drm-vc4",
-      "promptEn": "Broadcom VC4 Graphics",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_kmod-isp-bcm2835",
-      "promptEn": "BCM2835 ISP",
+      "symbol": "PACKAGE_kmod-qcom-qaic",
+      "promptEn": "Qualcomm QAIC accelerator support",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -19488,6 +19624,14 @@
     {
       "symbol": "PACKAGE_kmod-rpi-panel-attiny-regulator",
       "promptEn": "Raspberry Pi 7-inch touchscreen panel ATTINY regulator",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-video-core",
+      "promptEn": "Video4Linux support",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -19864,6 +20008,22 @@
     {
       "symbol": "PACKAGE_kmod-video-pxp",
       "promptEn": "i.MX PXP support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-video-qcom-iris",
+      "promptEn": "Qualcomm Iris VPU support",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-video-qcom-venus",
+      "promptEn": "Qualcomm Venus VPU support",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -36934,6 +37094,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ethtool-lua",
+      "promptEn": "ethtool lua library",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
       "symbol": "PACKAGE_getdns",
       "promptEn": "getdns (library)",
       "path": [
@@ -42716,6 +42883,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-app-nikki",
+      "promptEn": "LuCI Support for nikki",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
       "symbol": "PACKAGE_luci-app-passwall_INCLUDE_Haproxy",
       "promptEn": "Include Haproxy",
       "path": [
@@ -42781,15 +42956,6 @@
     {
       "symbol": "PACKAGE_luci-app-passwall_INCLUDE_SingBox",
       "promptEn": "Include Sing-Box",
-      "path": [
-        "LuCI",
-        "3. Applications",
-        "Configuration"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_luci-app-passwall_INCLUDE_tuic_client",
-      "promptEn": "Include tuic-client",
       "path": [
         "LuCI",
         "3. Applications",
@@ -44805,7 +44971,7 @@
     },
     {
       "symbol": "PACKAGE_transmission-cli",
-      "promptEn": "BitTorrent client (with OpenSSL)",
+      "promptEn": "BitTorrent client (with mbed TLS)",
       "path": [
         "Network",
         "BitTorrent"
@@ -44813,7 +44979,7 @@
     },
     {
       "symbol": "PACKAGE_transmission-daemon",
-      "promptEn": "BitTorrent client (with OpenSSL)",
+      "promptEn": "BitTorrent client (with mbed TLS)",
       "path": [
         "Network",
         "BitTorrent"
@@ -44821,7 +44987,7 @@
     },
     {
       "symbol": "PACKAGE_transmission-remote",
-      "promptEn": "BitTorrent client (with OpenSSL)",
+      "promptEn": "BitTorrent client (with mbed TLS)",
       "path": [
         "Network",
         "BitTorrent"
@@ -46098,15 +46264,7 @@
     },
     {
       "symbol": "PACKAGE_miniupnpd-iptables",
-      "promptEn": "Lightweight UPnP IGD, NAT-PMP & PCP daemon (iptables)",
-      "path": [
-        "Network",
-        "Firewall"
-      ]
-    },
-    {
-      "symbol": "MINIUPNPD_IPTABLES_IGDv2",
-      "promptEn": "Enable IGDv2",
+      "promptEn": "Lightweight UPnP IGD & PCP/NAT-PMP daemon (iptables)",
       "path": [
         "Network",
         "Firewall"
@@ -61682,6 +61840,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_dawn",
+      "promptEn": "Decentralized wifi controller",
+      "path": [
+        "Network",
+        "Wireless"
+      ]
+    },
+    {
       "symbol": "PACKAGE_dynapoint",
       "promptEn": "Dynamic access point manager",
       "path": [
@@ -62606,13 +62772,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_cshark",
-      "promptEn": "CloudShark capture tool",
-      "path": [
-        "Network"
-      ]
-    },
-    {
       "symbol": "PACKAGE_daemonlogger",
       "promptEn": "Software Network Tap",
       "path": [
@@ -62622,13 +62781,6 @@
     {
       "symbol": "PACKAGE_darkstat",
       "promptEn": "Network bandwidth monitor",
-      "path": [
-        "Network"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_dawn",
-      "promptEn": "Decentralized wifi controller",
       "path": [
         "Network"
       ]
@@ -74407,13 +74559,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_prometheus-node-exporter-lua-bmx6",
-      "promptEn": "Prometheus node exporter (bmx6 links collector)",
-      "path": [
-        "Utilities"
-      ]
-    },
-    {
       "symbol": "PACKAGE_prometheus-node-exporter-lua-bmx7",
       "promptEn": "Prometheus node exporter (bmx7 links collector)",
       "path": [
@@ -74423,6 +74568,20 @@
     {
       "symbol": "PACKAGE_prometheus-node-exporter-lua-dawn",
       "promptEn": "Prometheus node exporter (dawn collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-ethtool",
+      "promptEn": "Prometheus node exporter (ethtool collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-filesystem",
+      "promptEn": "Prometheus node exporter (filesystem collector)",
       "path": [
         "Utilities"
       ]
@@ -74442,8 +74601,29 @@
       ]
     },
     {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-hwmon",
+      "promptEn": "Prometheus node exporter (hwmon collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_prometheus-node-exporter-lua-ltq-dsl",
       "promptEn": "Prometheus node exporter (lantiq dsl collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-modemmanager",
+      "promptEn": "Prometheus node exporter (modemmanager collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-mwan3",
+      "promptEn": "Prometheus node exporter (mwan3 collector)",
       "path": [
         "Utilities"
       ]
@@ -74463,8 +74643,22 @@
       ]
     },
     {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-nft-counters",
+      "promptEn": "Prometheus node exporter (nftables counters collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_prometheus-node-exporter-lua-openwrt",
       "promptEn": "Prometheus node exporter (openwrt collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-realtek-poe",
+      "promptEn": "Prometheus node exporter (realtek-poe collector)",
       "path": [
         "Utilities"
       ]
@@ -74484,8 +74678,29 @@
       ]
     },
     {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-thermal",
+      "promptEn": "Prometheus node exporter (thermal collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-ubnt-manager",
+      "promptEn": "Prometheus node exporter (ubnt-manager collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
       "symbol": "PACKAGE_prometheus-node-exporter-lua-uci_dhcp_host",
       "promptEn": "Prometheus node exporter (uci_dhcp_host collector)",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_prometheus-node-exporter-lua-unbound",
+      "promptEn": "Prometheus node exporter (unbound stats collector)",
       "path": [
         "Utilities"
       ]
@@ -76932,84 +77147,5 @@
       "id": "choice-76",
       "promptEn": "stack tracing support"
     }
-  ],
-  "automation": {
-    "generatedAt": "2026-09-04T22:53:47.399Z",
-    "catalogs": 17,
-    "cachedTexts": 28515,
-    "trigger": "schedule",
-    "phase": "zh-CN-usage",
-    "activeLanguage": "zh-CN",
-    "nextLanguage": "zh-CN",
-    "rotationLanguages": [
-      "ru",
-      "es",
-      "pt",
-      "ja",
-      "ko",
-      "de",
-      "fr",
-      "vi"
-    ],
-    "frozenLanguages": [
-      "zh-TW"
-    ],
-    "batchNumber": 5,
-    "batchCount": 5,
-    "queuedThisRun": 500,
-    "retryQueuedAfter": 17,
-    "batchLimit": 500,
-    "queuedCharacters": 60189,
-    "requestedCharactersThisRun": 0,
-    "runCharacterBudget": null,
-    "translatedThisRun": 483,
-    "targetPendingBefore": 4115,
-    "targetPendingAfter": 3632,
-    "localizedFields": 191356,
-    "pendingFields": 2947064,
-    "localizedByLanguage": {
-      "zh-CN": 148350,
-      "zh-TW": 5189,
-      "ru": 5189,
-      "es": 5155,
-      "pt": 5172,
-      "ja": 5189,
-      "ko": 5189,
-      "de": 5134,
-      "fr": 5172,
-      "vi": 5168
-    },
-    "pendingByLanguage": {
-      "zh-CN": 172944,
-      "zh-TW": 316105,
-      "ru": 316105,
-      "es": 316139,
-      "pt": 316122,
-      "ja": 316105,
-      "ko": 316105,
-      "de": 316160,
-      "fr": 316122,
-      "vi": 316126
-    },
-    "uniqueDescriptionPendingByLanguage": {
-      "zh-CN": 3632,
-      "zh-TW": 13529,
-      "ru": 13529,
-      "es": 13529,
-      "pt": 13529,
-      "ja": 13529,
-      "ko": 13529,
-      "de": 13529,
-      "fr": 13529,
-      "vi": 13529
-    },
-    "provider": "argos",
-    "providerConfigured": true,
-    "translationEnabled": true,
-    "model": "en-zh:installed",
-    "rejected": 17,
-    "timedOut": false,
-    "apiError": "",
-    "warning": "Batch incomplete: translated 483/500 queued descriptions"
-  }
+  ]
 }
