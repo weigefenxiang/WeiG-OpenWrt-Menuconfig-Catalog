@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "source": {
+    "id": "lede",
+    "label": "Lean LEDE",
+    "repo": "coolsnowwolf/lede",
+    "branch": "master",
+    "commit": "29e06a479678216776e5c52ddba57f1c1bad8234",
+    "legacy": false
+  },
+  "generatedAt": "2026-09-06T03:30:51.657Z",
+  "summary": {
+    "targets": 169,
+    "selectableTargets": 115,
+    "unavailableTargets": 8,
+    "abstractTargets": 46
+  },
+  "unavailable": [
+    {
+      "target": "bcm63xx",
+      "board": "bcm63xx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "bmips",
+      "board": "bmips",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "imx",
+      "board": "imx",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "mxs",
+      "board": "mxs",
+      "subtarget": "",
+      "profiles": 3,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "omap",
+      "board": "omap",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "pistachio",
+      "board": "pistachio",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "realtek",
+      "board": "realtek",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    },
+    {
+      "target": "sunxi",
+      "board": "sunxi",
+      "subtarget": "",
+      "profiles": 1,
+      "missing": [
+        "Kconfig-selector"
+      ]
+    }
+  ],
+  "kconfigProbe": {
+    "schema": 1,
+    "mode": "target-chain-and-representative-profile",
+    "generatedAt": "2026-09-06T03:32:14.185Z",
+    "targets": 115,
+    "passed": 115,
+    "passedScope": "target chain plus one representative profile; all siblings remain hidden on failure",
+    "quarantined": []
+  }
+}
