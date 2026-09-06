@@ -1,174 +1,173 @@
 {
   "schema": 1,
-  "generatedAt": "2026-08-29T23:35:47.757Z",
+  "generatedAt": "2026-09-05T23:19:09.675Z",
   "metric": "maximum compressed bytes of package plus recursive strong dependency closure across successful samples",
   "bytes": {
-    "luci-app-3cat": 48331,
-    "luci-app-3ginfo-lite": 128789,
-    "luci-app-acl": 534482,
-    "luci-app-acme": 537896,
-    "luci-app-adblock": 1756993,
-    "luci-app-adblock-fast": 3520547,
-    "luci-app-adguardhome": 12029572,
-    "luci-app-advanced-reboot": 550754,
-    "luci-app-airplay2": 12846470,
-    "luci-app-amule": 8527152,
-    "luci-app-antiblock": 3518860,
-    "luci-app-apinger": 764752,
-    "luci-app-appfilter": 2034603,
-    "luci-app-argon-config": 479980,
-    "luci-app-aria2": 4768722,
-    "luci-app-arpbind": 3020,
-    "luci-app-attendedsysupgrade": 545066,
-    "luci-app-autoreboot": 3149,
-    "luci-app-babeld": 602622,
-    "luci-app-banip": 1694973,
-    "luci-app-bcp38": 535345,
-    "luci-app-bitsrunlogin-go": 3266926,
-    "luci-app-bmx7": 1189883,
-    "luci-app-cd8021x": 1693180,
-    "luci-app-chrony": 692339,
-    "luci-app-cifs-mount": 3527,
-    "luci-app-cjdns": 1279986,
-    "luci-app-clamav": 8890254,
-    "luci-app-cloudflared": 8991798,
-    "luci-app-commands": 535976,
-    "luci-app-coovachilli": 785021,
-    "luci-app-cpufreq": 4662,
-    "luci-app-cpulimit": 785820,
-    "luci-app-crowdsec-firewall-bouncer": 6130036,
-    "luci-app-csshnpd": 1030220,
-    "luci-app-dae": 14950989,
-    "luci-app-daed": 26624497,
-    "luci-app-dawn": 1181218,
-    "luci-app-dcwapd": 615711,
-    "luci-app-ddns": 577650,
-    "luci-app-ddns-go": 4328102,
-    "luci-app-diskman": 3890185,
-    "luci-app-docker": 73772039,
-    "luci-app-dockerman": 89156580,
-    "luci-app-dufs": 2450598,
-    "luci-app-dump1090": 3261008,
-    "luci-app-email": 3349911,
-    "luci-app-eoip": 581058,
+    "luci-app-3cat": 48327,
+    "luci-app-3ginfo-lite": 128786,
+    "luci-app-acl": 529657,
+    "luci-app-acme": 533076,
+    "luci-app-adblock": 1758377,
+    "luci-app-adblock-fast": 3516273,
+    "luci-app-adguardhome": 12032570,
+    "luci-app-advanced-reboot": 545928,
+    "luci-app-airplay2": 12852077,
+    "luci-app-amule": 783738,
+    "luci-app-antiblock": 3514598,
+    "luci-app-apinger": 759930,
+    "luci-app-appfilter": 2029772,
+    "luci-app-argon-config": 474004,
+    "luci-app-aria2": 4764622,
+    "luci-app-arpbind": 3018,
+    "luci-app-attendedsysupgrade": 540250,
+    "luci-app-autoreboot": 3144,
+    "luci-app-babeld": 528154,
+    "luci-app-banip": 1696358,
+    "luci-app-bcp38": 530508,
+    "luci-app-bitsrunlogin-go": 3474861,
+    "luci-app-bmx7": 542825,
+    "luci-app-cd8021x": 1694781,
+    "luci-app-chrony": 687519,
+    "luci-app-cifs-mount": 3528,
+    "luci-app-cjdns": 1275173,
+    "luci-app-clamav": 8886001,
+    "luci-app-cloudflared": 9093876,
+    "luci-app-commands": 531150,
+    "luci-app-coovachilli": 780191,
+    "luci-app-cpufreq": 4658,
+    "luci-app-cpulimit": 780987,
+    "luci-app-crowdsec-firewall-bouncer": 6132698,
+    "luci-app-csshnpd": 1024463,
+    "luci-app-dae": 19159070,
+    "luci-app-daed": 26764624,
+    "luci-app-dawn": 1176393,
+    "luci-app-dcwapd": 610890,
+    "luci-app-ddns": 577831,
+    "luci-app-ddns-go": 4578161,
+    "luci-app-diskman": 3889010,
+    "luci-app-docker": 74616968,
+    "luci-app-dockerman": 89512344,
+    "luci-app-dufs": 2450577,
+    "luci-app-dump1090": 3259607,
+    "luci-app-email": 3345085,
+    "luci-app-eoip": 576231,
     "luci-app-eqos": 3269,
-    "luci-app-example": 533995,
-    "luci-app-filebrowser": 531632,
-    "luci-app-filebrowser-go": 9114628,
-    "luci-app-filemanager": 553156,
-    "luci-app-firewall": 548887,
-    "luci-app-frpc": 6466555,
-    "luci-app-frps": 7626678,
-    "luci-app-fwknopd": 786242,
-    "luci-app-gost": 11970211,
-    "luci-app-hd-idle": 1177730,
-    "luci-app-homeproxy": 16374591,
-    "luci-app-https-dns-proxy": 3566659,
-    "luci-app-ipsec-vpnd": 3328791,
-    "luci-app-irqbalance": 592486,
-    "luci-app-keepalived": 5124574,
-    "luci-app-ksmbd": 719879,
-    "luci-app-ledtrig-rssi": 569146,
-    "luci-app-ledtrig-switch": 531278,
-    "luci-app-ledtrig-usbport": 531591,
-    "luci-app-libreswan": 7584088,
-    "luci-app-lldpd": 507601,
-    "luci-app-lorawan-basicstation": 972803,
-    "luci-app-lxc": 4308239,
-    "luci-app-microsocks": 9865,
-    "luci-app-minidlna": 1674833,
-    "luci-app-modemband": 26498,
-    "luci-app-mosquitto": 533896,
-    "luci-app-msd_lite": 76951,
-    "luci-app-music-remote-center": 17336620,
-    "luci-app-mwan3": 633052,
-    "luci-app-n2n": 3651601,
-    "luci-app-natmap": 556408,
-    "luci-app-netdata": 1593,
-    "luci-app-nextdns": 4339343,
-    "luci-app-nfs": 3243910,
-    "luci-app-ngrokc": 3211648,
-    "luci-app-njitclient": 3280782,
-    "luci-app-nlbwmon": 612713,
-    "luci-app-nps": 8266397,
-    "luci-app-nut": 5750465,
-    "luci-app-ocserv": 2741762,
-    "luci-app-oled": 842603,
-    "luci-app-olsr": 724490,
-    "luci-app-olsr-services": 739941,
-    "luci-app-olsr-viz": 750917,
-    "luci-app-omcproxy": 550611,
-    "luci-app-openclash": 16281080,
-    "luci-app-openlist": 43473878,
-    "luci-app-openthread": 737678,
-    "luci-app-openvpn-server": 3953915,
-    "luci-app-openwisp": 3728487,
-    "luci-app-oscam": 4051312,
-    "luci-app-p910nd": 547738,
-    "luci-app-package-manager": 541214,
-    "luci-app-pagekitec": 2979008,
-    "luci-app-passwall": 48718760,
-    "luci-app-pbr": 1536852,
-    "luci-app-pppoe-relay": 941340,
-    "luci-app-pppoe-server": 973926,
-    "luci-app-privoxy": 3363361,
-    "luci-app-ps3netsrv": 827780,
-    "luci-app-qbittorrent": 19372885,
-    "luci-app-qos": 540197,
-    "luci-app-qos-legacy": 532711,
-    "luci-app-qosify": 16694,
-    "luci-app-radicale3": 15398498,
-    "luci-app-ramfree": 1453,
-    "luci-app-rclone": 34382296,
-    "luci-app-rp-pppoe-server": 726870,
-    "luci-app-rtp2httpd": 400702,
-    "luci-app-rustdesk-server": 4353513,
-    "luci-app-samba4": 17083079,
-    "luci-app-scutclient": 799456,
-    "luci-app-ser2net": 811412,
-    "luci-app-smartdns": 2729042,
-    "luci-app-sms-tool-js": 34723,
-    "luci-app-snmpd": 535783,
-    "luci-app-softether": 7363455,
-    "luci-app-softethervpn": 8274788,
-    "luci-app-spotifyd": 4253061,
-    "luci-app-sqm": 554845,
-    "luci-app-squid": 5218540,
-    "luci-app-sshtunnel": 539031,
-    "luci-app-statistics": 960812,
-    "luci-app-strongswan-swanctl": 1842299,
-    "luci-app-syncdial": 884179,
-    "luci-app-syncthing": 11265443,
-    "luci-app-sysuh3c": 10502,
-    "luci-app-tailscale-community": 11559271,
-    "luci-app-timewol": 778200,
-    "luci-app-tinyproxy": 575143,
-    "luci-app-tor": 4469555,
-    "luci-app-transmission": 8478767,
-    "luci-app-travelmate": 3553582,
-    "luci-app-ttyd": 3726589,
-    "luci-app-ua2f": 227643,
-    "luci-app-udpxy": 569056,
-    "luci-app-uhttpd": 571534,
-    "luci-app-unblockneteasemusic": 22276316,
-    "luci-app-unbound": 3798883,
-    "luci-app-upnp": 535528,
-    "luci-app-usb-printer": 792192,
-    "luci-app-usteer": 573073,
-    "luci-app-ustreamer": 885387,
-    "luci-app-v2raya": 22663873,
-    "luci-app-vlmcsd": 27823,
-    "luci-app-vnstat2": 1805933,
-    "luci-app-vsftpd": 824152,
-    "luci-app-watchcat": 538559,
-    "luci-app-wechatpush": 3992686,
-    "luci-app-wifihistory": 576152,
-    "luci-app-wifischedule": 538627,
-    "luci-app-wol": 540617,
-    "luci-app-xfrpc": 3226321,
-    "luci-app-xinetd": 604874,
-    "luci-app-xlnetacc": 4003379,
-    "luci-app-zerotier": 496790
+    "luci-app-example": 529174,
+    "luci-app-filebrowser": 526809,
+    "luci-app-filebrowser-go": 9319509,
+    "luci-app-filemanager": 548333,
+    "luci-app-firewall": 544049,
+    "luci-app-frpc": 6472697,
+    "luci-app-frps": 7631488,
+    "luci-app-fwknopd": 781424,
+    "luci-app-gost": 12116280,
+    "luci-app-hd-idle": 1175589,
+    "luci-app-homeproxy": 16415337,
+    "luci-app-https-dns-proxy": 3562393,
+    "luci-app-ipsec-vpnd": 3328777,
+    "luci-app-irqbalance": 587847,
+    "luci-app-keepalived": 5141383,
+    "luci-app-ksmbd": 713638,
+    "luci-app-ledtrig-rssi": 564316,
+    "luci-app-ledtrig-switch": 526454,
+    "luci-app-ledtrig-usbport": 526769,
+    "luci-app-libreswan": 7573997,
+    "luci-app-lldpd": 508030,
+    "luci-app-lorawan-basicstation": 967324,
+    "luci-app-lxc": 4303382,
+    "luci-app-microsocks": 9861,
+    "luci-app-minidlna": 1670011,
+    "luci-app-modemband": 26501,
+    "luci-app-mosquitto": 529077,
+    "luci-app-msd_lite": 76948,
+    "luci-app-music-remote-center": 17342892,
+    "luci-app-mwan3": 628228,
+    "luci-app-n2n": 3646768,
+    "luci-app-natmap": 551588,
+    "luci-app-netdata": 1596,
+    "luci-app-nextdns": 4342135,
+    "luci-app-nfs": 3239101,
+    "luci-app-ngrokc": 3206811,
+    "luci-app-njitclient": 3275947,
+    "luci-app-nlbwmon": 607959,
+    "luci-app-nps": 8513284,
+    "luci-app-nut": 6102169,
+    "luci-app-ocserv": 2739637,
+    "luci-app-oled": 837766,
+    "luci-app-olsr": 719747,
+    "luci-app-olsr-services": 735204,
+    "luci-app-olsr-viz": 746176,
+    "luci-app-omcproxy": 545790,
+    "luci-app-openclash": 16438560,
+    "luci-app-openlist": 45755787,
+    "luci-app-openthread": 732848,
+    "luci-app-openvpn-server": 3949197,
+    "luci-app-openwisp": 3723822,
+    "luci-app-oscam": 4046552,
+    "luci-app-p910nd": 542915,
+    "luci-app-package-manager": 536396,
+    "luci-app-pagekitec": 2974177,
+    "luci-app-passwall": 49385680,
+    "luci-app-pbr": 1532013,
+    "luci-app-pppoe-relay": 938278,
+    "luci-app-pppoe-server": 970871,
+    "luci-app-privoxy": 3358530,
+    "luci-app-ps3netsrv": 822956,
+    "luci-app-qbittorrent": 19375554,
+    "luci-app-qos-legacy": 535474,
+    "luci-app-qosify": 16814,
+    "luci-app-radicale3": 15257243,
+    "luci-app-ramfree": 1452,
+    "luci-app-rclone": 34199735,
+    "luci-app-rp-pppoe-server": 723818,
+    "luci-app-rtp2httpd": 406183,
+    "luci-app-rustdesk-server": 4353518,
+    "luci-app-samba4": 16255898,
+    "luci-app-scutclient": 794627,
+    "luci-app-ser2net": 806589,
+    "luci-app-smartdns": 2732994,
+    "luci-app-sms-tool-js": 34722,
+    "luci-app-snmpd": 530958,
+    "luci-app-softether": 7361309,
+    "luci-app-softethervpn": 8272637,
+    "luci-app-spotifyd": 4253060,
+    "luci-app-sqm": 550038,
+    "luci-app-squid": 5213712,
+    "luci-app-sshtunnel": 534197,
+    "luci-app-statistics": 955992,
+    "luci-app-strongswan-swanctl": 1841700,
+    "luci-app-syncdial": 879348,
+    "luci-app-syncthing": 11411981,
+    "luci-app-sysuh3c": 10499,
+    "luci-app-tailscale-community": 11562661,
+    "luci-app-timewol": 773360,
+    "luci-app-tinyproxy": 570321,
+    "luci-app-tor": 4464731,
+    "luci-app-transmission": 8476074,
+    "luci-app-travelmate": 3552246,
+    "luci-app-ttyd": 3721765,
+    "luci-app-ua2f": 227990,
+    "luci-app-udpxy": 564231,
+    "luci-app-uhttpd": 567445,
+    "luci-app-unblockneteasemusic": 22279466,
+    "luci-app-unbound": 3786816,
+    "luci-app-upnp": 530659,
+    "luci-app-usb-printer": 787367,
+    "luci-app-usteer": 568254,
+    "luci-app-ustreamer": 880565,
+    "luci-app-v2raya": 22664207,
+    "luci-app-vlmcsd": 27815,
+    "luci-app-vnstat2": 1801118,
+    "luci-app-vsftpd": 819326,
+    "luci-app-watchcat": 533739,
+    "luci-app-wechatpush": 3999883,
+    "luci-app-wifihistory": 571318,
+    "luci-app-wifischedule": 533794,
+    "luci-app-wol": 535793,
+    "luci-app-xfrpc": 3221494,
+    "luci-app-xinetd": 600051,
+    "luci-app-xlnetacc": 3998525,
+    "luci-app-zerotier": 496797
   },
   "coverage": {
     "luci-app-3cat": [
@@ -176,7 +175,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 48331
+        "bytes": 48327
       }
     ],
     "luci-app-3ginfo-lite": [
@@ -184,7 +183,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 128789
+        "bytes": 128786
       }
     ],
     "luci-app-acl": [
@@ -192,13 +191,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 534482
+        "bytes": 529657
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 527000
+        "bytes": 528385
       }
     ],
     "luci-app-acme": [
@@ -206,13 +205,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 537896
+        "bytes": 533076
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 530415
+        "bytes": 531802
       }
     ],
     "luci-app-adblock": [
@@ -220,13 +219,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1756541
+        "bytes": 1750553
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1756993
+        "bytes": 1758377
       }
     ],
     "luci-app-adblock-fast": [
@@ -234,13 +233,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3520547
+        "bytes": 3516273
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1477207
+        "bytes": 1478592
       }
     ],
     "luci-app-adguardhome": [
@@ -248,13 +247,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 11937264
+        "bytes": 12032570
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 12029572
+        "bytes": 12030884
       }
     ],
     "luci-app-advanced-reboot": [
@@ -262,13 +261,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 550754
+        "bytes": 545928
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 543164
+        "bytes": 544549
       }
     ],
     "luci-app-airplay2": [
@@ -276,7 +275,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 12846470
+        "bytes": 12852077
       }
     ],
     "luci-app-amule": [
@@ -284,7 +283,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8527152
+        "bytes": 783738
       }
     ],
     "luci-app-antiblock": [
@@ -292,13 +291,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3518860
+        "bytes": 3514598
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1475752
+        "bytes": 1477135
       }
     ],
     "luci-app-apinger": [
@@ -306,13 +305,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 764752
+        "bytes": 759930
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 756615
+        "bytes": 758000
       }
     ],
     "luci-app-appfilter": [
@@ -320,7 +319,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2034603
+        "bytes": 2029772
       }
     ],
     "luci-app-argon-config": [
@@ -328,7 +327,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 479980
+        "bytes": 474004
       }
     ],
     "luci-app-aria2": [
@@ -336,13 +335,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4768722
+        "bytes": 4764622
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3225391
+        "bytes": 3229341
       }
     ],
     "luci-app-arpbind": [
@@ -350,7 +349,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3020
+        "bytes": 3018
       }
     ],
     "luci-app-attendedsysupgrade": [
@@ -358,13 +357,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 545066
+        "bytes": 540250
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 537371
+        "bytes": 538759
       }
     ],
     "luci-app-autoreboot": [
@@ -372,7 +371,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3149
+        "bytes": 3144
       }
     ],
     "luci-app-babeld": [
@@ -380,13 +379,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 602622
+        "bytes": 528154
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 525507
+        "bytes": 526888
       }
     ],
     "luci-app-banip": [
@@ -394,13 +393,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1691264
+        "bytes": 1688515
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1694973
+        "bytes": 1696358
       }
     ],
     "luci-app-bcp38": [
@@ -408,13 +407,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 535345
+        "bytes": 530508
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 527758
+        "bytes": 529140
       }
     ],
     "luci-app-bitsrunlogin-go": [
@@ -422,7 +421,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3266926
+        "bytes": 3474861
       }
     ],
     "luci-app-bmx7": [
@@ -430,13 +429,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1189883
+        "bytes": 542825
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 540185
+        "bytes": 542197
       }
     ],
     "luci-app-cd8021x": [
@@ -444,7 +443,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1693180
+        "bytes": 1694781
       }
     ],
     "luci-app-chrony": [
@@ -452,13 +451,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 692339
+        "bytes": 687519
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 684664
+        "bytes": 686047
       }
     ],
     "luci-app-cifs-mount": [
@@ -466,7 +465,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3527
+        "bytes": 3528
       }
     ],
     "luci-app-cjdns": [
@@ -474,13 +473,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1279986
+        "bytes": 1275173
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1270671
+        "bytes": 1272037
       }
     ],
     "luci-app-clamav": [
@@ -488,13 +487,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8890254
+        "bytes": 8886001
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8863434
+        "bytes": 8867379
       }
     ],
     "luci-app-cloudflared": [
@@ -502,13 +501,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8959239
+        "bytes": 8992180
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8991798
+        "bytes": 9093876
       }
     ],
     "luci-app-commands": [
@@ -516,13 +515,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 535976
+        "bytes": 531150
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 528495
+        "bytes": 530438
       }
     ],
     "luci-app-coovachilli": [
@@ -530,13 +529,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 785021
+        "bytes": 780191
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 777462
+        "bytes": 778844
       }
     ],
     "luci-app-cpufreq": [
@@ -544,7 +543,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4662
+        "bytes": 4658
       }
     ],
     "luci-app-cpulimit": [
@@ -552,7 +551,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 785820
+        "bytes": 780987
       }
     ],
     "luci-app-crowdsec-firewall-bouncer": [
@@ -560,13 +559,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 5900685
+        "bytes": 6132698
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 6130036
+        "bytes": 6131163
       }
     ],
     "luci-app-csshnpd": [
@@ -574,13 +573,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1030220
+        "bytes": 1024463
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1020436
+        "bytes": 1021821
       }
     ],
     "luci-app-dae": [
@@ -588,7 +587,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 14950989
+        "bytes": 19159070
       }
     ],
     "luci-app-daed": [
@@ -596,7 +595,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 26624497
+        "bytes": 26764624
       }
     ],
     "luci-app-dawn": [
@@ -604,13 +603,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1181218
+        "bytes": 1176393
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1172998
+        "bytes": 1174386
       }
     ],
     "luci-app-dcwapd": [
@@ -618,13 +617,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 615711
+        "bytes": 610890
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 525446
+        "bytes": 526824
       }
     ],
     "luci-app-ddns": [
@@ -632,13 +631,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 577650
+        "bytes": 577831
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 574624
+        "bytes": 576008
       }
     ],
     "luci-app-ddns-go": [
@@ -646,7 +645,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4328102
+        "bytes": 4578161
       }
     ],
     "luci-app-diskman": [
@@ -654,7 +653,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3890185
+        "bytes": 3889010
       }
     ],
     "luci-app-docker": [
@@ -662,7 +661,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 73772039
+        "bytes": 74616968
       }
     ],
     "luci-app-dockerman": [
@@ -670,13 +669,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 84929861
+        "bytes": 89512344
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 89156580
+        "bytes": 89159371
       }
     ],
     "luci-app-dufs": [
@@ -684,7 +683,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2450598
+        "bytes": 2450577
       }
     ],
     "luci-app-dump1090": [
@@ -692,13 +691,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3261008
+        "bytes": 3259607
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3256203
+        "bytes": 3257587
       }
     ],
     "luci-app-email": [
@@ -706,13 +705,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3349911
+        "bytes": 3345085
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2995230
+        "bytes": 2999179
       }
     ],
     "luci-app-eoip": [
@@ -720,13 +719,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 581058
+        "bytes": 576231
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 573380
+        "bytes": 574762
       }
     ],
     "luci-app-eqos": [
@@ -742,13 +741,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 533995
+        "bytes": 529174
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 526516
+        "bytes": 527900
       }
     ],
     "luci-app-filebrowser": [
@@ -756,13 +755,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 531632
+        "bytes": 526809
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 524161
+        "bytes": 525546
       }
     ],
     "luci-app-filebrowser-go": [
@@ -770,7 +769,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 9114628
+        "bytes": 9319509
       }
     ],
     "luci-app-filemanager": [
@@ -778,13 +777,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 553156
+        "bytes": 548333
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 545665
+        "bytes": 547047
       }
     ],
     "luci-app-firewall": [
@@ -792,13 +791,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 548887
+        "bytes": 544049
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 541360
+        "bytes": 542745
       }
     ],
     "luci-app-frpc": [
@@ -806,13 +805,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 6309682
+        "bytes": 6469375
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 6466555
+        "bytes": 6472697
       }
     ],
     "luci-app-frps": [
@@ -820,13 +819,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 7604147
+        "bytes": 7629418
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 7626678
+        "bytes": 7631488
       }
     ],
     "luci-app-fwknopd": [
@@ -834,13 +833,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 786242
+        "bytes": 781424
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 778259
+        "bytes": 779640
       }
     ],
     "luci-app-gost": [
@@ -848,7 +847,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 11970211
+        "bytes": 12116280
       }
     ],
     "luci-app-hd-idle": [
@@ -856,13 +855,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1177730
+        "bytes": 1175589
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1172116
+        "bytes": 1173498
       }
     ],
     "luci-app-homeproxy": [
@@ -870,7 +869,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 16374591
+        "bytes": 16415337
       }
     ],
     "luci-app-https-dns-proxy": [
@@ -878,13 +877,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3566659
+        "bytes": 3562393
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1523220
+        "bytes": 1525854
       }
     ],
     "luci-app-ipsec-vpnd": [
@@ -892,7 +891,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3328791
+        "bytes": 3328777
       }
     ],
     "luci-app-irqbalance": [
@@ -900,13 +899,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 592486
+        "bytes": 584508
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 586457
+        "bytes": 587847
       }
     ],
     "luci-app-keepalived": [
@@ -914,13 +913,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 5124574
+        "bytes": 5141383
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4789151
+        "bytes": 4790787
       }
     ],
     "luci-app-ksmbd": [
@@ -928,13 +927,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 719879
+        "bytes": 712530
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 712104
+        "bytes": 713638
       }
     ],
     "luci-app-ledtrig-rssi": [
@@ -942,13 +941,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 569146
+        "bytes": 564316
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 561354
+        "bytes": 562737
       }
     ],
     "luci-app-ledtrig-switch": [
@@ -956,13 +955,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 531278
+        "bytes": 526454
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 523808
+        "bytes": 525193
       }
     ],
     "luci-app-ledtrig-usbport": [
@@ -970,13 +969,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 531591
+        "bytes": 526769
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 524123
+        "bytes": 525501
       }
     ],
     "luci-app-libreswan": [
@@ -984,13 +983,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 7584088
+        "bytes": 7573997
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 7222498
+        "bytes": 7226451
       }
     ],
     "luci-app-lldpd": [
@@ -998,13 +997,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 507601
+        "bytes": 508030
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 506777
+        "bytes": 506775
       }
     ],
     "luci-app-lorawan-basicstation": [
@@ -1012,13 +1011,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 972803
+        "bytes": 967324
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 963399
+        "bytes": 964782
       }
     ],
     "luci-app-lxc": [
@@ -1026,13 +1025,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4308239
+        "bytes": 4303382
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3951442
+        "bytes": 3955393
       }
     ],
     "luci-app-microsocks": [
@@ -1040,7 +1039,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 9865
+        "bytes": 9861
       }
     ],
     "luci-app-minidlna": [
@@ -1048,13 +1047,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1674833
+        "bytes": 1670011
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1666483
+        "bytes": 1667866
       }
     ],
     "luci-app-modemband": [
@@ -1062,7 +1061,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 26498
+        "bytes": 26501
       }
     ],
     "luci-app-mosquitto": [
@@ -1070,13 +1069,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 533896
+        "bytes": 529077
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 526418
+        "bytes": 527806
       }
     ],
     "luci-app-msd_lite": [
@@ -1084,7 +1083,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 76951
+        "bytes": 76948
       }
     ],
     "luci-app-music-remote-center": [
@@ -1092,7 +1091,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 17336620
+        "bytes": 17342892
       }
     ],
     "luci-app-mwan3": [
@@ -1100,13 +1099,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 633052
+        "bytes": 628228
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 625043
+        "bytes": 626425
       }
     ],
     "luci-app-n2n": [
@@ -1114,7 +1113,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3651601
+        "bytes": 3646768
       }
     ],
     "luci-app-natmap": [
@@ -1122,13 +1121,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 556408
+        "bytes": 551588
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 548833
+        "bytes": 550217
       }
     ],
     "luci-app-netdata": [
@@ -1136,7 +1135,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1593
+        "bytes": 1596
       }
     ],
     "luci-app-nextdns": [
@@ -1144,13 +1143,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4143371
+        "bytes": 4342135
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4339343
+        "bytes": 4340594
       }
     ],
     "luci-app-nfs": [
@@ -1158,7 +1157,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3243910
+        "bytes": 3239101
       }
     ],
     "luci-app-ngrokc": [
@@ -1166,7 +1165,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3211648
+        "bytes": 3206811
       }
     ],
     "luci-app-njitclient": [
@@ -1174,7 +1173,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3280782
+        "bytes": 3275947
       }
     ],
     "luci-app-nlbwmon": [
@@ -1182,13 +1181,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 612713
+        "bytes": 607959
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 604954
+        "bytes": 606344
       }
     ],
     "luci-app-nps": [
@@ -1196,7 +1195,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8266397
+        "bytes": 8513284
       }
     ],
     "luci-app-nut": [
@@ -1204,13 +1203,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3954969
+        "bytes": 6102169
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 5750465
+        "bytes": 5754407
       }
     ],
     "luci-app-ocserv": [
@@ -1218,13 +1217,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2741762
+        "bytes": 2739637
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2736000
+        "bytes": 2737384
       }
     ],
     "luci-app-oled": [
@@ -1232,7 +1231,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 842603
+        "bytes": 837766
       }
     ],
     "luci-app-olsr": [
@@ -1240,13 +1239,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 724490
+        "bytes": 719747
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 716737
+        "bytes": 718123
       }
     ],
     "luci-app-olsr-services": [
@@ -1254,13 +1253,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 739941
+        "bytes": 735204
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 731981
+        "bytes": 733364
       }
     ],
     "luci-app-olsr-viz": [
@@ -1268,13 +1267,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 750917
+        "bytes": 746176
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 742943
+        "bytes": 744331
       }
     ],
     "luci-app-omcproxy": [
@@ -1282,13 +1281,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 550611
+        "bytes": 545790
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 543018
+        "bytes": 544403
       }
     ],
     "luci-app-openclash": [
@@ -1296,7 +1295,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 16281080
+        "bytes": 16438560
       }
     ],
     "luci-app-openlist": [
@@ -1304,13 +1303,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 43456812
+        "bytes": 43474034
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 43473878
+        "bytes": 45755787
       }
     ],
     "luci-app-openthread": [
@@ -1318,13 +1317,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 737678
+        "bytes": 732848
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 729082
+        "bytes": 730453
       }
     ],
     "luci-app-openvpn-server": [
@@ -1332,7 +1331,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3953915
+        "bytes": 3949197
       }
     ],
     "luci-app-openwisp": [
@@ -1340,13 +1339,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3728487
+        "bytes": 3723822
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1684313
+        "bytes": 1685690
       }
     ],
     "luci-app-oscam": [
@@ -1354,7 +1353,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4051312
+        "bytes": 4046552
       }
     ],
     "luci-app-p910nd": [
@@ -1362,13 +1361,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 547738
+        "bytes": 542915
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 540158
+        "bytes": 541540
       }
     ],
     "luci-app-package-manager": [
@@ -1376,13 +1375,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 541214
+        "bytes": 536396
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 533731
+        "bytes": 535149
       }
     ],
     "luci-app-pagekitec": [
@@ -1390,13 +1389,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2979008
+        "bytes": 2974177
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2624097
+        "bytes": 2628047
       }
     ],
     "luci-app-passwall": [
@@ -1404,7 +1403,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 48718760
+        "bytes": 49385680
       }
     ],
     "luci-app-pbr": [
@@ -1412,13 +1411,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1536852
+        "bytes": 1532013
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1527816
+        "bytes": 1529200
       }
     ],
     "luci-app-pppoe-relay": [
@@ -1426,7 +1425,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 941340
+        "bytes": 938278
       }
     ],
     "luci-app-pppoe-server": [
@@ -1434,7 +1433,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 973926
+        "bytes": 970871
       }
     ],
     "luci-app-privoxy": [
@@ -1442,13 +1441,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3363361
+        "bytes": 3358530
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3008426
+        "bytes": 3012375
       }
     ],
     "luci-app-ps3netsrv": [
@@ -1456,7 +1455,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 827780
+        "bytes": 822956
       }
     ],
     "luci-app-qbittorrent": [
@@ -1464,26 +1463,30 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 19372885
-      }
-    ],
-    "luci-app-qos": [
-      {
-        "source": "ImmortalWrt",
-        "branch": "master",
-        "architecture": "aarch64_cortex-a53",
-        "bytes": 540197
+        "bytes": 19375554
       }
     ],
     "luci-app-qos-legacy": [
       {
+        "source": "ImmortalWrt",
+        "branch": "master",
+        "architecture": "aarch64_cortex-a53",
+        "bytes": 535474
+      },
+      {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 532711
+        "bytes": 534093
       }
     ],
     "luci-app-qosify": [
+      {
+        "source": "ImmortalWrt",
+        "branch": "master",
+        "architecture": "aarch64_cortex-a53",
+        "bytes": 16814
+      },
       {
         "source": "OpenWrt",
         "branch": "main",
@@ -1496,13 +1499,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 15398498
+        "bytes": 15257243
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 14644193
+        "bytes": 14752981
       }
     ],
     "luci-app-ramfree": [
@@ -1510,7 +1513,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1453
+        "bytes": 1452
       }
     ],
     "luci-app-rclone": [
@@ -1518,7 +1521,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 34382296
+        "bytes": 34199735
       }
     ],
     "luci-app-rp-pppoe-server": [
@@ -1526,13 +1529,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 726870
+        "bytes": 723818
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 716887
+        "bytes": 718272
       }
     ],
     "luci-app-rtp2httpd": [
@@ -1540,7 +1543,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 400702
+        "bytes": 406183
       }
     ],
     "luci-app-rustdesk-server": [
@@ -1548,13 +1551,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4353513
+        "bytes": 4353518
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 532304
+        "bytes": 533689
       }
     ],
     "luci-app-samba4": [
@@ -1562,13 +1565,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 17083079
+        "bytes": 16255898
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 15903605
+        "bytes": 15907535
       }
     ],
     "luci-app-scutclient": [
@@ -1576,7 +1579,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 799456
+        "bytes": 794627
       }
     ],
     "luci-app-ser2net": [
@@ -1584,13 +1587,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 811412
+        "bytes": 806589
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 803640
+        "bytes": 805024
       }
     ],
     "luci-app-smartdns": [
@@ -1598,13 +1601,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2629696
+        "bytes": 2631771
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2729042
+        "bytes": 2732994
       }
     ],
     "luci-app-sms-tool-js": [
@@ -1612,7 +1615,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 34723
+        "bytes": 34722
       }
     ],
     "luci-app-snmpd": [
@@ -1620,13 +1623,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 535783
+        "bytes": 530958
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 528300
+        "bytes": 529682
       }
     ],
     "luci-app-softether": [
@@ -1634,13 +1637,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 7363455
+        "bytes": 7361309
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 7010932
+        "bytes": 7014882
       }
     ],
     "luci-app-softethervpn": [
@@ -1648,7 +1651,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8274788
+        "bytes": 8272637
       }
     ],
     "luci-app-spotifyd": [
@@ -1656,7 +1659,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4253061
+        "bytes": 4253060
       }
     ],
     "luci-app-sqm": [
@@ -1664,13 +1667,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 554845
+        "bytes": 550038
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 546539
+        "bytes": 547920
       }
     ],
     "luci-app-squid": [
@@ -1678,13 +1681,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 5218540
+        "bytes": 5213712
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4863811
+        "bytes": 4867760
       }
     ],
     "luci-app-sshtunnel": [
@@ -1692,13 +1695,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 539031
+        "bytes": 534197
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 531438
+        "bytes": 532823
       }
     ],
     "luci-app-statistics": [
@@ -1706,13 +1709,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 960812
+        "bytes": 955992
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 951776
+        "bytes": 953160
       }
     ],
     "luci-app-strongswan-swanctl": [
@@ -1720,13 +1723,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1842299
+        "bytes": 1836237
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1841702
+        "bytes": 1841700
       }
     ],
     "luci-app-syncdial": [
@@ -1734,7 +1737,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 884179
+        "bytes": 879348
       }
     ],
     "luci-app-syncthing": [
@@ -1742,7 +1745,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 11265443
+        "bytes": 11411981
       }
     ],
     "luci-app-sysuh3c": [
@@ -1750,7 +1753,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 10502
+        "bytes": 10499
       }
     ],
     "luci-app-tailscale-community": [
@@ -1758,13 +1761,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 11052477
+        "bytes": 11562661
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 11559271
+        "bytes": 11560632
       }
     ],
     "luci-app-timewol": [
@@ -1772,7 +1775,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 778200
+        "bytes": 773360
       }
     ],
     "luci-app-tinyproxy": [
@@ -1780,13 +1783,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 575143
+        "bytes": 570321
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 567557
+        "bytes": 568940
       }
     ],
     "luci-app-tor": [
@@ -1794,13 +1797,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4469555
+        "bytes": 4464731
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4114453
+        "bytes": 4118437
       }
     ],
     "luci-app-transmission": [
@@ -1808,13 +1811,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 8478767
+        "bytes": 8476074
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3088837
+        "bytes": 3090216
       }
     ],
     "luci-app-travelmate": [
@@ -1822,13 +1825,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3553582
+        "bytes": 3552246
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1512625
+        "bytes": 1514009
       }
     ],
     "luci-app-ttyd": [
@@ -1836,13 +1839,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3726589
+        "bytes": 3721765
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3371460
+        "bytes": 3375408
       }
     ],
     "luci-app-ua2f": [
@@ -1850,7 +1853,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 227643
+        "bytes": 227990
       }
     ],
     "luci-app-udpxy": [
@@ -1858,13 +1861,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 569056
+        "bytes": 564231
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 561471
+        "bytes": 562853
       }
     ],
     "luci-app-uhttpd": [
@@ -1872,13 +1875,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 571534
+        "bytes": 567445
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 564560
+        "bytes": 565937
       }
     ],
     "luci-app-unblockneteasemusic": [
@@ -1886,7 +1889,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 22276316
+        "bytes": 22279466
       }
     ],
     "luci-app-unbound": [
@@ -1894,13 +1897,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3798883
+        "bytes": 3786816
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3436541
+        "bytes": 3440490
       }
     ],
     "luci-app-upnp": [
@@ -1908,13 +1911,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 535528
+        "bytes": 530659
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 528002
+        "bytes": 529385
       }
     ],
     "luci-app-usb-printer": [
@@ -1922,7 +1925,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 792192
+        "bytes": 787367
       }
     ],
     "luci-app-usteer": [
@@ -1930,13 +1933,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 573073
+        "bytes": 568254
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 565483
+        "bytes": 566868
       }
     ],
     "luci-app-ustreamer": [
@@ -1944,13 +1947,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 885387
+        "bytes": 880565
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 877496
+        "bytes": 878881
       }
     ],
     "luci-app-v2raya": [
@@ -1958,13 +1961,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 22330708
+        "bytes": 22664207
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 22663873
+        "bytes": 22663277
       }
     ],
     "luci-app-vlmcsd": [
@@ -1972,7 +1975,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 27823
+        "bytes": 27815
       }
     ],
     "luci-app-vnstat2": [
@@ -1980,13 +1983,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1805933
+        "bytes": 1801118
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 1797500
+        "bytes": 1798885
       }
     ],
     "luci-app-vsftpd": [
@@ -1994,7 +1997,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 824152
+        "bytes": 819326
       }
     ],
     "luci-app-watchcat": [
@@ -2002,13 +2005,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 538559
+        "bytes": 533739
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 530973
+        "bytes": 532355
       }
     ],
     "luci-app-wechatpush": [
@@ -2016,7 +2019,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3992686
+        "bytes": 3999883
       }
     ],
     "luci-app-wifihistory": [
@@ -2024,13 +2027,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 576152
+        "bytes": 571318
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 568350
+        "bytes": 569732
       }
     ],
     "luci-app-wifischedule": [
@@ -2038,13 +2041,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 538627
+        "bytes": 533794
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 531037
+        "bytes": 532422
       }
     ],
     "luci-app-wol": [
@@ -2052,13 +2055,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 540617
+        "bytes": 535793
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 533038
+        "bytes": 534416
       }
     ],
     "luci-app-xfrpc": [
@@ -2066,13 +2069,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 3226321
+        "bytes": 3221494
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 2871196
+        "bytes": 2875146
       }
     ],
     "luci-app-xinetd": [
@@ -2080,13 +2083,13 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 604874
+        "bytes": 600051
       },
       {
         "source": "OpenWrt",
         "branch": "main",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 597294
+        "bytes": 598676
       }
     ],
     "luci-app-xlnetacc": [
@@ -2094,7 +2097,7 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 4003379
+        "bytes": 3998525
       }
     ],
     "luci-app-zerotier": [
@@ -2102,28 +2105,34 @@
         "source": "ImmortalWrt",
         "branch": "master",
         "architecture": "aarch64_cortex-a53",
-        "bytes": 496790
+        "bytes": 496797
       }
     ]
   },
   "provenance": [
     {
-      "schema": 1,
-      "generatedAt": "2026-08-29T23:35:47.302Z",
+      "schema": 2,
+      "generatedAt": "2026-09-05T23:19:09.208Z",
       "source": "ImmortalWrt",
       "branch": "master",
       "architecture": "aarch64_cortex-a53",
+      "format": "apk",
+      "baseUrl": "https://downloads.immortalwrt.org/snapshots/packages/aarch64_cortex-a53",
+      "available": true,
       "failures": [],
-      "packages": 10290
+      "packages": 10328
     },
     {
-      "schema": 1,
-      "generatedAt": "2026-08-29T23:35:45.053Z",
+      "schema": 2,
+      "generatedAt": "2026-09-05T23:19:06.835Z",
       "source": "OpenWrt",
       "branch": "main",
       "architecture": "aarch64_cortex-a53",
+      "format": "apk",
+      "baseUrl": "https://downloads.openwrt.org/snapshots/packages/aarch64_cortex-a53",
+      "available": true,
       "failures": [],
-      "packages": 9562
+      "packages": 9908
     }
   ]
 }
