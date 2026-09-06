@@ -8,11 +8,11 @@
     "commit": "8b50c1df2150be9c2883fca59d0a142b811e7d5d",
     "legacy": false
   },
-  "generatedAt": "2026-09-01T01:29:43.298Z",
+  "generatedAt": "2026-09-06T03:29:59.982Z",
   "summary": {
-    "symbols": 16751,
-    "duplicateSymbols": 586,
-    "duplicateNodes": 607,
+    "symbols": 18942,
+    "duplicateSymbols": 604,
+    "duplicateNodes": 626,
     "conflicts": 0
   },
   "duplicates": [
@@ -10391,7 +10391,7 @@
     },
     {
       "symbol": "MT7603E_LLTD_SUPPORT",
-      "count": 2,
+      "count": 3,
       "paths": [
         [
           "Kernel modules",
@@ -10412,10 +10412,509 @@
         {
           "file": "package/kernel/mt-drivers/mt7603e/config.in",
           "line": 450
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 119
         }
       ],
       "sources": [
-        "package/kernel/mt-drivers/mt7603e/config.in"
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_RLT_AP_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 367
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 1
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": [
+        {
+          "field": "prompt",
+          "values": [
+            "UnifyMAC 802.11n AP support",
+            "MT7603 802.11n AP support"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "MT7603E_WDS_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 375
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 12
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_MBSS_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 380
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 16
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_NEW_MBSSID_MODE",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 385
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 43
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_ENHANCE_NEW_MBSSID_MODE",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 391
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 49
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_CFG80211_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 395
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 24
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_SNIFFER_MIB_CMD",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 400
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 29
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_ALL_NET_EVENT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 405
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 34
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_ACL_V2_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 410
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 39
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_APCLI_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 415
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 54
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_MULTI_APCLI_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 419
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 65
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_MAC_REPEATER_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 423
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 69
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_AIRPLAY_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 429
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 76
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_DFS_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 437
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 84
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_NINTENDO_AP",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 455
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 124
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_COC_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 459
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 128
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_MCAST_RATE_SPECIFIC",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 468
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 137
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
+    {
+      "symbol": "MT7603E_PREVENT_ARP_SPOOFING_SUPPORT",
+      "count": 2,
+      "paths": [
+        [
+          "Kernel modules",
+          "Wireless Drivers",
+          "WiFi Operation Modes"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/config.in",
+          "line": 471
+        },
+        {
+          "file": "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig",
+          "line": 141
+        }
+      ],
+      "sources": [
+        "package/kernel/mt-drivers/mt7603e/config.in",
+        "package/kernel/mt-drivers/mt7603e/src/mt7603_wifi_ap/Kconfig"
       ],
       "conflicts": [],
       "variants": []

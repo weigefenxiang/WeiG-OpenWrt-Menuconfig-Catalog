@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "openwrt-19.07"
   },
-  "generatedAt": "2026-09-01T01:29:20.281Z",
+  "generatedAt": "2026-09-06T03:29:32.250Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 8064,
+  "options": 8160,
   "translatedZhCN": 102,
   "missingZhCN": [
     {
@@ -419,6 +419,48 @@
     {
       "symbol": "TARGET_IMAGES_GZIP",
       "promptEn": "GZip images",
+      "path": [
+        "Target Images"
+      ]
+    },
+    {
+      "symbol": "AXS10X_SD_BOOT_PARTSIZE",
+      "promptEn": "Boot (SD Card) filesystem partition size (in MB)",
+      "path": [
+        "Target Images"
+      ]
+    },
+    {
+      "symbol": "AT91_DFBOOT",
+      "promptEn": "Build dataflashboot loader",
+      "path": [
+        "Target Images"
+      ]
+    },
+    {
+      "symbol": "FLEXIBITY_ROOT",
+      "promptEn": "Build Flexibity RootFS (with embedded kernel)",
+      "path": [
+        "Target Images"
+      ]
+    },
+    {
+      "symbol": "TARGET_BOOTFS_PARTSIZE",
+      "promptEn": "Boot (SD Card) filesystem partition size (in MB)",
+      "path": [
+        "Target Images"
+      ]
+    },
+    {
+      "symbol": "OMAP_SD_BOOT_PARTSIZE",
+      "promptEn": "Boot (SD Card) filesystem partition size (in MB)",
+      "path": [
+        "Target Images"
+      ]
+    },
+    {
+      "symbol": "SUNXI_SD_BOOT_PARTSIZE",
+      "promptEn": "Boot (SD Card) filesystem partition size (in MB)",
       "path": [
         "Target Images"
       ]
@@ -1877,6 +1919,181 @@
       "path": []
     },
     {
+      "symbol": "PREINITOPT",
+      "promptEn": "Preinit configuration options",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_SUPPRESS_STDERR",
+      "promptEn": "Suppress stderr messages during preinit",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_DISABLE_FAILSAFE",
+      "promptEn": "Disable failsafe",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_TIMEOUT",
+      "promptEn": "Failsafe/Debug wait timeout",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_SHOW_NETMSG",
+      "promptEn": "Show all preinit network messages",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_SUPPRESS_FAILSAFE_NETMSG",
+      "promptEn": "Suppress network message indicating failsafe",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_IFNAME",
+      "promptEn": "Preinit network interface",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_IP",
+      "promptEn": "IP address for preinit network messages",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_NETMASK",
+      "promptEn": "Netmask for preinit network messages",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_PREINIT_BROADCAST",
+      "promptEn": "Broadcast address for preinit network messages",
+      "path": []
+    },
+    {
+      "symbol": "INITOPT",
+      "promptEn": "Init configuration options",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_INIT_PATH",
+      "promptEn": "PATH for regular boot",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_INIT_ENV",
+      "promptEn": "Environment variables to set when starting init (start with none)",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_INIT_CMD",
+      "promptEn": "Init command",
+      "path": []
+    },
+    {
+      "symbol": "TARGET_INIT_SUPPRESS_STDERR",
+      "promptEn": "Suppress stderr messages of init",
+      "path": []
+    },
+    {
+      "symbol": "VERSIONOPT",
+      "promptEn": "Version configuration options",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_DIST",
+      "promptEn": "Release distribution",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_NUMBER",
+      "promptEn": "Release version number",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_CODE",
+      "promptEn": "Release version code",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_REPO",
+      "promptEn": "Release repository",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_HOME_URL",
+      "promptEn": "Release Homepage",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_MANUFACTURER",
+      "promptEn": "Manufacturer name",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_MANUFACTURER_URL",
+      "promptEn": "Manufacturer URL",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_BUG_URL",
+      "promptEn": "Bug reporting URL",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_SUPPORT_URL",
+      "promptEn": "Support URL",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_PRODUCT",
+      "promptEn": "Product name",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_HWREV",
+      "promptEn": "Hardware revision",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_FILENAMES",
+      "promptEn": "Version number in filenames",
+      "path": []
+    },
+    {
+      "symbol": "VERSION_CODE_FILENAMES",
+      "promptEn": "Revision code in filenames",
+      "path": []
+    },
+    {
+      "symbol": "PER_FEED_REPO",
+      "promptEn": "Separate feed repositories",
+      "path": []
+    },
+    {
+      "symbol": "FEED_packages",
+      "promptEn": "Enable feed packages",
+      "path": []
+    },
+    {
+      "symbol": "FEED_luci",
+      "promptEn": "Enable feed luci",
+      "path": []
+    },
+    {
+      "symbol": "FEED_routing",
+      "promptEn": "Enable feed routing",
+      "path": []
+    },
+    {
+      "symbol": "FEED_telephony",
+      "promptEn": "Enable feed telephony",
+      "path": []
+    },
+    {
+      "symbol": "FEED_freifunk",
+      "promptEn": "Enable feed freifunk",
+      "path": []
+    },
+    {
       "symbol": "PACKAGE_attendedsysupgrade-common",
       "promptEn": "Common files neede by attendedsysupgrade packages",
       "path": [
@@ -1916,6 +2133,446 @@
       "promptEn": "Customize busybox options",
       "path": [
         "Base system"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_DESKTOP",
+      "promptEn": "Enable compatibility for full-blown desktop systems",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_EXTRA_COMPAT",
+      "promptEn": "Provide compatible behavior for rare corner cases (bigger code)",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEDORA_COMPAT",
+      "promptEn": "Building for Fedora distribution",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INCLUDE_SUSv2",
+      "promptEn": "Enable obsolete features removed before SUSv3",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_LONG_OPTS",
+      "promptEn": "Support --long-options",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_SHOW_USAGE",
+      "promptEn": "Show applet usage messages",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_VERBOSE_USAGE",
+      "promptEn": "Show verbose applet usage messages",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_COMPRESS_USAGE",
+      "promptEn": "Store applet usage messages in compressed form",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_PAM",
+      "promptEn": "Support PAM (Pluggable Authentication Modules)",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_DEVPTS",
+      "promptEn": "Use the devpts filesystem for Unix98 PTYs",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_UTMP",
+      "promptEn": "Support utmp file",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_WTMP",
+      "promptEn": "Support wtmp file",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_PIDFILE",
+      "promptEn": "Support writing pidfiles",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_PID_FILE_PATH",
+      "promptEn": "Directory for pidfiles",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_BUSYBOX",
+      "promptEn": "Include busybox applet",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_SHOW_SCRIPT",
+      "promptEn": "Support --show SCRIPT",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_INSTALLER",
+      "promptEn": "Support --install [-s] to install applet links at runtime",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_NO_USR",
+      "promptEn": "Don't use /usr",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_SUID",
+      "promptEn": "Drop SUID state for most applets",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_SUID_CONFIG",
+      "promptEn": "Enable SUID configuration via /etc/busybox.conf",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_SUID_CONFIG_QUIET",
+      "promptEn": "Suppress warning message if /etc/busybox.conf is not readable",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_PREFER_APPLETS",
+      "promptEn": "exec prefers applets",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_BUSYBOX_EXEC_PATH",
+      "promptEn": "Path to busybox executable",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_SELINUX",
+      "promptEn": "Support NSA Security Enhanced Linux",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_CLEAN_UP",
+      "promptEn": "Clean up all memory before exiting (usually not needed)",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_STATIC",
+      "promptEn": "Build static binary (no shared libs)",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_PIE",
+      "promptEn": "Build position independent executable",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_NOMMU",
+      "promptEn": "Force NOMMU build",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_BUILD_LIBBUSYBOX",
+      "promptEn": "Build shared libbusybox",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_LIBBUSYBOX_STATIC",
+      "promptEn": "Pull in all external references into libbusybox",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_INDIVIDUAL",
+      "promptEn": "Produce a binary for each applet, linked against libbusybox",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_FEATURE_SHARED_BUSYBOX",
+      "promptEn": "Produce additional busybox binary linked against libbusybox",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_CROSS_COMPILER_PREFIX",
+      "promptEn": "Cross compiler prefix",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_SYSROOT",
+      "promptEn": "Path to sysroot",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_EXTRA_CFLAGS",
+      "promptEn": "Additional CFLAGS",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_EXTRA_LDFLAGS",
+      "promptEn": "Additional LDFLAGS",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_EXTRA_LDLIBS",
+      "promptEn": "Additional LDLIBS",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_USE_PORTABLE_CODE",
+      "promptEn": "Avoid using GCC-specific code constructs",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_STACK_OPTIMIZATION_386",
+      "promptEn": "Use -mpreferred-stack-boundary=2 on i386 arch",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_APPLET_SYMLINKS",
+      "promptEn": "as soft-links",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_APPLET_HARDLINKS",
+      "promptEn": "as hard-links",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_APPLET_SCRIPT_WRAPPERS",
+      "promptEn": "as script wrappers",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_APPLET_DONT",
+      "promptEn": "not installed",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_SH_APPLET_SYMLINK",
+      "promptEn": "as soft-link",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_SH_APPLET_HARDLINK",
+      "promptEn": "as hard-link",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_INSTALL_SH_APPLET_SCRIPT_WRAPPER",
+      "promptEn": "as script wrapper",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_PREFIX",
+      "promptEn": "Destination path for 'make install'",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_DEBUG",
+      "promptEn": "Build with debug information",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_DEBUG_PESSIMIZE",
+      "promptEn": "Disable compiler optimizations",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_DEBUG_SANITIZE",
+      "promptEn": "Enable runtime sanitizers (ASAN/LSAN/USAN/etc...)",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_UNIT_TEST",
+      "promptEn": "Build unit tests",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_WERROR",
+      "promptEn": "Abort compilation on any warning",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_NO_DEBUG_LIB",
+      "promptEn": "None",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_DMALLOC",
+      "promptEn": "Dmalloc",
+      "path": [
+        "Base system",
+        "Settings"
+      ]
+    },
+    {
+      "symbol": "BUSYBOX_CONFIG_EFENCE",
+      "promptEn": "Electric-fence",
+      "path": [
+        "Base system",
+        "Settings"
       ]
     },
     {
@@ -61363,6 +62020,7 @@
   "missingMenusZhCN": [
     "Kernel build options",
     "Filesystem ACL and attr support options",
+    "Settings",
     "Configuration",
     "openwisp",
     "zabbix",
@@ -61557,103 +62215,103 @@
     },
     {
       "id": "choice-19",
-      "promptEn": "Selected SSL library"
+      "promptEn": "What kind of applet links to install"
     },
     {
       "id": "choice-20",
-      "promptEn": "Selected Database Software"
+      "promptEn": "/bin/sh applet link"
     },
     {
       "id": "choice-21",
-      "promptEn": "Firmware version"
+      "promptEn": "Additional debugging library"
     },
     {
       "id": "choice-22",
-      "promptEn": "device selection"
+      "promptEn": "Selected SSL library"
     },
     {
       "id": "choice-23",
-      "promptEn": "FXS coefficients"
+      "promptEn": "Selected Database Software"
     },
     {
       "id": "choice-24",
-      "promptEn": "ACX111 firmware version"
+      "promptEn": "Firmware version"
     },
     {
       "id": "choice-25",
-      "promptEn": "b43 firmware version"
+      "promptEn": "device selection"
     },
     {
       "id": "choice-26",
-      "promptEn": "Supported buses"
+      "promptEn": "FXS coefficients"
     },
     {
       "id": "choice-27",
-      "promptEn": "Hardware Acceleration"
+      "promptEn": "ACX111 firmware version"
     },
     {
       "id": "choice-28",
-      "promptEn": "Compile Visibility."
+      "promptEn": "b43 firmware version"
     },
     {
       "id": "choice-29",
-      "promptEn": "Compile Boost libraries."
+      "promptEn": "Supported buses"
     },
     {
       "id": "choice-30",
-      "promptEn": "Selects Boost Runtime linkage."
+      "promptEn": "Hardware Acceleration"
     },
     {
       "id": "choice-31",
-      "promptEn": "Select a Variant."
+      "promptEn": "Compile Visibility."
     },
     {
       "id": "choice-32",
-      "promptEn": "Selected SSL library"
+      "promptEn": "Compile Boost libraries."
     },
     {
       "id": "choice-33",
-      "promptEn": "Choose crypto backend"
+      "promptEn": "Selects Boost Runtime linkage."
     },
     {
       "id": "choice-34",
-      "promptEn": "Select XML library"
+      "promptEn": "Select a Variant."
     },
     {
       "id": "choice-35",
-      "promptEn": "Compile RE2 library."
-    },
-    {
-      "id": "choice-36",
-      "promptEn": "TLS Provider"
-    },
-    {
-      "id": "choice-37",
-      "promptEn": "SSL library"
-    },
-    {
-      "id": "choice-38",
-      "promptEn": "SSL Library"
-    },
-    {
-      "id": "choice-39",
-      "promptEn": "Crypto Library"
-    },
-    {
-      "id": "choice-40",
-      "promptEn": "XML Library"
-    },
-    {
-      "id": "choice-41",
-      "promptEn": "SSL library"
-    },
-    {
-      "id": "choice-42",
       "promptEn": "Selected SSL library"
     },
     {
-      "id": "choice-43",
+      "id": "choice-36",
+      "promptEn": "Choose crypto backend"
+    },
+    {
+      "id": "choice-37",
+      "promptEn": "Select XML library"
+    },
+    {
+      "id": "choice-38",
+      "promptEn": "Compile RE2 library."
+    },
+    {
+      "id": "choice-39",
+      "promptEn": "TLS Provider"
+    },
+    {
+      "id": "choice-40",
       "promptEn": "SSL library"
+    },
+    {
+      "id": "choice-41",
+      "promptEn": "SSL Library"
+    },
+    {
+      "id": "choice-42",
+      "promptEn": "Crypto Library"
+    },
+    {
+      "id": "choice-43",
+      "promptEn": "XML Library"
     },
     {
       "id": "choice-44",
@@ -61661,18 +62319,30 @@
     },
     {
       "id": "choice-45",
-      "promptEn": "Choose SSL Library"
+      "promptEn": "Selected SSL library"
     },
     {
       "id": "choice-46",
-      "promptEn": "Select SSL library"
+      "promptEn": "SSL library"
     },
     {
       "id": "choice-47",
-      "promptEn": "Select command-line editing support"
+      "promptEn": "SSL library"
     },
     {
       "id": "choice-48",
+      "promptEn": "Choose SSL Library"
+    },
+    {
+      "id": "choice-49",
+      "promptEn": "Select SSL library"
+    },
+    {
+      "id": "choice-50",
+      "promptEn": "Select command-line editing support"
+    },
+    {
+      "id": "choice-51",
       "promptEn": "stack tracing support"
     }
   ]

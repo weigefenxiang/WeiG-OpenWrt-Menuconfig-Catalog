@@ -8,14 +8,39 @@
     "commit": "9f2a40c72fdb0b9b077bf5b4b01aa17eac4bfb45",
     "legacy": false
   },
-  "generatedAt": "2026-09-01T01:29:21.921Z",
+  "generatedAt": "2026-09-06T03:29:25.054Z",
   "summary": {
-    "symbols": 12513,
-    "duplicateSymbols": 263,
-    "duplicateNodes": 263,
+    "symbols": 13613,
+    "duplicateSymbols": 264,
+    "duplicateNodes": 264,
     "conflicts": 0
   },
   "duplicates": [
+    {
+      "symbol": "AXS10X_SD_BOOT_PARTSIZE",
+      "count": 2,
+      "paths": [
+        [
+          "Target Images"
+        ]
+      ],
+      "locations": [
+        {
+          "file": "target/linux/arc770/image/Config.in",
+          "line": 1
+        },
+        {
+          "file": "target/linux/archs38/image/Config.in",
+          "line": 1
+        }
+      ],
+      "sources": [
+        "target/linux/arc770/image/Config.in",
+        "target/linux/archs38/image/Config.in"
+      ],
+      "conflicts": [],
+      "variants": []
+    },
     {
       "symbol": "PACKAGE_sane-abaton",
       "count": 2,
