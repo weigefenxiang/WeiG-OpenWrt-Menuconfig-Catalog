@@ -12,6 +12,7 @@ import {
 import { buildKconfigRelations } from './kconfig-relations.mjs';
 import { compactRelations } from './compact-relations.mjs';
 import { traceNativeKconfig, createNativeExpansionReplay } from './native-kconfig-preprocess.mjs';
+import { measureJsonBytes } from './catalog-size-report.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = {};
@@ -565,11 +566,14 @@ writeFileSync(join(outDir, `${slug}.relations.json.gz`), gzipSync(Buffer.from(JS
   relations: compact,
 })), { level: 9 }));
 if (process.env.CATALOG_DEBUG_RELATIONS === 'true') {
+  // This optional diagnostic keeps readable field names, but not indentation:
+  // deeply nested ASTs can inflate pretty JSON past the engine string limit.
+  // Runtime assets already use this same compact JSON whitespace convention.
   writeFileSync(join(outDir, `${slug}.relations.debug.json.gz`), gzipSync(Buffer.from(JSON.stringify({
     schema: relations.schema, source, generatedAt,
     summary: relations.summary, validation: relations.validation,
     indexes: relations.indexes, records: relations.records,
-  }, null, 2) + '\n'), { level: 9 }));
+  }) + '\n'), { level: 9 }));
 }
 writeFileSync(join(outDir, `${slug}.translations.json`), JSON.stringify(translationReport, null, 2) + '\n');
 const legacyContract = {
@@ -600,8 +604,8 @@ writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
       initialBytes: assets.core.bytes + assets.graph.bytes,
       graphJsonBytes: assets.graph.jsonBytes,
     },
-    readableRelationsJsonBytes: Buffer.byteLength(JSON.stringify(relations, null, 2) + '\n'),
-    compactRelationsJsonBytes: Buffer.byteLength(JSON.stringify(compact)),
+    readableRelationsJsonBytes: measureJsonBytes(relations, 2) + 1,
+    compactRelationsJsonBytes: measureJsonBytes(compact),
   },
 }, null, 2) + '\n');
 console.log(`${asset}: ${payload.counts.selectableTargets}/${targets.length} selectable targets / ` +

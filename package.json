@@ -4,7 +4,7 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "pretest": "node tests/check-native-kconfig-preprocess.mjs",
+    "pretest": "node tests/check-native-kconfig-preprocess.mjs && node --max-old-space-size=64 tests/check-catalog-json-size.mjs",
     "check": "node scripts/check.mjs",
     "discover": "node scripts/discover.mjs",
     "refresh:curated": "node scripts/refresh-curated-applications.mjs",
