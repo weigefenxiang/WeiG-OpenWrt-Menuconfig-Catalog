@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-09-06T03:31:23.745Z",
+  "generatedAt": "2026-09-08T00:23:22.790Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 11150,
+  "options": 11152,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -15772,6 +15772,14 @@
     {
       "symbol": "PACKAGE_ipq-wifi-netgear_rbk750",
       "promptEn": "board-2.bin Overrides for Netgear RBK750",
+      "path": [
+        "Firmware",
+        "ath10k Board-Specific Overrides"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_ipq-wifi-netgear_rbk850",
+      "promptEn": "board-2.bin Overrides for Netgear RBK850",
       "path": [
         "Firmware",
         "ath10k Board-Specific Overrides"
@@ -44604,6 +44612,13 @@
     {
       "symbol": "LIBCURL_TLS_SRP",
       "promptEn": "Enable TLS-SRP authentication",
+      "path": [
+        "Libraries"
+      ]
+    },
+    {
+      "symbol": "LIBCURL_KERBEROS_AUTH",
+      "promptEn": "Enable Kerberos authentication",
       "path": [
         "Libraries"
       ]

@@ -4,7 +4,7 @@
     "id": "ImmortalWrt",
     "branch": "openwrt-25.12"
   },
-  "generatedAt": "2026-09-06T03:30:56.317Z",
+  "generatedAt": "2026-09-08T00:22:06.484Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 11440,
+  "options": 11444,
   "translatedZhCN": 185,
   "missingZhCN": [
     {
@@ -51526,6 +51526,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-theme-footstrap",
+      "promptEn": "Footstrap Theme",
+      "path": [
+        "LuCI",
+        "4. Themes"
+      ]
+    },
+    {
       "symbol": "PACKAGE_luci-theme-material",
       "promptEn": "Material Theme",
       "path": [
@@ -73271,13 +73279,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_oping",
-      "promptEn": "Send ICMP echo request to network hosts",
-      "path": [
-        "Network"
-      ]
-    },
-    {
       "symbol": "PACKAGE_oscam",
       "promptEn": "Open Source Conditional Access Modul",
       "path": [
@@ -73727,6 +73728,13 @@
     {
       "symbol": "PACKAGE_list-smargo",
       "promptEn": "List Smargo readers",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_oping",
+      "promptEn": "Send ICMP echo request to network hosts",
       "path": [
         "Network"
       ]
@@ -74348,6 +74356,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_swgp-go",
+      "promptEn": "Simple WireGuard proxy",
+      "path": [
+        "Network"
+      ]
+    },
+    {
       "symbol": "PACKAGE_switchdev-poller",
       "promptEn": "Poll switchdev ports to bring CPU ports up/down",
       "path": [
@@ -74672,6 +74687,13 @@
     {
       "symbol": "PACKAGE_umdns",
       "promptEn": "OpenWrt Multicast DNS Daemon",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_uneighbord",
+      "promptEn": "802.11k Neighbor Report synchronizer",
       "path": [
         "Network"
       ]
@@ -81693,6 +81715,13 @@
     {
       "symbol": "PACKAGE_librespeed-cli",
       "promptEn": "Command line client for LibreSpeed",
+      "path": [
+        "Utilities"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_librespeed-cli-rust",
+      "promptEn": "Command line client for LibreSpeed (Rust)",
       "path": [
         "Utilities"
       ]
