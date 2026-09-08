@@ -27,7 +27,7 @@ JavaScript 中写死分支、Target 或菜单项目。
   `translations/zh-CN.json`; the filename is retained for compatibility.
 - Main menu/category labels for all 11 UI languages come from `translations/menu-i18n.json`.
 - The visible menu and the complete symbol table are separate: no-prompt/hidden Kconfig symbols remain out of the normal tree but are published for Advanced search and validation.
-- Runtime relations use compact `relations.schema=4`; schema 3 remains readable for old snapshots. The schema-4 contract keeps typed Kconfig values, ordered conditional defaults/ranges, visibility and choice conditions, per-definition provenance, virtual capability identity, and typed forward/reverse edges. Every asset declares `relationsComplete`; a missing/false declaration is fail-closed (`deferred`/`inconclusive`) rather than guessed.
+- Runtime relations retain the schema-4 `graph` for existing consumers and advertise an optional schema-5 `graphCompact` asset (`interned-definitions-edge-rows-v1`) for newer consumers. Interned definition/expression tables and positional edge rows preserve the same typed Kconfig values, ordered conditional defaults/ranges, visibility and choice conditions, per-definition provenance, virtual capability identity, and typed forward/reverse edges. Schema 3 remains readable for old snapshots. Every asset declares `relationsComplete`; a missing/false declaration is fail-closed (`deferred`/`inconclusive`) rather than guessed.
 - Package build closure is a separate narrow contract: `packageClosureComplete` and
   `packageClosureCapabilities` are true only after exact `.packageinfo` dependency tokens
   (including alternatives/conditions), virtual providers, and verified forward/reverse package
@@ -56,10 +56,11 @@ JavaScript 中写死分支、Target 或菜单项目。
 - Native source-closure proof is explicit. A complete active-root parse with no unresolved dynamic preprocessing distinguishes a symbol that is genuinely undefined in that closure from a symbol omitted by the Catalog projection. An intentionally Target-filtered definition may be external only when the full parser proof and `parsed-target-filter` provenance are both present; a definition omitted from the graph without that proven mapping remains unresolved. Undefined metadata keeps the symbol identity and records boolean coercion `n` plus the original string token; external types never come from a source label or an unknown prefix. Unevaluated `$(shell,...)`/dynamic assignments keep `relationsComplete=false`; they cannot be used to classify undefined or external symbols.
 - Compact relations retain the first-definition aggregate for the repaired depends/visibility AST fields, while select/imply relations keep their existing aggregate behavior; every definition remains available in ordered variants. Edge rows are positional and are not deduplicated because forward/reverse indexes refer to their source IDs. `defaultsFields` keeps the original default spelling alongside parsed value and condition, so semantic round-trip validation can report bounded structural differences instead of silently accepting a mismatch.
 - Package options also carry upstream `.packageinfo` `Conflicts:` metadata, so consumers can reject impossible `y/y` package combinations before compiling.
+- Package metadata follows the selected upstream's native `metadata.pm` projection: the last concrete package declaration wins, while virtual-provider membership retains the native accumulated registrations. Raw `Provides:` tokens and canonical capability identities remain separate; a capability such as `@base-files-any` is not a Kconfig symbol. Description/Config multiline blocks cannot create phantom package records. Alternative, conditional, build-only, and versioned tokens retain their field-specific meaning; conflicts are not expanded into invented aliases. Provider projection is tested against native metadata generations, independently of complete Kconfig/firmware parity.
 - Target selectors are emitted as an ordered schema and tree. Empty trailing selectors are hidden,
   one-option selectors are auto-selected, and extra future selectors can be appended without HTML changes.
 - Every generation writes a `*.translations.json` coverage report.
-- Catalog schema 6 splits each branch into `core`, `graph`, `menu`, `hidden`, `help`, and per-language menu gzip assets. The published index records every shard's compressed byte count, SHA-256, and immutable `assetRef` Git commit. Consumers initially fetch only `core + graph`; Advanced menu text and long help are loaded on demand. The schema-5 monolithic gzip remains temporarily as a compatibility fallback.
+- Catalog schema 6 splits each branch into `core`, `graph`, optional `graphCompact`, `menu`, `hidden`, `help`, and per-language menu gzip assets. The published index records every shard's compressed byte count, SHA-256, and immutable `assetRef` Git commit. New consumers initially fetch `core + graphCompact` when advertised; old consumers continue using `core + graph`. Advanced menu text and long help are loaded on demand. The schema-5 monolithic gzip remains temporarily as a compatibility fallback. A corrupt advertised compact asset is an error, not permission to silently mix assets from another snapshot.
 - Confirmed facts that upstream Kconfig cannot express live in the small global `compatibility.json`; it references package IDs only and never duplicates symbols, states, names, dependencies, or hashes. See [中文规则说明](docs/COMPATIBILITY.md) and [English rules](docs/COMPATIBILITY.en.md).
 - The daily translation workflow reads branch assets from `index.json`, reuses `i18n-cache.json`, and translates only new or changed descriptions.
   Argos runs locally by default without a key; Azure is an explicit optional engine. Successful
@@ -123,7 +124,8 @@ The refresh tool verifies every selected menu shard from the chosen Catalog data
 每个分支在迁移期同时发布旧单体和新分片：
 
 - `*.core.json.gz`：Target/Profile、构建契约、来源与分片清单所需的最小启动数据。
-- `*.graph.json.gz`：`relations.schema=4` 紧凑关系图；浏览器依赖解析只读取这一份关系数据，schema 3 仅为旧快照兼容。
+- `*.graph.json.gz`：保留 `relations.schema=4`，供旧消费者使用；schema 3 仅为旧快照兼容。
+- `*.graph.compact.json.gz`：index 的可选 `graphCompact`，使用 `relations.schema=5`、定义/表达式共享表与 positional edge rows。新消费者优先读取这一份图，不同时下载两份；声明存在但校验失败时必须报错，不能静默切换快照。
 - `*.menu.json.gz`：可见 Advanced 菜单的英文标题、短说明与路径。
 - `*.hidden.json.gz`：隐藏 Kconfig/packageinfo-only 的搜索显示信息。
 - `*.help.json.gz`：长 Help/usage，仅在用户查看完整说明时下载。
@@ -137,7 +139,13 @@ The refresh tool verifies every selected menu shard from the chosen Catalog data
 npm run size-report -- dist
 ```
 
-紧凑格式只删除重复表示，不删除 `depends/select/imply/choice/conflicts/provides`、隐藏节点、packageinfo-only 语义或 virtual capability 身份。测试会展开 schema 4 并进行 typed round-trip；schema 3 仍可展开用于旧快照诊断。
+紧凑格式只删除重复表示，不删除 `depends/select/imply/choice/conflicts/provides`、隐藏节点、packageinfo-only 语义或 virtual capability 身份。测试会分别展开 schema 4/5 并进行完整 typed round-trip；schema 3 仍可展开用于旧快照诊断。包元数据对齐上游 `metadata.pm`：同名实体采用最后定义，virtual provider 保留原生累计关系；原始 `Provides:` 与规范化 capability 分开，`@base-files-any` 不是 Kconfig 符号，多行 Description/Config 内容也不能生成假包。不同字段的条件、alternative、build-only 与 versioned token 不能混用解析规则。
+
+### Compact graph measurement / 紧凑图测量
+
+`scripts/benchmark-relation-wire-format.mjs` measures real graph data and requires full decoded structural equality. On one ImmortalWrt/master graph, schema 4 → 5 reduced raw JSON from 124,908,691 to 49,725,089 bytes and gzip-9 from 6,968,908 to 6,335,069 bytes. Median JSON parse time was 462.63 → 198.84 ms, with 82.41 ms additional schema-5 decoding; retained decoded heap was 236,123,376 → 140,630,456 bytes. These are representative local measurements, not a browser latency guarantee or a claim that every upstream configuration matches native `conf`.
+
+该基准使用真实图，并要求解码后完整结构一致；上述单个分支测量不代表所有浏览器时延，也不等于所有配置已完成原生 `conf` 对照。原生元数据投影、typed relations 完整性、package closure 完整性与固件编译成功必须分别验证。
 
 ## 自动更新
 
