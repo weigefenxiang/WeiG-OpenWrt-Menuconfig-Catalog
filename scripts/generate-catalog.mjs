@@ -10,7 +10,8 @@ import {
   resolvePackageOption, targetBuildContract,
 } from './lib.mjs';
 import { buildKconfigRelations } from './kconfig-relations.mjs';
-import { compactRelations } from './compact-relations.mjs';
+import { compactRelations, validateCompactRoundTrip } from './compact-relations.mjs';
+import { encodeCompactRelationTables } from './relation-table-codec.mjs';
 import { traceNativeKconfig, createNativeExpansionReplay } from './native-kconfig-preprocess.mjs';
 import { measureJsonBytes } from './catalog-size-report.mjs';
 
@@ -412,6 +413,9 @@ const graphPayload = {
   packageClosureValidation: compact.packageClosureValidation || {},
   relations: compact,
 };
+const compactTables = encodeCompactRelationTables(compact);
+const compactTableProof = validateCompactRoundTrip(relations, compactTables);
+if (!compactTableProof.valid) throw new Error(`Compact relation table mismatch: ${JSON.stringify(compactTableProof.reasons)}`);
 const menuPayload = {
   schema: 1,
   kind: 'menu',
@@ -542,6 +546,11 @@ const assets = {};
 for (const contract of [
   writeGzipAsset('core', `${slug}.core.json.gz`, corePayload),
   writeGzipAsset('graph', `${slug}.graph.json.gz`, graphPayload),
+  // Keep the old graph contract for already-deployed consumers. New readers
+  // choose the independently hashed compact representation of the same data.
+  writeGzipAsset('graphCompact', `${slug}.graph.compact.json.gz`, {
+    ...graphPayload, relations: compactTables,
+  }),
   writeGzipAsset('menu', `${slug}.menu.json.gz`, menuPayload),
   writeGzipAsset('hidden', `${slug}.hidden.json.gz`, hiddenPayload),
   writeGzipAsset('help', `${slug}.help.json.gz`, helpPayload),

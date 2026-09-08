@@ -337,7 +337,7 @@ function runMeasureWorker(args) {
   }));
 }
 
-function measureJson(jsonPath, iterations) {
+export function measureJson(jsonPath, iterations) {
   const result = spawnSync(process.execPath, ['--expose-gc', fileURLToPath(import.meta.url), '--measure-json', jsonPath, '--iterations', String(iterations)], {
     encoding: 'utf8', maxBuffer: 4 * 1024 * 1024,
   });

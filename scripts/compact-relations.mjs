@@ -1,4 +1,5 @@
 import { KCONFIG_RELATION_CAPABILITIES, parseKconfigExpression, splitKconfigIfClause } from './lib.mjs';
+import { decodeCompactRelationTables } from './relation-table-codec.mjs';
 
 const TYPE_CODES = Object.freeze({ '': 0, bool: 1, tristate: 2, string: 3, int: 4, hex: 5 });
 const TYPES = Object.freeze(['', 'bool', 'tristate', 'string', 'int', 'hex']);
@@ -874,6 +875,7 @@ function expandSchema4(compact) {
 
 /** Expand schema 3 or 4 into the canonical readable relation shape. */
 export function expandCompactRelations(compact) {
+  if (Number(compact?.schema) === 5) return expandCompactRelations(decodeCompactRelationTables(compact));
   const schema = Number(compact?.schema || 0);
   if (schema === 3) return expandSchema3(compact);
   if (schema === 4) return expandSchema4(compact);

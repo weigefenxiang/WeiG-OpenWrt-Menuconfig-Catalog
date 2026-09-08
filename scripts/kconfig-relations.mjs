@@ -10,8 +10,13 @@ function unique(values) {
 }
 
 function packageName(value) {
-  return String(value || '').replace(/^PACKAGE_/, '')
-    .match(/^[A-Za-z0-9_.+@-]+/)?.[0] || '';
+  return String(value || '').trim().replace(/^PACKAGE_/, '');
+}
+
+// metadata.pm removes the APK marker only in Provides. It is not a
+// normalization for Depends, where @ introduces a Kconfig condition.
+function providedCapabilityName(value) {
+  return packageName(value).replace(/^@/, '');
 }
 
 function packageSymbols(expressions = []) {
@@ -92,7 +97,7 @@ function closurePackageRecord(raw) {
   };
 }
 
-const PACKAGE_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.+@-]*$/;
+const PACKAGE_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.+@/-]*$/;
 export const PACKAGE_CLOSURE_CAPABILITY = 'complete-package-build-closure-v1';
 const PACKAGE_CLOSURE_DATA_CAPABILITIES = Object.freeze([
   'packageinfo-dependencies-v1',
@@ -186,8 +191,16 @@ export function validatePackageClosureGraph(packageRows = [], records, graph = {
   const providerMap = new Map();
   const validateCapabilityList = (field, source) => {
     for (const [owner, values] of source) for (const raw of values) {
-      const name = exactPackageId(packageName(raw));
+      // Provides entries are opaque metadata tokens, not concrete Kconfig
+      // package identifiers. Native metadata also preserves versioned tokens
+      // such as capability=1.2 literally; do not truncate or reject them.
+      const token = field === 'provides' ? providedCapabilityName(raw) : raw;
+      const name = /^[^\s\0]+$/.test(token) ? token : '';
       if (!name) {
+        // Native mconf_conflicts ignores unknown literal names. Preserve
+        // their spelling in metadata instead of inventing a concrete target
+        // by truncating punctuation (for example, a trailing comma).
+        if (field === 'conflicts') continue;
         metadataComplete = false;
         addReason('invalid-package-capability', { package: owner, field, value: raw });
       }
@@ -319,24 +332,29 @@ export function validatePackageClosureGraph(packageRows = [], records, graph = {
   let forwardReverseValidated = true;
   if (actualEdges && actualIndexes) {
     const edgeKey = (edge) => `${edge?.from || ''}\u0000${edge?.to || ''}\u0000${edge?.relation || ''}`;
-    const actualEdgeKeys = new Set(actualEdges.map(edgeKey));
-    const actualEdgesByKey = new Map(actualEdges.map((edge) => [edgeKey(edge), edge]));
+    const actualEdgesByKey = new Map();
+    for (const edge of actualEdges) {
+      const key = edgeKey(edge);
+      const rows = actualEdgesByKey.get(key) || [];
+      rows.push(edge); actualEdgesByKey.set(key, rows);
+    }
     const normalizedAlternatives = (value) => (Array.isArray(value) ? value : [])
       .map((row) => Array.isArray(row) ? row.map(String) : [String(row)])
       .filter((row) => row.length);
     for (const expected of expectedEdges) {
-      if (!actualEdgeKeys.has(edgeKey(expected))) {
+      const candidates = actualEdgesByKey.get(edgeKey(expected)) || [];
+      if (!candidates.length) {
         forwardReverseValidated = false;
         addReason('package-edge-missing', expected);
         continue;
       }
-      const actual = actualEdgesByKey.get(edgeKey(expected));
-      if (actual.required !== expected.required || String(actual.kind || '') !== expected.kind ||
-          String(actual.condition || '') !== expected.condition ||
-          JSON.stringify(normalizedAlternatives(actual.alternatives)) !==
-            JSON.stringify(normalizedAlternatives(expected.alternatives))) {
+      const actual = candidates.find((edge) => edge.required === expected.required &&
+        String(edge.kind || '') === expected.kind && String(edge.condition || '') === expected.condition &&
+        JSON.stringify(normalizedAlternatives(edge.alternatives)) ===
+          JSON.stringify(normalizedAlternatives(expected.alternatives)));
+      if (!actual) {
         forwardReverseValidated = false;
-        addReason('package-edge-projection-mismatch', { expected, actual });
+        addReason('package-edge-projection-mismatch', { expected, actual: candidates });
       }
     }
     actualEdges.forEach((edge, id) => {
@@ -430,7 +448,7 @@ export function derivePackageDependencyClosure(records = [], roots = [], failedP
   const providerMap = new Map();
   for (const record of byName.values()) {
     for (const provided of record.provides) {
-      const capability = packageName(provided);
+      const capability = providedCapabilityName(provided);
       if (!capability || byName.has(capability)) continue;
       const providers = providerMap.get(capability) || [];
       providers.push(record.name);
@@ -551,8 +569,8 @@ function emptyPackageInfo() {
   };
 }
 
-function capabilityRelation(raw, owner, packageByName, providerMap) {
-  const name = packageName(raw);
+function capabilityRelation(raw, owner, packageByName, providerMap, provided = false) {
+  const name = provided ? providedCapabilityName(raw) : packageName(raw);
   if (!name) return null;
   const concrete = packageByName.has(name);
   const providers = concrete ? [name] : [...(providerMap.get(name) || [])];
@@ -955,7 +973,7 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
   // such as libudev separate identities.
   for (const item of packages) {
     for (const provided of item.provides || []) {
-      const name = packageName(provided);
+      const name = providedCapabilityName(provided);
       if (!name || packageByName.has(name)) continue;
       const rows = providerMap.get(name) || [];
       rows.push(item.name);
@@ -978,9 +996,9 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
     const parsedDepends = packageDepends.map(parsePackageDependency).filter(Boolean);
     const dependencyPackages = unique(parsedDepends.flatMap((item) => item.packages));
     const provides = packageInfo?.provides || [];
-    const packageConflicts = (packageInfo?.conflicts || []).map(packageName).filter(Boolean);
+    const packageConflicts = [...(packageInfo?.conflicts || [])];
     const kconfigConflicts = packageOnly ? [] : (option?.kconfigConflicts || option?.conflicts || []);
-    const providesRelations = provides.map((raw) => capabilityRelation(raw, name, packageByName, providerMap)).filter(Boolean);
+    const providesRelations = provides.map((raw) => capabilityRelation(raw, name, packageByName, providerMap, true)).filter(Boolean);
     const conflictsRelations = (packageInfo?.conflicts || [])
       .map((raw) => capabilityRelation(raw, name, packageByName, providerMap)).filter(Boolean);
     const dependencyRelations = parsedDepends.map((dependency) => ({
@@ -1447,7 +1465,7 @@ export function packageCapabilityRelation(raw, owner, packages = []) {
   const packageByName = new Map(packages.map((item) => [item.name, item]));
   const providerMap = new Map();
   for (const item of packages) for (const provided of item.provides || []) {
-    const name = packageName(provided);
+    const name = providedCapabilityName(provided);
     if (!name || packageByName.has(name)) continue;
     const rows = providerMap.get(name) || [];
     rows.push(item.name); providerMap.set(name, rows);

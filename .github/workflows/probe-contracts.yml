@@ -93,6 +93,7 @@ jobs:
           git -C "$tree" fetch --depth=1 origin a1ea57bd050c172fdc2b851824ebd9782aafb055
           git -C "$tree" checkout --detach FETCH_HEAD
           KCONFIG_NATIVE_TEST_TREE="$tree" node tests/check-native-kconfig-preprocess.mjs
+          KCONFIG_NATIVE_TEST_TREE="$tree" node tests/check-package-metadata-parity.mjs
       - name: Test legacy literal strings and help with upstream parser
         shell: bash
         run: |

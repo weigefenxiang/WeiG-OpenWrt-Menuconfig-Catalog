@@ -226,15 +226,41 @@ export function buildTargetTree(targets, options = []) {
 }
 
 export function parsePackageInfo(text) {
-  const packages = [];
+  const packages = new Map();
   let item = null;
   let lastKey = '';
+  let sourceMakefile = '';
+  let override = '';
+  let multiline = '';
   const finish = () => {
-    if (item?.name) packages.push(item);
+    if (item?.name) {
+      // metadata.pm's concrete %package lookup keeps the last definition.
+      // Preserve provenance for audits, but never union stale dependencies
+      // from an earlier source into the effective package table.
+      const previous = packages.get(item.name);
+      if (previous) {
+        item.replacedSources = [...(previous.replacedSources || []), {
+          sourceMakefile: previous.sourceMakefile || '', override: previous.override || '',
+          depends: previous.depends, provides: previous.rawProvides || previous.provides, conflicts: previous.conflicts,
+        }];
+        // %vpackage retains earlier provider declarations even when the
+        // concrete %package entry is replaced. Preserve both native views.
+        item.rawProvides = [...item.provides];
+        item.provides = [...new Set([...previous.provides, ...item.provides])];
+      }
+      packages.set(item.name, item);
+    }
     item = null;
     lastKey = '';
   };
   for (const raw of text.replace(/\r\n/g, '\n').split('\n')) {
+    if (multiline) {
+      if (raw.startsWith('@@')) multiline = '';
+      else if (multiline === 'Description' && item && raw.trim()) {
+        item.description = `${item.description}${item.description ? ' ' : ''}${raw.trim()}`;
+      }
+      continue;
+    }
     const match = raw.match(/^([A-Za-z][A-Za-z0-9-]*):\s*(.*)$/);
     if (!match) {
       if (item && lastKey === 'Description' && /^\s+/.test(raw) && raw.trim()) {
@@ -244,18 +270,30 @@ export function parsePackageInfo(text) {
     }
     const [, key, value] = match;
     lastKey = key;
+    if (key === 'Source-Makefile') {
+      finish();
+      sourceMakefile = value.trim();
+      override = '';
+      continue;
+    }
+    if (key === 'Override') { override = value.trim(); continue; }
     if (key === 'Package') {
       finish();
       item = {
         name: value, title: value, description: '', category: 'Other',
         submenu: '', depends: [], provides: [], conflicts: [],
+        ...(sourceMakefile ? { sourceMakefile, override } : {}),
       };
       lastKey = key;
       continue;
     }
     if (!item) continue;
     if (key === 'Title') item.title = value;
-    else if (key === 'Description') item.description = value;
+    else if (key === 'Description') {
+      item.description = value;
+      if (sourceMakefile) multiline = key;
+    }
+    else if (key === 'Config' && sourceMakefile) multiline = key;
     else if (key === 'Category') item.category = value || 'Other';
     else if (key === 'Submenu') item.submenu = value;
     else if (key === 'Depends') item.depends = value.split(/\s+/).filter(Boolean);
@@ -263,9 +301,13 @@ export function parsePackageInfo(text) {
     else if (key === 'Conflicts') item.conflicts = value.split(/\s+/).filter(Boolean);
     else if (key === 'Menu-Depends') item.menuDepends = value;
     else if (key === 'Architecture') item.architecture = value;
+    else if (key === 'Build-Only') item.buildOnly = Boolean(value.trim());
+    else if (key === 'Build-Variant') item.buildVariant = value.trim();
+    else if (key === 'Default-Variant') item.defaultVariant = true;
+    else if (key === 'Hidden') item.hidden = Boolean(value.trim());
   }
   finish();
-  return packages;
+  return [...packages.values()];
 }
 
 // These are data capabilities, not evaluator capabilities.  The parser only

@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
+import { decodeCompactRelationTables } from './relation-table-codec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const output = mkdtempSync(join(tmpdir(), 'weig-branch-assets-'));
@@ -33,6 +34,11 @@ try {
   const core = readGzipJson('fixture--test.core.json.gz');
   const sizes = readGzipJson('fixture--test.package-sizes.json.gz');
   const meta = JSON.parse(readFileSync(join(output, 'fixture--test.meta.json'), 'utf8'));
+  const legacyGraph = readGzipJson('fixture--test.graph.json.gz');
+  const compactGraph = readGzipJson('fixture--test.graph.compact.json.gz');
+  assert.deepEqual(decodeCompactRelationTables(compactGraph.relations), legacyGraph.relations);
+  assert.equal(meta.assets.graphCompact.asset, 'fixture--test.graph.compact.json.gz');
+  assert.equal(compactGraph.source.commit, legacyGraph.source.commit);
 
   assert.deepEqual(core.applications.fields, ['symbol', 'package', 'group', 'hot']);
   assert(core.applications.rows.some((row) => row[0] === 'PACKAGE_luci-app-demo' && row[1] === 'luci-app-demo'));

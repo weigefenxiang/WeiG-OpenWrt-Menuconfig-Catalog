@@ -477,6 +477,35 @@ assert.equal(completePackageExpanded.packageClosureComplete, true);
 assert(completePackageExpanded.packageClosureCapabilities.includes('complete-package-build-closure-v1'));
 assert.equal(completePackageExpanded.relationsComplete, true);
 
+// APK Provides markers are metadata syntax, not capability identity. A
+// condition in Depends must retain its own @ semantics independently.
+const markedProviderRows = parsePackageInfo([
+  'Package: consumer', 'Depends: +TLS:tls-any +!TLS:tls-any @HAS_NETWORK', '',
+  'Package: provider', 'Provides: @tls-any @provider-any', '',
+  'Conflicts: other,', '', 'Package: other', '',
+].join('\n'));
+const markedProviderGraph = buildKconfigRelations([], markedProviderRows, []);
+assert.equal(markedProviderGraph.packageClosureComplete, true);
+assert.deepEqual(markedProviderGraph.indexes.providers['tls-any'], ['provider']);
+assert.equal(markedProviderGraph.indexes.providers['@tls-any'], undefined);
+assert.equal(markedProviderGraph.records.find((row) => row.package === 'provider').providesRelations[0].raw, '@tls-any');
+assert.equal(markedProviderGraph.records.find((row) => row.package === 'provider').conflicts[0], 'other,');
+assert.equal(markedProviderGraph.records.find((row) => row.package === 'provider').conflictsRelations[0].kind, 'unknown');
+assert.equal(markedProviderGraph.records.find((row) => row.package === 'consumer').dependencyRelations[2].kind, 'menu-condition');
+const markedEdges = markedProviderGraph.edges.filter((edge) => edge.relation === 'package-depends');
+assert.deepEqual(markedEdges.map((edge) => edge.condition).sort(), ['!TLS', 'TLS']);
+const damagedConditions = markedProviderGraph.edges.map((edge) =>
+  edge.condition === 'TLS' ? { ...edge, condition: 'UNRELATED' } : edge);
+assert.equal(validatePackageClosureGraph(markedProviderRows, markedProviderGraph.records,
+  { edges: damagedConditions, indexes: markedProviderGraph.indexes }).complete, false,
+  'matching another same-pair edge must not conceal a lost condition');
+assert.equal(validateCompactRoundTrip(markedProviderGraph, compactRelations(markedProviderGraph)).valid, true);
+const markedClosure = derivePackageDependencyClosure([
+  { name: 'consumer', depends: ['tls-any'] },
+  { name: 'provider', depends: [], provides: ['@tls-any'] },
+], ['consumer'], ['provider'], { selectedPackages: ['consumer', 'provider'] });
+assert.equal(markedClosure.result, 'reachable');
+
 // Compact data loss and malformed Kconfig sources are fail-closed. The
 // producer may retain a diagnostic false relation object for debugging, but a
 // publish path must reject it before writing schema-5/schema-6 assets.
