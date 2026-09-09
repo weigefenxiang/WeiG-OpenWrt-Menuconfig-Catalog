@@ -8,21 +8,7 @@ config BACKEND_AVAILABLE
 	default y
 
 if ENABLE_OWNER
-choice
-	prompt "Backend without explicit type"
-	default BACKEND_PREFERRED
-
-config BACKEND_PREFERRED
-	bool "Preferred backend"
-	depends on BACKEND_AVAILABLE
-	select BACKEND_LIBRARY
-
 source "backend-alternative.in"
-
-config BACKEND_ALPHA
-	bool "Alphabetically first, declared last"
-
-endchoice
 
 config BACKEND_LIBRARY
 	bool

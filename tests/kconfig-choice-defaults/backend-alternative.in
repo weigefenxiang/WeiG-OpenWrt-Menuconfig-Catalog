@@ -1,2 +1,16 @@
+choice
+	prompt "Backend without explicit type"
+	default BACKEND_PREFERRED
+
+config BACKEND_PREFERRED
+	bool "Preferred backend"
+	depends on BACKEND_AVAILABLE
+	select BACKEND_LIBRARY
+
 config BACKEND_ZETA
 	bool "Declared fallback"
+
+config BACKEND_ALPHA
+	bool "Alphabetically first, declared last"
+
+endchoice
