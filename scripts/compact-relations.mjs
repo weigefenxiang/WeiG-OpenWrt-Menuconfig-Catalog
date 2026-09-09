@@ -406,7 +406,7 @@ function compactRelationsV3(relations) {
     if (record.userSettable !== false && record.visible !== false) flags |= FLAG_USER_SETTABLE;
     if (record.canDisable !== false) flags |= FLAG_CAN_DISABLE;
     if (record.kconfigSymbol || record.symbol || record.origin !== 'packageinfo-only') flags |= FLAG_HAS_KCONFIG;
-    if (symbol.startsWith('PACKAGE_') || record.kind === 'package' || record.package) flags |= FLAG_PACKAGE;
+    if (record.kind === 'package' || record.package) flags |= FLAG_PACKAGE;
     const defaultRows = array(record.defaults).map(parseDefault).map(([value, condition]) => [
       strings.id(value), expressionIdV3(condition),
     ]);
@@ -527,7 +527,7 @@ export function compactRelations(relations) {
     if (record.userSettable !== false && record.visible !== false) flags |= FLAG_USER_SETTABLE;
     if (record.canDisable !== false) flags |= FLAG_CAN_DISABLE;
     if (record.kconfigSymbol || record.symbol || record.origin !== 'packageinfo-only') flags |= FLAG_HAS_KCONFIG;
-    if (symbol.startsWith('PACKAGE_') || record.kind === 'package' || record.package) flags |= FLAG_PACKAGE;
+    if (record.kind === 'package' || record.package) flags |= FLAG_PACKAGE;
     if (record.modules === true) flags |= FLAG_MODULES;
     if (record.optional === true) flags |= FLAG_OPTIONAL;
     return [

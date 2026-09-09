@@ -2,6 +2,9 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import {
   buildKconfigRelations,
 } from '../scripts/kconfig-relations.mjs';
@@ -14,6 +17,56 @@ import {
 } from '../scripts/compact-relations.mjs';
 
 const ROOT = join(fileURLToPath(new URL('..', import.meta.url)));
+const choiceMenu = parseKconfigTree(join(ROOT, 'tests', 'kconfig-choice-defaults'));
+const choiceRelations = buildKconfigRelations(choiceMenu.allOptions, [], choiceMenu.choices,
+  { parserValidation: choiceMenu.validation });
+assert.deepEqual(choiceRelations.choices[0].members,
+  ['BACKEND_PREFERRED', 'BACKEND_ZETA', 'BACKEND_ALPHA'],
+  'native declaration/source order must survive the sorted symbol table');
+assert.equal(choiceRelations.choices[0].memberOrder, 'native-declaration-v1');
+assert.deepEqual(expandCompactRelations(compactRelations(choiceRelations)).choices, choiceRelations.choices);
+const projectedChoices = buildKconfigRelations(choiceMenu.allOptions.filter(option =>
+  option.symbol !== 'BACKEND_PREFERRED'), [], choiceMenu.choices, {
+  parserValidation: choiceMenu.validation, choiceOptions: choiceMenu.allOptions,
+  externalSymbolSources: { BACKEND_PREFERRED: ['parsed-target-filter'] },
+});
+assert.deepEqual(projectedChoices.choices[0].members, choiceRelations.choices[0].members,
+  'Target/Profile projection must preserve members supplied by native baseline context');
+assert.deepEqual(expandCompactRelations(compactRelations(projectedChoices)).choices, projectedChoices.choices);
+const identityRelations = buildKconfigRelations([
+  { symbol: 'PACKAGE_real', type: 'tristate', prompt: 'Package', visible: true },
+  { symbol: 'PACKAGE_real_FEATURE', type: 'bool', prompt: 'Package option', visible: true },
+], [{ name: 'real', depends: [], provides: [], conflicts: [] }], []);
+for (const projection of [identityRelations, expandCompactRelations(compactRelations(identityRelations))]) {
+  const flag = projection.records.find((row) => row.configSymbol === 'PACKAGE_real_FEATURE');
+  assert.equal(flag.kind, 'config', 'package prefix is not concrete package identity');
+  assert.equal(flag.package, '');
+  assert.equal(projection.records.find((row) => row.configSymbol === 'PACKAGE_real').package, 'real');
+}
+if (process.env.KCONFIG_NATIVE_TEST_TREE) {
+  const nativeDirectory = join(process.env.KCONFIG_NATIVE_TEST_TREE, 'scripts', 'config');
+  execFileSync('make', ['-C', nativeDirectory, 'conf'], { stdio: 'pipe' });
+  const oracle = mkdtempSync(join(tmpdir(), 'catalog-choice-oracle-'));
+  try {
+    cpSync(join(ROOT, 'tests', 'kconfig-choice-defaults'), oracle, { recursive: true });
+    for (const test of JSON.parse(readFileSync(join(oracle, 'cases.json')))) {
+      const output = join(oracle, '.config');
+      writeFileSync(join(oracle, 'input.config'), test.input);
+      execFileSync(join(nativeDirectory, 'conf'), ['--defconfig=input.config', 'Config.in'], {
+        cwd: oracle, env: { ...process.env, KCONFIG_CONFIG: output }, stdio: 'pipe',
+      });
+      const values = new Map();
+      for (const line of readFileSync(output, 'utf8').split(/\r?\n/)) {
+        const match = line.match(/^CONFIG_([^=]+)=(.*)$/);
+        if (match) values.set(match[1], match[2].startsWith('"') ? JSON.parse(match[2]) : match[2]);
+      }
+      for (const [symbol, expected] of Object.entries(test.expected)) {
+        assert.equal(values.get(symbol) ?? 'n', expected, `native ${test.name}: ${symbol}`);
+      }
+      console.log(`Native conf choice/scalar parity: ${test.name}`);
+    }
+  } finally { rmSync(oracle, { recursive: true, force: true }); }
+}
 const tree = join(ROOT, 'tests', 'kconfig-compact-roundtrip');
 const menu = parseKconfigTree(tree);
 assert.equal(menu.validation.relationsComplete, true);

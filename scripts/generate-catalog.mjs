@@ -223,6 +223,9 @@ const relations = buildKconfigRelations(relationOptions, packages, menu.choices,
   // relation builder checks it together with source/graph diagnostics; the
   // compact serializer independently proves the readable round-trip below.
   parserValidation: menu.validation,
+  // A projected symbol table must not truncate native choice membership.
+  // External members are resolved by the exact Native Profile context.
+  choiceOptions: allMenuOptions,
   externalSymbols: Object.keys(externalSymbolSources),
   externalSymbolSources,
 });

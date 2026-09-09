@@ -586,14 +586,22 @@ function capabilityRelation(raw, owner, packageByName, providerMap, provided = f
   };
 }
 
-function normalizeChoice(choice, records = []) {
+function normalizeChoice(choice, records = [], menuOptions = []) {
   const id = String(choice?.id || '');
   const depends = [...(choice?.depends || [])];
   const selectRelations = [...(choice?.selectRelations || [])];
   const implyRelations = [...(choice?.implyRelations || [])];
-  const members = records.filter((record) => record.choice === id).map((record) => record.configSymbol);
+  // Symbol rows are sorted for stable wire encoding. Choice fallback is not:
+  // native Kconfig uses declaration order, including sourced definitions.
+  const memberRecords = records.filter((record) => record.choice === id);
+  const available = new Set(memberRecords.map((record) => record.configSymbol));
+  const members = unique(menuOptions.filter((option) => option.choice === id)
+    .map((option) => option.symbol));
+  const orderComplete = [...available].every((symbol) => members.includes(symbol));
+  for (const record of memberRecords) if (!members.includes(record.configSymbol)) members.push(record.configSymbol);
   return {
     id,
+    memberOrder: orderComplete ? 'native-declaration-v1' : 'unresolved',
     symbol: choice?.symbol || '',
     // An omitted choice type is not proof of bool.  Preserve the source value
     // (including empty/unknown) so the shared evaluator can apply native
@@ -983,7 +991,7 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
   for (const [name, rows] of providerMap) providerMap.set(name, unique(rows).sort());
 
   const makeRecord = (option, packageInfo = null, packageOnly = false) => {
-    const isPackage = Boolean(packageInfo) || String(option?.symbol || '').startsWith('PACKAGE_');
+    const isPackage = Boolean(packageInfo);
     const name = packageInfo?.name || (isPackage ? String(option?.symbol || '').slice('PACKAGE_'.length) : '');
     const kconfig = packageOnly ? {
       depends: [], selects: [], implies: [], dependsVariants: [], selectsVariants: [], impliesVariants: [],
@@ -1279,7 +1287,7 @@ export function buildKconfigRelations(menuOptions = [], packages = [], choices =
     }
   });
 
-  const choiceDefinitions = choices.map((choice) => normalizeChoice(choice, records));
+  const choiceDefinitions = choices.map((choice) => normalizeChoice(choice, records, options.choiceOptions || menuOptions));
   for (const choice of choiceDefinitions) {
     const choiceReferenceRowsValue = choiceReferenceRows(choice);
     const missingChoiceSymbols = unique(choiceReferenceRowsValue.flatMap((row) => row.symbols || []))

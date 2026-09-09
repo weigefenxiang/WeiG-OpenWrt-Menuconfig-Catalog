@@ -31,6 +31,11 @@ on:
       - "scripts/native-kconfig-*"
       - "tests/check-native-kconfig-preprocess.mjs"
       - "tests/check-package-metadata-parity.mjs"
+      - "scripts/kconfig-relations.mjs"
+      - "scripts/compact-relations.mjs"
+      - "scripts/generate-catalog.mjs"
+      - "tests/check-compact-relations.mjs"
+      - "tests/kconfig-choice-defaults/**"
       - "scripts/relation-table-codec.mjs"
       - "scripts/benchmark-relation-wire-format.mjs"
       - ".github/workflows/catalog.yml"
@@ -67,6 +72,11 @@ on:
       - "scripts/native-kconfig-*"
       - "tests/check-native-kconfig-preprocess.mjs"
       - "tests/check-package-metadata-parity.mjs"
+      - "scripts/kconfig-relations.mjs"
+      - "scripts/compact-relations.mjs"
+      - "scripts/generate-catalog.mjs"
+      - "tests/check-compact-relations.mjs"
+      - "tests/kconfig-choice-defaults/**"
       - "scripts/relation-table-codec.mjs"
       - "scripts/benchmark-relation-wire-format.mjs"
       - ".github/workflows/catalog.yml"
@@ -100,6 +110,7 @@ jobs:
           git -C "$tree" checkout --detach FETCH_HEAD
           KCONFIG_NATIVE_TEST_TREE="$tree" node tests/check-native-kconfig-preprocess.mjs
           KCONFIG_NATIVE_TEST_TREE="$tree" node tests/check-package-metadata-parity.mjs
+          KCONFIG_NATIVE_TEST_TREE="$tree" node tests/check-compact-relations.mjs
       - name: Test legacy literal strings and help with upstream parser
         shell: bash
         run: |

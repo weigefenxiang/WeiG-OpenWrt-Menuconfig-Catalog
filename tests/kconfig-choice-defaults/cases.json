@@ -1,0 +1,22 @@
+[
+  {
+    "name": "default-select-scalar-chain",
+    "input": "CONFIG_ENABLE_OWNER=y\nCONFIG_BACKEND_AVAILABLE=y\n",
+    "expected": { "BACKEND_PREFERRED": "y", "BACKEND_LIBRARY": "y", "OWNER_TEXT": "enabled", "OWNER_COUNT": "12", "OWNER_MASK": "0x20", "OPTIONAL_MEMBER": "n", "TRANSIENT_TEXT": "n" }
+  },
+  {
+    "name": "first-visible-source-order",
+    "input": "CONFIG_ENABLE_OWNER=y\n# CONFIG_BACKEND_AVAILABLE is not set\n",
+    "expected": { "BACKEND_PREFERRED": "n", "BACKEND_ZETA": "y", "BACKEND_ALPHA": "n", "BACKEND_LIBRARY": "n", "OWNER_TEXT": "alternative", "OPTIONAL_MEMBER": "n" }
+  },
+  {
+    "name": "preserve-user-choice-and-scalar",
+    "input": "CONFIG_ENABLE_OWNER=y\nCONFIG_BACKEND_AVAILABLE=y\nCONFIG_BACKEND_ALPHA=y\nCONFIG_OWNER_TEXT=\"custom\"\nCONFIG_OPTIONAL_MEMBER=y\n",
+    "expected": { "BACKEND_PREFERRED": "n", "BACKEND_ALPHA": "y", "BACKEND_LIBRARY": "n", "OWNER_TEXT": "custom", "OPTIONAL_MEMBER": "y" }
+  },
+  {
+    "name": "inactive-owner",
+    "input": "# CONFIG_ENABLE_OWNER is not set\nCONFIG_BACKEND_AVAILABLE=y\n",
+    "expected": { "BACKEND_PREFERRED": "n", "BACKEND_ZETA": "n", "BACKEND_ALPHA": "n", "BACKEND_LIBRARY": "n", "OPTIONAL_MEMBER": "n" }
+  }
+]

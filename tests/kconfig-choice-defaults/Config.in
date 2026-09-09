@@ -1,0 +1,57 @@
+mainmenu "Choice and scalar convergence"
+
+config ENABLE_OWNER
+	bool "Enable owner"
+
+config BACKEND_AVAILABLE
+	bool "Enable preferred backend"
+	default y
+
+if ENABLE_OWNER
+choice
+	prompt "Backend without explicit type"
+	default BACKEND_PREFERRED
+
+config BACKEND_PREFERRED
+	bool "Preferred backend"
+	depends on BACKEND_AVAILABLE
+	select BACKEND_LIBRARY
+
+source "backend-alternative.in"
+
+config BACKEND_ALPHA
+	bool "Alphabetically first, declared last"
+
+endchoice
+
+config BACKEND_LIBRARY
+	bool
+
+config OWNER_TEXT
+	string "Owner text"
+	default "enabled" if BACKEND_LIBRARY
+	default "alternative"
+
+config OWNER_COUNT
+	int "Owner count"
+	default 12
+
+config OWNER_MASK
+	hex "Owner mask"
+	default 0x20
+
+config TRANSIENT_TEXT
+	string
+	depends on !BACKEND_LIBRARY
+	default "!"
+
+choice
+	prompt "Optional backend"
+	optional
+	default OPTIONAL_MEMBER
+
+config OPTIONAL_MEMBER
+	bool "Optional member"
+
+endchoice
+endif
