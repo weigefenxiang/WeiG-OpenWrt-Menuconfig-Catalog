@@ -4,7 +4,7 @@
     "id": "OpenWrt",
     "branch": "main"
   },
-  "generatedAt": "2026-09-08T00:23:22.790Z",
+  "generatedAt": "2026-09-09T19:17:19.477Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 11152,
+  "options": 11154,
   "translatedZhCN": 122,
   "missingZhCN": [
     {
@@ -50306,6 +50306,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-app-librespeed",
+      "promptEn": "LibreSpeed internet speed measurements",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
       "symbol": "PACKAGE_luci-app-sfp-info",
       "promptEn": "SFP/QSFP Transceiver Diagnostics",
       "path": [
@@ -57276,6 +57284,14 @@
     {
       "symbol": "PACKAGE_tc-tiny",
       "promptEn": "Traffic control utility (minimal)",
+      "path": [
+        "Network",
+        "Routing and Redirection"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_tcfilter",
+      "promptEn": "Persistent tc ingress filters (UCI-managed)",
       "path": [
         "Network",
         "Routing and Redirection"
