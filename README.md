@@ -2,6 +2,18 @@
 
 ## Dynamic targets and 11-language translations / 动态目标与 11 语翻译
 
+Concrete package identity comes from native package metadata, not the `PACKAGE_`
+prefix: package configuration suboptions remain Kconfig-only in readable and compact
+relations. Choice membership preserves native declaration order (`native-declaration-v1`)
+and members outside the Target projection. Linux native `conf` regression fixtures check
+ordered fallback, conditional defaults, explicit values, and inactive owners; they do not
+claim exhaustive parity for all upstream configurations.
+
+真实软件包身份以原生包元数据为准，不能靠 `PACKAGE_` 前缀猜测；配置子选项在可读和
+紧凑图中仍为 Kconfig-only。Choice 保留原生声明顺序及 Target 投影之外的成员。
+Linux 原生 `conf` 回归覆盖顺序回退、条件默认值、显式值及非活动 owner，
+不宣称已经穷尽所有上游配置的等价性。
+
 Dynamic Kconfig defaults are expanded by the selected upstream's own parser in
 a disposable build directory, without reading or writing `.config`. Catalog
 replays the observed expansions against their source locations and retains the

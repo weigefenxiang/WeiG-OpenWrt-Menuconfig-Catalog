@@ -42,6 +42,8 @@ evaluateCompatibilityRules → deriveCompatibilityPlans → applyUserIntent
 
 ### 原生 Kconfig 解析与 source-closure 证明
 
+真实软件包身份必须来自原生包元数据；`PACKAGE_` 前缀也可能属于配置子选项，不能据此生成构建包实体。可读图与紧凑图保留同一身份区分。Choice 详情通过 `memberOrder: "native-declaration-v1"` 保留原生声明顺序，并在 Target 投影删去成员记录时仍保留完整成员列表。消费者不能用字母排序替代，也不能把缺失成员猜成关闭。Linux 原生 `conf` 样例验证 choice 顺序回退、条件 scalar/select 收敛、显式值保留和非活动 owner；这些检查验证契约，不宣称所有历史配置或上游固件构建都已验证。
+
 Catalog 复用上游 Kconfig 的词法边界：bool default 的 `m` 可以作为原始三态字面量保留，注释只在引号外剥离；引号外的 `@` 记录为 ignored-character warning 后继续解析普通表达式 AST，`@` 后面的 Kconfig symbols 仍保留，不能包装成另一种 package-selector AST；引号内的 `@` 不产生警告。`.packageinfo` 的 `@(...)` 仍由独立的软件包元数据解析器处理，不能混用这两个域。
 
 符号缺失只有在没有未求值动态预处理、且完整 active source closure 已被证明时才能分类为 native undefined。明确被 Target projection 排除的真实定义，只有同时有完整 parser proof 和 `parsed-target-filter` provenance 时才可作为 external；如果已解析定义既没有进入 graph、也没有这份证明，则仍是 projection omission，必须保持 `unresolved`。native undefined 的记录保留实际缺失符号、`nativeType: "unknown"`、bool coercion `n` 和原始 string token；不得把所有 unresolved 或所有带 source 标签的名称直接当成 external。`externalSymbolDefinitions` 只允许输出真实解析定义的 `{symbol,type}`。任何未求值的 `$(shell,...)` 或动态赋值都会使 `relationsComplete=false`，此时相关缺失只能保持 `unresolved`/`inconclusive`。
