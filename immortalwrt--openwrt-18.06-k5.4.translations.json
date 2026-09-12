@@ -4,7 +4,7 @@
     "id": "ImmortalWrt",
     "branch": "openwrt-18.06-k5.4"
   },
-  "generatedAt": "2026-09-05T21:14:08.548Z",
+  "generatedAt": "2026-09-12T21:27:05.612Z",
   "languages": [
     "en",
     "zh-CN",
@@ -68265,84 +68265,5 @@
       "id": "choice-68",
       "promptEn": "stack tracing support"
     }
-  ],
-  "automation": {
-    "generatedAt": "2026-09-09T22:45:34.039Z",
-    "catalogs": 17,
-    "cachedTexts": 28578,
-    "trigger": "schedule",
-    "phase": "zh-CN-usage",
-    "activeLanguage": "zh-CN",
-    "nextLanguage": "zh-CN",
-    "rotationLanguages": [
-      "ru",
-      "es",
-      "pt",
-      "ja",
-      "ko",
-      "de",
-      "fr",
-      "vi"
-    ],
-    "frozenLanguages": [
-      "zh-TW"
-    ],
-    "batchNumber": 1,
-    "batchCount": 5,
-    "queuedThisRun": 37,
-    "retryQueuedAfter": 34,
-    "batchLimit": 500,
-    "queuedCharacters": 6920,
-    "requestedCharactersThisRun": 0,
-    "runCharacterBudget": null,
-    "translatedThisRun": 3,
-    "targetPendingBefore": 37,
-    "targetPendingAfter": 34,
-    "localizedFields": 203176,
-    "pendingFields": 2935984,
-    "localizedByLanguage": {
-      "zh-CN": 160152,
-      "zh-TW": 5191,
-      "ru": 5191,
-      "es": 5157,
-      "pt": 5174,
-      "ja": 5191,
-      "ko": 5191,
-      "de": 5136,
-      "fr": 5174,
-      "vi": 5170
-    },
-    "pendingByLanguage": {
-      "zh-CN": 161216,
-      "zh-TW": 316177,
-      "ru": 316177,
-      "es": 316211,
-      "pt": 316194,
-      "ja": 316177,
-      "ko": 316177,
-      "de": 316232,
-      "fr": 316194,
-      "vi": 316198
-    },
-    "uniqueDescriptionPendingByLanguage": {
-      "zh-CN": 34,
-      "zh-TW": 13554,
-      "ru": 13554,
-      "es": 13554,
-      "pt": 13554,
-      "ja": 13554,
-      "ko": 13554,
-      "de": 13554,
-      "fr": 13554,
-      "vi": 13554
-    },
-    "provider": "argos",
-    "providerConfigured": true,
-    "translationEnabled": true,
-    "model": "en-zh:installed",
-    "rejected": 34,
-    "timedOut": false,
-    "apiError": "",
-    "warning": "Batch incomplete: translated 3/37 queued descriptions"
-  }
+  ]
 }

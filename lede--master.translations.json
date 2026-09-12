@@ -4,7 +4,7 @@
     "id": "lede",
     "branch": "master"
   },
-  "generatedAt": "2026-09-05T21:14:48.790Z",
+  "generatedAt": "2026-09-12T21:27:24.984Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10150,
+  "options": 10157,
   "translatedZhCN": 198,
   "missingZhCN": [
     {
@@ -5252,6 +5252,13 @@
       ]
     },
     {
+      "symbol": "PACKAGE_trusted-firmware-a-sunxi-a523",
+      "promptEn": "Trusted-Firmware-A for Allwinner A523",
+      "path": [
+        "Boot Loaders"
+      ]
+    },
+    {
       "symbol": "PACKAGE_trusted-firmware-a-sunxi-a64",
       "promptEn": "Trusted-Firmware-A for Allwinner A64",
       "path": [
@@ -6710,34 +6717,6 @@
     {
       "symbol": "PACKAGE_automount",
       "promptEn": "Mount autoconfig hotplug script.",
-      "path": [
-        "Extra packages"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_autosamba",
-      "promptEn": "Samba autoconfig hotplug script.",
-      "path": [
-        "Extra packages"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_autosamba_INCLUDE_KSMBD",
-      "promptEn": "KSMBD",
-      "path": [
-        "Extra packages"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_autosamba_INCLUDE_SAMBA3",
-      "promptEn": "SAMBA 3",
-      "path": [
-        "Extra packages"
-      ]
-    },
-    {
-      "symbol": "PACKAGE_autosamba_INCLUDE_SAMBA4",
-      "promptEn": "SAMBA 4",
       "path": [
         "Extra packages"
       ]
@@ -15622,14 +15601,6 @@
       ]
     },
     {
-      "symbol": "BATMAN_ADV_NC",
-      "promptEn": "Network Coding",
-      "path": [
-        "Kernel modules",
-        "Network Support"
-      ]
-    },
-    {
       "symbol": "BATMAN_ADV_MCAST",
       "promptEn": "Multicast optimisation",
       "path": [
@@ -16816,6 +16787,14 @@
     {
       "symbol": "PACKAGE_kmod-pcengines-apuv2",
       "promptEn": "PC Engines APUv2/3 front button and LEDs driver",
+      "path": [
+        "Kernel modules",
+        "Other modules"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-phytium-npu",
+      "promptEn": "Phytium NPU and DMA buffer heap",
       "path": [
         "Kernel modules",
         "Other modules"
@@ -19582,6 +19561,30 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-phytium-dc",
+      "promptEn": "Phytium FTD330 display controller",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-phytium-gpu",
+      "promptEn": "Phytium FTG340 GPU",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-phytium-vpu",
+      "promptEn": "Phytium FTV310 video codec",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-qcom-qaic",
       "promptEn": "Qualcomm QAIC accelerator support",
       "path": [
@@ -19630,14 +19633,6 @@
       ]
     },
     {
-      "symbol": "PACKAGE_kmod-video-core",
-      "promptEn": "Video4Linux support",
-      "path": [
-        "Kernel modules",
-        "Video Support"
-      ]
-    },
-    {
       "symbol": "PACKAGE_kmod-stm32-csi",
       "promptEn": "STM32 Camera Serial Interface (CSI) support",
       "path": [
@@ -19664,6 +19659,14 @@
     {
       "symbol": "PACKAGE_kmod-v4l2loopback",
       "promptEn": "v4l2loopback kernel module",
+      "path": [
+        "Kernel modules",
+        "Video Support"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_kmod-video-core",
+      "promptEn": "Video4Linux support",
       "path": [
         "Kernel modules",
         "Video Support"
@@ -23214,6 +23217,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_kmod-rtw88-8821cs",
+      "promptEn": "Realtek RTL8821CS support",
+      "path": [
+        "Kernel modules",
+        "Wireless Drivers"
+      ]
+    },
+    {
       "symbol": "PACKAGE_kmod-rtw88-8821cu",
       "promptEn": "Realtek RTL8821CU support",
       "path": [
@@ -24249,7 +24260,25 @@
     },
     {
       "symbol": "NODEJS_22",
-      "promptEn": "22.x Active LTS",
+      "promptEn": "22.x Maintenance LTS",
+      "path": [
+        "Languages",
+        "Node.js",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "NODEJS_24",
+      "promptEn": "24.x Active LTS",
+      "path": [
+        "Languages",
+        "Node.js",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "NODEJS_26",
+      "promptEn": "26.x Current",
       "path": [
         "Languages",
         "Node.js",
@@ -24277,6 +24306,15 @@
     {
       "symbol": "NODEJS_ICU_SYSTEM",
       "promptEn": "system-icu",
+      "path": [
+        "Languages",
+        "Node.js",
+        "Configuration"
+      ]
+    },
+    {
+      "symbol": "NODEJS_HOST_BIN",
+      "promptEn": "Use the official Node.js binary for the host build",
       "path": [
         "Languages",
         "Node.js",
@@ -43192,6 +43230,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-app-sysctl",
+      "promptEn": "LuCI application to manage kernel sysctl parameters",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
       "symbol": "PACKAGE_TURBOACC_INCLUDE_NO_FASTPATH",
       "promptEn": "Use NSS ECM",
       "path": [
@@ -44971,7 +45017,7 @@
     },
     {
       "symbol": "PACKAGE_transmission-cli",
-      "promptEn": "BitTorrent client (with mbed TLS)",
+      "promptEn": "BitTorrent client (with OpenSSL)",
       "path": [
         "Network",
         "BitTorrent"
@@ -44979,7 +45025,7 @@
     },
     {
       "symbol": "PACKAGE_transmission-daemon",
-      "promptEn": "BitTorrent client (with mbed TLS)",
+      "promptEn": "BitTorrent client (with OpenSSL)",
       "path": [
         "Network",
         "BitTorrent"
@@ -44987,7 +45033,7 @@
     },
     {
       "symbol": "PACKAGE_transmission-remote",
-      "promptEn": "BitTorrent client (with mbed TLS)",
+      "promptEn": "BitTorrent client (with OpenSSL)",
       "path": [
         "Network",
         "BitTorrent"
@@ -46984,6 +47030,14 @@
       ]
     },
     {
+      "symbol": "PACKAGE_ddns-scripts-dnspod-v3",
+      "promptEn": "Extension for dnspod.tencentcloudapi.com (aka: dnspod.cn) API v3",
+      "path": [
+        "Network",
+        "IP Addresses and Names"
+      ]
+    },
+    {
       "symbol": "PACKAGE_ddns-scripts-freedns",
       "promptEn": "Extension for freedns.42.pl",
       "path": [
@@ -47551,7 +47605,7 @@
       ]
     },
     {
-      "symbol": "PACKAGE_isc-dhcp-dyndns-ipv4",
+      "symbol": "PACKAGE_isc-dhcp-dyndns-ipv6",
       "promptEn": "ISC's DHCP server dynamic DNS dependencies (meta)",
       "path": [
         "Network",
@@ -47599,16 +47653,16 @@
       ]
     },
     {
-      "symbol": "PACKAGE_isc-dhcp-server-ipv6",
-      "promptEn": "ISC's DHCP server (with IPv6)",
+      "symbol": "PACKAGE_isc-dhcp-dyndns-ipv4",
+      "promptEn": "ISC's DHCP server dynamic DNS dependencies (meta)",
       "path": [
         "Network",
         "IP Addresses and Names"
       ]
     },
     {
-      "symbol": "PACKAGE_isc-dhcp-dyndns-ipv6",
-      "promptEn": "ISC's DHCP server dynamic DNS dependencies (meta)",
+      "symbol": "PACKAGE_isc-dhcp-server-ipv6",
+      "promptEn": "ISC's DHCP server (with IPv6)",
       "path": [
         "Network",
         "IP Addresses and Names"
@@ -58607,7 +58661,7 @@
     },
     {
       "symbol": "PACKAGE_softethervpn5-bridge",
-      "promptEn": "softethervpn5 v5.02.5187 bridge",
+      "promptEn": "softethervpn5 v5.2.5188 bridge",
       "path": [
         "Network",
         "VPN"
@@ -58615,7 +58669,7 @@
     },
     {
       "symbol": "PACKAGE_softethervpn5-client",
-      "promptEn": "softethervpn5 v5.02.5187 client",
+      "promptEn": "softethervpn5 v5.2.5188 client",
       "path": [
         "Network",
         "VPN"
@@ -58623,7 +58677,7 @@
     },
     {
       "symbol": "PACKAGE_softethervpn5-server",
-      "promptEn": "softethervpn5 v5.02.5187 server",
+      "promptEn": "softethervpn5 v5.2.5188 server",
       "path": [
         "Network",
         "VPN"
@@ -62767,6 +62821,13 @@
     {
       "symbol": "PACKAGE_crowdsec-firewall-bouncer",
       "promptEn": "Firewall bouncer for Crowdsec",
+      "path": [
+        "Network"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_cshark",
+      "promptEn": "CloudShark capture tool",
       "path": [
         "Network"
       ]
@@ -76945,183 +77006,183 @@
     },
     {
       "id": "choice-26",
-      "promptEn": "Samba Server Selection"
-    },
-    {
-      "id": "choice-27",
       "promptEn": "ZRAM Default compressor"
     },
     {
-      "id": "choice-28",
+      "id": "choice-27",
       "promptEn": "device selection"
     },
     {
-      "id": "choice-29",
+      "id": "choice-28",
       "promptEn": "FXS coefficients"
     },
     {
-      "id": "choice-30",
+      "id": "choice-29",
       "promptEn": "ath11k memory profile"
     },
     {
-      "id": "choice-31",
+      "id": "choice-30",
       "promptEn": "b43 firmware version"
     },
     {
-      "id": "choice-32",
+      "id": "choice-31",
       "promptEn": "Supported buses"
     },
     {
-      "id": "choice-33",
+      "id": "choice-32",
       "promptEn": "EEPROM Type of 1st Card"
     },
     {
-      "id": "choice-34",
+      "id": "choice-33",
       "promptEn": "Main Mode"
     },
     {
-      "id": "choice-35",
+      "id": "choice-34",
       "promptEn": "Choose First WiFi Interface"
     },
     {
-      "id": "choice-36",
+      "id": "choice-35",
       "promptEn": "Choose Second WiFi Interface"
     },
     {
-      "id": "choice-37",
+      "id": "choice-36",
       "promptEn": "Choose Third WiFi Interface"
     },
     {
-      "id": "choice-38",
+      "id": "choice-37",
       "promptEn": "EEPROM Type of 1st Card"
     },
     {
-      "id": "choice-39",
+      "id": "choice-38",
       "promptEn": "EEPROM Type of 2nd Card"
     },
     {
-      "id": "choice-40",
+      "id": "choice-39",
       "promptEn": "EEPROM Type of 3th Card"
     },
     {
-      "id": "choice-41",
+      "id": "choice-40",
       "promptEn": "PA LNA Type of 1st Card"
     },
     {
-      "id": "choice-42",
+      "id": "choice-41",
       "promptEn": "PA LNA Type of 2nd Card"
     },
     {
-      "id": "choice-43",
+      "id": "choice-42",
       "promptEn": "PA LNA Type of 3rd Card"
     },
     {
-      "id": "choice-44",
+      "id": "choice-43",
       "promptEn": "SSL Library"
     },
     {
-      "id": "choice-45",
+      "id": "choice-44",
       "promptEn": "Version Selection"
     },
     {
-      "id": "choice-46",
+      "id": "choice-45",
       "promptEn": "i18n features"
     },
     {
-      "id": "choice-47",
+      "id": "choice-46",
       "promptEn": "Hardware Acceleration"
     },
     {
-      "id": "choice-48",
+      "id": "choice-47",
       "promptEn": "Compile Visibility."
     },
     {
-      "id": "choice-49",
+      "id": "choice-48",
       "promptEn": "Compile Boost libraries."
     },
     {
-      "id": "choice-50",
+      "id": "choice-49",
       "promptEn": "Selects Boost Runtime linkage."
     },
     {
-      "id": "choice-51",
+      "id": "choice-50",
       "promptEn": "Select a Variant."
     },
     {
-      "id": "choice-52",
+      "id": "choice-51",
       "promptEn": "Selected SSL library"
     },
     {
-      "id": "choice-53",
+      "id": "choice-52",
       "promptEn": "Select QMI message collection to build"
     },
     {
-      "id": "choice-54",
+      "id": "choice-53",
       "promptEn": "Choose crypto backend"
     },
     {
-      "id": "choice-55",
+      "id": "choice-54",
       "promptEn": "Select XML library"
     },
     {
-      "id": "choice-56",
+      "id": "choice-55",
       "promptEn": "Transparent Proxy Backend"
     },
     {
-      "id": "choice-57",
+      "id": "choice-56",
       "promptEn": "Shadowsocks Client Selection"
     },
     {
-      "id": "choice-58",
+      "id": "choice-57",
       "promptEn": "Shadowsocks Server Selection"
     },
     {
-      "id": "choice-59",
+      "id": "choice-58",
       "promptEn": "V2ray-core Selection"
     },
     {
-      "id": "choice-60",
+      "id": "choice-59",
       "promptEn": "FastPath Engine"
     },
     {
-      "id": "choice-61",
+      "id": "choice-60",
       "promptEn": "TLS Provider"
     },
     {
-      "id": "choice-62",
+      "id": "choice-61",
       "promptEn": "Regular Expression"
     },
     {
-      "id": "choice-63",
+      "id": "choice-62",
       "promptEn": "SSL library"
     },
     {
-      "id": "choice-64",
+      "id": "choice-63",
       "promptEn": "SSL Library"
     },
     {
-      "id": "choice-65",
+      "id": "choice-64",
       "promptEn": "Crypto Library"
     },
     {
-      "id": "choice-66",
+      "id": "choice-65",
       "promptEn": "XML Library"
     },
     {
-      "id": "choice-67",
+      "id": "choice-66",
       "promptEn": "SSL library"
     },
     {
-      "id": "choice-68",
+      "id": "choice-67",
       "promptEn": "Selected SSL library"
     },
     {
-      "id": "choice-69",
+      "id": "choice-68",
       "promptEn": "Selected SSL MD5 library"
     },
     {
-      "id": "choice-70",
+      "id": "choice-69",
       "promptEn": "Enable SNMP support"
+    },
+    {
+      "id": "choice-70",
+      "promptEn": "SSL library"
     },
     {
       "id": "choice-71",
@@ -77129,102 +77190,19 @@
     },
     {
       "id": "choice-72",
-      "promptEn": "SSL library"
-    },
-    {
-      "id": "choice-73",
       "promptEn": "Choose SSL Library"
     },
     {
-      "id": "choice-74",
+      "id": "choice-73",
       "promptEn": "Select SSL library"
     },
     {
-      "id": "choice-75",
+      "id": "choice-74",
       "promptEn": "Select command-line editing support"
     },
     {
-      "id": "choice-76",
+      "id": "choice-75",
       "promptEn": "stack tracing support"
     }
-  ],
-  "automation": {
-    "generatedAt": "2026-09-09T22:45:34.039Z",
-    "catalogs": 17,
-    "cachedTexts": 28578,
-    "trigger": "schedule",
-    "phase": "zh-CN-usage",
-    "activeLanguage": "zh-CN",
-    "nextLanguage": "zh-CN",
-    "rotationLanguages": [
-      "ru",
-      "es",
-      "pt",
-      "ja",
-      "ko",
-      "de",
-      "fr",
-      "vi"
-    ],
-    "frozenLanguages": [
-      "zh-TW"
-    ],
-    "batchNumber": 1,
-    "batchCount": 5,
-    "queuedThisRun": 37,
-    "retryQueuedAfter": 34,
-    "batchLimit": 500,
-    "queuedCharacters": 6920,
-    "requestedCharactersThisRun": 0,
-    "runCharacterBudget": null,
-    "translatedThisRun": 3,
-    "targetPendingBefore": 37,
-    "targetPendingAfter": 34,
-    "localizedFields": 203176,
-    "pendingFields": 2935984,
-    "localizedByLanguage": {
-      "zh-CN": 160152,
-      "zh-TW": 5191,
-      "ru": 5191,
-      "es": 5157,
-      "pt": 5174,
-      "ja": 5191,
-      "ko": 5191,
-      "de": 5136,
-      "fr": 5174,
-      "vi": 5170
-    },
-    "pendingByLanguage": {
-      "zh-CN": 161216,
-      "zh-TW": 316177,
-      "ru": 316177,
-      "es": 316211,
-      "pt": 316194,
-      "ja": 316177,
-      "ko": 316177,
-      "de": 316232,
-      "fr": 316194,
-      "vi": 316198
-    },
-    "uniqueDescriptionPendingByLanguage": {
-      "zh-CN": 34,
-      "zh-TW": 13554,
-      "ru": 13554,
-      "es": 13554,
-      "pt": 13554,
-      "ja": 13554,
-      "ko": 13554,
-      "de": 13554,
-      "fr": 13554,
-      "vi": 13554
-    },
-    "provider": "argos",
-    "providerConfigured": true,
-    "translationEnabled": true,
-    "model": "en-zh:installed",
-    "rejected": 34,
-    "timedOut": false,
-    "apiError": "",
-    "warning": "Batch incomplete: translated 3/37 queued descriptions"
-  }
+  ]
 }
