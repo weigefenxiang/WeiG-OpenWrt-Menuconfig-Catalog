@@ -68782,5 +68782,84 @@
       "id": "choice-57",
       "promptEn": "stack tracing support"
     }
-  ]
+  ],
+  "automation": {
+    "generatedAt": "2026-09-19T22:30:21.829Z",
+    "catalogs": 17,
+    "cachedTexts": 28838,
+    "trigger": "schedule",
+    "phase": "zh-CN-usage",
+    "activeLanguage": "zh-CN",
+    "nextLanguage": "zh-CN",
+    "rotationLanguages": [
+      "ru",
+      "es",
+      "pt",
+      "ja",
+      "ko",
+      "de",
+      "fr",
+      "vi"
+    ],
+    "frozenLanguages": [
+      "zh-TW"
+    ],
+    "batchNumber": 1,
+    "batchCount": 5,
+    "queuedThisRun": 142,
+    "retryQueuedAfter": 34,
+    "batchLimit": 500,
+    "queuedCharacters": 17378,
+    "requestedCharactersThisRun": 0,
+    "runCharacterBudget": null,
+    "translatedThisRun": 108,
+    "targetPendingBefore": 142,
+    "targetPendingAfter": 34,
+    "localizedFields": 203328,
+    "pendingFields": 2939632,
+    "localizedByLanguage": {
+      "zh-CN": 160340,
+      "zh-TW": 5187,
+      "ru": 5187,
+      "es": 5153,
+      "pt": 5170,
+      "ja": 5187,
+      "ko": 5187,
+      "de": 5132,
+      "fr": 5170,
+      "vi": 5166
+    },
+    "pendingByLanguage": {
+      "zh-CN": 161418,
+      "zh-TW": 316571,
+      "ru": 316571,
+      "es": 316605,
+      "pt": 316588,
+      "ja": 316571,
+      "ko": 316571,
+      "de": 316626,
+      "fr": 316588,
+      "vi": 316592
+    },
+    "uniqueDescriptionPendingByLanguage": {
+      "zh-CN": 34,
+      "zh-TW": 13677,
+      "ru": 13677,
+      "es": 13677,
+      "pt": 13677,
+      "ja": 13677,
+      "ko": 13677,
+      "de": 13677,
+      "fr": 13677,
+      "vi": 13677
+    },
+    "provider": "argos",
+    "providerConfigured": true,
+    "translationEnabled": true,
+    "model": "en-zh:installed",
+    "rejected": 34,
+    "timedOut": false,
+    "apiError": "",
+    "warning": "Batch incomplete: translated 108/142 queued descriptions"
+  }
 }
