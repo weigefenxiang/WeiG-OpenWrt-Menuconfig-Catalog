@@ -5,10 +5,10 @@
     "label": "ImmortalWrt",
     "repo": "immortalwrt/immortalwrt",
     "branch": "master",
-    "commit": "3e246256ce4ca966818c4152bd20f84d0d9ea570",
+    "commit": "f44d1535b4ef107a4ee255caa43cf101daf9fa35",
     "legacy": false
   },
-  "generatedAt": "2026-09-12T21:27:37.305Z",
+  "generatedAt": "2026-09-19T21:29:18.665Z",
   "curated": [
     {
       "id": "3cat",
@@ -479,8 +479,8 @@
       "packages": [
         "luci-app-dcwapd"
       ],
-      "package": "luci-app-dcwapd",
-      "available": true
+      "package": "",
+      "available": false
     },
     {
       "id": "ddns",
@@ -2282,7 +2282,6 @@
     "luci-app-dae",
     "luci-app-daed",
     "luci-app-dawn",
-    "luci-app-dcwapd",
     "luci-app-ddns",
     "luci-app-ddns-go",
     "luci-app-diskman",
@@ -2432,6 +2431,7 @@
     "cifs",
     "cshark",
     "cupsd",
+    "dcwapd",
     "diag-core",
     "dnscrypt-proxy",
     "dnsforwarder",
@@ -2568,7 +2568,6 @@
       "luci-app-dae",
       "luci-app-daed",
       "luci-app-dawn",
-      "luci-app-dcwapd",
       "luci-app-ddns",
       "luci-app-ddns-go",
       "luci-app-diskman",
@@ -2605,6 +2604,7 @@
       "luci-app-ledtrig-rssi",
       "luci-app-ledtrig-switch",
       "luci-app-ledtrig-usbport",
+      "luci-app-librespeed",
       "luci-app-libreswan",
       "luci-app-lldpd",
       "luci-app-lorawan-basicstation",

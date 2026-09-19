@@ -4,7 +4,7 @@
     "id": "lede",
     "branch": "master"
   },
-  "generatedAt": "2026-09-12T21:27:24.984Z",
+  "generatedAt": "2026-09-19T21:28:55.779Z",
   "languages": [
     "en",
     "zh-CN",
@@ -18,7 +18,7 @@
     "fr",
     "vi"
   ],
-  "options": 10157,
+  "options": 10161,
   "translatedZhCN": 198,
   "missingZhCN": [
     {
@@ -42921,8 +42921,24 @@
       ]
     },
     {
+      "symbol": "PACKAGE_luci-app-easytier-next",
+      "promptEn": "LuCI support for EasyTier Next",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
       "symbol": "PACKAGE_luci-app-nikki",
       "promptEn": "LuCI Support for nikki",
+      "path": [
+        "LuCI",
+        "3. Applications"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_luci-app-oui",
+      "promptEn": "Local OUI vendor icons for DHCP leases",
       "path": [
         "LuCI",
         "3. Applications"
@@ -58051,6 +58067,22 @@
     {
       "symbol": "PACKAGE_chaosvpn",
       "promptEn": "Config generator for chaos vpn",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
+      "symbol": "PACKAGE_easytier-next",
+      "promptEn": "A simple, decentralized mesh VPN with WireGuard support (Next)",
+      "path": [
+        "Network",
+        "VPN"
+      ]
+    },
+    {
+      "symbol": "EASYTIER_INCLUDE_WEBCONSOLE",
+      "promptEn": "Include Web Console (easytier-web)",
       "path": [
         "Network",
         "VPN"
@@ -77204,84 +77236,5 @@
       "id": "choice-75",
       "promptEn": "stack tracing support"
     }
-  ],
-  "automation": {
-    "generatedAt": "2026-09-12T22:32:59.703Z",
-    "catalogs": 17,
-    "cachedTexts": 28615,
-    "trigger": "schedule",
-    "phase": "zh-CN-usage",
-    "activeLanguage": "zh-CN",
-    "nextLanguage": "zh-CN",
-    "rotationLanguages": [
-      "ru",
-      "es",
-      "pt",
-      "ja",
-      "ko",
-      "de",
-      "fr",
-      "vi"
-    ],
-    "frozenLanguages": [
-      "zh-TW"
-    ],
-    "batchNumber": 1,
-    "batchCount": 5,
-    "queuedThisRun": 54,
-    "retryQueuedAfter": 34,
-    "batchLimit": 500,
-    "queuedCharacters": 9417,
-    "requestedCharactersThisRun": 0,
-    "runCharacterBudget": null,
-    "translatedThisRun": 20,
-    "targetPendingBefore": 54,
-    "targetPendingAfter": 34,
-    "localizedFields": 203198,
-    "pendingFields": 2936402,
-    "localizedByLanguage": {
-      "zh-CN": 160174,
-      "zh-TW": 5191,
-      "ru": 5191,
-      "es": 5157,
-      "pt": 5174,
-      "ja": 5191,
-      "ko": 5191,
-      "de": 5136,
-      "fr": 5174,
-      "vi": 5170
-    },
-    "pendingByLanguage": {
-      "zh-CN": 161236,
-      "zh-TW": 316219,
-      "ru": 316219,
-      "es": 316253,
-      "pt": 316236,
-      "ja": 316219,
-      "ko": 316219,
-      "de": 316274,
-      "fr": 316236,
-      "vi": 316240
-    },
-    "uniqueDescriptionPendingByLanguage": {
-      "zh-CN": 34,
-      "zh-TW": 13569,
-      "ru": 13569,
-      "es": 13569,
-      "pt": 13569,
-      "ja": 13569,
-      "ko": 13569,
-      "de": 13569,
-      "fr": 13569,
-      "vi": 13569
-    },
-    "provider": "argos",
-    "providerConfigured": true,
-    "translationEnabled": true,
-    "model": "en-zh:installed",
-    "rejected": 34,
-    "timedOut": false,
-    "apiError": "",
-    "warning": "Batch incomplete: translated 20/54 queued descriptions"
-  }
+  ]
 }
