@@ -52,6 +52,8 @@ jobs:
           # candidate file hashes and provenance are verified independently above.
           git -C candidate fetch --no-tags --depth=1 origin "$asset_ref"
           git -C candidate cat-file -e "${asset_ref}^{commit}"
+          git -C candidate show "$asset_ref:index.json" > "$RUNNER_TEMP/asset-index.json"
+          node scripts/stamp-catalog-snapshot.mjs verify-assets candidate/index.json "$RUNNER_TEMP/asset-index.json"
       - name: Promote exact snapshot to catalog-main
         id: data
         env:

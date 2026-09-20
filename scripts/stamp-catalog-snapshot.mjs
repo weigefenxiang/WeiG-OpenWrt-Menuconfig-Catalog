@@ -2,11 +2,44 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import { indexBody, stampIndex } from './index-contract.mjs';
 
 export const GIT_COMMIT_RE = /^[0-9a-f]{40}$/;
 const CODE_REF_RE = /^(?:main|dev|staging|fix-[A-Za-z0-9][A-Za-z0-9._-]{0,95}|fix\/[A-Za-z0-9._/-]+)$/;
 const SHA256_RE = /^[0-9a-f]{64}$/;
+
+// Asset commits cannot contain their own Git SHA. Publication identity belongs
+// only in the subsequent channel wrapper, never in a newly committed manifest.
+export function catalogAssetBody(index) {
+  const { assetRef, assetRefType, provenance, ...body } = indexBody(index);
+  return body;
+}
+
+export function prepareCatalogAssetManifest(index) {
+  return stampIndex(catalogAssetBody(index));
+}
+
+export function verifyCatalogAssetManifest(publication, manifest) {
+  if (!GIT_COMMIT_RE.test(String(publication?.assetRef || '')) || publication.assetRefType !== 'git-commit') {
+    throw new Error('Catalog publication requires an immutable Git assetRef');
+  }
+  // Historical unstamped manifests remain valid. An explicit conflicting
+  // identity is never silently ignored, matching the Worker reader contract.
+  if (manifest?.assetRef && manifest.assetRef !== publication.assetRef) {
+    throw new Error(`Worker asset identity mismatch: immutable ${publication.assetRef}/index.json carries ${manifest.assetRef}`);
+  }
+  if (!isDeepStrictEqual(catalogAssetBody(publication), catalogAssetBody(manifest))) {
+    throw new Error('Published snapshot and immutable asset manifest differ beyond channel provenance');
+  }
+  for (const index of [publication, manifest]) {
+    const expected = stampIndex(index);
+    if (index.hash !== expected.hash || index.bytes !== expected.bytes) {
+      throw new Error('Catalog publication or immutable manifest has an invalid index contract');
+    }
+  }
+  return { assetRef: publication.assetRef };
+}
 
 function normalizeComplete(value, fallback) {
   if (value === undefined || value === null || value === '') return fallback;
@@ -113,31 +146,45 @@ const invokedDirectly = process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (invokedDirectly) {
-  const [
-    indexArg = 'dist/index.json',
-    assetRef = '',
-    codeRef = '',
-    codeSha = '',
-    complete = '',
-    previousCodeSha = '',
-  ] = process.argv.slice(2);
-  const indexFile = resolve(indexArg);
-  const index = JSON.parse(readFileSync(indexFile, 'utf8'));
-  if (previousCodeSha) {
-    const reusable = verifyReusableCatalogSnapshot(index, {
-      repository: process.env.GITHUB_REPOSITORY || '',
-      codeRef,
-      previousCodeSha,
-    });
-    if (String(assetRef || '').trim().toLowerCase() !== reusable.assetRef) {
-      throw new Error('Catalog reuse must preserve the existing assetRef');
+  if (process.argv[2] === 'prepare-assets') {
+    const file = resolve(process.argv[3]);
+    const index = JSON.parse(readFileSync(file, 'utf8'));
+    const complete = normalizeComplete(index.provenance?.complete, false);
+    if (complete) verifyCatalogRuntimeSurface(index);
+    writeFileSync(file, JSON.stringify(prepareCatalogAssetManifest(index), null, 2) + '\n');
+    // Let partial/root/translation publishers preserve their actual completeness.
+    console.log(String(complete));
+  } else if (process.argv[2] === 'verify-assets') {
+    const read = file => JSON.parse(readFileSync(resolve(file), 'utf8'));
+    verifyCatalogAssetManifest(read(process.argv[3]), read(process.argv[4]));
+    console.log('Catalog publication and immutable asset manifest verified');
+  } else {
+    const [
+      indexArg = 'dist/index.json',
+      assetRef = '',
+      codeRef = '',
+      codeSha = '',
+      complete = '',
+      previousCodeSha = '',
+    ] = process.argv.slice(2);
+    const indexFile = resolve(indexArg);
+    const index = JSON.parse(readFileSync(indexFile, 'utf8'));
+    if (previousCodeSha) {
+      const reusable = verifyReusableCatalogSnapshot(index, {
+        repository: process.env.GITHUB_REPOSITORY || '',
+        codeRef,
+        previousCodeSha,
+      });
+      if (String(assetRef || '').trim().toLowerCase() !== reusable.assetRef) {
+        throw new Error('Catalog reuse must preserve the existing assetRef');
+      }
     }
+    const stamped = stampCatalogSnapshot(index, assetRef, {
+      ...(codeRef ? { codeRef } : {}),
+      ...(codeSha ? { codeSha } : {}),
+      ...(complete !== '' ? { complete } : {}),
+    });
+    writeFileSync(indexFile, JSON.stringify(stamped, null, 2) + '\n');
+    console.log(`catalog snapshot pinned: ${stamped.assetRef}`);
   }
-  const stamped = stampCatalogSnapshot(index, assetRef, {
-    ...(codeRef ? { codeRef } : {}),
-    ...(codeSha ? { codeSha } : {}),
-    ...(complete !== '' ? { complete } : {}),
-  });
-  writeFileSync(indexFile, JSON.stringify(stamped, null, 2) + '\n');
-  console.log(`catalog snapshot pinned: ${stamped.assetRef}`);
 }

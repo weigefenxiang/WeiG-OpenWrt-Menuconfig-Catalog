@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { indexContract, stampIndex } from './index-contract.mjs';
 import {
   stampCatalogSnapshot, verifyCatalogRuntimeSurface, verifyReusableCatalogSnapshot,
+  prepareCatalogAssetManifest, verifyCatalogAssetManifest,
 } from './stamp-catalog-snapshot.mjs';
 
 const ref = '0123456789abcdef0123456789abcdef01234567';
@@ -122,6 +123,62 @@ for (const invalidReuse of [
 
 const temp = mkdtempSync(join(tmpdir(), 'catalog-snapshot-'));
 try {
+  // Exercise real Git commits: a new asset tree inherits an old publication,
+  // then becomes a clean manifest before receiving a new channel wrapper.
+  const git = (...args) => {
+    const result = spawnSync('git', ['-C', temp, ...args], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  git('init', '--quiet');
+  git('config', 'user.name', 'Snapshot Test');
+  git('config', 'user.email', 'snapshot@example.invalid');
+  const manifestFile = join(temp, 'manifest.json');
+  const changed = structuredClone(reusable);
+  changed.generatedAt = '2026-09-20T00:00:00Z';
+  const manifest = prepareCatalogAssetManifest(changed);
+  assert.equal(manifest.assetRef, undefined);
+  assert.equal(manifest.assetRefType, undefined);
+  assert.equal(manifest.provenance, undefined);
+  assert.deepEqual(prepareCatalogAssetManifest(manifest), manifest);
+  writeFileSync(join(temp, 'index.json'), JSON.stringify(manifest));
+  git('add', 'index.json');
+  git('commit', '--quiet', '-m', 'Create asset manifest');
+  const immutableRef = git('rev-parse', 'HEAD');
+  const committedManifest = JSON.parse(git('show', `${immutableRef}:index.json`));
+  writeFileSync(manifestFile, JSON.stringify(committedManifest));
+  for (const channel of ['fix-test', 'dev', 'staging', 'main']) {
+    const publication = stampCatalogSnapshot(manifest, immutableRef, { codeRef: channel, codeSha, complete: true });
+    assert.equal(verifyCatalogAssetManifest(publication, committedManifest).assetRef, immutableRef);
+    const stale = stampCatalogSnapshot(manifest, ref, { codeRef: 'dev', codeSha, complete: true });
+    assert.throws(() => verifyCatalogAssetManifest(publication, stale), /Worker asset identity mismatch/);
+    const drift = stampIndex({ ...manifest, generatedAt: 'different' });
+    assert.throws(() => verifyCatalogAssetManifest(publication, drift), /differ beyond/);
+    assert.throws(() => verifyCatalogAssetManifest(publication, { ...manifest, hash: 'bad' }), /invalid index contract/);
+    writeFileSync(join(temp, 'index.json'), JSON.stringify(publication));
+    git('add', 'index.json');
+    git('commit', '--quiet', '-m', `Publish ${channel}`);
+    const cli = spawnSync(process.execPath, [
+      fileURLToPath(new URL('./stamp-catalog-snapshot.mjs', import.meta.url)),
+      'verify-assets', join(temp, 'index.json'), manifestFile,
+    ], { encoding: 'utf8' });
+    assert.equal(cli.status, 0, cli.stderr);
+    assert.deepEqual(JSON.parse(git('show', `${immutableRef}:index.json`)), committedManifest);
+  }
+  // Every producing path must prepare before the asset commit and verify
+  // after stamping; neither translation path may inherit old publication data.
+  for (const [name, count] of [['catalog.yml', 2], ['translate.yml', 2]]) {
+    const workflow = readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), 'utf8');
+    assert.equal((workflow.match(/stamp-catalog-snapshot\.mjs prepare-assets/g) || []).length, count);
+    assert.equal((workflow.match(/stamp-catalog-snapshot\.mjs verify-assets/g) || []).length, count);
+    for (const segment of workflow.split('asset_commit="').slice(1)) {
+      assert(segment.includes('verify-assets'), `${name}: missing post-commit manifest verification`);
+    }
+  }
+  for (const name of ['catalog-reuse.yml', 'catalog-production.yml']) {
+    const workflow = readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), 'utf8');
+    assert(workflow.includes('stamp-catalog-snapshot.mjs verify-assets'), `${name}: manifest verification missing`);
+  }
   const file = join(temp, 'index.json');
   writeFileSync(file, JSON.stringify(input, null, 2) + '\n');
   const result = spawnSync(process.execPath, [
@@ -161,6 +218,15 @@ try {
   if (promoted.assetRef !== ref || promoted.provenance?.codeRef !== 'fix-F' ||
       promoted.provenance?.codeSha !== codeSha || promoted.provenance?.complete !== true) {
     throw new Error('snapshot reuse CLI did not preserve generic fix assets while advancing provenance');
+  }
+  for (const complete of [true, false]) {
+    writeFileSync(file, JSON.stringify(stampCatalogSnapshot(input, ref, { codeRef: 'dev', codeSha, complete })));
+    const prepared = spawnSync(process.execPath, [
+      fileURLToPath(new URL('./stamp-catalog-snapshot.mjs', import.meta.url)), 'prepare-assets', file,
+    ], { encoding: 'utf8' });
+    assert.equal(prepared.status, 0, prepared.stderr);
+    assert.equal(prepared.stdout.trim(), String(complete));
+    assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')), prepareCatalogAssetManifest(input));
   }
 } finally {
   rmSync(temp, { recursive: true, force: true });

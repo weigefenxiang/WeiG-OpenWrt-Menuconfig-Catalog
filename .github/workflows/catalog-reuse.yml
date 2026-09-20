@@ -155,6 +155,8 @@ jobs:
 
           git -C source fetch --depth 1 origin "$asset_ref"
           git -C source cat-file -e "${asset_ref}^{commit}"
+          git -C source show "$asset_ref:index.json" > "$RUNNER_TEMP/asset-index.json"
+          node scripts/stamp-catalog-snapshot.mjs verify-assets source/index.json "$RUNNER_TEMP/asset-index.json"
           echo "reuse=true" >> "$GITHUB_OUTPUT"
           echo "asset_ref=$asset_ref" >> "$GITHUB_OUTPUT"
           echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
@@ -243,6 +245,9 @@ jobs:
           )
           [[ "${source_identity[0]}" == "$EXPECTED_ASSET_REF" ]] || { echo "source assetRef changed after preflight"; exit 1; }
           [[ "${source_identity[1]}" == "$EXPECTED_BASE_SHA" ]] || { echo "source provenance changed after preflight"; exit 1; }
+          git -C source fetch --no-tags --depth 1 origin "$EXPECTED_ASSET_REF"
+          git -C source show "$EXPECTED_ASSET_REF:index.json" > "$RUNNER_TEMP/asset-index.json"
+          node scripts/stamp-catalog-snapshot.mjs verify-assets source/index.json "$RUNNER_TEMP/asset-index.json"
 
           if git ls-remote --exit-code --heads "$remote" "refs/heads/$TARGET_DATA_BRANCH" >/dev/null 2>&1; then
             git clone --depth 1 --single-branch --branch "$TARGET_DATA_BRANCH" "$remote" target
@@ -252,6 +257,7 @@ jobs:
           fi
           rsync -a --delete --exclude=.git source/ target/
           node scripts/stamp-catalog-snapshot.mjs target/index.json "$EXPECTED_ASSET_REF" "$GITHUB_REF_NAME" "$GITHUB_SHA" true
+          node scripts/stamp-catalog-snapshot.mjs verify-assets target/index.json "$RUNNER_TEMP/asset-index.json"
           node scripts/sync-index-assets.mjs target --check
           git -C target config user.name github-actions[bot]
           git -C target config user.email 41898282+github-actions[bot]@users.noreply.github.com

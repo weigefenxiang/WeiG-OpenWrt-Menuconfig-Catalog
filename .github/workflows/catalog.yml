@@ -369,6 +369,7 @@ jobs:
           IFS=',' read -ra assets <<< "$FAST_ASSETS"
           git -C previous config user.name github-actions[bot]
           git -C previous config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          complete="$(node scripts/stamp-catalog-snapshot.mjs prepare-assets previous/index.json)"
           add=(index.json)
           for asset in "${assets[@]}"; do add+=("$asset.json.gz"); done
           git -C previous add --sparse "${add[@]}"
@@ -378,7 +379,9 @@ jobs:
           fi
           git -C previous commit -m "data: refresh Catalog root assets"
           asset_commit="$(git -C previous rev-parse HEAD)"
-          node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA"
+          git -C previous show "$asset_commit:index.json" > "$RUNNER_TEMP/asset-index.json"
+          node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA" "$complete"
+          node scripts/stamp-catalog-snapshot.mjs verify-assets previous/index.json "$RUNNER_TEMP/asset-index.json"
           git -C previous add --sparse index.json
           if ! git -C previous diff --cached --quiet; then
             git -C previous commit -m "data: pin Catalog root assets"
@@ -442,12 +445,15 @@ jobs:
             find previous -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
             cp -a dist/. previous/
             rm -f -- previous/*.meta.json
+            node scripts/stamp-catalog-snapshot.mjs prepare-assets previous/index.json
             git -C previous add -A
             if ! git -C previous diff --cached --quiet; then
               git -C previous commit -m "data: refresh menuconfig catalog"
             fi
             asset_commit="$(git -C previous rev-parse HEAD)"
+            git -C previous show "$asset_commit:index.json" > "$RUNNER_TEMP/asset-index.json"
             node scripts/stamp-catalog-snapshot.mjs previous/index.json "$asset_commit" "$GITHUB_REF_NAME" "$GITHUB_SHA" "${{ steps.collect.outputs.complete }}"
+            node scripts/stamp-catalog-snapshot.mjs verify-assets previous/index.json "$RUNNER_TEMP/asset-index.json"
             node scripts/sync-index-assets.mjs previous --check
             git -C previous add index.json
             if ! git -C previous diff --cached --quiet; then

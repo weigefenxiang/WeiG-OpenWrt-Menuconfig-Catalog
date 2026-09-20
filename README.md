@@ -249,6 +249,18 @@ During the migration window each branch publishes two independent contracts in `
 
 The `legacy` object contains `asset`, compressed `hash`, compressed `bytes`, `catalogSchema`, and `relationsSchema`. Root-level `asset/hash/bytes` remain mirrored temporarily for older clients. New consumers must use `branch.legacy` as one atomic build contract and must not combine its file metadata with schemas from the split runtime model.
 
+## Immutable asset manifests and channel publications
+
+Asset-producing jobs (full generation, root-asset updates, and translations) remove
+publication-only `assetRef`, `assetRefType`, and `provenance` before committing the
+asset manifest. The following channel publication points to that immutable asset
+commit and supplies code/channel provenance. An asset commit cannot embed its own
+Git SHA. Reuse and production promotion preserve the same immutable assetRef and
+verify that its manifest matches the published content, not just that the commit
+exists. Legacy unstamped manifests remain readable; contradictory embedded asset
+identities are rejected. Fix a malformed snapshot in a development source lane,
+not by relaxing consumers or regenerating assets during production promotion.
+
 ## License / 许可证
 
 This project is licensed under [GNU GPLv3 or later](LICENSE). The [Chinese explanation](LICENSE.zh-CN.md) is informational only. Copyright and the public contact address are in [NOTICE](NOTICE).

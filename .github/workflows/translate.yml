@@ -155,9 +155,13 @@ jobs:
               echo "Batch ${batch}/${batch_count}: no catalog changes to publish."
               return 0
             fi
+            complete="$(node scripts/stamp-catalog-snapshot.mjs prepare-assets dist/index.json)"
+            git -C dist add --sparse index.json
             git -C dist commit -m "data: translate menuconfig descriptions batch ${batch}/${batch_count}"
             asset_commit="$(git -C dist rev-parse HEAD)"
-            node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit" "${{ needs.channel.outputs.code_ref }}" "${{ steps.code.outputs.sha }}"
+            git -C dist show "$asset_commit:index.json" > "$RUNNER_TEMP/asset-index.json"
+            node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit" "${{ needs.channel.outputs.code_ref }}" "${{ steps.code.outputs.sha }}" "$complete"
+            node scripts/stamp-catalog-snapshot.mjs verify-assets dist/index.json "$RUNNER_TEMP/asset-index.json"
             node scripts/sync-translation-assets.mjs dist/index.json --check
             git -C dist add index.json
             git -C dist commit -m "data: pin translated catalog assets batch ${batch}/${batch_count}"
@@ -209,9 +213,13 @@ jobs:
             echo "No translated catalog changes to publish."
             exit 0
           fi
+          complete="$(node scripts/stamp-catalog-snapshot.mjs prepare-assets dist/index.json)"
+          git -C dist add --sparse index.json
           git -C dist commit -m "data: translate menuconfig descriptions"
           asset_commit="$(git -C dist rev-parse HEAD)"
-          node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit" "${{ needs.channel.outputs.code_ref }}" "${{ steps.code.outputs.sha }}"
+          git -C dist show "$asset_commit:index.json" > "$RUNNER_TEMP/asset-index.json"
+          node scripts/stamp-catalog-snapshot.mjs dist/index.json "$asset_commit" "${{ needs.channel.outputs.code_ref }}" "${{ steps.code.outputs.sha }}" "$complete"
+          node scripts/stamp-catalog-snapshot.mjs verify-assets dist/index.json "$RUNNER_TEMP/asset-index.json"
           node scripts/sync-translation-assets.mjs dist/index.json --check
           git -C dist add index.json
           git -C dist commit -m "data: pin translated catalog assets"
