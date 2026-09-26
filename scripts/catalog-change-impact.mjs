@@ -34,6 +34,7 @@ const REGISTRY = Object.freeze({
     'scripts/collect-curated-size-samples.mjs',
     'scripts/discover.mjs',
     'scripts/generate-catalog.mjs',
+    'scripts/catalog-inputs.mjs',
     'scripts/generate-profile-config-groups.mjs',
     'scripts/install-probe-feeds.sh',
     'scripts/index-contract.mjs',

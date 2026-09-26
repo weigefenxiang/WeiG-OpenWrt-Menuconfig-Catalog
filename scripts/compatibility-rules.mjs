@@ -5,6 +5,7 @@ const RULE_KEYS_V2 = new Set(['id', 'issue', 'match', 'scope', 'if', 'packages',
 const RULE_KEYS_V3 = new Set([...RULE_KEYS_V2, 'sourceCommits', 'targetScope', 'failure']);
 const RULE_KEYS_V4 = new Set([...RULE_KEYS_V3, 'buildDependency']);
 const RULE_KEYS_V5 = new Set([...RULE_KEYS_V4, 'policy', 'environments', 'evidence']);
+const RULE_KEYS_V6 = new Set([...RULE_KEYS_V5, 'preferredDisable']);
 const TARGET_SCOPE_KEYS = new Set(['system', 'subtarget', 'profile']);
 const FAILURE_KEYS = new Set(['phase', 'cause', 'code', 'observed']);
 const BUILD_DEPENDENCY_KEYS = new Set(['package', 'triggerPackages']);
@@ -311,8 +312,8 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
   if (!plainObject(raw)) throw new Error('compatibility document must be an object');
   rejectUnknownKeys(raw, DOCUMENT_KEYS, 'compatibility document');
   const schema = Number(raw.schema);
-  if (![2, 3, 4, 5].includes(schema) || !Array.isArray(raw.rules)) {
-    throw new Error('compatibility document requires schema 2, 3, 4, or 5 and a rules array');
+  if (![2, 3, 4, 5, 6].includes(schema) || !Array.isArray(raw.rules)) {
+    throw new Error('compatibility document requires schema 2, 3, 4, 5, or 6 and a rules array');
   }
   const sourcePolicy = new Map((policy.sources || []).map((source) => [source.id, source]));
   const seen = new Set();
@@ -320,7 +321,7 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
     const label = `compatibility.rules[${index}]`;
     if (!plainObject(rule)) throw new Error(`${label} must be an object`);
     rejectUnknownKeys(rule, schema === 2 ? RULE_KEYS_V2 : schema === 3 ? RULE_KEYS_V3 :
-      schema === 4 ? RULE_KEYS_V4 : RULE_KEYS_V5, label);
+      schema === 4 ? RULE_KEYS_V4 : schema === 5 ? RULE_KEYS_V5 : RULE_KEYS_V6, label);
     const id = String(rule.id || '').trim();
     if (!RULE_ID_RE.test(id)) throw new Error(`${label}.id is invalid`);
     if (seen.has(id)) throw new Error(`duplicate compatibility rule id: ${id}`);
@@ -337,11 +338,11 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
     if (condition && !CONDITION_RE.test(condition)) {
       throw new Error(`${id}.if is invalid`);
     }
-    const preventive = schema === 5 && rule.policy === 'preventive';
-    if (schema === 5 && rule.policy !== undefined && !preventive) {
+    const preventive = schema >= 5 && rule.policy === 'preventive';
+    if (schema >= 5 && rule.policy !== undefined && !preventive) {
       throw new Error(`${id}.policy is invalid`);
     }
-    if (schema === 5 && !preventive && (rule.environments !== undefined || rule.evidence !== undefined)) {
+    if (schema >= 5 && !preventive && (rule.environments !== undefined || rule.evidence !== undefined)) {
       throw new Error(`${id}.environments and evidence require policy preventive`);
     }
     if (preventive && (rule.scope !== undefined || rule.sourceCommits !== undefined ||
@@ -391,6 +392,14 @@ export function normalizeCompatibilityDocument(raw, policy = { sources: [] }) {
           normalized.sourceCommits,
           normalized.evidence,
         );
+      }
+    }
+    if (rule.preferredDisable !== undefined) {
+      normalized.preferredDisable = uniqueStrings(rule.preferredDisable, {
+        label: `${id}.preferredDisable`, min: 1, max: 16, pattern: PACKAGE_RE,
+      });
+      if (rule.buildDependency || normalized.preferredDisable.some((name) => !normalized.packages.includes(name))) {
+        throw new Error(`${id}.preferredDisable requires ordinary rule participants`);
       }
     }
     return normalized;

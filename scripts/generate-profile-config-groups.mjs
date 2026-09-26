@@ -11,6 +11,7 @@ import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { captureCatalogInputs, catalogInputsHash } from './catalog-inputs.mjs';
 import {
   parseInfoRecords, parseKconfigTree, resolveTargetSelectors, safeSlug, targetBuildContract,
 } from './lib.mjs';
@@ -540,12 +541,17 @@ async function main() {
     payload.generatedAt = new Date().toISOString();
     payload.metrics.nativeParitySamples = nativeParitySamples;
     payload.metrics.generationMs = Date.now() - started;
+    const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
+    if (meta.buildInputs) {
+      const inputsHash = catalogInputsHash(captureCatalogInputs(tree));
+      if (inputsHash !== meta.source.inputsHash) throw new Error('Profile generation inputs changed after graph generation');
+      payload.source.inputsHash = inputsHash;
+    }
     const json = JSON.stringify(payload);
     const compressed = gzipSync(Buffer.from(json), { level: 9 });
     const asset = `${slug}.profiles.json.gz`;
     writeFileSync(join(outDir, asset), compressed);
 
-    const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
     meta.assets ||= {};
     meta.assets.profileBaselines = {
       asset, hash: sha256(compressed), bytes: compressed.byteLength,

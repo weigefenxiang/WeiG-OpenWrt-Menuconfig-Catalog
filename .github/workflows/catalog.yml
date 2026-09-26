@@ -30,6 +30,7 @@ on:
       - "scripts/curated-applications.mjs"
       - "scripts/discover.mjs"
       - "scripts/generate-catalog.mjs"
+      - "scripts/catalog-inputs.mjs"
       - "scripts/generate-profile-config-groups.mjs"
       - "scripts/index-contract.mjs"
       - "scripts/kconfig-relations.mjs"
@@ -240,6 +241,7 @@ jobs:
             --branch "${{ matrix.branch }}" \
             --legacy "${{ matrix.legacy }}" \
             --tree work/upstream \
+            --feeds-runtime probe-feeds-runtime.json \
             --size-sample work/package-size-sample.json \
             --out dist
       - name: Verify Target/Profile Kconfig contracts

@@ -46,18 +46,19 @@ function writeCompatibilityAsset(directory, policy) {
     JSON.parse(readFileSync(join(ROOT, 'compatibility.json'), 'utf8')),
     policy,
   );
-  const asset = 'compatibility.json.gz';
-  const json = JSON.stringify(compatibility);
-  writeFileSync(join(directory, asset), gzipSync(Buffer.from(json), { level: 9 }));
+  const write = (asset, document) => {
+    const json = JSON.stringify(document);
+    writeFileSync(join(directory, asset), gzipSync(Buffer.from(json), { level: 9 }));
+    return { asset, ...fileContract(join(directory, asset)), schema: document.schema,
+      rules: document.rules.length, jsonBytes: Buffer.byteLength(json) };
+  };
+  // One authority, two wire projections: old consumers still see every conflict.
+  const legacy = compatibility.schema >= 6 ? { schema: 5,
+    rules: compatibility.rules.map(({ preferredDisable, ...rule }) => rule) } : compatibility;
   return {
     compatibility,
-    contract: {
-      asset,
-      ...fileContract(join(directory, asset)),
-      schema: compatibility.schema,
-      rules: compatibility.rules.length,
-      jsonBytes: Buffer.byteLength(json),
-    },
+    contract: write('compatibility.json.gz', legacy),
+    ...(compatibility.schema >= 6 ? { v6Contract: write('compatibility.v6.json.gz', compatibility) } : {}),
   };
 }
 
@@ -113,7 +114,8 @@ if (fastAssetMode) {
   const body = indexBody(previous);
   const next = stampIndex({
     ...body,
-    assets: { ...body.assets, [fastAssetMode]: generated.contract },
+    assets: { ...body.assets, [fastAssetMode]: generated.contract,
+      ...(generated.v6Contract ? { compatibilityV6: generated.v6Contract } : {}) },
   });
   writeFileSync(out, JSON.stringify(next, null, 2) + '\n');
   const count = fastAssetMode === 'compatibility'
@@ -139,7 +141,7 @@ if (!rows.length && !(previous.sources || []).length && !attempts.length) {
   throw new Error('没有当前、历史或失败状态数据');
 }
 const policy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8'));
-const { compatibility, contract: compatibilityContract } = writeCompatibilityAsset(dir, policy);
+const { compatibility, contract: compatibilityContract, v6Contract } = writeCompatibilityAsset(dir, policy);
 const { applications, contract: applicationsContract } = writeApplicationsAsset(dir);
 const sources = (previous.sources || []).filter((source) => policy.sources.some((item) => item.id === source.id))
   .map((source) => {
@@ -174,6 +176,7 @@ for (const row of rows) {
     version: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
     branch: row.source.branch, counts: row.counts,
     commit: row.commit || row.source.commit || '',
+    ...(row.buildInputs ? { buildInputs: row.buildInputs, inputsHash: row.source.inputsHash } : {}),
     legacy,
     assets: row.assets || {},
     schema: Number(row.schema || 5),
@@ -237,7 +240,8 @@ const body = {
     stale: branchRows.filter((item) => item.state === 'stale').length,
     unavailable: branchRows.filter((item) => item.state === 'unavailable').length,
   },
-  assets: { compatibility: compatibilityContract, applications: applicationsContract },
+  assets: { compatibility: compatibilityContract, applications: applicationsContract,
+    ...(v6Contract ? { compatibilityV6: v6Contract } : {}) },
   sources,
 };
 writeFileSync(

@@ -678,10 +678,14 @@ assert.equal(sizeRows[0].relationsReductionPercent, 75);
 
 // Compatibility v5 separates a global preventive applicability policy from exact evidence.
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
-assert.equal(normalizedCompatibility.schema, 5);
-assert.equal(normalizedCompatibility.rules.length, 5);
-assert.equal(normalizedCompatibility.rules[0]?.id, 'OWN-0001');
-assert.equal(normalizedCompatibility.rules[0]?.issue, 'file-ownership');
+assert.equal(normalizedCompatibility.schema, 6);
+assert.equal(normalizedCompatibility.rules.length, 6);
+assert.equal(normalizedCompatibility.rules.find(rule => rule.id === 'OWN-0001')?.issue, 'file-ownership');
+const preferredOwnershipRule = normalizedCompatibility.rules.find(rule => rule.id === 'OWN-0002');
+assert.deepEqual(preferredOwnershipRule.preferredDisable, ['autosamba']);
+assert.throws(() => normalizeCompatibilityDocument({ schema: 5, rules: [preferredOwnershipRule] }, policy), /preferredDisable/);
+assert.throws(() => normalizeCompatibilityDocument({ schema: 6,
+  rules: [{ ...preferredOwnershipRule, preferredDisable: ['unrelated-package'] }] }, policy), /participants/);
 assert.throws(() => normalizeCompatibilityDocument({ schema: 1, rules: [] }, policy));
 assert.equal(normalizeCompatibilityDocument({ schema: 2, rules: [] }, policy).schema, 2);
 assert.equal(normalizeCompatibilityDocument({ schema: 3, rules: [] }, policy).schema, 3);
@@ -741,7 +745,7 @@ assert.throws(() => normalizeCompatibilityDocument({
   schema: 4, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['dockerd'] })],
 }, policy), /triggerPackages must not include the failed package/);
 assert.throws(() => normalizeCompatibilityDocument({
-  schema: 4, rules: [{ ...compatibility.rules[0], buildDependency: { package: 'openvpn-openssl', triggerPackages: ['openvpn-openssl'] } }],
+  schema: 4, rules: [{ ...compatibility.rules.find(rule => rule.id === 'OWN-0001'), buildDependency: { package: 'openvpn-openssl', triggerPackages: ['openvpn-openssl'] } }],
 }, policy), /buildDependency is only valid for build-failure/);
 assert.throws(() => normalizeCompatibilityDocument({
   schema: 3, rules: [withBuildDependency({ package: 'dockerd', triggerPackages: ['docker'] })],

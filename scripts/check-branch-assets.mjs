@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { decodeCompactRelationTables } from './relation-table-codec.mjs';
+import { captureCatalogInputs, catalogInputsHash } from './catalog-inputs.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const output = mkdtempSync(join(tmpdir(), 'weig-branch-assets-'));
@@ -18,6 +19,25 @@ try {
   copyFileSync(join(fixture, 'Config.in'), join(tree, 'Config.in'));
   copyFileSync(join(fixture, 'targetinfo'), join(tree, 'tmp', '.targetinfo'));
   copyFileSync(join(fixture, 'packageinfo'), join(tree, 'tmp', '.packageinfo'));
+  const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const initialize = directory => {
+    git(directory, 'init');
+    git(directory, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-m', 'Fixture inputs');
+  };
+  initialize(tree);
+  const feedTree = join(tree, 'feeds', 'packages');
+  mkdirSync(feedTree, { recursive: true });
+  initialize(feedTree);
+  const feedCommit = git(feedTree, 'rev-parse', 'HEAD');
+  writeFileSync(join(tree, 'feeds.conf'), 'src-git --force packages https://example.invalid/packages.git;stable\n');
+  const receipt = { outcome: 'success', feeds: [{ name: 'packages', status: 'success', commit: feedCommit }] };
+  const receiptPath = join(output, 'feeds-runtime.json');
+  writeFileSync(receiptPath, JSON.stringify(receipt));
+  const inputs = captureCatalogInputs(tree, receipt);
+  assert.equal(inputs.feeds[0].url, 'https://example.invalid/packages.git');
+  assert.deepEqual(inputs.feeds[0].options, ['--force']);
+  assert.throws(() => captureCatalogInputs(tree, { ...receipt, outcome: 'failure' }), /receipt/);
+  assert.throws(() => captureCatalogInputs(tree, { ...receipt, feeds: [] }), /receipt/);
   execFileSync(process.execPath, [
     join(ROOT, 'scripts', 'generate-catalog.mjs'),
     '--source-id', 'Fixture',
@@ -26,6 +46,7 @@ try {
     '--branch', 'test',
     '--legacy', 'false',
     '--tree', tree,
+    '--feeds-runtime', receiptPath,
     '--size-sample', join(fixture, 'package-size-sample.json'),
     '--out', output,
   ], { stdio: ['ignore', 'pipe', 'pipe'] });
@@ -35,6 +56,9 @@ try {
   const sizes = readGzipJson('fixture--test.package-sizes.json.gz');
   const meta = JSON.parse(readFileSync(join(output, 'fixture--test.meta.json'), 'utf8'));
   const legacyGraph = readGzipJson('fixture--test.graph.json.gz');
+  assert.deepEqual(meta.buildInputs, inputs);
+  assert.equal(core.source.inputsHash, catalogInputsHash(inputs));
+  assert.equal(legacyGraph.source.inputsHash, core.source.inputsHash);
   const compactGraph = readGzipJson('fixture--test.graph.compact.json.gz');
   assert.deepEqual(decodeCompactRelationTables(compactGraph.relations), legacyGraph.relations);
   assert.equal(meta.assets.graphCompact.asset, 'fixture--test.graph.compact.json.gz');

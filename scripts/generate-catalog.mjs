@@ -14,6 +14,7 @@ import { compactRelations, validateCompactRoundTrip } from './compact-relations.
 import { encodeCompactRelationTables } from './relation-table-codec.mjs';
 import { traceNativeKconfig, createNativeExpansionReplay } from './native-kconfig-preprocess.mjs';
 import { measureJsonBytes } from './catalog-size-report.mjs';
+import { captureCatalogInputs, catalogInputsHash } from './catalog-inputs.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = {};
@@ -29,10 +30,13 @@ const slug = `${safeSlug(args['source-id'])}--${safeSlug(args.branch)}`;
 mkdirSync(outDir, { recursive: true });
 let commit = '';
 try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
+const buildInputs = args['feeds-runtime']
+  ? captureCatalogInputs(tree, JSON.parse(readFileSync(args['feeds-runtime'], 'utf8'))) : null;
 const source = {
   id: args['source-id'], label: args.label || args['source-id'],
   repo: args.repo, branch: args.branch,
   commit, legacy: args.legacy === 'true',
+  ...(buildInputs ? { inputsHash: catalogInputsHash(buildInputs) } : {}),
 };
 const targets = parseInfoRecords(readFileSync(targetInfo, 'utf8'));
 const packages = parsePackageInfo(readFileSync(packageInfo, 'utf8'));
@@ -598,6 +602,7 @@ const legacyContract = {
 writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
   schema: 6,
   source: payload.source,
+  ...(buildInputs ? { buildInputs } : {}),
   counts: payload.counts,
   // Root fields remain mirrored during the schema-6 migration for old consumers.
   asset: legacyContract.asset,
