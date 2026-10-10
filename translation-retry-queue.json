@@ -5,694 +5,1384 @@
       {
         "id": "3d8f33c09b6778562f18652ea18c1e74135682b7fce27a55b594a97ed3993588",
         "text": "This enables further checks in the kernel address sanitizer, for now\nit only includes the address-use-after-scope check that can lead\nto excessive kernel stack usage, frame size warnings and longer\ncompile time.\nhttps://gcc.gnu.org/bugzilla/show_bug.cgi?id=81715 has more",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "30221851cb10191e8a1dbb211b1aca963d8f3c1e91b9a5a9cb1ac82b4ec39766",
         "text": "This package contains a base filesystem and system scripts for OpenWrt. http://openwrt.org/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "22984b637cbae0159223c5b103a8f125066e6571a2240db46dcb2710f0db4dd1",
         "text": "Without this, sort only supports -rusz, and an integer version\nof -n. Selecting this adds sort keys, floating point support, and\nmore. This adds a little over 3k to a nonstatic build on x86.\n\nThe SuSv3 sort standard is available at:\nhttp://www.opengroup.org/onlinepubs/007904975/utilities/sort.html",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "0ac2f390872e0634e755893ff0d282962eb58d26e99a078611aefb17737788bb",
         "text": "bc is a command-line, arbitrary-precision calculator with a\nTuring-complete language. See the GNU bc manual\n(https://www.gnu.org/software/bc/manual/bc.html) and bc spec\n(http://pubs.opengroup.org/onlinepubs/9699919799/utilities/bc.html).\n\nThis bc has five differences to the GNU bc:\n1) The period (.) is a shortcut for \"last\", as in the BSD bc.\n2) Arrays are copied before being passed as arguments to\nfunctions. This behavior is required by the bc spec.\n3) Arrays can be passed to the builtin \"length\" function to get\nthe number of elements in the array. This prints \"1\":\na[0] = 0; length(a[])\n4) The precedence of the boolean \"not\" operator (!) is equal to\nthat of the unary minus (-) negation operator. This still\nallows POSIX-compliant scripts to work while somewhat\npreserving expected behavior (versus C) and making parsing\neasier.\n5) \"read()\" accepts expressions, not only numeric literals.",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "5f533b6d710406dc616aa3062123d676e9bc7312660b1b5bc9858214b955ea66",
         "text": "dc is a reverse-polish notation command-line calculator which\nsupports unlimited precision arithmetic. See the FreeBSD man page\n(https://www.unix.com/man-page/FreeBSD/1/dc/) and GNU dc manual\n(https://www.gnu.org/software/bc/manual/dc-1.05/html_mono/dc.html).\n\nThis dc has a few differences from the two above:\n1) When printing a byte stream (command \"P\"), this dc follows what\nthe FreeBSD dc does.\n2) Implements the GNU extensions for divmod (\"~\") and\nmodular exponentiation (\"|\").\n3) Implements all FreeBSD extensions, except for \"J\" and \"M\".\n4) Like the FreeBSD dc, this dc supports extended registers.\nHowever, they are implemented differently. When it encounters\nwhitespace where a register should be, it skips the whitespace.\nIf the character following is not a lowercase letter, an error\nis issued. Otherwise, the register name is parsed by the\nfollowing regex: [a-z][a-z0-9_]*\nThis generally means that register names will be surrounded by\nwhitespace. Examples:\nl idx s temp L index S temp2 < do_thing\nAlso note that, like the FreeBSD dc, extended registers are not\nallowed unless the \"-x\" option is given.",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "24dc96dd13936a1853dedf42fb9da516c939d98cceceaa0b2b9d4c6a6e8d069f",
         "text": "This option allows you to define URLs that will be forwarded\nto another HTTP server. To setup add the following line to the\nconfiguration file\nP:/url/:http://hostname[:port]/new/path/\nThen a request to /url/myfile will be forwarded to\nhttp://hostname[:port]/new/path/myfile.",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "fa16c44cac10daf7dccda848f638a764f17266d21496e33b1288368077cba60f",
         "text": "A daemon for the TELNET protocol, allowing you to log onto the host\nrunning the daemon. Please keep in mind that the TELNET protocol\nsends passwords in plain text. If you can't afford the space for an\nSSH daemon and you trust your network, you may say 'y' here. As a\nmore secure alternative, you should seriously consider installing the\nvery small Dropbear SSH daemon instead:\nhttp://matt.ucc.asn.au/dropbear/dropbear.html\n\nNote that for busybox telnetd to work you need several things:\nFirst of all, your kernel needs:\nCONFIG_UNIX98_PTYS=y\n\nNext, you need a /dev/pts directory on your root filesystem:\n\n$ ls -ld /dev/pts\ndrwxr-xr-x  2 root root 0 Sep 23 13:21 /dev/pts/\n\nNext you need the pseudo terminal master multiplexer /dev/ptmx:\n\n$ ls -la /dev/ptmx\ncrw-rw-rw-  1 root tty 5, 2 Sep 23 13:55 /dev/ptmx\n\nAny /dev/ttyp[0-9]* files you may have can be removed.\nNext, you need to mount the devpts filesystem on /dev/pts using:\n\nmount -t devpts devpts /dev/pts\n\nYou need to be sure that busybox has LOGIN and\nFEATURE_SUID enabled. And finally, you should make\ncertain that busybox has been installed setuid root:\n\nchown root.root /bin/busybox\nchmod 4755 /bin/busybox\n\nwith all that done, telnetd _should_ work....",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "d66d64cf8d266e29142324fefb34188d513a3c749e664a1c3212a50c92c6d182",
         "text": "Enable support to modify to relabel files.\nNotice: If you built libselinux with -D_FILE_OFFSET_BITS=64,\n(It is default in libselinux's Makefile), you _must_ enable\nCONFIG_LFS.",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "48705f6e3cbfaa1ed2d22cef5ad2925fefc22d7943f2b492bbc6f7a57ea10814",
         "text": "It is intended to provide coupled DNS and DHCP service to a LAN. http://www.thekelleys.org.uk/dnsmasq/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1e0a9d8d1e05420ff3c2f6a82761a2d3a6b341e7c13e423e7a6d9110b8e073df",
         "text": "This package contains the hw watchdog script for the OM1P and OM2P device. http://openwrt.org/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "f817c1efc099563a7a352ab9a5e57006ca21f2712c69bad2af076c0cdb812aea",
         "text": "This package contains a collection of tools for configuring wireless adapters implementing the \"Linux Wireless Extensions\". http://hplabs.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "0dd2cbd36294156f01990f30040bf3d8920897e173cb35b58e2297093557afb2",
         "text": "Resource monitor that shows usage and stats for processor, memory, disks, network and processes. https://github.com/aristocratos/bpytop",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "842fe2f39e315d9f2f06eec86850db2cf88b5e55f226a2a46c4062122e482d6d",
         "text": "Resource monitor that shows usage and stats for processor, memory, disks, network and processes. This package contains the Python source files for bpytop. https://github.com/aristocratos/bpytop",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "2855d4cc7a4e48158eb20497b3b0a6b6316bbfedeb56df390995643ac5496068",
         "text": "Trusted-Firmware-A for MediaTek MT7622 (eMMC, 1x DDR3) https://www.trustedfirmware.org/projects/tf-a/ Daniel Golle <daniel@makrotopia.org>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "4790feddf31a682b573b4434b3ab3537aa1e2bd197132bf5620807eb2337ee92",
         "text": "Trusted-Firmware-A for MediaTek MT7622 (eMMC, 2x DDR3) https://www.trustedfirmware.org/projects/tf-a/ Daniel Golle <daniel@makrotopia.org>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b72b9f510b3b3332096cfa077773b15d48a564dca17d02e1ba813e1ca31f1404",
         "text": "Trusted-Firmware-A for Methode uDPU https://www.trustedfirmware.org/projects/tf-a/ Vladimir Vid <vladimir.vid@sartura.hr>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "24bc5ad23e6f4dd3aaa1fd39b9d56d742b0c6bcd0b9cdca347d7665f204d27ed",
         "text": "U-Boot for Arcadyan arv4519pw (NOR) http://www.denx.de/wiki/U-Boot",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7b6cf8bffe8f19fc70e5891f2e53b9101f16268db4f3c93c10a356d99cbb777f",
         "text": "U-Boot for Arcadyan ARV7506PW11 (NOR) http://www.denx.de/wiki/U-Boot",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "2f10103b2bea94897affd59b95ef88dfe2c070bead85dc287501d56dced6271e",
         "text": "U-Boot for Arcadyan ARV7506PW11 (RAM) http://www.denx.de/wiki/U-Boot",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c8d518e57bff4866fede7b39b2c3b057e3e535b656ffc0ba6961291a589c55a2",
         "text": "U-Boot for Arcadyan arv7510pw (NOR) http://www.denx.de/wiki/U-Boot",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "72ce677df3f0fc52a6634b3fc18ed0f324c5bf0d02fc7297941072bb2d418681",
         "text": "U-Boot for Banana Pi R2 (mt7623) http://www.denx.de/wiki/U-Boot",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "0f3ff49d1ae278e7e728a0b91b395982209921ee989a746b4a808ea26c363f11",
         "text": "U-Boot for SABRE i.MX6Quad board http://www.denx.de/wiki/U-Boot",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b42366351d153a9ac1da4aba8eec04e76d10b57fd112c1874521b0f0453200a8",
         "text": "GDB, the GNU Project debugger, allows you to see what is going on `inside' another program while it executes -- or what another program was doing at the moment it crashed. https://www.gnu.org/software/gdb/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c95645f443163c323522bf3ec3480eebaeddd8c1d77f0c32382822c9c84c3ab0",
         "text": "GDBSERVER is a program that allows you to run GDB on a different machine than the one which is running the program being debugged. https://www.gnu.org/software/gdb/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7e470bc6685124fffb9699b49100dd2cf72057cd01395dab66d02bcc39c45b54",
         "text": "GitLab Runner is an application that works with GitLab CI/CD to run jobs in a pipeline. https://docs.gitlab.com/runner Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "a46c967e71227769621e0acb56554cc21783b03d2c9c0ebc572e554cba904263",
         "text": "Valgrind is an award-winning suite of tools for debugging and profiling Linux programs. With the tools that come with Valgrind, you can automatically detect many memory management and threading bugs, avoiding hours of frustrating bug-hunting, making your programs more stable. You can also perform detailed profiling, to speed up and reduce memory use of your programs. http://www.valgrind.org Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "9f12f72007337a8d877976494f8a87a13c08ea94cc4a377971da6934dedbb1c4",
         "text": "Alternative ath10k firmware for IPQ4019 radio from Candela Technologies. Enables IBSS and other features.  Works with standard or ath10k-ct driver. See:  http://www.candelatech.com/ath10k-10.4.php https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "6e980b15c034cd0393e6da29a6ab109729c21d409bab5a9fd9613653c2b3ab16",
         "text": "Alternative ath10k firmware for IPQ4019 radio from Candela Technologies. Uses normal HTT TX data path for management frames, which improves stability in busy networks and may be required for .11r authentication. Enables IBSS and other features. See:  http://www.candelatech.com/ath10k-10.4.php This firmware selects and requires the ath10k-ct driver. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "34d724fd1024137d816c6a2e9a32cf037dc24b38e020215cfd3bce2851cdd1e6",
         "text": "Alternative ath10k firmware for QCA9887 from Candela Technologies. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.1.php This firmware conflicts with the standard 9887 firmware, so select only one. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "2a8949e8c01be6d139af7c2d2a4a4f652a3112060fd6894f0aaf305e024866ab",
         "text": "Alternative ath10k firmware for QCA9887 from Candela Technologies. Uses normal HTT TX data path for management frames, which improves stability in busy networks and fixes .11r authentication. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.1.php This firmware selects and requires the ath10k-ct driver. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "6b86e51dfa07f4b023e7cbd2235c83f0a0393389483944f67c219da397e35236",
         "text": "Alternative ath10k firmware for QCA9886 and QCA9888 from Candela Technologies. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.4.php This firmware conflicts with the standard 9886 and 9888 firmware, so select only one. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "a6ee55e5281c29a3584e615ad02222f8bd7c86f3dd359abeba9f1729b3589204",
         "text": "Alternative ath10k firmware for QCA9886 and QCA9888 from Candela Technologies. Uses normal HTT TX data path for management frames, which improves stability in busy networks and may be required for .11r authentication. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.4.php This firmware selects and requires the ath10k-ct driver. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c70c0b34e9c8ae04209b7ce43d9f1eb75ce40d5fff8a3644f284810cea8e5bbc",
         "text": "Alternative ath10k firmware for QCA988X from Candela Technologies. Uses normal HTT TX data path for management frames, which improves stability in busy networks and fixes .11r authentication. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.1.php This firmware selects and requires the ath10k-ct driver. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7a203fbba2c83ae50f9561ab3a283a1b5f270038e1ecc2993fc6e101d95bc8d9",
         "text": "Alternative ath10k firmware for QCA9984 from Candela Technologies. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.4.php This firmware conflicts with the standard 9984 firmware, so select only one. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "ec27f878deaea8b4fc891a0914ca65f52097f7b4121653ebbe6a9caefb05108a",
         "text": "Alternative ath10k firmware for QCA9984 from Candela Technologies. Uses normal HTT TX data path for management frames, which improves stability in busy networks and may be required for .11r authentication. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.4.php This firmware selects and requires the ath10k-ct driver. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b899b505498d29b29bdd54c2fce9356117a98befabfe938a756eed8ba954ab9b",
         "text": "Alternative ath10k firmware for QCA99x0 from Candela Technologies. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.4.php This firmware conflicts with the standard 99x0 firmware, so select only one. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "d3114865e1b3de480290a43d81bc23a59a0476344154abfe06dec3c12443e93f",
         "text": "Alternative ath10k firmware for QCA99x0 from Candela Technologies. Uses normal HTT TX data path for management frames, which improves stability in busy networks and may be required for .11r authentication. Enables IBSS and other features.  See: http://www.candelatech.com/ath10k-10.4.php This firmware selects and requires the ath10k-ct driver. https://www.candelatech.com/ath10k.php",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "854c144ba698130c5a81a3afbb039e88964f4fa543c5bf9b021a7301ff54bcd6",
         "text": "Broadcom BCM43430 NVRAM for Raspberry Pi Zero W http://git.kernel.org/cgit/linux/kernel/git/firmware/linux-firmware.git Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "23c2701ce80ba9ec718536f60cd7b88eadeb2f026a4622958845afbfe321fe2f",
         "text": "Patch which between the Annex A and Annex B firmware to create the Annex A firmware. http://www.lantiq.com/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "ec20a980d6483fa64a8aaa1082a28ac1d8ea71106bf50a0e404164de1e577e48",
         "text": "Patch which between the Annex A and Annex B firmware to create the Annex B firmware. http://www.lantiq.com/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7f3ad7d6bfa4f0597123dea6a032a7717e66822241c74ff45d36cff63409c005",
         "text": "Intel Wireless Wi-Fi 5150AGN firmware http://git.kernel.org/cgit/linux/kernel/git/firmware/linux-firmware.git Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "36423b8c20a7f6cf64d4fd2996e6004514231971822d14ecf0b74394dd372796",
         "text": "Driver for Atheros AR5523 USB sticks https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "ae53ff8f1ca95d843541ed79089b4f44004af99f586f95aecc3b95605aca8a98",
         "text": "This module contains some common parts needed by Atheros Wireless drivers. https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "95592c5d1553c18f5fe1dc725e328ac4e738fe2862718865afab59806c55adae",
         "text": "This module adds support for wireless adapters based on Atheros IEEE 802.11ac family of chipsets. For now only PCI is supported. https://wireless.wiki.kernel.org/en/users/drivers/ath10k Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "adc19a0f5da46ccea5f1ab9358e3cd1d146aeb4cea6d2888c2e1362e8ed7d638",
         "text": "This module adds support for wireless adapters based on Atheros 5xxx chipset. https://wireless.wiki.kernel.org/en/users/drivers/ath5k Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1d6e235762ee6149d384454360053e705b18c71dd9a7050cb207ac1671a21b2f",
         "text": "This module adds support for wireless adapters based on Atheros IEEE 802.11n AR6003 and AR6004 family of chipsets. https://wireless.wiki.kernel.org/en/users/drivers/ath6kl Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "318c8ee28dcd28bd4878eeeccf33dea93cffa44fd48667f9ca094f76d2d4cf22",
         "text": "This module adds support for wireless adapters based on the Atheros IEEE 802.11n AR6004 chipset. https://wireless.wiki.kernel.org/en/users/drivers/ath6kl Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "579edc79fc04ad16abfe1557cfd8c21e71efbcfe7600b608c5be449d6acb4c59",
         "text": "This module adds support for wireless adapters based on Atheros IEEE 802.11n AR5008 and AR9001 family of chipsets. https://wireless.wiki.kernel.org/en/users/drivers/ath9k Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "130270a6b0fa17b20652100c9155dc97e71efc34f2bc29aa01ca25e506f83181",
         "text": "This module adds support for wireless adapters based on Atheros USB AR9271 and AR7010 family of chipsets. https://wireless.wiki.kernel.org/en/users/drivers/ath9k Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "f5a51c854c6b94680c037002e93b0c78034091f6afe2ebbb76ae05723c8dfee9",
         "text": "This module contains some common parts needed by Broadcom Wireless drivers brcmsmac and brcmfmac. https://wireless.wiki.kernel.org/en/users/drivers/brcm80211 Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "e77bf8afb600fae56fe0701d847aab3f04adee4639d2b46114c78f8870dc901d",
         "text": "cfg80211 is the Linux wireless LAN (802.11) configuration API. https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "94e967ad7d2a6e747f23f7a590ec9582432c0e9ada6d0956d64d7818e7c5a1e5",
         "text": "iwlwifi kernel module for Intel Wireless WiFi Link 6250AGN Adapter Intel 6000 Series Wi-Fi Adapters (6200AGN and 6300AGN) Intel WiFi Link 1000BGN Intel Wireless WiFi 5150AGN Intel Wireless WiFi 5100AGN, 5300AGN, and 5350AGN Intel 6005 Series Wi-Fi Adapters Intel 6030 Series Wi-Fi Adapters Intel Wireless WiFi Link 6150BGN 2 Adapter Intel 100 Series Wi-Fi Adapters (100BGN and 130BGN) Intel 2000 Series Wi-Fi Adapters Intel 7260 Wi-Fi Adapter Intel 3160 Wi-Fi Adapter Intel 7265 Wi-Fi Adapter Intel 8260 Wi-Fi Adapter Intel 3165 Wi-Fi Adapter https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "3998f5f1f319bd812c5d1b17b0af6b8250a0e0689500a4fe45f0b3be42d12437",
         "text": "Hardware independent IEEE 802.11 networking stack for ipw2100 and ipw2200. https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "d2ef902654c98e1dc37a2a2ba12025ddaf78487960e1e52c3e4615722da3c524",
         "text": "Kernel module that helps to initialize certain Qualcomm Atheros' PCI(e) Wifi chips, which have the init data (which contains the PCI device ID for example) stored together with the calibration data in the file system. This is necessary for devices like the Cisco Meraki Z1. https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "141ee809642bce5993f1cd64ac6660869db6cc2a96c4d26d18bd38c73874669d",
         "text": "This option enables support for RTL8723BS SDIO drivers, such as the wifi found on the 1st gen Intel Compute Stick, the CHIP and many other Intel Atom and ARM based devices. https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "edf63cf89e7fe635c4d9ae3cd067f16bafb991cc08404f0d83060c816760658d",
         "text": "This is an alternative driver for various Realtek RTL8XXX parts written to utilize the Linux mac80211 stack. The driver is known to work with a number of RTL8723AU, RL8188CU, RTL8188RU, RTL8191CU, and RTL8192CU devices This driver is under development and has a limited feature set. In particular it does not yet support 40MHz channels and power management. However it should have a smaller memory footprint than the vendor drivers and benetifs from the in kernel mac80211 stack. It can coexist with drivers from drivers/staging/rtl8723au, drivers/staging/rtl8192u, and drivers/net/wireless/rtlwifi, but you will need to control which module you wish to load. RTL8XXXU_UNTESTED is enabled This option enables detection of Realtek 8723/8188/8191/8192 WiFi USB devices which have not been tested directly by the driver author or reported to be working by third parties. Please report your results! https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "942c4ea65578d830779ac01506e8ee2c700cff87fcb1dababf5853a6bd4a9036",
         "text": "This module contains some common parts needed by TI Wireless drivers. https://wireless.wiki.kernel.org/ Felix Fietkau <nbd@nbd.name>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1712127f5435c1d7919c0a0fa6f16d5680dda88e897428f4f8666e93678f069e",
         "text": "Erlang/OTP is a general-purpose programming language and runtime environment. Erlang has built-in support for concurrency, distribution and fault tolerance. . This Erlang/OTP package provides functions for exporting XML data to an external format http://www.erlang.org/ Arnaud Sautaux <arnaud.sautaux@infoteam.ch>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1b7f433fcd3230bedb4af175f58ab34b38c537854592cce56539a7a4fc591b02",
         "text": "LuaSec is a binding for OpenSSL library to provide TLS/SSL communication. https://github.com/brunoos/luasec",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "a9f6ab5f1209beea63a9a243e89447919dd71d694a728239b29d2b4f7e7ea24f",
         "text": "LuaSQL is a simple interface from Lua to a DBMS. . This package contains the MySQL binding. https://keplerproject.github.io/luasql/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1b5ce338646921dccb601e71a234e1db056f24bef4edd26e928a52cd0448a865",
         "text": "LuaSQL is a simple interface from Lua to a DBMS. . This package contains the PostgreSQL binding. https://keplerproject.github.io/luasql/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7027e06d64c01284810141e4fe2ccb84dc8ad61c801e2b6e9972bcece160c42f",
         "text": "LuaSQL is a simple interface from Lua to a DBMS. . This package contains the SQLite 3 binding. https://keplerproject.github.io/luasql/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "8a36d934628fb025a56a05b50795ce3460321d874a9242d3d3ccab582f0c152b",
         "text": "WWW client/server library for Perl (aka LWP) https://search.cpan.org/dist/libwww-perl/ Marcel Denia <naoir@gmx.net>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "bbb0d07179efd927f9a05b6c7b6e5864838863b9b2d09e84b551c150f0871075",
         "text": "apipkg is used to control the exported namespace of a Python package and greatly reduce the number of imports for users. https://github.com/pytest-dev/apipkg Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1080b4e0d383659b6966545bba5c81037bc86690fb74519d47245b353a731fb9",
         "text": "apipkg is used to control the exported namespace of a Python package and greatly reduce the number of imports for users. This package contains the Python source files for python3-apipkg. https://github.com/pytest-dev/apipkg Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b7f733dd43a2179f8381298e64ed4586321bdc9f0ff7d3f95f998c82f07cdbe9",
         "text": "Python library for atomic file writes. https://github.com/untitaker/python-atomicwrites Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "5413538dddddeeeb0fdeb26f1d2c07996970dd485178b1db830f1da639aadcbe",
         "text": "Python library for atomic file writes. This package contains the Python source files for python3-atomicwrites. https://github.com/untitaker/python-atomicwrites Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "cabceb744d386fee8a4c68d3e8fd1356f84815e8a32067f13ff84b109a771c3b",
         "text": "Pure python bindings for Augeas. http://augeas.net Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "0d99f86feb9c0a42938d2cd3c61d25dbd1d998cbc94c346e5fd1417ce04bd6d6",
         "text": "Pure python bindings for Augeas. This package contains the Python source files for python3-augeas. http://augeas.net Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "89df1c43d81c10e7921153853f8f255f6613375011c0d44cb027a66765f975ae",
         "text": "Good password hashing for your software and your servers. https://github.com/pyca/bcrypt/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "f58fa251bb27ff2723eb0671776165a23ca7e5d56318cc1352dbefe5b72047b2",
         "text": "Good password hashing for your software and your servers. This package contains the Python source files for python3-bcrypt. https://github.com/pyca/bcrypt/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c7bc698a0b09703cba6a31b6eecd30d4f8a687c7392898f945432737acaf93c5",
         "text": "The bidirectional mapping library for Python. https://github.com/jab/bidict Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "dfd54751a7b3b5b97ecb067961776635c81784c1883a67a1b3af418d9237ea2d",
         "text": "The bidirectional mapping library for Python. This package contains the Python source files for python3-bidict. https://github.com/jab/bidict Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b9d27ce620f5164409ec88d2158435742eab0d012170c0eaa477a32d767cee26",
         "text": "Python implementation of the Engine.IO realtime client and server. https://github.com/miguelgrinberg/python-engineio Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "a12c1fac290b5aacb0cf9294163ce38f5670d7fc8e82658ffceed10d0957f356",
         "text": "Python implementation of the Engine.IO realtime client and server. This package contains the Python source files for python3-engineio. https://github.com/miguelgrinberg/python-engineio Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "eee933319a4baec9f25651a09164b747fce309607ebc48ce2af46475546c0e9f",
         "text": "Eventlet is a concurrent networking library for Python that allows you to change how you run your code, not how you write it. https://eventlet.net/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "d97d2506d489a80c2522c0d7f4c162c9b40a89e2e60eb03b0d58c1484d023b99",
         "text": "Eventlet is a concurrent networking library for Python that allows you to change how you run your code, not how you write it. This package contains the Python source files for python3-eventlet. https://eventlet.net/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "54486a7bd0ef1669a2630f0f0cb93270e36652d8d182426ab216276259ec6434",
         "text": "The execnet provides a share-nothing model with channel-send/receive communication for distributing execution across many Python interpreters across version, platform and network barriers.complex functional testing for applications and libraries. https://execnet.readthedocs.io Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1b977613e64667397b72392e8fe5b8cddb1cf761d04062617226138534078efe",
         "text": "The execnet provides a share-nothing model with channel-send/receive communication for distributing execution across many Python interpreters across version, platform and network barriers.complex functional testing for applications and libraries. This package contains the Python source files for python3-execnet. https://execnet.readthedocs.io Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "0f3c88f28ebafbeb091d5b8d528b12c03a666ec486dae4a128fdafd24d39d727",
         "text": "Flask-HTTPAuth is a Flask extension that simplifies the use of HTTP authentication with Flask routes This package contains the Python source files for python3-flask-httpauth. https://github.com/miguelgrinberg/flask-httpauth Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "54f0a621149dfa172e9b99c8a4b6829693515321d417299b6401c3b1364e9a2a",
         "text": "Flask-Login provides user session management for Flask. It handles the common tasks of logging in, logging out, and remembering your users’ sessions over extended periods of time. https://github.com/maxcountryman/flask-login Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "ffc634670b1c0b4f647db2312d2154454cee27a39e706c0c7364f9423f966998",
         "text": "Flask-Login provides user session management for Flask. It handles the common tasks of logging in, logging out, and remembering your users’ sessions over extended periods of time. This package contains the Python source files for python3-flask-login. https://github.com/maxcountryman/flask-login Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "65509201e15fc160db69a34cf9a76a8341b579d89fa3bba9c474b6f3eaf82162",
         "text": "Flask-SocketIO gives Flask applications access to low latency bi-directional communications between the clients and the server. https://github.com/miguelgrinberg/Flask-SocketIO/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "6dfd5c16d6139fb118bca1f7313d885a81aa8ac3e09838fe8f1ce85673ece432",
         "text": "Flask-SocketIO gives Flask applications access to low latency bi-directional communications between the clients and the server. This package contains the Python source files for python3-flask-socketio. https://github.com/miguelgrinberg/Flask-SocketIO/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "beb34eca58f3e004d01fcad876166d9b29282bd38a018c70cdbab44577fbe520",
         "text": "The greenlet package is a spin-off of Stackless a version of CPython that supports micro-threads called tasklets. https://github.com/python-greenlet/greenlet Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "e6bb6c6584fb73cd356889891f4837e7b0a877197f9c86dc9d0fcfe7722e424f",
         "text": "The greenlet package is a spin-off of Stackless a version of CPython that supports micro-threads called tasklets. This package contains the Python source files for python3-greenlet. https://github.com/python-greenlet/greenlet Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "0920e886b184abfde9076ecef3170f91702eeb68db459da7973b8c48de302a48",
         "text": "iniconfig is a small and simple INI-file parser module. https://github.com/RonnyPfannschmidt/iniconfig Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "3902e4a6a18d3c57ae9737f1f6444ec4898c278b7eac3fe09090322f1bf5a7d6",
         "text": "iniconfig is a small and simple INI-file parser module. This package contains the Python source files for python3-iniconfig. https://github.com/RonnyPfannschmidt/iniconfig Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "6053e81d606321dc91a3a85a185f7759646c6f559e5da066ce9b326326e48f08",
         "text": "Module for reading MaxMind DB files This package contains the Python source files for python3-maxminddb. https://dev.maxmind.com/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "bb354a8b2baaab716f3b338f2a62eadf01fc00ab2345f2b6e37234c42af35da0",
         "text": "more-itertools library collects additional building blocks, recipes, and routines for working with Python iterables. https://github.com/erikrose/more-itertools Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "f9b9e2cc857d0652fc535b87f050e3cf8f632120713e8317f1398b5e1d31dc7b",
         "text": "more-itertools library collects additional building blocks, recipes, and routines for working with Python iterables. This package contains the Python source files for python3-more-itertools. https://github.com/erikrose/more-itertools Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "3af6b2d6d7d24458a79df0efb64507d9eb4f3ac674cffce563df65cf7fcdca16",
         "text": "MessagePack is an efficient binary serialization format. It lets you exchange data among multiple languages like JSON. https://msgpack.org/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "55d259d9aedd586bd9983adcdb8141058831ecc222f8378a637de1f38526a0b2",
         "text": "MessagePack is an efficient binary serialization format. It lets you exchange data among multiple languages like JSON. This package contains the Python source files for python3-msgpack. https://msgpack.org/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "ad322e5ad8529610b9f8148491a423526cf9b5a2cc8daabbe5c669531e66abf4",
         "text": "The packaging project includes version handling, specifiers, markers, requirements, tags, utilities. https://github.com/pypa/packaging Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "5785e9839d1ec5be58cdd91902921d26ca14146b71db32e33776733db1ea9fad",
         "text": "The packaging project includes version handling, specifiers, markers, requirements, tags, utilities. This package contains the Python source files for python3-packaging. https://github.com/pypa/packaging Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "10a96100fa4d901e19dbea56b088c9cc0d760209a97c293aca9b69011eae79bd",
         "text": "Passlib is a password hashing library for Python 2 & 3, which provides cross-platform implementations of over 30 password hashing algorithms, as well as a framework for managing existing password hashes. It’s designed to be useful for a wide range of tasks, from verifying a hash found in /etc/shadow, to providing full-strength password hashing for multi-user applications. https://bitbucket.org/ecollins/passlib",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b3af3766021fbf004226407eb101a293de64efbf0f4e9377b47c6854317e34f7",
         "text": "Passlib is a password hashing library for Python 2 & 3, which provides cross-platform implementations of over 30 password hashing algorithms, as well as a framework for managing existing password hashes. It’s designed to be useful for a wide range of tasks, from verifying a hash found in /etc/shadow, to providing full-strength password hashing for multi-user applications. This package contains the Python source files for python3-passlib. https://bitbucket.org/ecollins/passlib",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c0bd450390448593559fd0ffda217516f864488cc0adf42dc5aa76ac1162302e",
         "text": "A minimalist production ready plugin system for python This package contains the Python source files for python3-pluggy. https://github.com/pytest-dev/pluggy Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "5a76bf257c54771a6aef518b7d6da735a462b2fcbb5f217ff6f5afbe9c2ab769",
         "text": "psutil is a cross-platform library for retrieving information on running processes and system utilization. https://github.com/giampaolo/psutil Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "003f7e84f25ce03849dffffeec305e2b06c3c53f1a8a18557c11019adaf6fbbb",
         "text": "psutil is a cross-platform library for retrieving information on running processes and system utilization. This package contains the Python source files for python3-psutil. https://github.com/giampaolo/psutil Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "aa1039302e502b827b06a08b20fb729bc555c7de9132733a1d8f71b390957d86",
         "text": "Library with cross-python path, ini-parsing, io, code, log facilities This package contains the Python source files for python3-py. https://github.com/pytest-dev/py Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "8c1824e56581b4c7cacfc3f6001970c8e0ef85cc4b5e63c3da24088085e4fe7f",
         "text": "The pyparsing module is an alternative approach to creating and executing simple grammars, vs. the traditional lex/yacc approach, or the use of regular expressions. The pyparsing module provides a library of classes that client code uses to construct the grammar directly in Python code. https://github.com/pyparsing/pyparsing/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "8e90ecf0033a1cc22db90a1e60d808bf21820f2fdd53ccbd559101cdcd63d44b",
         "text": "The pyparsing module is an alternative approach to creating and executing simple grammars, vs. the traditional lex/yacc approach, or the use of regular expressions. The pyparsing module provides a library of classes that client code uses to construct the grammar directly in Python code. This package contains the Python source files for python3-pyparsing. https://github.com/pyparsing/pyparsing/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b6ded379cf6b4644b6c3851fea54ad1c391fbd557f692f6197d0fbe9da31b2b4",
         "text": "PySocks lets you send traffic through SOCKS proxy servers. It is a modern fork of SocksiPy with bug fixes and extra features. https://github.com/Anorov/PySocks Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "aea403a9e05352d9af6b71c099390a03d60a5a0ea73dbd6410eb2178c3651c59",
         "text": "PySocks lets you send traffic through SOCKS proxy servers. It is a modern fork of SocksiPy with bug fixes and extra features. This package contains the Python source files for python3-pysocks. https://github.com/Anorov/PySocks Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7dfb1d718913b7c5af8e09a8b218034df2e9cef7b9e16dfeb72b84ea913fa2dd",
         "text": "The pytest framework makes it easy to write small tests, yet scales to support complex functional testing for applications and libraries. https://docs.pytest.org/en/latest/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1ae1f2d569ce7fb2d0eb4246ea99e10017655587d67a01212ad6a7fb5d1628a4",
         "text": "Pytest plugin which enables to run tests in isolated forked subprocesses This package contains the Python source files for python3-pytest-forked. https://github.com/pytest-dev/pytest-forked Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "63858de108b9897b72b34dde3d4894e0ae9b77b5cddaa96666d479d232743a27",
         "text": "The pytest framework makes it easy to write small tests, yet scales to support complex functional testing for applications and libraries. This package contains the Python source files for python3-pytest. https://docs.pytest.org/en/latest/ Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "f51de58f24d21914fe7e01b0bb14bd006e4f0da7198fa752d51445ef32f1abe6",
         "text": "The pytest framework makes it easy to write small tests, yet scales to support complex functional testing for applications and libraries. https://github.com/pytest-dev/pytest-xdist Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "bad3ee9d22b14c3ae5c4e20a346e6b265a2be3cc25b71ea99c8137841c10f95c",
         "text": "The pytest framework makes it easy to write small tests, yet scales to support complex functional testing for applications and libraries. This package contains the Python source files for python3-pytest-xdist. https://github.com/pytest-dev/pytest-xdist Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "f78ee49a2ebc9d864d9f8c51ac30da1b0bb071518b14a21d47d04044758cc645",
         "text": "Python implementation of the Socket.IO realtime client and server. https://github.com/miguelgrinberg/python-socketio Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "4881350fcda082f589b998d9b510cf84949431ab65ec9b73f1ea1c3831aa0f3f",
         "text": "Python implementation of the Socket.IO realtime client and server. This package contains the Python source files for python3-socketio. https://github.com/miguelgrinberg/python-socketio Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "114372a6f14b2b255babb02ab865bc3f2b4d909a0f76a53d4de663e4d0876ae0",
         "text": "Python Library for Tom's Obvious, Minimal Language This package contains the Python source files for python3-toml. https://github.com/uiri/toml Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "a6ac2a5b5951c9dd8f6029cfac8808e6722d4fd4a1b9d985ca185cc382cd6a2b",
         "text": "Backported and Experimental Type Hints for Python. https://github.com/python/typing Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "62b893d1a4b5cccf347b4f2f71a6b624d7a029149307f71e534b7ded7b09a0ae",
         "text": "Backported and Experimental Type Hints for Python. This package contains the Python source files for python3-typing-extensions. https://github.com/python/typing Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "62506d187344b94a04df82bbee9d793eee5823d532059617c5bddf3e6618eb95",
         "text": "vCard and vCalendar support for Python This package contains the Python source files for python3-vobject. http://eventable.github.io/vobject/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "9376d237ed3da4d09f11f9960c82ad2b1b45de785c8ad2de4cbec5ebe43207b2",
         "text": "Python library that measures the width of unicode strings rendered to a terminal This package contains the Python source files for python3-wcwidth. https://github.com/jquast/wcwidth Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "5240b8053847162cdb75ec7482fa9b7d52bbe057d1cd3aeb68a5224e5abb57c7",
         "text": "Backport of pathlib-compatible object wrapper for zip files This package contains the Python source files for python3-zipp. https://github.com/jaraco/zipp Jan Pavlinec <jan.pavlinec@nic.cz>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "9966a8e54ed55c2577ddd54454de0d03f6848f840243299da109b68465a2e403",
         "text": "Ruby is the interpreted scripting language for quick and easy object-oriented programming.  It has many features to process text files and to do system management tasks (as in perl).  It is simple, straight-forward, and extensible. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "2ad8a7ef6180da1e04e0555aac47d43d0a06dc0191194b99eac7275e905b98ad",
         "text": "This metapackage currently install all ruby-* packages, providing a complete Ruby Standard Library. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "ce14f538238ff76c4ed9b30c9d5dd165c866c7487f5b949f07e1985d538919bb",
         "text": "This package contains the ruby Manage dependencies. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "9a6572cccfcb615de0731fda247f22f7d3da9a1d489cde5d6a85286802d3d1f3",
         "text": "This package contains the ruby (embedded interpreter). http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c8597cc0c96e275c518a13c418b7fad4cebfb92f87b39e6eb725f3d996aa4442",
         "text": "This package contains the ruby gems packet management. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "61426fba85d0ea10c6de9413953f90649a8af2cab7aace1db4b0d8a59c6dba5a",
         "text": "This package contains the ruby (interactive shell). http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "a191118c65d23df84e887dbed655b02026a44e928da08cef09365d02c084c48c",
         "text": "This package contains the ruby JSON Implementation for Ruby. Provides: - /usr/lib/ruby/3.0/json.rb - /usr/lib/ruby/3.0/json - /usr/lib/ruby/3.0/*/json - /usr/lib/ruby/gems/3.0/specifications/default/json-*.gemspec Except: - /usr/lib/ruby/3.0/psych - /usr/lib/ruby/3.0/psych.rb - /usr/lib/ruby/3.0/*/psych.so - /usr/lib/ruby/gems/3.0/specifications/default/psych-*.gemspec http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "b2d7bc2ee6c23a0ea5d290c3e476c6ed69f5ef714d25b70f3361990ea8cef5c0",
         "text": "This package contains the ruby Observer design pattern. Provides: - /usr/lib/ruby/3.0/observer.rb - /usr/lib/ruby/3.0/observer/ - /usr/lib/ruby/gems/3.0/gems/observer-*/ - /usr/lib/ruby/gems/3.0/specifications/default/observer-*.gemspec http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "1aa2e242289e4aacbc1f740439fb590919a24eec9d1b6070e9285a433e22fd7d",
         "text": "This package contains the ruby LALR parser generator. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "702ec8b445039b22f7a37f81ea7adc9e6b54cc0c28d280b7dddc68949de44062",
         "text": "This package contains the ruby Rake (make replacement). http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c214f553d30dab2be429bffe74e34675e0d8b3e327bdc8892a449d7d823ef796",
         "text": "This package contains the ruby RBS provides syntax and semantics definition for the Ruby Signature language. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "08c88a6c37f51079b05fff97d55c344e343f5f277309779ea5e7c8717e6bd16c",
         "text": "This package contains the ruby RDoc produces HTML and command-line documentation for Ruby projects. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7469d5c7077d4cf610c321bf52bbe77d38efa3bcfb917297f832ab32d2f97f6a",
         "text": "This package contains the ruby XML toolkit. Provides: - /usr/lib/ruby/3.0/rexml - /usr/lib/ruby/gems/3.0/gems/rexml-* - /usr/lib/ruby/gems/3.0/specifications/rexml-*.gemspec Except: - /usr/lib/ruby/gems/3.0/gems/rexml-*/doc - /usr/lib/ruby/gems/3.0/gems/rexml-*/test - /usr/lib/ruby/gems/3.0/gems/rexml-*/sample - /usr/lib/ruby/gems/3.0/gems/rexml-*/*.md - /usr/lib/ruby/gems/3.0/gems/rexml-*/.travis.yml http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "3ce7a4d360ec235aca95762e9ba98e742d69e9d6de510c50459a32207b68e15a",
         "text": "This package contains the ruby RSS toolkit. Provides: - /usr/lib/ruby/3.0/rss - /usr/lib/ruby/3.0/rss.rb - /usr/lib/ruby/gems/3.0/gems/rss-* - /usr/lib/ruby/gems/3.0/specifications/rss-*.gemspec Except: - /usr/lib/ruby/gems/3.0/gems/rss-*/doc - /usr/lib/ruby/gems/3.0/gems/rss-*/test - /usr/lib/ruby/gems/3.0/gems/rss-*/sample - /usr/lib/ruby/gems/3.0/gems/rss-*/*.md - /usr/lib/ruby/gems/3.0/gems/rss-*/*.txt http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "7e72e3d29432a1c28f49ead13b284f4a1238a55593d9f6e81dcd096ac770e650",
         "text": "This package contains the ruby Gem test-unit. Provides: - /usr/lib/ruby/gems/3.0/specifications/test-unit-*.gemspec - /usr/lib/ruby/gems/3.0/gems/test-unit-* Except: - /usr/lib/ruby/gems/3.0/gems/test-unit-*/doc - /usr/lib/ruby/gems/3.0/gems/test-unit-*/test - /usr/lib/ruby/gems/3.0/gems/test-unit-*/sample - /usr/lib/ruby/gems/3.0/gems/test-unit-*/*.md http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "46a5e262e99bb44a054417f92c5064210cee905280283a2c8558cfa0461d6b0b",
         "text": "This package contains the ruby A type analysis tool for Ruby code based on abstract interpretation. http://www.ruby-lang.org/ Luiz Angelo Daros de Luca <luizluca@gmail.com>",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "bfad7fbed973a4433ea76cbc72daeee957667d9c3529c842b3cd3c4ce90cb96d",
         "text": "Zstandard - Fast real-time compression algorithm. This package provides libzstd library. https://github.com/facebook/zstd",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "c54e6d7ad53db3567f889b835d175ca4e0c700911418984361fe86ac7d865bea",
         "text": "SQLite is a small C library that implements a self-contained, embeddable, zero-configuration SQL database engine. This package contains the SQLite (v3.x) shared library, used by other programs. http://www.sqlite.org/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "4dfaa3e064d9be553eafd3a426a46863804d9c388bfd0afac769b92dfb9e92c8",
         "text": "psqlODBC is the official PostgreSQL ODBC Driver. It is released under the Library General Public Licence, or LGPL. https://odbc.postgresql.org/",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       },
       {
         "id": "dc6b03c78e77b8d40caa44bad5bb2efb1cd4e3d318910731d78bbcbac592fecd",
         "text": "FUSE (Filesystem in UserSpacE) This package contains the FUSE shared libraries, needed by other programs. - libfuse - libulockmgr https://github.com/libfuse/libfuse",
-        "reason": "Batch incomplete: translated 362/500 queued descriptions"
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "c7c02fa8d07880d9dcba0d089fafdc802bb0f0db188445619e063349c61e6701",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains kxcjk1013 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "9085f5d149c45245a76efc375976a84c028b432d013b4202eb33b1e202ed2eb6",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains mq303a sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "716da1d9af7dc08a2c342f643af5342924fbe4e282ebeb55e6e0ff6fb9e61bf9",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains mq303a sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "b2b94bcb18269c293a2c15f318b4c8e4885c0d43269bd7585b654442158ecb98",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ms5611 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "056fd4db11cd1120dd5d021a493cdbf2067ac4463f9f68899e1119327ccb1e2e",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ms5611 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "68af4bdbc508bfe86e745c35e40c3100aa4c5d96edf0b6f985860c73e9c42052",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ms5803 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "64b5d5c140b9eb62c1e963b2754639efbbe36b09c775776fdcf239e45d393592",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ms5803 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "2158f4029af358ba9ee0edd0224cfb4a1027c786a114c7f709e4506818c7f230",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains my9221 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "06939bbb622741f4a3ae2dd017c08e97f2901aaaf723f2f5dd37d39cdbe11282",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains my9221 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "13c6b4d36798e7ec068d3fa59fb15def82241e8476f06d564b6295e735018b4a",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nlgpio16 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "2227c2765432ff2331ba966e906597c4d67bd000f472f86405fe94aefc5dec9d",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nlgpio16 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "4569f12594037b1bb33ecc1b5a22d14f78eb6576236207ea3b65aaacc8af52bf",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nmea_gps sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "67d4af4d88d545d8ca2928139f3da58fcfb3913e45d1f753765863119946fdaa",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nmea_gps sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "926f43482a411f27fd38b2c42bc174952c4d097286c9afbef76cf5a4ba09fdc8",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nrf24l01 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "4ccc5c70cb7629099494cde16478a859fd48aff101df95642517baa31dfa7090",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nrf24l01 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "c945968c881a1b37e0f2874b1389e5807d0cc51ba0b432199ce68f75f6e378ba",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nrf8001 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "b2fcd0b2ed0bc5fb4bd79afd519ec39c9e241ad096dd066ed4f0266c5a5d8d9f",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nrf8001 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "75b8dac62b2df12fc55f63b53d39f72b4c0843d8e724d7ba8e51c740b6940900",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nunchuck sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "5e1694a98d326f99f0e972263bb19d40c516a7fb4e52e1607a6381e21ab92279",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains nunchuck sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "612fc15fbf602197dfb7cbcf2f1ada611168cea66a8000d57b2d44d7e65ec3f4",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains o2 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f0e69e5e804d1fb7280d087dc83e3d46b7a7232cb0bfa65e43bd2e3057c6842d",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains o2 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "8b16ec9e8b03aa8f7859fd3ec02c2d9db4ff6a179c9e972df3a102f852fc874c",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains otp538u sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "c7014cf0ee595e5495448adf547ace61fa7f2b2aead426befb4b59ae29d25ac2",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains otp538u sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f01293a8361ff902c45b3be1ec877c609bdcbb3c14b336c5ac9f9dabe7f54626",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ozw sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "5aea838487de7ed9f3a33ba63c0b034a61e20a3441fe133e6ee3c1b62ee08189",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ozw sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "5c9637af4f32d597683ad9e50f6bfac0e391ec251dcb445072fa5d95432e81d0",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains p9813 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "9c0c174d14d3ca9af0fe17232af3af505b9312c6491d9690cfd89bcedfe2298f",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains p9813 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "19fad676cbff672993722e627f39e29ea84cae19b2c7594dd0eac38d660265a5",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains pca9685 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "cc371208dac2ce56cc8b36a09c530f61b59561fc508dbfca33c7762bd7c44d34",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains pca9685 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "9e50ef7650d6984e6d4a91b6f1c5de05f162f69e87017b78a6d87fb47549e3af",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains pn532 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "5600075e774f7e963b69c1064c0f524f442f2d57f706452b68c0b602cbe1fa8a",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains pn532 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "daa52a43ddf411dcdf6daf9b92219a40b40d99fe9e512c04875f7e39209d6562",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ppd42ns sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "0fc391900ba07fe981a89fe92a9a220fb21abf8c013eb526d4ad81e2158c660b",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ppd42ns sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "afb2f2bc30ae79f87e9e7ac10a0464c6c1067d6af892a59b6ca5eba6826bdb98",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains pulsensor sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "fa36c3caa3b61c519693c0a23b27b3c5ccc8e34309fb195fb6e34ad7c7b12048",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains pulsensor sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "afa73d2de705b06de9a2302877eb260321a3b0c1a8b14a1d0739089f3d2a4ab7",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains relay sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "03075de7f74a27ff2068e14889dc9f1e32a6dbf4602a921810a290ca12562a10",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains relay sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f5fd3d052f402e27f998e5d91d85908e86386d7af84ada0395478e53fa9ad0e2",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rf22 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "59fde00b24ace3a02a66210adb878996e22d93e1d54b7f50571ce9d1b00df612",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rf22 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "75ca4b20b24acc840e57eb53d7b30dfbde868fb0fadf5594fd3c5a17dd005d7a",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rfr359f sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "16a8f9c39dbacd857e118e6f5784f7d3641e8165dc7cc76ec8d7aa8d109bad2e",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rfr359f sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "620d96d0b664340a2ac7f539abb06a12034aaddb59b643ee6233efe9e88c86f7",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rgbringcoder sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "422aff72b4824035899e76933b9d3c72ecf536d6c638193261d57dbcfff343e8",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rgbringcoder sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "bd9e3925469d0411e7a33a94736069337c59af3146af9ac37ba9a169581681e1",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rhusb sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "e012cc67eea4972d2b409096af579ba39c775367a6e0cf8c20f5da43fc828040",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rhusb sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "6a7f342fc3d3a77e844c5fffbcd41574ac9a928c1b6c7f583d9041d24319a9fd",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rn2903 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "507ab99277f94aa757ae40a1e74dc4854ff208237ab591188026a150278ecd55",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rn2903 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "52386c03eb8b6badde37453831fbf3339b3cd61b31f64f26c3e894ba86c2abcf",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rotary sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "71e2ccc063a002f71fb7a3ee6ebd426963314fbb9ede55deff4ce76ec2fa0a93",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rotary sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "8e7a305ff14ac8e82f97edab5b19ece66c0d9f7b44245b706fbf0768bc969f09",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rotaryencoder sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "0135fd53e4a108326abdd0c0e10bbe84fb02d324ad738871478b9fc44af42de5",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rotaryencoder sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "48abc497f4f18d8039899f9bf165f41282017e0809fea8e736c7e677baa636e3",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rpr220 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "0d1896dfbad1ac86e5d474dd4602a5dc9269f0dacb2330e79ac369ed76c4b43c",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rpr220 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f7afca13c7c197588ec28f71bd15a5474b3aee0eb4f888389d145647391b41cb",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rsc sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "eb3b65e7e26a683fccc509a4793e3d5b3cf2e5f7861b07e8cfb7db71a0ec2a54",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains rsc sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "065647d1f0ed7c30473ec5f1609d4563e68f67a612561b1855b092fd580005df",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains scam sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "7b9f68481ad07e98da3997e5cf2d57a784a1bba08bb422be703608719742a595",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains scam sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "fda0148fc0470a5fe82f4b20d48e9eeccc454b4923401429358fc7ca3355d37e",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sensortemplate sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "ba339cf931ef51984a9e930fe05049b039f3cda49bfce35bd76368cc6e3957c8",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sensortemplate sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "ce811a2ace185c2c26a459bc6a6be4bf0cbe49ae78798cef8da64a2c1c686bb7",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains servo sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "a11ea498281972ac9730e3f24ee616e6a7149f441f83ab2d6a62fd6b8ba1000c",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains servo sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "8abd83306f23ae15dde7e72733e6ab4234a9a4461bb0a8048ed09b33e0c22069",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sht1x sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "ba67f560edfd21c745f176234b148edcd1153b060f992591f4ba775d35df0f09",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sht1x sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "7e1d50515ebb844dc1b4e62b145b8e76225891131780f164eeb560c1b77fea5e",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains si1132 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "23a538541cb9498e620b3c5e356c4fe1c48b96a29493045fdde48482596436c0",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains si1132 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "7b62084842788e255b4481279502ec2b4650ff1d90152db58e51c449e4beaf97",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains si114x sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "bbae08b7dfe36fb37fd28feebd2f6414afcfcc469295f7ba3afa1d586ce83e8a",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains si114x sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "dda1ad966fc6695e19687151113ce5603fe2dc5caa81d01a4f8adc7d8e191c1f",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains si7005 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "43f983b42ba40dd484657badc934e01452a2a63af434a8d72f0d32fcd64fb43b",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains si7005 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "4241115b6bf266a68e0ab60c65a737bfd8a9afe99ea9a2898fc030befdf2e3d5",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains slide sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "23e655566fa193988bf51a592379fd428c6b0b0e566cea12954f7e7a64e309b7",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains slide sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "66f5da7b79cd13532c634d7875cccaecf408771633bbc1fb44c85edf4611524c",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sm130 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "4d0df6a55f793b718b625f987ced77a4d856c36982cc0a4120de201018b18384",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sm130 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f8cb4a44c2536885ed7d3f602224a4d068e9e992378cd568e45f9ca0339901eb",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains smartdrive sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "d14c9f6325c20ae8401f0712fbbaa616eda9f5fc4ead708d53a074632b9a2332",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains smartdrive sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "7a22014eea46ac50b1867d3644f515f4bfdf2e3aa520339bf4fa693a999916c3",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains speaker sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "7952ba061fdd97010033701025362f0ecdbd7ec088cf2a06a36f5e14194701ad",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains speaker sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "83e48a6c883d3b244d209029a21798faecd7e1d781397849140a49099f1acc81",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ssd1351 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "8448e96ba10ae4a03b8bd44416aae91110ccf5eb5043eca5b921782217ba016f",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ssd1351 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f1fb5f2e540e3639ec0c7c1511f1767b80e086dbbb870fa769d07eed83cf95e8",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains st7735 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "eccd8e5e51ad0bd859850ba53fcc3e5f00b566714f1789e6b7ab205249d7f3fb",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains st7735 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "a0e7ded06e4b13d9b1ad1605cedbe2d1abaa2ed240523ce4dc68f00615a98b3f",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains stepmotor sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "4ec3b81fd4b5fc12e1c9315dba06602e15047b153e5756af6f73ab804dd06516",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains stepmotor sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "a075e2d5765a51dd66a7fd543731135b7f1f7b75c1e9d0035c2c50fc1123ba48",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sx1276 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "c549d7d69b57ad8af912ddcdd198ade33ed0e18abc143fe29b158701304fd9de",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sx1276 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "2b8f66461aed1e2dffd7aa309efbe2e6ec2233162752e1bfa00eff6c48b2c93d",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sx6119 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "6795079ea1d3366f3bfe7e2a297900f8d3f433f24ff3df69ebc74b4bb846b0a0",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains sx6119 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "2021f9aed5563b0af897e114a2cf50fb6044648e3726463b4a62cde02914a1fb",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains t3311 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "c1f50606ea8dd281b27767b28b4ebf441e74371d3f343d87e55d8ca4b40c3f06",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains t3311 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "fca3d16b48f320e219d53e05e4d968c7dfc200117e7025976572d350d5668d38",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains t6713 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "572d6b86a498e195c5a46520199a1e7af1fe6edc21403e0486a29a13622e32c8",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains t6713 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "fef509289484a0f68d80af52e0147801ee26538f4fa35b8728d02ec7b0146d3c",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ta12200 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "070849b69156092b7aa73589ed0e51674eb44d09c16dd44650dc845f0e3ba7ee",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ta12200 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "6ce12d3a9fbd8c063a70b221339b978ca5d29de4896c835b72fac74f4b0eaa59",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tca9548a sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "14d5e1bbeca2800d90ed0c276431754af00a6d28970317d157f75ef106aa0900",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tca9548a sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "142c702531e68adc8548cb8b8aef80212857b9bafc8ee2990882123c1f1d87c0",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tcs3414cs sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "94910a3e4f956196736da12fb0dda9b608ef05ff3495078e1c3e48ec97b34a20",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tcs3414cs sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "b38f30f7b923d6704e5a3ccc800c8debadb0d5aa1078b066b806370603e05b2e",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tcs37727 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "b5a16dc62eda58709f293bd94a25ea65819f2ed281aaca404302ad8e9ade74fa",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tcs37727 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "22191bf36a7685e932817089caaa3d4064cc3d795c4741e3a51df66873b163db",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains teams sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "72a314a57a392c561ccfbf1689facc150f8977f477a088a811a04bb4704835a1",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains teams sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "114669372a7241b445d55c1fcd333a2345dae76b1444d45be6531f7dc28906e5",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains temperature sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "7f95d94a9a660750f9824d00158836ebb1ee8390a82e6fb46e3f310f4fa5b64c",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains temperature sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f4e49885cdfd02b6832495f2aed2fd921c8e091514dd24018445c6b52019c3de",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tex00 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "e54a9ef159fe17eb247502f301079aea48d704078de21b4df51b10af0edf6ac3",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tex00 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "13b57a120320d0429ad78e4f6130faab8c4d63784f56ba4980a873cf874b83ef",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains th02 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "3ea7ecc2989742b4df177fc418d783fc6331de1af7e8a736653d3760f3383a8b",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains th02 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "5df6513c3ea46eb503be058a736ddfa0c74d960007cab5b244a53cc87febd02c",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tm1637 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "194cefa9b900dc8c29449f580311291b9cfeb9cbae1f98284de15a4782cb62e9",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tm1637 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "94eff3d1f6a28fb027227631f83a8480c494295009453cf5bdaef3d33133f18a",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tmp006 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "b2102e73d986b671f6882d53c554d23afccc0f0c13de85a4fde12488760928e5",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tmp006 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "03e1907cd01bbe6866dcd9d57d7b95a74d9fce080f8ae1ca2fe5d849935144d6",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tsl2561 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "3b5e236fcce5927fcf9a464574041d27e4365f869f81133337c0317ebcd34d4d",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains tsl2561 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "576f31f7d8a8520f62b30952e22a76a6a34b955930b4077f46ff62cf28f5b781",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ttp223 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "bfa03149226923fb1268174e61d76e163853dbdef1e0549ca8e7c97211af5666",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ttp223 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "4bdb4cb2d0be16c9e4e388103a81df6c4ec10599b1123aa1d9762d85dd515633",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains uartat sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "e88f13943ed700524bbed5085ea2662ae7148a03baf32d0a5c673fb555040e99",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains uartat sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "2a4c5d0b11983f011598276d495a41272b977f4800f26950d2eaec2cf54035be",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains uln200xa sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "1fe973a10342cf547d00db73f8f09cd088fb6f66b8bb3d0b1fbc57a7bdff6b90",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains uln200xa sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "b0aa85608bf9df73075ce8d122eb50acf7aa7bdaa416028d695543ddbee7f292",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ultrasonic sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "91bc9bcf64bbce6fa6f5f718ea4a1ee93e3dbc839d7c95d91c39b42a005720e4",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains ultrasonic sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "b380559aa2edb3cbddeadd479d7e46be3f1e25620ecc976239e5b5d12c880120",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains urm37 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "db773dc18386a1a4df2bfadb830e823f9280aac4c45d7f8bf2d2b5697352ccef",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains urm37 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "686f8a2001802e19d65491d33b1cd150ea2acb9735a7efa44ba4be69944714c9",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains utilities sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "c8da890bad70528f5180c644389b37d8b08eed72025f443c6ead88b30bf94dbb",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains utilities sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "77cff4468c195733a943f2cf7125a259553c134d757f9273c307c98ce952056b",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains vcap sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "104003f6ea208a7390df62cc4a629f18d58f8bbb7b7fb17360c7227aad835589",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains vcap sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "d4b62ea7d81e4358841eab9a2d3f59c33beef7771811a04959d00dbee063111d",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains vdiv sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "9aaffde014b80ccf59410bd0fc8a0e4fa6589ff67de4e8503886d2fd8101035d",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains vdiv sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "e47c50afbfaf294cb192dd56f487e0016c24317012eca62306b4f36c8ae419e2",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains veml6070 sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "a029459648170c7942b03f50eaa6c84e91a25b815faea288c7aa2a8741097a8d",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains veml6070 sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "bfb71eda0c2d875da3ce7dc331d0dc57643049d89e16d14620cf0afe71163c21",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains water sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "f1aba1bcc8ac647c80250a9851e0faef5acf53dd937c9e5a562080d17e341d54",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains water sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "1bd8af39883fe7b84d191cd3dd3f4a484d5ee7e4bfda0a098f8f81f1d9ca12e2",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains waterlevel sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "0ddd8664d8a449a134f1b241fdddcc2336c3d1faeea2b43fcd47e7e15d0fa6d0",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains waterlevel sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "958291adc7140f6e8a3573e80031fd926c9209771348118b49247803d62031f3",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains wfs sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "82c104ccc4ffcfbe75cb20f95b063f96baa9fac99e9698a223780e753d26a8c9",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains wfs sensor Python3 library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
+      },
+      {
+        "id": "bf7140b0e39aba638339ef7a97cc986bac6d75b885535fedfe073bf459727d37",
+        "text": "UPM is a high level repository that provides software drivers for a wide variety of commonly used sensors and actuators. These software drivers interact with the underlying hardware platform through calls to MRAA APIs. MRAA that allows you to use various sensors on platforms such as the Intel Galileo, Intel Edison, Minnowboard MAX and others. This package contains wheelencoder sensor C/C++ library https://github.com/intel-iot-devkit/upm John Crispin <blogic@openwrt.org>, Hirokazu MORIKAWA <morikw2@gmail.com>",
+        "reason": "Batch incomplete: translated 224/500 queued descriptions"
       }
     ]
   },
-  "updatedAt": "2026-10-09T01:22:48.093Z"
+  "updatedAt": "2026-10-10T00:28:54.024Z"
 }
