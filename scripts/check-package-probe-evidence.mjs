@@ -582,6 +582,14 @@ const timeoutPackageNames = parseProbeLog([
   'Package: python3-async-timeout:',
   'Package: cttimeout:',
 ].join('\n'));
+assert.deepEqual(parseProbeLog(' * pkg_hash_check_unresolved: cannot find dependency baidupcs-web for luci-app-baidupcs-web'),
+  [{ type: 'missing-install-dependency', package: 'luci-app-baidupcs-web', dependency: 'baidupcs-web', manager: 'opkg' }]);
+assert(!parseProbeLog('Packages for luci-app-baidupcs-web found, but incompatible with the architectures configured')
+  .some(row => row.type === 'missing-install-dependency'), 'secondary installer diagnostics do not prove a missing backend');
+assert(parseProbeLog('ext4_allocate_best_fit_partial: failed to allocate 613 blocks, out of space?')
+  .some(row => row.type === 'image-too-large'), 'ext4 partition exhaustion is capacity, not a package fault');
+assert.equal(createEvidence({ log: 'ERROR: operation timed out after 300 seconds\n * pkg_hash_check_unresolved: cannot find dependency backend for frontend',
+  env: { PROBE_ROOTS: 'frontend' } }).conclusion, 'inconclusive', 'interrupted installation cannot establish package incompatibility');
 assert(!timeoutPackageNames.some((issue) => issue.type === 'timeout'), 'package names containing timeout must not be classified as runner timeout');
 assert(parseProbeLog('ERROR: operation timed out after 300 seconds').some((issue) => issue.type === 'timeout'));
 assert(!parseProbeLog('Probe bootstrap: apt-get update attempt 1/3 (timeout 240s).').some((issue) => issue.type === 'timeout'),

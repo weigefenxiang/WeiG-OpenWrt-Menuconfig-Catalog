@@ -2,6 +2,39 @@
   "schema": 7,
   "rules": [
     {
+      "id": "BLD-0015",
+      "issue": "build-failure",
+      "match": "all-installed",
+      "scope": { "iStoreOS": ["istoreos-24.10"] },
+      "sourceCommits": ["fb971407ffd9a094e6f16d9c029f1f580ed5c2ad"],
+      "inputHashes": ["750cca36b6786ae99dd924ca03867f49e04982bd5264cc09a19d5775783543f5"],
+      "targetScope": { "system": ["x86"], "subtarget": ["64"], "profile": ["DEVICE_generic"] },
+      "packages": ["luci-app-baidupcs-web"],
+      "refs": [
+        "run:37603997193",
+        "job:112735039803",
+        "feed:packages:f1c73e13fc8c78f5f1c74096f25494817494dc47",
+        "feed:luci:b28d7f1da49c3cb4ce931aff3267473fb327a05b",
+        "feed:routing:00619bc7bc60d8b67ecc490121e45298b122cd6e",
+        "feed:telephony:92892fa285360b8981f62bf4e0a097e6449e7e33",
+        "feed:store:a97ace34f2da358a015b094d326bba2697697f2e",
+        "feed:third:335fa421e0fcd673a78986117981d4dfa3bf57d7"
+      ],
+      "failure": {
+        "phase": "rootfs-install",
+        "cause": "dependency-caused",
+        "code": "missing-package-dependencies",
+        "observed": {
+          "package": "luci-app-baidupcs-web",
+          "missingDependencies": ["baidupcs-web"],
+          "sourceMakefile": "feeds/third/luci-app-baidupcs-web/Makefile",
+          "compileTarget": "package/install",
+          "error": "pkg_hash_check_unresolved: cannot find dependency baidupcs-web for luci-app-baidupcs-web",
+          "evidenceBasis": "native-selectable; frontend compile succeeded; absent backend failed OPKG installation"
+        }
+      }
+    },
+    {
       "id": "BLD-0014",
       "issue": "build-failure",
       "match": "all-selected",

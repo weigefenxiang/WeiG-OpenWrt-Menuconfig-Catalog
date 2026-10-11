@@ -29,6 +29,9 @@ export function parseProbeLog(log) {
   for (const match of text.matchAll(/(?:WARNING|ERROR):\s+Makefile ['"]?([^'"\s]+)['"]? has a dependency on ['"]?([^'"\s,]+)[,'"]? which does not exist/gi)) {
     issues.push({ type: 'missing-dependency', makefile: match[1], dependency: match[2] });
   }
+  for (const match of text.matchAll(/pkg_hash_check_unresolved:\s+cannot find dependency\s+([^\s]+)\s+for\s+([^\s]+)/gi)) {
+    issues.push({ type: 'missing-install-dependency', package: match[2], dependency: match[1], manager: 'opkg' });
+  }
   if (/No rule to make target/i.test(text)) issues.push({ type: 'missing-target' });
   if (/direct(?:ly selected)? Probe (?:roots|intent) did not survive/i.test(text)) issues.push({ type: 'kconfig-unsatisfied' });
   if (/upstream package metadata does not contain Probe root|ambiguous upstream Source-Makefile|tmp\/\.packageinfo is missing/i.test(text)) {
@@ -41,7 +44,7 @@ export function parseProbeLog(log) {
   if (isMemoryExhaustion(text)) issues.push({ type: 'infrastructure-failure', reason: 'memory-exhausted' });
   if (/(?:^|[\s:])(?:timed\s*out|timeout:)/i.test(text)) issues.push({ type: 'timeout' });
   if (/Hash check failed|download failed|Connection timed out|Could not resolve host|RPC failed|HTTP\s+(?:429|5\d\d)|returned error:\s*(?:429|5\d\d)|expected ['"]?packfile|early EOF|Connection reset|TLS.*(?:error|failed)|GnuTLS.*error|SSL.*(?:error|failed)/i.test(text)) issues.push({ type: 'package-download-failure' });
-  if (/not enough space|image is too big|filesystem.*too large/i.test(text)) issues.push({ type: 'image-too-large' });
+  if (/not enough space|image is too big|filesystem.*too large|ext4_allocate[^:]*:.*out of space|failed to allocate [0-9]+ blocks, out of space/i.test(text)) issues.push({ type: 'image-too-large' });
   if (/final-boot-failed|Kernel panic|not syncing/i.test(text)) issues.push({ type: 'boot-failure' });
   return [...new Map(issues.map((row) => [JSON.stringify(row), row])).values()];
 }

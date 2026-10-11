@@ -1,8 +1,16 @@
 # Compatibility 证据规则
 
-`compatibility.json` 只记录上游 Kconfig/Catalog 当前无法表达、但真实构建已经确认的兼容性事实。它不是第二套 dependency 数据库，不保存 symbol 类型、N/M/Y、名称、翻译、依赖、provider、包内容 hash 或生成时间。精确适用范围可引用已有源码/feeds 输入身份。
+`compatibility.json` 只记录原生 Kconfig 无法表达、但真实构建已经确认的编译或安装故障。Catalog relations 仍拥有依赖与提供者事实；规则记录故障证据，不复制关系图。它不是第二套 dependency 数据库，不保存 symbol 类型、N/M/Y、名称、翻译、provider、包内容 hash 或生成时间。精确适用范围可引用已有源码/feeds 输入身份。
 
 ## Schema 7 与向后兼容发布
+
+BLD-0015 记录 iStoreOS/istoreos-24.10 在精确源码/feeds、x86/64/DEVICE_generic 下的
+`luci-app-baidupcs-web` 缺少 `baidupcs-web` 安装后端。Run 37603997193 的前端编译成功，
+OPKG 在 package/install 阶段失败；不是 native menuconfig 不可选，也不是架构不支持。
+仅 Y 安装时命中，M 不命中；推荐取消前端是规避已证实故障，不能补造不存在的后端。
+Lienol/25.12 的 Run 37593841726 安装前后端成功，不套用此规则。
+其它分支、硬件限制和仅静态发现的缺失依赖不外推，详见
+[后端缺失证据与候选边界](COMPATIBILITY-BACKENDS-20261011.md)。
 
 权威文档使用 schema 7。可选 `preferredDisable` 只指定规则命中后优先关闭的参与包，
 不是依赖、锁定或可执行指令；共享 Kconfig planner 仍须模拟并验证合法修改，

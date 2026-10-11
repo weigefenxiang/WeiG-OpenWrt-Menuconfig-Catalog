@@ -709,7 +709,17 @@ assert.equal(sizeRows[0].relationsReductionPercent, 75);
 // Compatibility v5 separates a global preventive applicability policy from exact evidence.
 const normalizedCompatibility = normalizeCompatibilityDocument(compatibility, policy);
 assert.equal(normalizedCompatibility.schema, 7);
-assert.equal(normalizedCompatibility.rules.length, 18);
+assert.equal(normalizedCompatibility.rules.length, 19);
+const backendRule = normalizedCompatibility.rules.find(row => row.id === 'BLD-0015');
+assert.equal(backendRule.match, 'all-installed');
+assert.equal(backendRule.failure.phase, 'rootfs-install');
+assert.equal(backendRule.failure.code, 'missing-package-dependencies');
+assert.deepEqual(backendRule.failure.observed.missingDependencies, ['baidupcs-web']);
+assert.deepEqual(backendRule.scope, { iStoreOS: ['istoreos-24.10'] });
+assert.deepEqual(backendRule.targetScope, { system: ['x86'], subtarget: ['64'], profile: ['DEVICE_generic'] });
+assert.equal(backendRule.sourceCommits[0], 'fb971407ffd9a094e6f16d9c029f1f580ed5c2ad');
+assert.equal(backendRule.inputHashes[0], '750cca36b6786ae99dd924ca03867f49e04982bd5264cc09a19d5775783543f5');
+assert(!backendRule.buildDependency && !backendRule.policy, 'runtime backend absence is not a compile closure or blanket preventive ban');
 const amuleRule = normalizedCompatibility.rules.find(row => row.id === 'BLD-0014');
 assert.deepEqual(amuleRule.packages, ['amule']);
 assert.deepEqual(amuleRule.buildDependency, { package: 'amule' });
