@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "languages": {
+    "zh-CN": [
+      {
+        "id": "3d8f33c09b6778562f18652ea18c1e74135682b7fce27a55b594a97ed3993588",
+        "text": "This enables further checks in the kernel address sanitizer, for now\nit only includes the address-use-after-scope check that can lead\nto excessive kernel stack usage, frame size warnings and longer\ncompile time.\nhttps://gcc.gnu.org/bugzilla/show_bug.cgi?id=81715 has more",
+        "attempts": 1,
+        "reason": "unchanged-or-rejected-output",
+        "nextAttemptAt": "2026-10-18T13:14:03.383Z"
+      }
+    ]
+  },
+  "updatedAt": "2026-10-17T13:14:03.383Z"
+}
