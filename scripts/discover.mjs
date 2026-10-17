@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  compareBranches, sourceEnvironment, sourceAllowsBranch, sourceBranchVersion, sourceNeedsDiscovery, validateSourcePolicy,
+  compareBranches, sourceEnvironment, sourceEnvironmentKeys, sourceAllowsBranch, sourceBranchVersion, sourceNeedsDiscovery, validateSourcePolicy,
 } from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -42,7 +42,7 @@ for (const source of config.sources) {
     const candidate = (await response.json()).default_branch;
     if (sourceAllowsBranch(source, candidate)) defaultBranch = candidate;
   }
-  const environmentKeys = (source.environments || []).filter(row => branches.includes(row.branch)).map(row => row.key);
+  const environmentKeys = sourceEnvironmentKeys(source, branches);
   for (const branch of [...new Set([...branches, ...environmentKeys])].filter((item) => sourceAllowsBranch(source, item))
     .sort((left, right) => compareBranches(left, right, source))) {
     if (!/^[A-Za-z0-9._/-]{1,96}$/.test(branch)) throw new Error(`非法分支名:${source.repo}/${branch}`);

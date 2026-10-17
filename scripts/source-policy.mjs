@@ -47,7 +47,8 @@ export function sourceEnvironment(source, key) {
   const seen = new Set();
   for (const row of environments) {
     if (!BRANCH_RE.test(row.key || '') || !BRANCH_RE.test(row.branch || '') ||
-        row.key === row.branch || seen.has(row.key) || !row.label || !Array.isArray(row.feeds) || !row.feeds.length) {
+        row.key === row.branch || seen.has(row.key) || !row.label || !Array.isArray(row.feeds) || !row.feeds.length ||
+        (row.retired !== undefined && typeof row.retired !== 'boolean')) {
       throw new Error('Invalid source environment identity');
     }
     seen.add(row.key);
@@ -61,6 +62,13 @@ export function sourceEnvironment(source, key) {
     }
   }
   return environments.find(row => row.key === key) || { key, branch: key, label: key, feeds: [] };
+}
+
+// Retired environments remain resolvable for immutable historical requests,
+// but never become choices in a newly generated Catalog.
+export function sourceEnvironmentKeys(source, branches) {
+  return (source.environments || []).filter(row => !row.retired && branches.includes(row.branch))
+    .map(row => row.key);
 }
 
 export function sourceAllowsBranch(source, branch) {
