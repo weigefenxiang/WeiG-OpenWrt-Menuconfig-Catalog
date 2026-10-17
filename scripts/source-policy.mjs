@@ -42,7 +42,29 @@ export function validateSourcePolicy(source) {
   return { patterns, exclude, family };
 }
 
+export function sourceEnvironment(source, key) {
+  const environments = source?.environments || [];
+  const seen = new Set();
+  for (const row of environments) {
+    if (!BRANCH_RE.test(row.key || '') || !BRANCH_RE.test(row.branch || '') ||
+        row.key === row.branch || seen.has(row.key) || !row.label || !Array.isArray(row.feeds) || !row.feeds.length) {
+      throw new Error('Invalid source environment identity');
+    }
+    seen.add(row.key);
+    const names = new Set();
+    for (const feed of row.feeds) {
+      if (!/^\w+$/.test(feed.name || '') || names.has(feed.name) ||
+          !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(feed.repo || '') || !BRANCH_RE.test(feed.ref || '')) {
+        throw new Error('Invalid source environment feed');
+      }
+      names.add(feed.name);
+    }
+  }
+  return environments.find(row => row.key === key) || { key, branch: key, label: key, feeds: [] };
+}
+
 export function sourceAllowsBranch(source, branch) {
+  branch = sourceEnvironment(source, branch).branch;
   const { patterns, exclude, family } = validateSourcePolicy(source);
   if (family) {
     const value = String(branch || '');

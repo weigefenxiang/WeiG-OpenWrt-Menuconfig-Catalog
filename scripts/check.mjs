@@ -34,7 +34,7 @@ import { buildCatalogSizeReport } from './catalog-size-report.mjs';
 import { applicableBuildDependencies, normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
 import { activeCuratedGroups, buildCuratedApplications, buildBranchApplicationRows } from './curated-applications.mjs';
-import { sourceAllowsBranch, sourceBranchVersion, compareBranches, validateSourcePolicy } from './source-policy.mjs';
+import { sourceAllowsBranch, sourceEnvironment, sourceBranchVersion, compareBranches, validateSourcePolicy } from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = join(ROOT, 'tests', 'fixture');
@@ -74,6 +74,11 @@ assert.deepEqual(openwrt.branches?.include, ['main', 'openwrt-*']);
 assert(sourceAllowsBranch(openwrt, 'main'));
 assert(!sourceAllowsBranch(openwrt, 'master'));
 assert(sourceAllowsBranch(lede, 'master'));
+for (const environment of lede.environments) {
+  assert(sourceAllowsBranch(lede, environment.key));
+  assert.equal(sourceEnvironment(lede, environment.key).branch, 'master');
+}
+assert(!sourceAllowsBranch(lede, 'master-luci-19.07'), 'unsupported feeds must not appear as a stable version');
 assert(sourceAllowsBranch(lede, 'openwrt-30.01'));
 const store = policy.sources.find((row) => row.id === 'iStoreOS');
 const lienol = policy.sources.find((row) => row.id === 'Lienol');

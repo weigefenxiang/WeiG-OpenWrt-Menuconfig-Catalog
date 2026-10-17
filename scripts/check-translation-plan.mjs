@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { createTranslationPlan } from './translation-plan.mjs';
+import { createTranslationPlan, remainingTranslationSeconds, deferTranslationRetries } from './translation-plan.mjs';
 
 const defaults = createTranslationPlan({});
 assert.deepEqual(defaults, {
@@ -28,4 +28,11 @@ assert.throws(() => createTranslationPlan({ TRANSLATE_BATCH_SIZE: '99' }), /Batc
 assert.throws(() => createTranslationPlan({ TRANSLATE_BATCH_COUNT: '21' }), /Batch count/);
 assert.throws(() => createTranslationPlan({ TRANSLATE_PUBLISH_MODE: 'never' }), /Publish mode/);
 
+assert.equal(remainingTranslationSeconds(2000, 600, 1000), 600);
+assert.equal(remainingTranslationSeconds(1500, 600, 1000), 200);
+assert.equal(remainingTranslationSeconds(1200, 600, 1000), 0);
+const retries = deferTranslationRetries([], [['demo', { english: 'Keep product name' }]], {}, 'zh-CN', 0);
+assert.equal(retries[0].attempts, 1);
+assert.equal(retries[0].nextAttemptAt, '1970-01-02T00:00:00.000Z');
+assert.deepEqual(deferTranslationRetries(retries, [], { demo: { translations: { 'zh-CN': 'translated' } } }, 'zh-CN', 0), []);
 console.log('translation plan checks passed: 60m job / 50m shared budget / 5000 items');

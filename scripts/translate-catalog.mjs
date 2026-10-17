@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import { remainingTranslationSeconds, deferTranslationRetries } from './translation-plan.mjs';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -80,9 +81,12 @@ const zhBefore = missing('zh-CN').length;
 if (zhBefore) state.phase = 'zh-CN-usage'; else if (state.phase !== 'rotation') state.phase = 'rotation';
 const runPhase = state.phase;
 const activeLanguage = requestedLanguage !== 'auto' ? requestedLanguage : runPhase === 'zh-CN-usage' ? 'zh-CN' : rotationLanguages[state.rotationIndex];
-const retryIds = new Set((retryQueue.languages?.[activeLanguage] || []).map((row) => row.id));
+const priorRetries = retryQueue.languages?.[activeLanguage] || [];
+const retryById = new Map(priorRetries.map(row => [row.id, row]));
+const retryIds = new Set(priorRetries.map(row => row.id));
 const candidates = missing(activeLanguage).map((id) => [id, cache.entries[id]]).filter(([, row]) => [...row.english].length <= 4500)
-  .sort((a, b) => Number(retryIds.has(b[0])) - Number(retryIds.has(a[0])));
+  .filter(([id]) => !retryById.get(id)?.nextAttemptAt || Date.parse(retryById.get(id).nextAttemptAt) <= Date.now())
+  .sort((a, b) => Number(retryIds.has(a[0])) - Number(retryIds.has(b[0])));
 const pending = []; let chars = 0;
 for (const row of candidates) { const length = [...row[1].english].length; if (pending.length >= maxItems || (provider === 'azure' && chars + length > runBudget)) continue; pending.push(row); chars += length; }
 let translated = 0, requestedCharacters = 0, apiError = '', model = '', rejected = 0, timedOut = false;
@@ -90,40 +94,47 @@ const save = (id, text, meta) => { const row = cache.entries[id]; if (!row || !t
 if (enabled && provider === 'azure') {
   if (!azureKey) apiError = 'Azure selected but AZURE_TRANSLATOR_KEY is not configured';
   for (let offset = 0; azureKey && offset < pending.length && !apiError;) {
+    const remaining = remainingTranslationSeconds(Number(process.env.TRANSLATE_DEADLINE_UNIX), Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 3000));
+    if (remaining <= 0) { timedOut = true; break; }
     const batch = pending.slice(offset, offset + 50); offset += batch.length; requestedCharacters += batch.reduce((sum, [, row]) => sum + [...row.english].length, 0);
-    try { const query = new URLSearchParams({ 'api-version': '3.0', from: 'en', textType: 'plain', to: languageCodes[activeLanguage] }); const headers = { 'Ocp-Apim-Subscription-Key': azureKey, 'Content-Type': 'application/json' }; if (process.env.AZURE_TRANSLATOR_REGION) headers['Ocp-Apim-Subscription-Region'] = process.env.AZURE_TRANSLATOR_REGION; const response = await fetch(`${azureEndpoint}/translate?${query}`, { method: 'POST', headers, body: JSON.stringify(batch.map(([, row]) => ({ Text: row.english }))) }); if (!response.ok) throw new Error(`${response.status} ${await response.text()}`); const payload = await response.json(); batch.forEach(([id], index) => save(id, String(payload[index]?.translations?.[0]?.text || '').trim(), 'azure-translator')); model = 'azure-translator'; } catch (error) { apiError = error.message; }
+    try { const query = new URLSearchParams({ 'api-version': '3.0', from: 'en', textType: 'plain', to: languageCodes[activeLanguage] }); const headers = { 'Ocp-Apim-Subscription-Key': azureKey, 'Content-Type': 'application/json' }; if (process.env.AZURE_TRANSLATOR_REGION) headers['Ocp-Apim-Subscription-Region'] = process.env.AZURE_TRANSLATOR_REGION; const response = await fetch(`${azureEndpoint}/translate?${query}`, { method: 'POST', headers, signal: AbortSignal.timeout(Math.max(1, Math.min(60, remaining)) * 1000), body: JSON.stringify(batch.map(([, row]) => ({ Text: row.english }))) }); if (!response.ok) throw new Error(`${response.status} ${await response.text()}`); const payload = await response.json(); batch.forEach(([id], index) => save(id, String(payload[index]?.translations?.[0]?.text || '').trim(), 'azure-translator')); model = 'azure-translator'; } catch (error) { apiError = error.message; }
   }
 }
 if (enabled && provider === 'argos' && pending.length) {
   const queue = join(distDir, '.argos-queue.json'), resultFile = join(distDir, '.argos-result.json');
   temporaryFiles = [queue, resultFile];
-  writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 3000), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
+  writeFileSync(queue, JSON.stringify({ language: activeLanguage, timeBudgetSeconds: remainingTranslationSeconds(Number(process.env.TRANSLATE_DEADLINE_UNIX), Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 3000)), rows: pending.map(([id, row]) => ({ id, text: row.english })) }));
   console.log(`Argos: ${activeLanguage}, batch ${batchNumber}/${batchCount}, queued ${pending.length}/${candidates.length} descriptions (batch limit ${maxItems})`);
   const result = await new Promise((done) => {
     activeChild = spawn(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { stdio: 'inherit' });
     activeChild.once('error', (error) => done({ error, status: -1 }));
-    activeChild.once('exit', (status) => done({ status }));
+    const budget = remainingTranslationSeconds(Number(process.env.TRANSLATE_DEADLINE_UNIX), Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 3000));
+    const timer = setTimeout(() => {
+      timedOut = true;
+      activeChild?.kill('SIGTERM');
+      setTimeout(() => activeChild?.kill('SIGKILL'), 10000).unref();
+    }, Math.max(1, budget) * 1000 + 15000);
+    activeChild.once('exit', (status) => { clearTimeout(timer); done({ status }); });
   });
   activeChild = null;
   if (cancelled) {
     rmSync(queue, { force: true }); rmSync(resultFile, { force: true }); temporaryFiles = [];
     throw new Error('Translation cancelled before Catalog data publish');
   }
-  if (result.error || result.status !== 0 || !existsSync(resultFile)) apiError = result.error?.message || 'Argos translator failed';
-  else { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut = Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }
+  if (result.error || (!timedOut && result.status !== 0) || (!timedOut && !existsSync(resultFile))) apiError = result.error?.message || 'Argos translator failed';
+  else if (existsSync(resultFile)) { const output = JSON.parse(readFileSync(resultFile, 'utf8')); apiError = output.error || ''; model = output.model || 'argos'; rejected = Number(output.rejected || 0); timedOut ||= Boolean(output.timedOut); for (const row of output.translations || []) save(row.id, String(row.text || '').trim(), model); }
   rmSync(queue, { force: true }); rmSync(resultFile, { force: true }); temporaryFiles = [];
 }
 const incomplete = enabled && pending.length > 0 && translated !== pending.length;
 const warning = apiError || (incomplete ? `Batch incomplete: translated ${translated}/${pending.length} queued descriptions` : '');
-const fatalError = Boolean(enabled && pending.length > 0 && translated === 0);
+const fatalError = Boolean(enabled && (apiError || (pending.length > 0 && translated === 0 && !timedOut && rejected !== pending.length)));
 const fatalMessage = fatalError ? (apiError || 'No translations produced') : '';
 const ready = enabled && !fatalError && (provider !== 'azure' || Boolean(azureKey));
 if (enabled) {
   retryQueue.schema = 1;
   retryQueue.updatedAt = new Date().toISOString();
   retryQueue.languages ||= {};
-  const remaining = pending.filter(([id]) => !cache.entries[id]?.translations?.[activeLanguage])
-    .map(([id, row]) => ({ id, text: row.english, reason: warning || 'not translated' }));
+  const remaining = deferTranslationRetries(priorRetries, timedOut ? [] : pending, cache.entries, activeLanguage);
   if (remaining.length) retryQueue.languages[activeLanguage] = remaining;
   else delete retryQueue.languages[activeLanguage];
   writeFileSync(retryFile, JSON.stringify(retryQueue, null, 2) + '\n');

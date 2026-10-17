@@ -1,16 +1,21 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { decodeCompactRelationTables } from './relation-table-codec.mjs';
-import { captureCatalogInputs, catalogInputsHash } from './catalog-inputs.mjs';
+import { captureCatalogInputs, catalogInputsHash, applyEnvironmentFeeds } from './catalog-inputs.mjs';
 import { indexedTranslationCatalogs, readIndexedTranslationCatalog, menuLanguagePayload } from './translation-catalog-assets.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const feedInput = 'src-git packages https://github.com/example/packages.git\n#src-git luci https://github.com/coolsnowwolf/luci.git;master\nsrc-git luci https://github.com/coolsnowwolf/luci.git;openwrt-25.12\n';
+const environment = { feeds: [{ name: 'luci', repo: 'coolsnowwolf/luci', ref: 'openwrt-24.10' }] };
+assert.match(applyEnvironmentFeeds(feedInput, environment), /luci.git;openwrt-24.10/);
+assert(applyEnvironmentFeeds(feedInput, environment).includes('packages https://github.com/example/packages.git'));
+assert.throws(() => applyEnvironmentFeeds(feedInput, { feeds: [{ ...environment.feeds[0], repo: 'other/luci' }] }), /mismatch/);
 const output = mkdtempSync(join(tmpdir(), 'weig-branch-assets-'));
 const fixture = join(ROOT, 'tests', 'fixture');
 const tree = join(output, 'tree');
@@ -57,14 +62,16 @@ try {
   const readGzipJson = (name) => JSON.parse(gunzipSync(readFileSync(join(output, name))).toString('utf8'));
   const core = readGzipJson('fixture--test.core.json.gz');
   const meta = JSON.parse(readFileSync(join(output, 'fixture--test.meta.json'), 'utf8'));
-  const legacyGraph = readGzipJson('fixture--test.graph.json.gz');
+  assert(!existsSync(join(output, 'fixture--test.graph.json.gz')), 'new snapshots must retire the duplicate readable graph');
   assert.deepEqual(meta.buildInputs, inputs);
   assert.equal(core.source.inputsHash, catalogInputsHash(inputs));
-  assert.equal(legacyGraph.source.inputsHash, core.source.inputsHash);
+
   const compactGraph = readGzipJson('fixture--test.graph.compact.json.gz');
-  assert.deepEqual(decodeCompactRelationTables(compactGraph.relations), legacyGraph.relations);
+  const referenceGraph = readGzipJson('fixture--test.relations.json.gz');
+  assert.deepEqual(decodeCompactRelationTables(compactGraph.relations), referenceGraph.relations,
+    'published compact graph must remain field-for-field equal to the producer reference');
   assert.equal(meta.assets.graphCompact.asset, 'fixture--test.graph.compact.json.gz');
-  assert.equal(compactGraph.source.commit, legacyGraph.source.commit);
+  assert.equal(compactGraph.source.commit, referenceGraph.source.commit);
   assert.equal(core.source.defaultBranch, 'test', 'discovered upstream default must survive generated source metadata');
   assert.equal(meta.sizeReport.split.initialBytes, meta.assets.core.bytes + meta.assets.graphCompact.bytes);
   const textEntry = indexedTranslationCatalogs({ sources: [{ id: 'Fixture', branches: [{

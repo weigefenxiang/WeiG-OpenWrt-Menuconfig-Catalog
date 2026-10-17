@@ -1,5 +1,26 @@
 # WeiG OpenWrt Menuconfig Catalog
 
+## Source build environments / 源码构建组合
+
+LEDE keeps the real `master` source branch. Optional LuCI 24.10, 23.05 and master
+feeds are reviewed `environments` in `catalog.config.json`, not historical LEDE
+firmware releases. Each environment has a unique Catalog key, a separate
+`upstreamBranch`, a truthful `displayName`, and explicit feed overrides. Discovery,
+source cloning, metadata, Native Profiles and Probe use the same policy. All
+actual source/feed commits remain locked in `buildInputs` and `inputsHash`.
+
+LEDE 的组合键用于区分同一源码配不同 feeds；不冒充 Git 分支或整套旧稳定版。
+网页展示真实 `master · LuCI …`，只有完整生成验证成功的组合才可提交。
+
+Translation runs daily. One deadline covers setup, translation, encoding and
+publication, with a publication reserve. Rejected unchanged output stays English
+and is retried with backoff; it is never counted as translated. Modern translation
+updates independently hashed language shards without recompressing full legacy
+graphs. Earlier successful batches remain published if a later batch stops.
+
+每日翻译复用现有增量/批次发布链；整轮预算包含回写、校验和发布。未翻译项保留英文，
+拒绝项退避重试，不伪装完整翻译。旧快照不重写，不合并全部语言、不清理固定 SHA。
+
 ## Source families and runtime publication / 版本族与运行资产
 
 | Source | Discovered branches | Default selection |
@@ -20,15 +41,14 @@ proof that every Profile or firmware builds. Package-capacity estimates are not 
 不作为可用数据。没有可信同源官方大小索引时明确未知，不借用其它源数字。
 
 New snapshots keep required contract/duplicate/translation/relations evidence in
-Actions artifacts, not the runtime data branch. Existing graph and legacy bundle
-contracts remain while older consumers still require them; immutable historical
-snapshots remain addressable. Modern translation reads full text from menu/help
+Actions artifacts, not the runtime data branch. New snapshots publish the existing proven compact graph only; readable graph
+and legacy bundle contracts in immutable historical snapshots remain addressable.
+The full legacy bundle is retained for compatibility but is frozen during modern translation. Modern translation reads full text from menu/help
 (`complete-text-v1`) and language projections, without decoding a graph to discover
-text; old snapshots retain the legacy path, and compatibility bundles are updated
-one branch at a time with non-text fields preserved.
+text; legacy-only inputs retain the translation path with non-text fields preserved.
 
 网页先显示验证过的 core 选择器，依赖图与 Native baseline 并行加载，菜单/长说明/语言/
-当前架构大小仍按需加载，不把所有数据合成 ZIP。代表性真实 `ImmortalWrt/openwrt-25.12`
+语言仍按需加载，不把所有数据合成 ZIP。代表性真实 `ImmortalWrt/openwrt-25.12`
 core+compact graph+profiles 为 6,659,160 bytes gzip；合并 gzip-9 为 6,657,709 bytes，
 只省 0.022%，不值得牺牲首屏、按需加载和独立缓存。该比较不等于所有源的浏览器性能承诺。
 

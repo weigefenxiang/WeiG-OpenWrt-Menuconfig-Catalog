@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  compareBranches, sourceAllowsBranch, sourceBranchVersion, sourceNeedsDiscovery, validateSourcePolicy,
+  compareBranches, sourceEnvironment, sourceAllowsBranch, sourceBranchVersion, sourceNeedsDiscovery, validateSourcePolicy,
 } from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -42,15 +42,19 @@ for (const source of config.sources) {
     const candidate = (await response.json()).default_branch;
     if (sourceAllowsBranch(source, candidate)) defaultBranch = candidate;
   }
-  for (const branch of [...new Set(branches)].filter((item) => sourceAllowsBranch(source, item))
+  const environmentKeys = (source.environments || []).filter(row => branches.includes(row.branch)).map(row => row.key);
+  for (const branch of [...new Set([...branches, ...environmentKeys])].filter((item) => sourceAllowsBranch(source, item))
     .sort((left, right) => compareBranches(left, right, source))) {
     if (!/^[A-Za-z0-9._/-]{1,96}$/.test(branch)) throw new Error(`非法分支名:${source.repo}/${branch}`);
     const version = sourceBranchVersion(source, branch);
+    const environment = sourceEnvironment(source, branch);
     include.push({
       source: source.id,
       label: source.label,
       repo: source.repo,
       branch,
+      upstreamBranch: environment.branch,
+      displayName: environment.label,
       version,
       defaultBranch,
       jobKey: safeKey(`${source.id}-${branch}`),

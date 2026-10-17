@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
 import {
-  appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync,
+  appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync,
   writeFileSync,
 } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
@@ -237,7 +237,7 @@ for (const artifactDir of artifactDirs) {
       issues.push(`Catalog shard cannot be decoded ${logical}:${error.message}`);
     }
   }
-  if (Number(meta?.schema || 0) >= 6 && (!meta.assets?.core || !meta.assets?.graph || !meta.assets?.menu ||
+  if (Number(meta?.schema || 0) >= 6 && (!meta.assets?.core || !(meta.assets?.graphCompact || meta.assets?.graph) || !meta.assets?.menu ||
       !meta.assets?.hidden || !meta.assets?.help || !meta.assets?.profileBaselines)) {
     issues.push('Catalog schema 6 lacks required split/Profile baseline assets');
   }
@@ -248,6 +248,9 @@ for (const artifactDir of artifactDirs) {
       copyUnique(metaFiles[0], distDir, identity) &&
       [contractFile, relationsFile, duplicateFile, candidateFile, translationFile]
         .every((file) => copyUnique(file, diagnosticsDir, identity));
+    if (fresh && meta.assets?.graphCompact && !meta.assets?.graph) {
+      rmSync(join(distDir, meta.asset.replace(/\.json\.gz$/, '.graph.json.gz')), { force: true });
+    }
     if (!fresh) issues.push('输出文件名冲突');
   }
   warnings.push(...issues.map((item) => `${identity}:${item}`));

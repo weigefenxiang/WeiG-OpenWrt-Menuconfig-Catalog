@@ -181,6 +181,7 @@ for (const row of rows) {
     id: row.source.branch.startsWith('openwrt-') ? row.source.branch.slice(8) : row.source.branch,
     version: sourceBranchVersion(policy.sources.find((item) => item.id === row.source.id), row.source.branch),
     branch: row.source.branch, counts: row.counts,
+    ...(row.source.upstreamBranch ? { upstreamBranch: row.source.upstreamBranch, displayName: row.source.displayName } : {}),
     commit: row.commit || row.source.commit || '',
     ...(row.buildInputs ? { buildInputs: row.buildInputs, inputsHash: row.source.inputsHash } : {}),
     legacy,

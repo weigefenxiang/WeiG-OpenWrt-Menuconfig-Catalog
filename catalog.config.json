@@ -51,7 +51,45 @@
       "build": {
         "diy1": "diy-generic.sh",
         "diy2": "diy2-lede.sh"
-      }
+      },
+      "environments": [
+        {
+          "key": "master-luci-24.10",
+          "branch": "master",
+          "label": "master · LuCI 24.10",
+          "feeds": [
+            {
+              "name": "luci",
+              "repo": "coolsnowwolf/luci",
+              "ref": "openwrt-24.10"
+            }
+          ]
+        },
+        {
+          "key": "master-luci-23.05",
+          "branch": "master",
+          "label": "master · LuCI 23.05",
+          "feeds": [
+            {
+              "name": "luci",
+              "repo": "coolsnowwolf/luci",
+              "ref": "openwrt-23.05"
+            }
+          ]
+        },
+        {
+          "key": "master-luci-legacy",
+          "branch": "master",
+          "label": "master · LuCI master",
+          "feeds": [
+            {
+              "name": "luci",
+              "repo": "coolsnowwolf/luci",
+              "ref": "master"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "hanwckf",
@@ -73,26 +111,44 @@
       "label": "iStoreOS",
       "repo": "istoreos/istoreos",
       "branches": {
-        "include": ["istoreos-*"],
-        "versionFamily": { "prefix": "istoreos-", "components": 2, "width": 2 },
+        "include": [
+          "istoreos-*"
+        ],
+        "versionFamily": {
+          "prefix": "istoreos-",
+          "components": 2,
+          "width": 2
+        },
         "preferDefault": true
       },
       "exclude": [],
       "diy": "generic",
-      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-generic.sh" }
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-generic.sh"
+      }
     },
     {
       "id": "Lienol",
       "label": "Lienol",
       "repo": "Lienol/openwrt",
       "branches": {
-        "include": ["*"],
-        "versionFamily": { "prefix": "", "components": 2, "width": 2 },
+        "include": [
+          "*"
+        ],
+        "versionFamily": {
+          "prefix": "",
+          "components": 2,
+          "width": 2
+        },
         "preferDefault": true
       },
       "exclude": [],
       "diy": "generic",
-      "build": { "diy1": "diy-generic.sh", "diy2": "diy2-generic.sh" }
+      "build": {
+        "diy1": "diy-generic.sh",
+        "diy2": "diy2-generic.sh"
+      }
     }
   ],
   "curatedGroups": [

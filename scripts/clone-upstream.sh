@@ -5,6 +5,8 @@ repo_url="${1:?repository URL is required}"
 branch="${2:?branch is required}"
 destination="${3:?destination is required}"
 max_attempts="${CLONE_MAX_ATTEMPTS:-3}"
+inputs_tool="$(dirname "${BASH_SOURCE[0]}")/catalog-inputs.mjs"
+clone_ref="$(node "$inputs_tool" source-ref "$repo_url" "$branch")" || exit $?
 
 if ! [[ "$max_attempts" =~ ^[1-5]$ ]]; then
   echo "CLONE_MAX_ATTEMPTS must be an integer from 1 to 5" >&2
@@ -30,9 +32,10 @@ for ((attempt = 1; attempt <= max_attempts; attempt++)); do
   rm -rf -- "$destination"
   attempt_log="$(mktemp)"
   echo "[clone] attempt ${attempt}/${max_attempts}: ${repo_url} @ ${branch}"
-  if GIT_TERMINAL_PROMPT=0 git clone --branch "$branch" --depth 1 --single-branch --no-tags \
+  if GIT_TERMINAL_PROMPT=0 git clone --branch "$clone_ref" --depth 1 --single-branch --no-tags \
       --filter=blob:none "$repo_url" "$destination" >"$attempt_log" 2>&1; then
     cat "$attempt_log"
+    node "$inputs_tool" apply-profile "$repo_url" "$branch" "$destination" || exit $?
     echo "[clone] succeeded on attempt ${attempt}/${max_attempts}"
     exit 0
   else

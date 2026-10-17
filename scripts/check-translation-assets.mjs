@@ -103,6 +103,9 @@ try {
   const modernEntry = { ...entries[0], textAssets: {
     menu: { file: menuFile }, help: { file: helpFile },
   } };
+  const germanFile = join(directory, 'future--openwrt-30.00.menu.de.json.gz');
+  writeFileSync(germanFile, gzipSync(Buffer.from(JSON.stringify(menuLanguagePayload(textCatalog, 'de', 'same')))));
+  modernEntry.languageAssets = { ...modernEntry.languageAssets, de: germanFile };
   const modern = readIndexedTranslationCatalog(modernEntry);
   assert.equal(modern.modern, true);
   assert.equal(modern.catalog.menu.options[0].usageEn, textCatalog.menu.options[0].usageEn);
@@ -114,12 +117,17 @@ try {
   const legacyView = { catalog: structuredClone(textCatalog), modern: false,
     originalText: JSON.stringify(textCatalog) };
   legacyView.catalog.menu.options[0].usageI18n.de = 'Updated description';
-  writeTranslatedLegacyProjection(modernEntry, modern, 'fixed-time');
-  const modernOutput = JSON.parse(gunzipSync(readFileSync(join(directory, legacyAsset))));
+  const frozenLegacy = readFileSync(join(directory, legacyAsset));
+  assert.equal(writeTranslatedLegacyProjection(modernEntry, modern, 'fixed-time'), false);
+  assert.deepEqual(readFileSync(join(directory, legacyAsset)), frozenLegacy,
+    'modern translations must not rewrite the frozen full legacy/Kconfig projection');
+  assert.equal(writeIndexedLanguageAssets(modernEntry, modern.catalog, 'fixed-time'), 1);
+  assert.match(gunzipSync(readFileSync(germanFile)).toString(), /Updated description/);
   writeTranslatedLegacyProjection(entries[0], legacyView, 'fixed-time');
-  assert.deepEqual(modernOutput, JSON.parse(gunzipSync(readFileSync(join(directory, legacyAsset)))),
-    'modern and legacy translation projection must be fully equal, including untouched Kconfig graph');
-  assert.deepEqual(modernOutput.relations, textCatalog.relations);
+  const legacyOutput = JSON.parse(gunzipSync(readFileSync(join(directory, legacyAsset))));
+  assert.deepEqual(legacyOutput.relations, textCatalog.relations);
+  assert.equal(legacyOutput.menu.options[0].usageI18n.de, 'Updated description',
+    'legacy-only translation inputs remain supported');
   assert.throws(() => readIndexedTranslationCatalog({ ...modernEntry, textAssets: {
     ...modernEntry.textAssets, menu: { file: menuFile, hash: 'bad', asset: 'menu' },
   } }), /text contract mismatch/, 'advertised corrupt text may not silently fall back');

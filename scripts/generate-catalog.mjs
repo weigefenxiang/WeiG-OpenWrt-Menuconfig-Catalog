@@ -15,6 +15,7 @@ import { encodeCompactRelationTables } from './relation-table-codec.mjs';
 import { traceNativeKconfig, createNativeExpansionReplay } from './native-kconfig-preprocess.mjs';
 import { measureJsonBytes } from './catalog-size-report.mjs';
 import { captureCatalogInputs, catalogInputsHash } from './catalog-inputs.mjs';
+import { sourceEnvironment } from './source-policy.mjs';
 import { buildBranchApplicationRows } from './curated-applications.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,7 +34,10 @@ let commit = '';
 try { commit = execFileSync('git', ['-C', tree, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); } catch {}
 const buildInputs = args['feeds-runtime']
   ? captureCatalogInputs(tree, JSON.parse(readFileSync(args['feeds-runtime'], 'utf8'))) : null;
+const sourcePolicy = JSON.parse(readFileSync(join(ROOT, 'catalog.config.json'), 'utf8')).sources.find(row => row.id === args['source-id']);
+const environment = sourceEnvironment(sourcePolicy, args.branch);
 const source = {
+  upstreamBranch: environment.branch, displayName: environment.label,
   id: args['source-id'], label: args.label || args['source-id'],
   repo: args.repo, branch: args.branch,
   commit, legacy: args.legacy === 'true',
@@ -508,9 +512,8 @@ const languagePayloads = Object.fromEntries(translationReport.languages.filter((
 const assets = {};
 for (const contract of [
   writeGzipAsset('core', `${slug}.core.json.gz`, corePayload),
-  writeGzipAsset('graph', `${slug}.graph.json.gz`, graphPayload),
-  // Keep the old graph contract for already-deployed consumers. New readers
-  // choose the independently hashed compact representation of the same data.
+  // The existing compact graph has a field-preserving round-trip proof.
+  // Historical snapshots retain their readable graph; new snapshots publish one graph.
   writeGzipAsset('graphCompact', `${slug}.graph.compact.json.gz`, {
     ...graphPayload, relations: compactTables,
   }),
@@ -567,7 +570,7 @@ writeFileSync(join(outDir, `${slug}.meta.json`), JSON.stringify({
       bytes: Object.values(assets).reduce((sum, item) => sum + item.bytes, 0),
       pickerBytes: assets.core.bytes,
       initialBytes: assets.core.bytes + assets.graphCompact.bytes,
-      graphJsonBytes: assets.graph.jsonBytes,
+      graphJsonBytes: assets.graphCompact.jsonBytes,
     },
     readableRelationsJsonBytes: measureJsonBytes(relations, 2) + 1,
     compactRelationsJsonBytes: measureJsonBytes(compact),

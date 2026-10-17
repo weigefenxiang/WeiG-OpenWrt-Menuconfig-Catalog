@@ -38,7 +38,27 @@ export function createTranslationPlan(env = process.env) {
   };
 }
 
+// A deadline covers setup, decoding, translation, encoding, checks and publication.
+export function remainingTranslationSeconds(deadline, perBatch, now = Date.now() / 1000, reserve = 300) {
+  if (!Number.isFinite(Number(deadline)) || Number(deadline) <= 0) return Number(perBatch);
+  return Math.max(0, Math.min(Number(perBatch), Math.floor(Number(deadline) - now - reserve)));
+}
+export function deferTranslationRetries(previous, pending, entries, language, now = Date.now()) {
+  const prior = new Map(previous.map(row => [row.id, row]));
+  for (const [id, row] of pending) {
+    if (entries[id]?.translations?.[language]) { prior.delete(id); continue; }
+    const attempts = Number(prior.get(id)?.attempts || 0) + 1;
+    prior.set(id, { id, text: row.english, attempts, reason: 'unchanged-or-rejected-output',
+      nextAttemptAt: new Date(now + Math.min(7, 2 ** Math.min(attempts - 1, 3)) * 86400000).toISOString() });
+  }
+  return [...prior.values()].filter(row => !entries[row.id]?.translations?.[language]);
+}
+
 function main() {
+  if (process.argv[2] === 'remaining') {
+    console.log(remainingTranslationSeconds(Number(process.argv[3]), Number(process.argv[4])));
+    return;
+  }
   const plan = createTranslationPlan();
   const message =
     `Configured translation: ${plan.batchCount} batch(es) × ${plan.batchSize} descriptions ` +
@@ -58,6 +78,7 @@ function main() {
   }
   if (!process.env.GITHUB_OUTPUT) return;
   appendFileSync(process.env.GITHUB_OUTPUT, [
+    `deadline_unix=${Math.floor(Date.now() / 1000) + plan.totalTimeBudgetSeconds}`,
     `batch_size=${plan.batchSize}`,
     `batch_count=${plan.batchCount}`,
     `total_items=${plan.totalItems}`,

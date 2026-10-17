@@ -138,6 +138,7 @@ jobs:
           TRANSLATE_BATCH_COUNT: ${{ steps.plan.outputs.batch_count }}
           TRANSLATE_CHAR_BUDGET: ${{ inputs.translate_char_budget || '400000' }}
           ARGOS_TIME_BUDGET_SECONDS: ${{ steps.plan.outputs.per_batch_time_budget_seconds }}
+          TRANSLATE_DEADLINE_UNIX: ${{ steps.plan.outputs.deadline_unix }}
           CATALOG_DATA_BRANCH: ${{ needs.channel.outputs.data_branch }}
         run: |
           set -euo pipefail
@@ -168,8 +169,13 @@ jobs:
             git -C dist push origin "HEAD:$CATALOG_DATA_BRANCH"
           }
           for ((batch=1; batch<=batch_count; batch++)); do
+            remaining="$(node scripts/translation-plan.mjs remaining "$TRANSLATE_DEADLINE_UNIX" "$ARGOS_TIME_BUDGET_SECONDS")"
+            if (( remaining < 60 )); then
+              echo "Translation deadline reached; prior batches are published and remaining work stays queued."
+              break
+            fi
             echo "::group::Batch ${batch}/${batch_count} · translate"
-            if TRANSLATE_BATCH_NUMBER="$batch" node scripts/translate-catalog.mjs dist dist/i18n-cache.json; then
+            if ARGOS_TIME_BUDGET_SECONDS="$remaining" TRANSLATE_BATCH_NUMBER="$batch" node scripts/translate-catalog.mjs dist dist/i18n-cache.json; then
               translation_rc=0
             else
               translation_rc=$?
@@ -184,12 +190,12 @@ jobs:
               fi
               exit "$translation_rc"
             fi
-            if [[ "$translated" == "0" || "$queued" == "0" ]]; then
-              echo "No more successful translations are available; stopping after batch ${batch}/${batch_count}."
-              break
-            fi
             if [[ "$publish_mode" == "each-batch" ]]; then
               publish_batch
+            fi
+            if [[ "$translated" == "0" || "$queued" == "0" ]]; then
+              echo "No more translations are ready; retry/fallback state is preserved after batch ${batch}/${batch_count}."
+              break
             fi
           done
       - name: Publish translated Catalog snapshot

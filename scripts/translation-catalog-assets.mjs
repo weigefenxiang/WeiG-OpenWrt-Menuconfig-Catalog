@@ -98,6 +98,10 @@ export function readIndexedTranslationCatalog(entry) {
 }
 
 export function writeTranslatedLegacyProjection(entry, view, generatedAt) {
+  // Modern readers use independently hashed language shards. Freeze the legacy
+  // projection: rewriting hundreds of MiB of unrelated graphs per batch serves
+  // no modern consumer and grows Git history. Legacy-only inputs retain support.
+  if (view.modern) return false;
   const originalText = view.originalText || gunzipSync(readFileSync(entry.file)).toString('utf8');
   const legacy = view.modern ? JSON.parse(originalText) : view.catalog;
   if (view.modern) {
