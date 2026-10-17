@@ -34,7 +34,6 @@ import { buildCatalogSizeReport } from './catalog-size-report.mjs';
 import { applicableBuildDependencies, normalizeCompatibilityDocument } from './compatibility-rules.mjs';
 import { buildProbeConfig, verifyProbeConfig } from './verify-target-contracts.mjs';
 import { activeCuratedGroups, buildCuratedApplications, buildBranchApplicationRows } from './curated-applications.mjs';
-import { parseApkDump, parseOpkgPackages } from './curated-sizes.mjs';
 import { sourceAllowsBranch, sourceBranchVersion, compareBranches, validateSourcePolicy } from './source-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -98,7 +97,6 @@ assert.throws(() => validateSourcePolicy({ ...store, branches: { ...store.branch
 assert(store.branches.preferDefault && lienol.branches.preferDefault);
 for (const source of [store, lienol]) {
   assert.deepEqual(source.build, { diy1: 'diy-generic.sh', diy2: 'diy2-generic.sh' });
-  assert(!policy.curatedSizeSources.some((row) => row.id === source.id), 'never borrow another fork\'s package sizes');
 }
 
 // Official Target/Profile parsing and selector contracts.
@@ -693,14 +691,6 @@ assert(curatedDocument.items.every((row) => row.id && row.titleZh && row.usageZh
 assert.equal(new Set(curated.flatMap((row) => row.packages || [])).size,
   curated.reduce((count, row) => count + (row.packages?.length || 0), 0));
 
-const opkg = parseOpkgPackages('Package: luci-app-demo\nSize: 100\nInstalled-Size: 250\nDepends: demo-lib (>= 1), +demo-data\n\n' +
-  'Package: demo-lib\nSize: 20\n\nPackage: demo-data\nSize: 5\n');
-const apk = parseApkDump({ packages: [
-  { info: { name: 'luci-app-demo', file_size: 120, installed_size: 280, depends: ['demo-lib>=1'] } },
-  { info: { name: 'demo-lib', file_size: 30, depends: [] } },
-] });
-assert.equal(opkg[0].installedSize, 250);
-assert.equal(apk[0].installedSize, 280);
 const sizeRows = buildCatalogSizeReport([{ source: { id: 'fixture', branch: 'test', commit: 'a'.repeat(40) },
   sizeReport: { legacy: { bytes: 1000 }, split: { initialBytes: 300, bytes: 700 }, readableRelationsJsonBytes: 10000, compactRelationsJsonBytes: 2500 } }]);
 assert.equal(sizeRows[0].initialReductionPercent, 70);

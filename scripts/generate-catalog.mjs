@@ -390,7 +390,6 @@ const corePayload = {
     'split-catalog-assets-v1',
     'lazy-menu-v1',
     'branch-applications-v1',
-    'package-sizes-v1',
   ],
   engine: payload.engine,
   generatedAt,
@@ -506,57 +505,6 @@ const languagePayloads = Object.fromEntries(translationReport.languages.filter((
   }).filter(Boolean),
 }]));
 
-const nativePackageVersions = new Map(packages.map((item) => [item.name, item.version]));
-function packageSizeDocument(sample) {
-  const exact = sample?.source === source.id && sample?.branch === source.branch && sample?.available === true;
-  const observed = new Map((exact && Array.isArray(sample.packages) ? sample.packages : [])
-    .filter((row) => row && typeof row.name === 'string')
-    .map((row) => [JSON.stringify([row.name, row.version]), row]));
-  const names = [...packageSymbols].sort((a, b) => a.localeCompare(b));
-  const rows = names.flatMap((name) => {
-    const version = nativePackageVersions.get(name);
-    const row = observed.get(JSON.stringify([name, version]));
-    if (!row || !Number.isSafeInteger(Number(row.size)) || Number(row.size) < 0) return [];
-    if (!version || !row.version || version !== row.version) return [];
-    const installed = Number(row.installedSize);
-    return [[name, Number(row.size), Number.isSafeInteger(installed) && installed > 0 ? installed : null]];
-  });
-  return {
-    schema: 1,
-    kind: 'package-sizes',
-    encoding: 'positional-rows-v1',
-    fields: ['package', 'archiveBytes', 'installedBytes'],
-    metric: {
-      archiveBytes: 'compressed package archive bytes',
-      installedBytes: 'installed bytes when published by the package index',
-    },
-    generatedAt,
-    source,
-    observation: exact ? {
-      generatedAt: sample.generatedAt || '',
-      architecture: sample.architecture || '',
-      format: sample.format || '',
-      baseUrl: sample.baseUrl || '',
-      match: 'exact-source-branch-architecture-package-version',
-      reason: rows.length ? '' : 'no-matching-native-package-versions',
-    } : {
-      architecture: '',
-      match: 'unavailable',
-      reason: sample?.reason || 'no-exact-official-index-observation',
-    },
-    coverage: { known: rows.length, total: names.length, unknown: names.length - rows.length },
-    rows,
-  };
-}
-const samplePath = args['size-sample'] ? resolve(args['size-sample']) : '';
-let sizeSample = null;
-if (samplePath && existsSync(samplePath)) sizeSample = JSON.parse(readFileSync(samplePath, 'utf8'));
-const packageSizeDocuments = sizeSample?.schema === 3
-  ? (sizeSample.observations || []).map((row) => packageSizeDocument(row.file
-    ? JSON.parse(readFileSync(resolve(dirname(samplePath), row.file), 'utf8')) : row))
-  : [packageSizeDocument(sizeSample)];
-const packageSizesPayload = packageSizeDocuments.find((document) => document.observation.architecture) || packageSizeDocument(sizeSample);
-
 const assets = {};
 for (const contract of [
   writeGzipAsset('core', `${slug}.core.json.gz`, corePayload),
@@ -570,27 +518,6 @@ for (const contract of [
   writeGzipAsset('hidden', `${slug}.hidden.json.gz`, hiddenPayload),
   writeGzipAsset('help', `${slug}.help.json.gz`, helpPayload),
 ]) assets[contract.logical] = contract;
-const packageSizesContract = writeGzipAsset('packageSizes', `${slug}.package-sizes.json.gz`, packageSizesPayload);
-Object.assign(packageSizesContract, {
-  schema: packageSizesPayload.schema,
-  kind: packageSizesPayload.kind,
-  items: packageSizesPayload.rows.length,
-  totalPackages: packageSizesPayload.coverage.total,
-  architecture: packageSizesPayload.observation.architecture || '',
-  installedItems: packageSizesPayload.rows.filter((row) => row[2] !== null).length,
-  reason: packageSizesPayload.observation.reason || '',
-});
-assets.packageSizes = packageSizesContract;
-for (const document of packageSizeDocuments) {
-  const architecture = document.observation.architecture;
-  if (!architecture) continue;
-  const logical = `packageSizes:${architecture}`;
-  const contract = writeGzipAsset(logical, `${slug}.package-sizes.${safeSlug(architecture)}.json.gz`, document);
-  Object.assign(contract, { schema: document.schema, kind: document.kind, items: document.rows.length,
-    totalPackages: document.coverage.total, architecture, installedItems: document.rows.filter((row) => row[2] !== null).length,
-    reason: document.observation.reason || '' });
-  assets[logical] = contract;
-}
 for (const [lang, value] of Object.entries(languagePayloads)) {
   const logical = `menu:${lang}`;
   assets[logical] = writeGzipAsset(logical, `${slug}.menu.${safeSlug(lang)}.json.gz`, value);

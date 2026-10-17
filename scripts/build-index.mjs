@@ -184,7 +184,8 @@ for (const row of rows) {
     commit: row.commit || row.source.commit || '',
     ...(row.buildInputs ? { buildInputs: row.buildInputs, inputsHash: row.source.inputsHash } : {}),
     legacy,
-    assets: row.assets || {},
+    // Preserve old immutable snapshots, but never republish retired optional assets.
+    assets: Object.fromEntries(Object.entries(row.assets || {}).filter(([key]) => !key.startsWith('packageSizes'))),
     schema: Number(row.schema || 5),
     sizeReport: row.sizeReport || {},
     state: 'fresh',

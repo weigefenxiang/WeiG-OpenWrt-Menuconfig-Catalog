@@ -4,7 +4,7 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "pretest": "node tests/check-native-kconfig-preprocess.mjs && node tests/check-package-metadata-parity.mjs && node --max-old-space-size=64 tests/check-catalog-json-size.mjs && node tests/check-package-size-collection.mjs",
+    "pretest": "node tests/check-native-kconfig-preprocess.mjs && node tests/check-package-metadata-parity.mjs && node --max-old-space-size=64 tests/check-catalog-json-size.mjs",
     "check": "node scripts/check.mjs",
     "discover": "node scripts/discover.mjs",
     "refresh:curated": "node scripts/refresh-curated-applications.mjs",
@@ -15,7 +15,6 @@
     "check:index-assets": "node scripts/check-index-assets.mjs",
     "size-report": "node scripts/catalog-size-report.mjs dist",
     "benchmark:profiles": "node --expose-gc scripts/benchmark-profile-wire-format.mjs",
-    "benchmark:package-sizes": "node --expose-gc scripts/benchmark-package-size-assets.mjs",
     "benchmark:profile-groups": "node scripts/benchmark-profile-config-groups.mjs"
   },
   "engines": {

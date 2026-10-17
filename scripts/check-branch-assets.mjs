@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,13 +51,11 @@ try {
     '--legacy', 'false',
     '--tree', tree,
     '--feeds-runtime', receiptPath,
-    '--size-sample', join(fixture, 'package-size-sample.json'),
     '--out', output,
   ], { stdio: ['ignore', 'pipe', 'pipe'] });
 
   const readGzipJson = (name) => JSON.parse(gunzipSync(readFileSync(join(output, name))).toString('utf8'));
   const core = readGzipJson('fixture--test.core.json.gz');
-  const sizes = readGzipJson('fixture--test.package-sizes.json.gz');
   const meta = JSON.parse(readFileSync(join(output, 'fixture--test.meta.json'), 'utf8'));
   const legacyGraph = readGzipJson('fixture--test.graph.json.gz');
   assert.deepEqual(meta.buildInputs, inputs);
@@ -84,49 +82,14 @@ try {
   assert(core.applications.rows.some((row) => row[0] === 'PACKAGE_luci-app-demo' && row[1] === 'luci-app-demo'));
   assert(!core.applications.rows.some((row) => /INCLUDE_payload|symbol-only/.test(row[0])),
     'Kconfig suboptions must not become application packages');
-  assert(!sizes.rows.some((row) => /INCLUDE_payload|symbol-only/.test(row[0])));
   assert.equal(core.applications.rows.some((row) => row[1] === 'luci-app-packageinfo-only'), false,
     'packageinfo-only metadata must not become a selectable branch application');
-  assert.deepEqual(sizes.fields, ['package', 'archiveBytes', 'installedBytes']);
-  assert.deepEqual(sizes.rows.find((row) => row[0] === 'luci-app-demo'), ['luci-app-demo', 100, 240]);
-  assert.equal(sizes.observation.match, 'exact-source-branch-architecture-package-version');
-  assert.equal(sizes.coverage.total >= sizes.coverage.known, true);
-  assert.equal(meta.assets.packageSizes.asset, 'fixture--test.package-sizes.json.gz');
-  assert.equal(meta.assets.packageSizes.items, sizes.rows.length);
-  assert.equal(meta.assets.packageSizes.totalPackages, sizes.coverage.total);
-  assert.equal(meta.assets['packageSizes:x86_64'].installedItems, sizes.rows.filter(row => row[2] != null).length);
-
-  // Multiple official architectures retain independent, version-matched size
-  // observations; neither newer binaries nor another Source/Branch may leak in.
-  const sample = JSON.parse(readFileSync(join(fixture, 'package-size-sample.json'), 'utf8'));
-  const observations = [
-    { ...sample, architecture: 'arch_a', packages: sample.packages.flatMap(row => [
-      row, { ...row, version: 'later-repository-version', size: 999999, installedSize: 999999 },
-    ]) },
-    { ...sample, architecture: 'arch_b', packages: sample.packages.map(row => ({ ...row, size: row.size * 2, installedSize: row.installedSize * 2 })) },
-    { ...sample, architecture: 'arch_new', packages: sample.packages.map(row => ({ ...row, version: 'mismatched-version' })) },
-    { ...sample, architecture: 'arch_other_source', source: 'Other' },
-  ];
-  const bundle = join(output, 'size-bundle.json');
-  writeFileSync(bundle, JSON.stringify({ schema: 3, observations: observations.map((row, index) => {
-    const file = `size-observation-${index}.json`;
-    writeFileSync(join(output, file), JSON.stringify(row));
-    return { architecture: row.architecture, file };
-  }) }));
-  execFileSync(process.execPath, [join(ROOT, 'scripts/generate-catalog.mjs'),
-    '--source-id', 'Fixture', '--repo', 'example/fixture', '--branch', 'test', '--tree', tree,
-    '--size-sample', bundle, '--out', output], { stdio: ['ignore', 'pipe', 'pipe'] });
-  const multiMeta = JSON.parse(readFileSync(join(output, 'fixture--test.meta.json'), 'utf8'));
-  const a = readGzipJson(multiMeta.assets['packageSizes:arch_a'].asset);
-  const b = readGzipJson(multiMeta.assets['packageSizes:arch_b'].asset);
-  assert.deepEqual(a.rows.find(row => row[0] === 'luci-app-demo'), ['luci-app-demo', 100, 240],
-    'a later repository version must not shadow the exact native package version');
-  assert.equal(b.rows[0][1], a.rows[0][1] * 2);
-  assert.equal(b.rows[0][2], a.rows[0][2] * 2);
-  assert.equal(multiMeta.assets['packageSizes:arch_new'].installedItems, 0);
-  assert.equal(readGzipJson(multiMeta.assets['packageSizes:arch_new'].asset).rows.length, 0);
-  assert.equal(multiMeta.assets['packageSizes:arch_other_source'], undefined);
-  console.log(`Branch application/size assets passed: applications=${core.applications.rows.length} sizes=${sizes.rows.length}/${sizes.coverage.total}`);
+  assert(!Object.keys(meta.assets).some((key) => key.startsWith('packageSizes')),
+    'retired size assets must not be advertised');
+  assert(!core.capabilities.includes('package-sizes-v1'));
+  assert(!readdirSync(output).some((name) => name.includes('.package-sizes')),
+    'the producer must not emit retired size files');
+  console.log(`Branch applications passed without retired sizes: ${core.applications.rows.length}`);
 } finally {
   rmSync(output, { recursive: true, force: true });
 }

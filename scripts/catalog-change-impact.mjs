@@ -10,6 +10,9 @@ const GIT_SHA_RE = /^[0-9a-f]{40}$/i;
 const PROMOTION_ONLY_PUSH_REFS = new Set(['dev', 'staging', 'main']);
 const RETIRED_PATHS = new Map([
   ['scripts/run-boot-smoke.sh', 'none'],
+  ['scripts/curated-sizes.mjs', 'none'],
+  ['scripts/collect-curated-size-samples.mjs', 'none'],
+  ['scripts/benchmark-package-size-assets.mjs', 'none'],
   ['curated-sizes.json', 'applications'],
   ['scripts/refresh-curated-sizes.mjs', 'none'],
   ['.github/workflows/curated-sizes.yml', 'none'],
@@ -35,8 +38,6 @@ const REGISTRY = Object.freeze({
     'scripts/compact-relations.mjs',
     'scripts/relation-table-codec.mjs',
     'scripts/catalog-size-report.mjs',
-    'scripts/collect-curated-size-samples.mjs',
-    'scripts/curated-sizes.mjs',
     'scripts/discover.mjs',
     'scripts/generate-catalog.mjs',
     'scripts/catalog-inputs.mjs',
@@ -67,7 +68,6 @@ const REGISTRY = Object.freeze({
     'scripts/benchmark-profile-config-groups.mjs',
     'scripts/benchmark-profile-wire-format.mjs',
     'scripts/benchmark-relation-wire-format.mjs',
-    'scripts/benchmark-package-size-assets.mjs',
     'scripts/catalog-channels.mjs',
     'scripts/check-catalog-change-impact.mjs',
     'scripts/check-branch-assets.mjs',

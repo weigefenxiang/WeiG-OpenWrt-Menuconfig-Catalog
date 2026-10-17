@@ -46,7 +46,7 @@ const copyUnique = (file, dir, scope) => {
 // snapshots stay addressable; carrying last-good may not republish retired
 // duplicate graphs or human-readable reports into the new snapshot.
 const isDiagnosticAsset = (file) =>
-  /\.(?:relations(?:\.debug)?\.json(?:\.gz)?|translations\.json|contract\.json|duplicates\.json|curated-candidates\.json)$/.test(file);
+  /\.(?:package-sizes(?:\.[^.]+)?\.json(?:\.gz)?|relations(?:\.debug)?\.json(?:\.gz)?|translations\.json|contract\.json|duplicates\.json|curated-candidates\.json)$/.test(file);
 for (const file of walk(previousDir).filter((item) =>
   item.endsWith('.json.gz') && !isDiagnosticAsset(item))) {
   copyFileSync(file, join(distDir, basename(file)));

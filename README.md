@@ -12,7 +12,7 @@ existing discovery, metadata-only bootstrap, exact feeds, native Profile baselin
 Kconfig and package graph generation are shared. A future family version is
 discovered automatically. A configured source becomes usable only after native
 generation/validation publishes a complete snapshot; configuration alone is not
-proof that every Profile or firmware builds. No other source's package sizes are borrowed.
+proof that every Profile or firmware builds. Package-capacity estimates are not published.
 
 版本倒序和默认选择分开：iStoreOS 当前最新发现 `25.12`，官方默认仍为 `24.10`；
 这些是发现结果，不是网页写死的版本表。两新源复用原生成链，网页选择具体 Profile 后
@@ -157,37 +157,24 @@ npm run refresh:applications -- --channel dev
 npm run refresh:applications -- --channel dev --write
 ```
 
-The refresh tool verifies menu shards and merges shared application descriptions across Source/Branch entries. It is report-only unless `--write` is explicit; `--source` and `--branch` accept exact IDs/names or `*`. `applications.json.gz` supplies descriptions/groups and translated Probe UI, not package availability or aggregate sizes. Official OPKG/APK indexes feed branch size assets during generation. The obsolete `curated-sizes.json`, aggregate refresh script and weekly size workflow are retired. Probe package choices come from current Catalog/Kconfig state.
+The refresh tool verifies menu shards and merges shared application descriptions across Source/Branch entries. It is report-only unless `--write` is explicit; `--source` and `--branch` accept exact IDs/names or `*`. `applications.json.gz` supplies descriptions/groups and translated Probe UI, not package availability or aggregate sizes. Package-size collection, generated size assets, estimates and the old aggregate refresh path are retired. Probe package choices come from current Catalog/Kconfig state.
 
 `curatedGroups` is the ordered group authority. Published applications keep only groups used by at least one curated application; refresh prunes empty groups, and validation rejects empty or duplicate groups. Group changes belong in `catalog.config.json` and refresh metadata, never in AutoBuild package-name conditions.
 
 The selectable branch application projection is the intersection of native LuCI
 Kconfig options and the branch's concrete `.packageinfo` package index. A
-`PACKAGE_luci-app-*` configuration suboption is not an application or a package
-size record. Shared descriptions/groups supplement this projection; they do not
+`PACKAGE_luci-app-*` configuration suboption is not an application. Shared
+descriptions/groups supplement this projection; they do not
 make a package available in another Source/Branch/Target. The full menu and typed
 relations remain available to Advanced menuconfig.
 
-Package-size observations come from official binary indexes, not source file
-bytes. The OPKG/APK collector intersects official architectures with native
-Targets and admits only exact native package versions. Each architecture has an
-independent positional gzip asset advertised as `packageSizes:<arch>`; the
-default `packageSizes` contract remains readable. Collection uses a bounded
-deadline and four architecture workers; unavailable coverage does not block
-generation. Consumers match Source/Branch/commit/architecture and distinguish
-archive from installed bytes. Count only final-Y concrete packages. Missing
-observations are unknown, never zero. Capacity percentages require complete
-installed-size coverage; they do not predict compressed firmware size.
-
-Repository discovery is data-driven through `curatedSizeSources`: inspect trusted
-architecture/feed listings, same-version-family releases and native Target
-repositories, with declared archive fallbacks. Preserve every package/version
-pair so a later repository cannot shadow the native version; conflicting
-installed-size observations for one identity remain unknown. Stable and future
-`openwrt-*` branches and snapshot lanes share the same collector. Lean LEDE and
-other forks without a declared matching official index remain explicitly
-unavailable; upstream OpenWrt binaries are not substitutes. No firmware build or
-additional Worker dependency gate is required for these optional observations.
+Package-size collection and capacity estimates are retired. Generation no longer
+downloads official OPKG/APK indexes or emits package-size shards. Current
+indexes do not advertise those optional assets; immutable historical snapshots
+remain addressable for already-exported requests. Applications, Kconfig
+relations, native Profile baselines and compatibility evidence are unchanged.
+RootFS partition settings and nonblocking software-count warnings remain in
+the customizer, without claiming measured package occupancy.
 
 `curatedGroups` 是分组顺序的权威数据。公开应用只保留至少含一个精选应用的分组；刷新工具自动清理空分组，校验器拒绝空分组和重复分组。分组调整必须同步维护 `catalog.config.json` 与刷新元数据，禁止在 AutoBuild 按软件包名特判。
 

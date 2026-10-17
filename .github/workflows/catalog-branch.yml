@@ -71,16 +71,6 @@ jobs:
         timeout-minutes: 15
         working-directory: work/upstream
         run: bash "$GITHUB_WORKSPACE/scripts/run-stage.sh" metadata bash "$GITHUB_WORKSPACE/scripts/prepare-metadata.sh" "${{ fromJSON(inputs.branch).metadataCompat }}"
-      - name: Collect exact package-size observation
-        id: package_sizes
-        continue-on-error: true
-        timeout-minutes: 8
-        run: |
-          node scripts/collect-curated-size-samples.mjs work/size-samples \
-            --source "${{ fromJSON(inputs.branch).source }}" \
-            --branch "${{ fromJSON(inputs.branch).branch }}" \
-            --tree work/upstream \
-            --output-file work/package-size-sample.json
       - name: Extract catalog
         id: extract
         timeout-minutes: 5
@@ -94,7 +84,6 @@ jobs:
             --legacy "${{ fromJSON(inputs.branch).legacy }}" \
             --tree work/upstream \
             --feeds-runtime probe-feeds-runtime.json \
-            --size-sample work/package-size-sample.json \
             --out dist
       - name: Verify Target/Profile Kconfig contracts
         id: kconfig_contract
