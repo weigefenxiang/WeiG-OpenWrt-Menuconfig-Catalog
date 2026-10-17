@@ -249,7 +249,13 @@ jobs:
             bash scripts/clone-upstream.sh "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
             if [[ -n "${{ matrix.upstreamCommit }}" && "$(git -C work/upstream rev-parse HEAD)" != "${{ matrix.upstreamCommit }}" ]]; then
               git -C work/upstream fetch --depth 1 origin "${{ matrix.upstreamCommit }}"
+              # A feed profile is an untracked generated overlay. Rebuild it
+              # from the selected source commit, not the branch tip just cloned.
+              if [[ -f work/upstream/feeds.conf ]] && ! git -C work/upstream ls-files --error-unmatch feeds.conf >/dev/null 2>&1; then
+                rm -f -- work/upstream/feeds.conf
+              fi
               git -C work/upstream checkout --detach "${{ matrix.upstreamCommit }}"
+              node scripts/catalog-inputs.mjs apply-profile "https://github.com/${{ matrix.repo }}" "${{ matrix.branch }}" work/upstream
             fi
             if [[ -n "${{ matrix.upstreamCommit }}" ]]; then
               test "$(git -C work/upstream rev-parse HEAD)" = "${{ matrix.upstreamCommit }}"

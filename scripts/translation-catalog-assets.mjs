@@ -103,23 +103,7 @@ export function writeTranslatedLegacyProjection(entry, view, generatedAt) {
   // no modern consumer and grows Git history. Legacy-only inputs retain support.
   if (view.modern) return false;
   const originalText = view.originalText || gunzipSync(readFileSync(entry.file)).toString('utf8');
-  const legacy = view.modern ? JSON.parse(originalText) : view.catalog;
-  if (view.modern) {
-    const options = new Map(view.catalog.menu.options.map((row) => [row.symbol, row]));
-    const choices = new Map(view.catalog.menu.choices.map((row) => [row.id, row]));
-    for (const row of legacy.menu?.options || []) {
-      const next = options.get(row.symbol);
-      if (next) Object.assign(row, { usageEn: next.usageEn, promptI18n: next.promptI18n, usageI18n: next.usageI18n });
-    }
-    for (const [name, row] of Object.entries(legacy.menu?.labels || {})) {
-      const next = view.catalog.menu.labels[name];
-      if (next) Object.assign(row, { i18n: next.i18n, usageI18n: next.usageI18n });
-    }
-    for (const row of legacy.menu?.choices || []) {
-      const next = choices.get(row.id);
-      if (next) Object.assign(row, { promptI18n: next.promptI18n, usageI18n: next.usageI18n });
-    }
-  }
+  const legacy = view.catalog;
   if (JSON.stringify(legacy) === originalText) return false;
   legacy.translation = { ...(legacy.translation || {}), languages: ['en', ...translationLanguages],
     fallback: 'en', updatedAt: generatedAt };

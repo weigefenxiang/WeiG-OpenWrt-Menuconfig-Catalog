@@ -107,7 +107,7 @@ if (enabled && provider === 'argos' && pending.length) {
   console.log(`Argos: ${activeLanguage}, batch ${batchNumber}/${batchCount}, queued ${pending.length}/${candidates.length} descriptions (batch limit ${maxItems})`);
   const result = await new Promise((done) => {
     activeChild = spawn(process.env.ARGOS_PYTHON || 'python', [process.env.ARGOS_TRANSLATOR_SCRIPT || join('scripts', 'translate-argos.py'), queue, resultFile], { stdio: 'inherit' });
-    activeChild.once('error', (error) => done({ error, status: -1 }));
+    activeChild.once('error', (error) => { clearTimeout(timer); done({ error, status: -1 }); });
     const budget = remainingTranslationSeconds(Number(process.env.TRANSLATE_DEADLINE_UNIX), Number(process.env.ARGOS_TIME_BUDGET_SECONDS || 3000));
     const timer = setTimeout(() => {
       timedOut = true;
